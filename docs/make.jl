@@ -3,6 +3,7 @@ using Documenter
 
 DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
 
+push!(LOAD_PATH,"../src/")
 makedocs(;
     modules=[AeroBeams],
     authors="Luiz Pancini <luizpancini@usp.br>",
@@ -19,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/luizpancini/AeroBeams.jl",
+    repo="github.com/luizpancini/AeroBeams.jl.git",
     devbranch="main",
 )
