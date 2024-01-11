@@ -2,5 +2,5 @@ using AeroBeams
 using Test
 
 @testset "AeroBeams.jl" begin
-    # Write your tests here.
+    @test AeroBeams.greeting() == "This is the AeroBeams package"
 end

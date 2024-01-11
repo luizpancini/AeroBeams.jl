@@ -5,7 +5,7 @@ DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true
 
 makedocs(;
     modules=[AeroBeams],
-    authors="Luiz Pancini <luizpancini@usp.br",
+    authors="Luiz Pancini <luizpancini@usp.br>",
     sitename="AeroBeams.jl",
     format=Documenter.HTML(;
         canonical="https://luizpancini.github.io/AeroBeams.jl",
@@ -14,6 +14,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "References" => "references.md"
     ],
 )
 

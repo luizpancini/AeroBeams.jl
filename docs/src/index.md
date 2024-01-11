@@ -1,14 +1,9 @@
-```@meta
-CurrentModule = AeroBeams
-```
-
 # AeroBeams
 
 Documentation for [AeroBeams](https://github.com/luizpancini/AeroBeams.jl).
 
-```@index
-```
+## Installation
 
-```@autodocs
-Modules = [AeroBeams]
-```
+"""julia-REPL
+pkg> add AeroBeams
+"""
