@@ -19,3 +19,9 @@ This is the AeroBeams package
 function greeting()
     return "This is the AeroBeams package"
 end
+
+function f()
+    return π
+end
+
+my_array = [1,π,2*π,10,20,30]
