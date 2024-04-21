@@ -8,7 +8,7 @@ EA,GA,GJ,EI = 1e7,5e6,833_333,833_333
 nElem = 20
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],k=[0;0;1/R])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],k=[0;0;1/R])
 
 # BCs
 F₀ = 100
@@ -17,14 +17,14 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 tipForce = create_BC(name="tipForce",beam=beam,node=nElem+1,types=["Ff3A"],values=[(t)->F(t)])
 
 # Model
-curvedCantileverDynamicFollower = Model(name="curvedCantileverDynamicFollower",beams=[beam],BCs=[clamp,tipForce])
+curvedCantileverDynamicFollower = create_Model(name="curvedCantileverDynamicFollower",beams=[beam],BCs=[clamp,tipForce])
 
 # Time variables
 tf = 7.5
 Δt = 1e-2
 
 # Create and solve the problem
-problem = DynamicProblem(model=curvedCantileverDynamicFollower,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=curvedCantileverDynamicFollower,finalTime=tf,Δt=Δt)
 solve!(problem)
 
 # Unpack numerical solution

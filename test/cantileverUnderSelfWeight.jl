@@ -8,21 +8,21 @@ A,Iy = b*H,b*H^3/12
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,0,0,0])
 nElem = 40
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-cantileverUnderSelfWeight = Model(name="cantileverUnderSelfWeight",beams=[beam],BCs=[clamp],gravityVector=[0,0,-9.81])
+cantileverUnderSelfWeight = create_Model(name="cantileverUnderSelfWeight",beams=[beam],BCs=[clamp],gravityVector=[0,0,-9.81])
 
 # Set system solver options
 σ0 = 0
 σstep = 0.05
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=cantileverUnderSelfWeight,systemSolver=NR)
+problem = create_SteadyProblem(model=cantileverUnderSelfWeight,systemSolver=NR)
 solve!(problem)
 
 # Get nodal arclength positions, displacements and forces over the beams

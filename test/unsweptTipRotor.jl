@@ -36,13 +36,13 @@ complianceMatrix[1:3,1:3] .= [   1/(E11*A) -ν12/(G12*A*Ksy)  -ν13/(G13*A*Ksz);
 complianceMatrix[4:6,4:6] .= diagm([1/(G23*J*Kt); 1/(E11*Iy); 1/(E11*Iz)])
 stiffnessMatrix = inv(complianceMatrix)
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Create model
-unsweptTipRotor = Model(name="unsweptTipRotor",beams=[beam],BCs=[clamp],initialPosition=r0)
+unsweptTipRotor = create_Model(name="unsweptTipRotor",beams=[beam],BCs=[clamp],initialPosition=r0)
 
 # Initialize outputs
 numFreqs = Vector{Vector{Float64}}(undef,length(ωRange))
@@ -55,7 +55,7 @@ for (i,ω) in enumerate(ωRange)
     # Display progress
     display("Solving for ω = $(ωRPM[i]) rpm")
     # Create and solve eigenproblem
-    global problem = EigenProblem(model=unsweptTipRotor,nModes=nModes)
+    global problem = create_EigenProblem(model=unsweptTipRotor,nModes=nModes)
     solve!(problem)
     # Get outputs
     numFreqs[i] = problem.frequenciesOscillatory

@@ -33,14 +33,14 @@ nModes = 8
 # Beams
 stiffnessMatrix = diagm([E*A,G*A*Ksy,G*A*Ksz,G*J*Kt,E*Iy,E*Iz])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
-beam1 = Beam(name="beam1",length=L1,nElements=nElemBeam1,C=[stiffnessMatrix],I=[inertiaMatrix])
-beam2 = Beam(name="beam2",length=L2,nElements=nElemBeam2,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321")
+beam1 = create_Beam(name="beam1",length=L1,nElements=nElemBeam1,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam2 = create_Beam(name="beam2",length=L2,nElements=nElemBeam2,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321")
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Create model
-sweptTipRotor = Model(name="sweptTipRotor",beams=[beam1,beam2],BCs=[clamp],initialPosition=r0)
+sweptTipRotor = create_Model(name="sweptTipRotor",beams=[beam1,beam2],BCs=[clamp],initialPosition=r0)
 
 # Initialize outputs
 numFreqs = Matrix{Vector{Float64}}(undef,length(ωRange),length(tipAngleRange))
@@ -64,7 +64,7 @@ for (i,ω) in enumerate(ωRange)
         update_model!(sweptTipRotor)
         # plot_undeformed_assembly(sweptTipRotor)
         # Create and solve eigenproblem
-        problem = EigenProblem(model=sweptTipRotor,nModes=nModes)
+        problem = create_EigenProblem(model=sweptTipRotor,nModes=nModes)
         solve!(problem)
         # Get outputs
         numFreqs[i,j] = problem.frequenciesOscillatory

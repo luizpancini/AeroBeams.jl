@@ -10,8 +10,8 @@ G = E/(2*(1+ν))
 EA,GAy,GAz,GJ,EIy,EIz = E*A,∞,∞,∞,E*Iy,∞
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 nElem = 20
-beam1 = Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix])
-beam2 = Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
 
 # BCs
 F = 5e3
@@ -19,15 +19,15 @@ clamp = create_BC(name="clamp",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A",
 tipFollowerForce = create_BC(name="tipFollowerForce",beam=beam2,node=nElem+1,types=["Ff3b"],values=[-F])
 
 # Model
-rightAngledFrame = Model(name="rightAngledFrame",beams=[beam1,beam2],BCs=[clamp,tipFollowerForce])
+rightAngledFrame = create_Model(name="rightAngledFrame",beams=[beam1,beam2],BCs=[clamp,tipFollowerForce])
 
 # Set system solver options
 σ0 = 0.0
 σstep = 0.02
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=rightAngledFrame,systemSolver=NR)
+problem = create_SteadyProblem(model=rightAngledFrame,systemSolver=NR)
 solve!(problem)
 
 # Get solution at partial load steps

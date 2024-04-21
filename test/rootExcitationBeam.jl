@@ -8,14 +8,12 @@ L,b,H = 479e-3,50.8e-3,0.45e-3
 A,Iy,Iz = b*H,b*H^3/12,H*b^3/12
 J = Is = Iy+Iz
 Ksy = Ksz = 5/6
-E = 127e9
-ν = 0.36
+E,ν,ρ = 127e9,0.36,4.43e3
 G = E/(2*(1+ν))
-ρ = 4.43e3
 nElem = 60
 stiffnessMatrix = diagm([E*A,G*A*Ksy,G*A*Ksz,G*J,E*Iy,E*Iz])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,-π/2,0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,-π/2,0])
 
 # BCs
 if mode == 1
@@ -31,7 +29,7 @@ u₃b = t -> A*sin.(ω*t)
 shaker = create_BC(name="shaker",beam=beam,node=1,types=["u1b","u2b","u3b","p1b","p2b","p3b"],values=[0,0,t->u₃b(t),0,0,0])
 
 # Model
-rootExcitationBeam = Model(name="rootExcitationBeam",beams=[beam],BCs=[shaker],gravityVector=[0,0,-9.81])
+rootExcitationBeam = create_Model(name="rootExcitationBeam",beams=[beam],BCs=[shaker],gravityVector=[0,0,-9.81])
 
 # Time variables
 cycles = 5
@@ -39,7 +37,7 @@ tf = cycles*T
 Δt = T/100
 
 # Create and solve the problem
-problem = DynamicProblem(model=rootExcitationBeam,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=rootExcitationBeam,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

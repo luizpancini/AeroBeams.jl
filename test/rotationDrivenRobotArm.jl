@@ -7,7 +7,7 @@ EA,GA,GJ,EI = 1e4,1e4,1e3,1e3
 nElem = 40
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 τ = 5
@@ -18,14 +18,14 @@ support = create_BC(name="support",beam=beam,node=1,types=["u1A","u2A","u3A","p1
 driver = create_BC(name="driver",beam=beam,node=1,types=["p2A"],values=[t->p(t)])
 
 # Model
-rotationDrivenRobotArm = Model(name="rotationDrivenRobotArm",beams=[beam],BCs=[support,driver])
+rotationDrivenRobotArm = create_Model(name="rotationDrivenRobotArm",beams=[beam],BCs=[support,driver])
 
 # Time variables
 tf = 9
 Δt = 1e-1
 
 # Create and solve the problem
-problem = DynamicProblem(model=rotationDrivenRobotArm,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=rotationDrivenRobotArm,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

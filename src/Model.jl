@@ -1,5 +1,5 @@
 """
-mutable struct UnitSystem 
+@with_kw mutable struct UnitSystem 
 
 A composite type with fields for length, force, angle and frequency units (this is only for plotting purposes and does not influence calculations)
 
@@ -9,13 +9,13 @@ A composite type with fields for length, force, angle and frequency units (this 
 - angle::String
 - frequency::String
 """
-mutable struct UnitSystem
+@with_kw mutable struct UnitSystem
 
     # Fields
-    length::String 
-    force::String 
-    angle::String 
-    frequency::String 
+    length::String = "m"
+    force::String = "N"
+    angle::String = "rad"
+    frequency::String = "rad/s"
 
     # Constructor
     function UnitSystem(length::String,force::String,angle::String,frequency::String)
@@ -71,74 +71,6 @@ end
 
 
 """
-@with_kw mutable struct TrimLoadsLink
-
-TrimLoadsLink composite type
-
-# Fields
-- masterBeam::Beam
-- masterNodeLocalID::Int64
-- masterLoadBC::BC
-- slaveBeams::Vector{Beam}
-- slaveNodesLocalIDs::Vector{Int64}
-- slaveLoadBCs::Vector{BC}
-- slaveLoadMultipliers::Vector{Float64}
-- masterNodeGlobalID::Int64
-- slaveNodesGlobalIDs::Vector{Int64}
-"""
-@with_kw mutable struct TrimLoadsLink
-
-    masterBeam::Union{Nothing,Beam} = nothing
-    masterNodeLocalID::Union{Nothing,Int64} = nothing
-    masterLoadBC::Union{Nothing,BC} = nothing
-    slaveBeams::Union{Nothing,Vector{Beam}} = nothing
-    slaveNodesLocalIDs::Union{Nothing,Vector{Int64}} = nothing
-    slaveLoadBCs::Union{Nothing,Vector{BC}} = nothing
-    slaveLoadMultipliers::Union{Nothing,Vector{Float64}} = nothing
-    masterNodeGlobalID::Int64 = 0
-    slaveNodesGlobalIDs::Vector{Int64} = Vector{Int64}()
-
-    # Constructor
-    function TrimLoadsLink(masterBeam::Union{Nothing,Beam},masterNodeLocalID::Union{Nothing,Int64},masterLoadBC::Union{Nothing,BC},slaveBeams::Union{Nothing,Vector{Beam}},slaveNodesLocalIDs::Union{Nothing,Vector{Int64}},slaveLoadBCs::Union{Nothing,Vector{BC}},slaveLoadMultipliers::Union{Nothing,Vector{Float64}})
-
-        # Check if any data was input
-        if isnothing(masterBeam)
-            return new(masterBeam,masterNodeLocalID,masterLoadBC,slaveBeams,slaveNodesLocalIDs,slaveLoadBCs,slaveLoadMultipliers,0,Vector{Int64}())
-        end
-
-        # Validate
-        validLoadTypes = ["F1b","F2b","F3b","M1b","M2b","M3b","Ff1b","Ff2b","Ff3b","Mf1b","Mf2b","Mf3b"]
-        for (slaveBeam,slaveNode) in zip(slaveBeams,slaveNodesLocalIDs)
-            @assert slaveNode <= slaveBeam.nElements+1 "slave beam does not contain that slave node"
-        end
-        @assert length(slaveLoadBCs) == length(slaveNodesLocalIDs) == length(slaveBeams) "set a slave node and corresponding BC for each slave beam"
-        @assert masterLoadBC in validLoadTypes "invalid load type for master load BC"
-        for slaveLoadType in slaveLoadBCs
-            @assert slaveLoadType in validLoadTypes "invalid load type for slave load BC"
-        end
-        @assert any(masterLoadBC.isTrim) "master load BC does not contain any trim loads"
-        for slaveLoadBC in slaveLoadBCs
-            @assert any(slaveLoadBC.isTrim) "slave load BC does not contain any trim loads"
-        end
-
-        # Set default load multipliers for slave nodes, or assert that they were input with the correct size
-        if isnothing(slaveLoadMultipliers)
-            slaveLoadMultipliers = ones(length(slaveBeams))
-        else
-            @assert length(slaveLoadBCs) == length(slaveLoadMultipliers)
-        end
-
-        # Global IDs are updated upon assembly of the model
-
-        return new(masterBeam,masterNodeLocalID,masterLoadBC,slaveBeams,slaveNodesLocalIDs,slaveLoadBCs,slaveLoadMultipliers,0,Vector{Int64}())
-
-    end
-
-end
-export TrimLoadsLink
-
-
-"""
 @with_kw mutable struct Model
 
 Model composite type
@@ -162,22 +94,23 @@ Model composite type
 """
 @with_kw mutable struct Model
 
-    # Primary (necessary for the definition of the model)
-    # --------------------------------------------------------------------------
-    name::String = ""
-    units::UnitSystem = UnitSystem("m","N","rad","rad/s")
-    beams::Vector{Beam} = Vector{Beam}()
-    initialPosition::Vector{<:Number} = zeros(3)
-    gravityVector::Vector{<:Number} = zeros(3)
-    BCs::Vector{BC} = Vector{BC}()
-    p_A0::Vector{Float64} = zeros(3)
-    u_A::Union{Vector{<:Number},<:Function,Nothing} = nothing
-    v_A::Union{Vector{<:Number},<:Function,Nothing} = nothing
-    ω_A::Union{Vector{<:Number},<:Function,Nothing} = nothing
-    vdot_A::Union{Vector{<:Number},<:Function,Nothing} = nothing
-    ωdot_A::Union{Vector{<:Number},<:Function,Nothing} = nothing
+    # Primary (inputs for the definition of the model)
+    # ------------------------------------------------
+    name::String
+    units::UnitSystem
+    beams::Vector{Beam}
+    initialPosition::Vector{<:Number}
+    gravityVector::Vector{<:Number}
+    BCs::Vector{BC}
+    p_A0::Vector{Float64}
+    u_A::Union{Vector{<:Number},<:Function,Nothing}
+    v_A::Union{Vector{<:Number},<:Function,Nothing}
+    ω_A::Union{Vector{<:Number},<:Function,Nothing}
+    vdot_A::Union{Vector{<:Number},<:Function,Nothing}
+    ωdot_A::Union{Vector{<:Number},<:Function,Nothing}
 
-    # Secondary (derived from the primary fields)
+    # Secondary (outputs from model creation)
+    # ---------------------------------------
     elements::Vector{Element} = Vector{Element}()
     nElementsTotal::Int64 = 0
     nNodesTotal::Int64 = 0
@@ -194,20 +127,22 @@ Model composite type
     nTrimVariables::Int64 = 0
     trimLoadsLinks::Vector{TrimLoadsLink} = Vector{TrimLoadsLink}()
 
-    # Constructor
-    function Model(name::String,units::UnitSystem,beams::Vector{Beam},initialPosition::Vector{<:Number},gravityVector::Vector{<:Number},BCs::Vector{BC},p_A0::Vector{Float64},u_A::Union{Vector{<:Number},<:Function,Nothing},v_A::Union{Vector{<:Number},<:Function,Nothing},ω_A::Union{Vector{<:Number},<:Function,Nothing},vdot_A::Union{Vector{<:Number},<:Function,Nothing},ωdot_A::Union{Vector{<:Number},<:Function,Nothing},elements::Vector{Element},nElementsTotal::Int64,nNodesTotal::Int64,elementNodes::Vector{Vector{Int64}},r_n::Vector{Vector{Float64}},BCedNodes::Vector{Int64},specialNodes::Vector{SpecialNode},specialNodesGlobalIDs::Vector{Int64},systemOrder::Int64,forceScaling::Float64,R_A::Matrix{Float64},R_AT::Matrix{Float64},skipValidationMotionBasisA::Bool,nTrimVariables::Int64,trimLoadsLinks::Vector{TrimLoadsLink}) 
-    
-        # Initialize 
-        self = new(name,units,beams,initialPosition,gravityVector,BCs,p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,elements,nElementsTotal,nNodesTotal,elementNodes,r_n,BCedNodes,specialNodes,specialNodesGlobalIDs,systemOrder,forceScaling,R_A,R_AT,skipValidationMotionBasisA,nTrimVariables,trimLoadsLinks)
-
-        # Update  
-        update_model!(self)
-
-        return self
-    end
-
 end
 export Model
+
+
+# Constructor
+function create_Model(;name::String="",units::UnitSystem=UnitSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing) 
+    
+    # Initialize 
+    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A)
+
+    # Update  
+    update_model!(self)
+
+    return self
+end
+export create_Model
 
 
 """
@@ -237,11 +172,11 @@ function update_model!(model::Model)
     # Get rotation tensors from basis A
     initialize_basis_A_rotation!(model)
 
-    # Update initial conditions
-    update_initial_conditions!(model)
-
     # Get special nodes
     get_special_nodes!(model)
+
+    # Update initial conditions
+    update_initial_conditions!(model)
 
     # Get system indices
     get_system_indices!(model)
@@ -253,7 +188,7 @@ export update_model!
 
 
 """
-validate_model_inputs(model::Model)
+validate_model!(model::Model)
 
 Validates the inputs to the model
 
@@ -639,7 +574,7 @@ Updates the initial condition states on all elements of the assembly
 """
 function update_initial_conditions!(model::Model)
 
-    @unpack beams = model
+    @unpack beams,specialNodes = model
 
     # Loop over beams
     for beam in beams
@@ -650,21 +585,21 @@ function update_initial_conditions!(model::Model)
         for element in beam.elements
 
             # Unpack
-            @unpack states,statesRates,compStates,nodalStates,x1,x1_n1,x1_n2,R0,R0T,S = element
+            @unpack states,statesRates,compStates,nodalStates,Δℓ,x1,x1_n1,x1_n2,R0,R0T,S,I,k = element
 
             # b basis' generalized velocities at element's midpoint, resolved in basis A
-            v_b,ω_b = element_velocities_basis_b!(model,element)
+            v,ω = element_velocities_basis_b!(model,element)
 
             # b basis' generalized accelerations at element's midpoint, resolved in basis A
-            vdot_b,ωdot_b = element_accelerations_basis_b!(model,element)
+            vdot,ωdot = element_accelerations_basis_b!(model,element)
 
             # Generalized displacements, resolved in basis A
             u = R0*u0_of_x1(x1)
             p = R0*p0_of_x1(x1)
 
             # Derivatives of generalized displacements, resolved in basis A
-            uprime = R0*uprime0_of_x1(x1)
-            pprime = R0*pprime0_of_x1(x1)
+            u_prime = R0*uprime0_of_x1(x1)
+            p_prime = R0*pprime0_of_x1(x1)
 
             # Rotation tensors, resolved in basis A
             R, = rotation_tensor_WM(p)
@@ -673,8 +608,8 @@ function update_initial_conditions!(model::Model)
             RR0T = Matrix(RR0')
 
             # Strains, resolved in basis b
-            γ = RR0T*(R0*a1+uprime) - a1
-            κ = R0T*HT*pprime
+            γ = RR0T*(R0*a1+u_prime) - a1
+            κ = R0T*HT*p_prime
             round_off!(γ)
 
             # Sectional forces, resolved in basis B
@@ -687,8 +622,19 @@ function update_initial_conditions!(model::Model)
             pdot = R0*pdot0_of_x1(x1)
 
             # Generalized sectional velocities, resolved in basis B
-            V = RR0T*(v_b+cross(ω_b,u)+udot)
-            Ω = R0T*(HT*pdot+R'*ω_b)
+            V = RR0T*(v+cross(ω,u)+udot)
+            Ω = R0T*(HT*pdot+R'*ω)
+            
+            # Sectional linear and angular momenta, resolved in basis B 
+            P = I[1:3,:]*[V; Ω]
+            H = I[4:6,:]*[V; Ω]
+
+            # Midpoint deformed curvature vector, resolved in basis B
+            K = k+κ
+
+            # Midpoint generalized forces' derivatives with respect to x1 (disregarding momenta rates)
+            F_prime = cross(Ω,P)-cross(K,F)
+            M_prime = cross(Ω,H)+cross(V,P)-cross(a1+γ,F)-cross(K,M)
 
             # Nodal displacements and rotations
             u_n1 = u0_of_x1(x1_n1)
@@ -696,14 +642,30 @@ function update_initial_conditions!(model::Model)
             p_n1 = p0_of_x1(x1_n1)
             p_n2 = p0_of_x1(x1_n2)
 
+            # Nodal forces and moments (disregarding distributed loads' resultants)
+            F_n1 = F - (Δℓ/2*F_prime)
+            F_n2 = F + (Δℓ/2*F_prime)
+            M_n1 = M - (Δℓ/2*M_prime)
+            M_n2 = M + (Δℓ/2*M_prime)
+
             # Pack variables onto element
             @pack! states = u,p,F,M,V,Ω
             @pack! compStates = γ,κ
             @pack! statesRates = udot,pdot
-            @pack! nodalStates = u_n1,u_n2,p_n1,p_n2
-            @pack! element = states,statesRates,compStates,nodalStates,v_b,ω_b,vdot_b,ωdot_b,R,HT,RR0,RR0T
+            @pack! nodalStates = u_n1,u_n2,p_n1,p_n2,F_n1,F_n2,M_n1,M_n2
+            @pack! element = states,statesRates,compStates,nodalStates,v,ω,vdot,ωdot,R,HT,RR0,RR0T
 
         end
+    end
+
+    # Loop over special nodes
+    for specialNode in specialNodes
+        @unpack connectedElements,ζonElements = specialNode
+        u = ζonElements[1] == -1 ? connectedElements[1].nodalStates.u_n1 : connectedElements[1].nodalStates.u_n2
+        p = ζonElements[1] == -1 ? connectedElements[1].nodalStates.p_n1 : connectedElements[1].nodalStates.p_n2
+        F = ζonElements[1] == -1 ? connectedElements[1].nodalStates.F_n1 : connectedElements[1].nodalStates.F_n2
+        M = ζonElements[1] == -1 ? connectedElements[1].nodalStates.M_n1 : connectedElements[1].nodalStates.M_n2
+        @pack! specialNode = u,p,F,M
     end
 
 end
@@ -763,8 +725,8 @@ function get_special_nodes!(model::Model)
     for node in nodesList  
 
         # Elements connected to this node and their IDs
-        connectedElementsGlobalID = findall(x -> node in x, elementNodes)
-        connectedElements = elements[connectedElementsGlobalID]
+        connectedElementsGlobalIDs = findall(x -> node in x, elementNodes)
+        connectedElements = elements[connectedElementsGlobalIDs]
 
         # Number of elements that are connected to the node
         nConnectedElements = length(connectedElements)
@@ -772,7 +734,7 @@ function get_special_nodes!(model::Model)
         # Find in which side and ζ position of the elements that node is 
         sideOnElements = Vector{Int64}(undef, nConnectedElements)
         ζonElements = Vector{Int64}(undef, nConnectedElements)
-        for (i, e) in enumerate(connectedElementsGlobalID)
+        for (i, e) in enumerate(connectedElementsGlobalIDs)
             sideOnElements[i] = elementNodes[e][1] == node ? 1 : 2
             ζonElements[i] = elementNodes[e][1] == node ? -1 : 1
         end
@@ -796,9 +758,9 @@ function get_special_nodes!(model::Model)
                         push!(nodesBCs,BC)
                     end
                 end
-                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalID,connectedElements,ζonElements,nodesBCs))
+                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,nodesBCs))
             else
-                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalID,connectedElements,ζonElements))
+                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements))
             end
         end
     end
@@ -1001,11 +963,13 @@ function get_system_indices!(model::Model)
 
     # Set nodal trim loads indices for master nodes
     for (specialNode,specialNodeGlobalID) in zip(specialNodes,specialNodesGlobalIDs)
+        # Initialize trim loads state indices
+        DOF_trimLoads = zeros(Int64,6)
+        @pack! specialNode = DOF_trimLoads
         # Skip non-BC'ed nodes
         if !(specialNodeGlobalID in BCedNodes)
             continue
         end
-        @unpack DOF_trimLoads = specialNode
         # Treat cases with and without trim loads links separately
         if isempty(trimLoadsLinks)
             # Loop over nodes' BCs
@@ -1027,8 +991,8 @@ function get_system_indices!(model::Model)
         else
             # Loop trim loads links
             for link in trimLoadsLinks
-                @unpack masterNodeGlobalID,masterLoadBC = link
-                @unpack isTrim = masterLoadBC
+                @unpack masterNodeGlobalID,masterBC = link
+                @unpack isTrim = masterBC
                 # Skip if not a master node 
                 if specialNodeGlobalID != masterNodeGlobalID
                     continue
@@ -1055,27 +1019,27 @@ function get_system_indices!(model::Model)
         end
         @unpack DOF_trimLoads = specialNode
         # Skip if DOF_trimLoads has been set (this is a master node)
-        if !any(x->x>0,DOF_trimLoads)
+        if any(!iszero(DOF_trimLoads))
             continue
         end
         # This is a slave node: loop trim loads links
         for link in trimLoadsLinks
-            @unpack masterNodeGlobalID,slaveNodesGlobalIDs,slaveLoadBCs = link
+            @unpack masterNodeGlobalID,slaveNodesGlobalIDs,slaveBCs = link
             # Skip if the node is not in the current link
             if !(specialNodeGlobalID in slaveNodesGlobalIDs)
                 continue
             end
             # Get the master node's trim loads DoF
-            masterSpecialNode = findfirst(x -> x.globalID == masterNodeGlobalID, specialNodes)
-            DOF_trimLoadsMaster = masterSpecialNode.DOF_trimLoads
+            masterSpecialNodeID = findfirst(x -> x.globalID == masterNodeGlobalID, specialNodes)
+            DOF_trimLoadsMaster = specialNodes[masterSpecialNodeID].DOF_trimLoads
             # Loop slave BCs 
-            for slaveLoadBC in slaveLoadBCs
-                @unpack isTrim = slaveLoadBC
+            for slaveBC in slaveBCs
+                @unpack isTrim = slaveBC
                 # Loop load indices
                 for i=1:6
                     # Update nodal trim state indices as those of the master node
                     if isTrim[i] 
-                        DOF_trimLoads[i] = DOF_trimLoadsMaster[isTrim[i]]
+                        DOF_trimLoads[i] = DOF_trimLoadsMaster[i]
                     end
                 end
             end

@@ -7,8 +7,8 @@ EA,GAy,GAz,GJ,EIy,EIz = 1e6,1e6,1e6,1e3,1e3,1e3
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
 nElem = 20
-beam1 = Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
-beam2 = Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π/2;0;0])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π/2;0;0])
 
 # BCs
 F₀ = 50
@@ -17,14 +17,14 @@ clamp = create_BC(name="clamp",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A",
 elbowForce = create_BC(name="elbowForce",beam=beam2,node=1,types=["F3A"],values=[t->F(t)])
 
 # Model
-elbowFrame = Model(name="elbowFrame",beams=[beam1,beam2],BCs=[clamp,elbowForce])
+elbowFrame = create_Model(name="elbowFrame",beams=[beam1,beam2],BCs=[clamp,elbowForce])
 
 # Time variables
 tf = 30
 Δt = 5e-2
 
 # Create and solve the problem
-problem = DynamicProblem(model=elbowFrame,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=elbowFrame,finalTime=tf,Δt=Δt)
 solve!(problem)
 
 # Get solution over time

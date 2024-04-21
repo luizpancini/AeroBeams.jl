@@ -7,18 +7,18 @@ EA,GA,GJ,EIy,EIz = 1e6,1e6,1e6,1,1e6
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,0,0,0])
 nElem = 100
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs: clamped - sliding support
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 slider = create_BC(name="slider",beam=beam,node=nElem+1,types=["u1A","u2A","p1A","p2A","p3A"],values=[0,0,0,0,0])
 
 # Model
-beamBendingVibrationCS = Model(name="beamBendingVibrationCS",beams=[beam],BCs=[clamp,slider])
+beamBendingVibrationCS = create_Model(name="beamBendingVibrationCS",beams=[beam],BCs=[clamp,slider])
 
 # Create and solve the problem
 nModes=6
-problem = EigenProblem(model=beamBendingVibrationCS,nModes=nModes,getLinearSolution=true,normalizeModeShapes=true)
+problem = create_EigenProblem(model=beamBendingVibrationCS,nModes=nModes,getLinearSolution=true,normalizeModeShapes=true)
 solve!(problem)
 
 # Get frequencies and mode shapes

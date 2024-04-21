@@ -20,7 +20,7 @@ EIy = 1.0
 nElem = 48
 stiffnessMatrix = diagm([Φ,Φ,Φ,Φ,EIy,Φ])
 inertiaMatrix = diagm([ρA,ρA,ρA,0,0,0])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 if initialConditions == "displacement"
     beam.udot0_of_x1=x1->[0; 0; udot₃(x1)]
 elseif initialConditions == "rotation"
@@ -44,7 +44,7 @@ elseif BCType == "ss-roller"
 end
 
 # Model
-initialVelocityBeam = Model(name="initialVelocityBeam",beams=[beam],BCs=bcs)
+initialVelocityBeam = create_Model(name="initialVelocityBeam",beams=[beam],BCs=bcs)
 
 # plot_undeformed_assembly(initialVelocityBeam)
 
@@ -65,7 +65,7 @@ elseif initialConditions == "both"
 end
 
 # Create and solve the problem
-problem = DynamicProblem(model=initialVelocityBeam,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
+problem = create_DynamicProblem(model=initialVelocityBeam,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

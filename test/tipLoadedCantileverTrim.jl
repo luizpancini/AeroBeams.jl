@@ -6,22 +6,23 @@ EI = 333.333
 ∞ = 1e14
 stiffnessMatrix = diagm([∞,∞,∞,∞,EI,∞])
 nElem = 30
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
 
 # BCs
 F = 1
+trimF3Guess,trimM2Guess = 0,0
 tipForce = create_BC(name="tipForce",beam=beam,node=1,types=["F3A"],values=[-F])
 clamp = create_BC(name="clamp",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-clampReactions = create_BC(name="clampReactions",beam=beam,node=nElem+1,types=["F3A","M2A"],values=[1,1],toBeTrimmed=[true,true])
+clampReactions = create_BC(name="clampReactions",beam=beam,node=nElem+1,types=["F3A","M2A"],values=[trimF3Guess,trimM2Guess],toBeTrimmed=[true,true])
 
 # Model
-tipLoadedCantileverTrim = Model(name="tipLoadedCantileverTrim",beams=[beam],BCs=[clamp,tipForce,clampReactions])
+tipLoadedCantileverTrim = create_Model(name="tipLoadedCantileverTrim",beams=[beam],BCs=[clamp,tipForce,clampReactions])
 
-
-NR = NewtonRaphson(maximumIterations=50,displayStatus=true)
+# Set NR system solver with increased number of maximum iterations
+NR = create_NewtonRaphson(maximumIterations=50,displayStatus=true)
 
 # Create and solve the problem
-problem = TrimProblem(model=tipLoadedCantileverTrim,systemSolver=NR)
+problem = create_TrimProblem(model=tipLoadedCantileverTrim,systemSolver=NR)
 solve!(problem)
 
 # Get solution 

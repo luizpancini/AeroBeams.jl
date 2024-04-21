@@ -10,7 +10,7 @@ E,ν = 1e7,0
 G = E/(2*(1+ν))
 stiffnessMatrix = diagm([E*A,G*A,G*A,G*J,E*Iy,E*Iz])
 nElem = 16
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],k=[0;0;1/R])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],k=[0;0;1/R])
 
 # BCs
 F = 600
@@ -18,15 +18,15 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 tipForce = create_BC(name="tipForce",beam=beam,node=nElem+1,types=["F3A"],values=[F])
 
 # Model
-curvedCantilever = Model(name="curvedCantilever",beams=[beam],BCs=[clamp,tipForce])
+curvedCantilever = create_Model(name="curvedCantilever",beams=[beam],BCs=[clamp,tipForce])
 
 # Set system solver options
 σ0 = 0.05
 σstep = 0.05
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=curvedCantilever,systemSolver=NR)
+problem = create_SteadyProblem(model=curvedCantilever,systemSolver=NR)
 solve!(problem)
 
 # Get tip displacements  

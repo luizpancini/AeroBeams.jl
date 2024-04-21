@@ -7,7 +7,7 @@ EA,GA,GJ,EIy,EIz = 2e10*1e-6,1e12,1e12,1e12,1e12
 nElem = 20
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,ρI,ρI,ρI])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # Time variables
 tf = 1.0
@@ -20,10 +20,10 @@ axialForce = create_BC(name="axialForce",beam=beam,node=nElem+1,types=["F1A"],va
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-axialTractionCantilever = Model(name="axialTractionCantilever",beams=[beam],BCs=[clamp,axialForce])
+axialTractionCantilever = create_Model(name="axialTractionCantilever",beams=[beam],BCs=[clamp,axialForce])
 
 # Create and solve the problem
-problem = DynamicProblem(model=axialTractionCantilever,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=axialTractionCantilever,finalTime=tf,Δt=Δt)
 solve!(problem)
 
 # Unpack numerical solution

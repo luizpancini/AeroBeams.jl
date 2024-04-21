@@ -7,7 +7,7 @@ A,Iy = 1,1/12
 ∞ = 1e14
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
 nElem = 20
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
 
 # BCs
 F = 130e3
@@ -15,15 +15,15 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 tipFollowerForce = create_BC(name="tipFollowerForce",beam=beam,node=nElem+1,types=["Ff3A"],values=[F])
 
 # Model
-tipFollowerForceCantilever = Model(name="tipFollowerForceCantilever",beams=[beam],BCs=[clamp,tipFollowerForce])
+tipFollowerForceCantilever = create_Model(name="tipFollowerForceCantilever",beams=[beam],BCs=[clamp,tipFollowerForce])
 
 # Set system solver options
-σ0 = 0.0
+σ0 = 0.01
 σstep = 0.01
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=tipFollowerForceCantilever,systemSolver=NR)
+problem = create_SteadyProblem(model=tipFollowerForceCantilever,systemSolver=NR)
 solve!(problem)
 
 # Get solution at partial load steps

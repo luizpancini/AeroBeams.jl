@@ -1,13 +1,13 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 
 # Beam
-L = 1.0
+L = 1
 E = 210e6
 A,Iy = 20e-4,5/3*1e-8
 ∞ = 1e12
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
 nElem = 20
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
 
 # BCs
 q = 100
@@ -15,15 +15,15 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 add_loads_to_beam!(beam,loadTypes=["ff_b_of_x1t"],loadFuns=[(x1,t)->[0; 0; q]])
 
 # Model
-distributedLoadCantilever = Model(name="distributedLoadCantilever",beams=[beam],BCs=[clamp])
+distributedLoadCantilever = create_Model(name="distributedLoadCantilever",beams=[beam],BCs=[clamp])
 
 # Set system solver options
 σ0 = 0
 σstep = 0.02
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=distributedLoadCantilever,systemSolver=NR)
+problem = create_SteadyProblem(model=distributedLoadCantilever,systemSolver=NR)
 solve!(problem)
 
 # Get solution at partial load steps

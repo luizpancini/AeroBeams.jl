@@ -10,7 +10,7 @@ stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix1 = diagm([ρA,ρA,ρA,2*ρI1,ρI1,ρI1])
 inertiaMatrix2 = diagm([ρA,ρA,ρA,2*ρI2,ρI2,ρI2])
 inertiaMatrices = vcat([inertiaMatrix2 for _ in 1:div(nElem,2)],[inertiaMatrix1 for _ in 1:div(nElem,2)])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=inertiaMatrices,rotationParametrization="E321",p0=[0;θ₀;0],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=inertiaMatrices,rotationParametrization="E321",p0=[0;θ₀;0],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
 
 # BCs 
 M₀ = 160
@@ -20,7 +20,7 @@ F1 = t -> M2(t)/4
 forces = create_BC(name="forces",beam=beam,node=nElem+1,types=["F1A","M2A"],values=[t->F1(t),t->M2(t)])
 
 # Model
-flyingScissors = Model(name="flyingScissors",beams=[beam],BCs=[forces])
+flyingScissors = create_Model(name="flyingScissors",beams=[beam],BCs=[forces])
 
 # Time variables
 tf = 5
@@ -30,7 +30,7 @@ tf = 5
 initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2, Δt=Δt/10)
 
 # Create and solve the problem
-problem = DynamicProblem(model=flyingScissors,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
+problem = create_DynamicProblem(model=flyingScissors,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

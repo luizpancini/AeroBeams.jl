@@ -212,11 +212,23 @@ mutable struct Element <: BeamElement
     RdotR0::Matrix{Float64}
     HT::Matrix{Float64}
     HTinv::Matrix{Float64}
-    # Velocities and accelerations in basis b
-    v_b::Vector{Float64}
-    ω_b::Vector{Float64}
-    vdot_b::Vector{Float64}
-    ωdot_b::Vector{Float64}
+    R_p1::Matrix{Float64}
+    R_p2::Matrix{Float64}
+    R_p3::Matrix{Float64}
+    HT_p1::Matrix{Float64}
+    HT_p2::Matrix{Float64}
+    HT_p3::Matrix{Float64}
+    HTinv_p1::Matrix{Float64}
+    HTinv_p2::Matrix{Float64}
+    HTinv_p3::Matrix{Float64}
+    Rdot_p1::Matrix{Float64}
+    Rdot_p2::Matrix{Float64}
+    Rdot_p3::Matrix{Float64}
+    # Velocities and accelerations of basis b
+    v::Vector{Float64}
+    ω::Vector{Float64}
+    vdot::Vector{Float64}
+    ωdot::Vector{Float64}
     # TF matrices for hinged nodes
     hingedNode1Mat::BitMatrix
     notHingedNode1Mat::BitMatrix
@@ -239,11 +251,28 @@ mutable struct Element <: BeamElement
     mf_A::Array{Float64}
     ff_b::Array{Float64}
     mf_b::Array{Float64}
-    # Current values of nodal resultants
+    # Total distributed loads' nodal resultants
     f1::Vector{Float64}
     f2::Vector{Float64}
     m1::Vector{Float64}
     m2::Vector{Float64}
+    # Gravitational loads' nodal resultants
+    f_g::Vector{Float64}
+    m_g::Vector{Float64}
+    # Follower distributed loads' nodal resultants
+    ff1_A::Vector{Float64}
+    ff2_A::Vector{Float64}
+    mf1_A::Vector{Float64}
+    mf2_A::Vector{Float64}
+    ff1_b::Vector{Float64}
+    ff2_b::Vector{Float64}
+    mf1_b::Vector{Float64}
+    mf2_b::Vector{Float64}
+    # Derivatives w.r.t. extended rotation parameters
+    f1_p::Matrix{Float64}
+    f2_p::Matrix{Float64}
+    m1_p::Matrix{Float64}
+    m2_p::Matrix{Float64}
     # TFs for non-zero distributed loads
     hasDistributedDeadForcesBasisA::Bool
     hasDistributedDeadMomentsBasisA::Bool
@@ -354,11 +383,11 @@ mutable struct Element <: BeamElement
         # Loop point inertias attached to the beam
         for pointInertia in parent.pointInertias
             # Check if is linked to current element
-            if localID == pointInertia.elementLocalID 
-                @unpack mass,ηtilde,inertiaMatrix = pointInertia
+            if localID == pointInertia.elementID 
+                @unpack mass,η,inertiaMatrix = pointInertia
                 # Increment element's sectional inertia matrix
-                I += 1/Δℓ * [mass*I3 -mass*ηtilde;
-                    mass*ηtilde inertiaMatrix-mass*ηtilde^2]
+                I += 1/Δℓ * [mass*I3 -mass*tilde(η);
+                    mass*tilde(η) inertiaMatrix-mass*tilde(η)^2]
                 # Add to element's list of attached point inertias
                 push!(attachedPointInertias,pointInertia)    
             end
@@ -385,10 +414,10 @@ mutable struct Element <: BeamElement
         udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,uddotEquiv,pddotEquiv = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
 
         # Initialize rotation tensors
-        R,RR0,RR0T,RRwR0,HT,HTinv,RdotR0 = I3,R0,R0T,R0,I3,I3,zeros(3,3)
+        R,RR0,RR0T,RRwR0,HT,HTinv,RdotR0,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3 = I3,R0,R0T,R0,I3,I3,zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3)
 
         # Initialize element velocities and accelerations in basis b
-        v_b,ω_b,vdot_b,ωdot_b = zeros(3),zeros(3),zeros(3),zeros(3)
+        v,ω,vdot,ωdot = zeros(3),zeros(3),zeros(3),zeros(3)
 
         # Get matrices of hinged and not hinged nodes' DoF
         hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = get_hinged_nodes_matrices(parent,nodesLocalID)
@@ -399,8 +428,11 @@ mutable struct Element <: BeamElement
         # Initialize nodal values of distributed loads 
         f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b = zeros(2,3,1),zeros(2,3,1),zeros(2,3,1),zeros(2,3,1),zeros(2,3,1),zeros(2,3,1),zeros(2,3,1),zeros(2,3,1)
 
-        # Initialize resultants of nodal generalized forces, resolved in basis A
-        f1,f2,m1,m2 = zeros(3),zeros(3),zeros(3),zeros(3)
+        # Initialize nodal resultants of distributed loads, resolved in basis A
+        f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
+    
+        # Initialize derivatives of total nodal resultants of distributed loads w.r.t. extended rotation parameters
+        f1_p,f2_p,m1_p,m2_p = zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3)
 
         # Initialize TFs for non-zero nodal values of distributed loads 
         hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = false,false,false,false,false,false,false,false
@@ -411,7 +443,7 @@ mutable struct Element <: BeamElement
         isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set = false,false,false,false
         
         # Create element
-        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,k,r,R0,R0T,R_cs,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,uddotEquiv,pddotEquiv,R,RR0,RR0T,RRwR0,RdotR0,HT,HTinv,v_b,ω_b,vdot_b,ωdot_b,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set)
+        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,k,r,R0,R0T,R_cs,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,uddotEquiv,pddotEquiv,R,RR0,RR0T,RRwR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,v,ω,vdot,ωdot,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f1_p,f2_p,m1_p,m2_p,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set)
 
         # Add element to parent beam
         push!(parent.elements, self)
@@ -553,11 +585,22 @@ Adds the point inertia's matrix to the element's sectional inertia matrix
 function add_point_inertia_to_element!(element::Element,pointInertia::PointInertia)
 
     @unpack I,Δℓ = element
-    @unpack mass,ηtilde,inertiaMatrix = pointInertia
+    @unpack η,mass,inertiaMatrix = pointInertia
 
-    I += 1/Δℓ * [mass*I3 -mass*ηtilde;
-    mass*ηtilde inertiaMatrix-mass*ηtilde^2]
+    # Add to inertia matrix 
+    I += 1/Δℓ * [mass*I3 -mass*tilde(η);
+    mass*tilde(η) inertiaMatrix-mass*tilde(η)^2]
 
-    @pack! element = I
+    # Update submatrices
+    I_11 = I[1:3,1:3]
+    I_12 = I[1:3,4:6]
+    I_21 = I[4:6,1:3]
+    I_22 = I[4:6,4:6]
+
+    # Update mass per unit length and skew-symmetric matrix of sectional position
+    μ = I[1,1]
+    ηtilde = μ > 0 ? I_21/μ : zeros(3,3)
+
+    @pack! element = I,I_11,I_12,I_21,I_22,μ,ηtilde
 
 end

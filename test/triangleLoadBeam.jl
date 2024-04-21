@@ -6,7 +6,7 @@ EIy = 1e7
 ∞ = 1e12
 stiffnessMatrix = diagm([∞,∞,∞,∞,EIy,∞])
 nElem = 20
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
 
 # BCs
 q₀ = 1e6
@@ -16,10 +16,10 @@ clamp = create_BC(name="clamp",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","
 roller = create_BC(name="roller",beam=beam,node=1,types=["u3A"],values=[0])
 
 # Model
-triangleLoadBeam = Model(name="triangleLoadBeam",beams=[beam],BCs=[clamp,roller])
+triangleLoadBeam = create_Model(name="triangleLoadBeam",beams=[beam],BCs=[clamp,roller])
 
 # Create and solve the problem
-problem = SteadyProblem(model=triangleLoadBeam,getLinearSolution=true)
+problem = create_SteadyProblem(model=triangleLoadBeam,getLinearSolution=true)
 solve!(problem)
 
 # Get nodal arclength positions, displacements and forces over the beams

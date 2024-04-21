@@ -14,20 +14,20 @@ E,ρ = 200e9,7.8e3
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*I,∞])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,2*ρ*I,ρ*I,ρ*I])
 nElem = 20
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,(π/2-θ₀),0],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,(π/2-θ₀),0],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
 
 # BCs
 support = create_BC(name="support",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
 
 # Model
-doublePendulum = Model(name="doublePendulum",beams=[beam],BCs=[support],gravityVector=[0,0,-g])
+doublePendulum = create_Model(name="doublePendulum",beams=[beam],BCs=[support],gravityVector=[0,0,-g])
 
 # Time variables
 tf = 1
 Δt = tf/1e3
 
 # Create and solve the problem
-problem = DynamicProblem(model=doublePendulum,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=doublePendulum,finalTime=tf,Δt=Δt)
 solve!(problem)
 
 # Unpack numerical solution

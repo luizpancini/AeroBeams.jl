@@ -9,7 +9,7 @@ Is = Iy+Iz
 nElements = 20
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
-beam = Beam(name="beam",length=L,nElements=nElements,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElements,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 F = 1e3
@@ -18,7 +18,7 @@ force = create_BC(name="force",beam=beam,node=nElements+1,types=["F3A"],values=[
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-tipSineLoadedCantilever = Model(name="tipSineLoadedCantilever",beams=[beam],BCs=[clamp,force])
+tipSineLoadedCantilever = create_Model(name="tipSineLoadedCantilever",beams=[beam],BCs=[clamp,force])
 
 # Time variables
 T = 2*π/ω
@@ -26,7 +26,7 @@ tf = 20*T
 Δt = T/100
 
 # Create and solve the problem
-problem = DynamicProblem(model=tipSineLoadedCantilever,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=tipSineLoadedCantilever,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

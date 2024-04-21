@@ -7,7 +7,7 @@ EA,GA,GJ,EI = 1e4,1e4,1e3,1e3
 nElem = 40
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 M₀ = -80
@@ -17,14 +17,14 @@ hinge = create_BC(name="hinge",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 moment = create_BC(name="moment",beam=beam,node=1,types=["M2A"],values=[t->M(t)])
 
 # Model
-momentDrivenRobotArm = Model(name="momentDrivenRobotArm",beams=[beam],BCs=[hinge,moment])
+momentDrivenRobotArm = create_Model(name="momentDrivenRobotArm",beams=[beam],BCs=[hinge,moment])
 
 # Time variables
 tf = 15
 Δt = 1e-1
 
 # Create and solve the problem
-problem = DynamicProblem(model=momentDrivenRobotArm,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=momentDrivenRobotArm,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

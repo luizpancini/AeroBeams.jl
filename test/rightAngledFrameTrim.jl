@@ -6,10 +6,10 @@ L = 1
 stiffnessMatrix = diagm([∞,∞,∞,∞,∞,∞])
 nElem1 = 2
 nElem2 = 1
-beam1 = Beam(name="beam1",length=L,nElements=nElem1,C=[stiffnessMatrix])
-beam2 = Beam(name="beam2",length=L,nElements=nElem2,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem1,C=[stiffnessMatrix])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem2,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
 
-# BCs
+# BCs - balanceLoads are the equivalent reactions at the pin
 F = 1
 roller = create_BC(name="roller",beam=beam1,node=1,types=["u3A"],values=zeros(1))
 pin = create_BC(name="pin",beam=beam1,node=nElem1+1,types=["u1A","u2A","u3A","p1A","p3A"],values=zeros(5))
@@ -18,10 +18,13 @@ horizontalForce = create_BC(name="horizontalForce",beam=beam2,node=nElem2+1,type
 balanceLoads = create_BC(name="balanceLoads",beam=beam2,node=1,types=["F1A","F3A"],values=zeros(2),toBeTrimmed=trues(2))
 
 # Model
-rightAngledFrameTrim = Model(name="rightAngledFrameTrim",beams=[beam1,beam2],BCs=[roller,pin,verticalForce,horizontalForce,balanceLoads])
+rightAngledFrameTrim = create_Model(name="rightAngledFrameTrim",beams=[beam1,beam2],BCs=[roller,pin,verticalForce,horizontalForce,balanceLoads])
+
+# Set NR system solver with increased number of maximum iterations
+NR = create_NewtonRaphson(maximumIterations=100,displayStatus=true)
 
 # Create and solve the problem
-problem = TrimProblem(model=rightAngledFrameTrim)
+problem = create_TrimProblem(model=rightAngledFrameTrim,systemSolver=NR)
 solve!(problem)
 
 # Get solution 

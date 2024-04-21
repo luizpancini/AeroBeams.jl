@@ -13,44 +13,42 @@ function element_arrays!(problem::Problem,model::Model,element::Element)
     ## Generalized velocities and accelerations of basis b at element's midpoint, resolved in basis A
     # --------------------------------------------------------------------------
     # Velocities
-    v_b,ω_b = element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
+    element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
     # Accelerations
-    vdot_b,ωdot_b = element_accelerations_basis_b!(model,element,problem.σ,problem.timeNow)
+    element_accelerations_basis_b!(model,element,problem.σ,problem.timeNow)
 
     ## States and states' rates
     # --------------------------------------------------------------------------
     # States
-    u,p,F,M,V,Ω = element_states!(problem,model,element)
+    element_states!(problem,model,element)
     # States' rates
-    udot,pdot,Vdot,Ωdot = element_states_rates!(problem,element)
+    element_states_rates!(problem,element)
     
     ## Rotation variables
     # --------------------------------------------------------------------------
-    R,RR0,RR0T,RRwR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3 = element_rotation_variables!(problem,element)
+    element_rotation_variables!(problem,element)
     
     ## Distributed loads
     # --------------------------------------------------------------------------
-    f1,f2,m1,m2,ηtilde_A,f_g,ff1_ANow,ff2_ANow,mf1_ANow,mf2_ANow,ff1_bNow,ff2_bNow,mf1_bNow,mf2_bNow = element_distributed_loads!(problem,model,element)
+    element_distributed_loads!(problem,model,element)
     
     ## Check intent
     # If the intent is getting the external forces array, we need to calculate the loads with actual states (because follower loads depend on it), and then reset element states to zero (because R(x) = J*x - F_ext(x), then F_ext = -R only if x = 0)
     if problem.getExternalForcesArray == true
         u,p,F,M,V,Ω,udot,pdot,Vdot,Ωdot = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
-        RR0 = R0
+        RR0 = element.R0
         @pack! element = u,p,F,M,V,Ω,udot,pdot,Vdot,Ωdot,RR0
     end
     
     ## Sectional strains, momenta and momenta's rates
     # --------------------------------------------------------------------------
     # Strains
-    γ,κ,_ = element_strains!(element)
+    element_strains!(element)
     # Momenta
-    P,H,_ = element_momenta!(element)
+    element_momenta!(element)
     # Momenta rates
     if typeof(problem) == DynamicProblem
-        Pdot,Hdot = element_momenta_rates!(element)
-    else
-        Pdot,Hdot = zeros(3),zeros(3)
+        element_momenta_rates!(element)
     end
     
     ## Residual array
@@ -62,16 +60,16 @@ function element_arrays!(problem::Problem,model::Model,element::Element)
     
     ## Follower distributed loads' contributions to Jacobian matrix
     # --------------------------------------------------------------------------
-    f1_p,f2_p,m1_p,m2_p = distributed_loads_Jacobians(element,R_p1,R_p2,R_p3,ηtilde_A,f_g,ff1_ANow,ff2_ANow,mf1_ANow,mf2_ANow,ff1_bNow,ff2_bNow,mf1_bNow,mf2_bNow)
+    distributed_loads_Jacobians!(element)
      
     ## Jacobian matrix
     # --------------------------------------------------------------------------
-    element_jacobian!(problem,model,element,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,f1_p,f2_p,m1_p,m2_p)
+    element_jacobian!(problem,model,element)
     
     ## Inertia matrix
     # --------------------------------------------------------------------------
     if typeof(problem) == EigenProblem 
-        element_inertia!(problem,model,element,R_p1,R_p2,R_p3)
+        element_inertia!(problem,model,element)
     end
 
     ## Update nodal states of the element (mere outputs)
@@ -95,29 +93,29 @@ function special_node_arrays!(problem::Problem,model::Model,specialNode::Special
 
     ## States
     # --------------------------------------------------------------------------
-    u,p,F,M = special_node_states(problem,model,specialNode)
+    special_node_states!(problem,model,specialNode)
 
     # If the intent is getting the external forces vector, we need to calculate
     # the loads with actual states (because follower loads depend on it), and
     # then reset nodal displacements to zero (because since R(x) = J*x - F_ext(x), then F_ext = -R only if x = 0)
     if problem.getExternalForcesArray
-        u,p = zeros(3),zeros(3)
+        specialNode.u,specialNode.p = zeros(3),zeros(3)
     end
 
     ## Residual
     # --------------------------------------------------------------------------
-    special_node_residual!(problem,model,specialNode,u,p,F,M)
+    special_node_residual!(problem,model,specialNode)
     if problem.getExternalForcesArray
         return
     end
 
     # Follower loads' Jacobians
     # --------------------------------------------------------------------------
-    F_p,M_p = special_node_follower_loads_jacobians(problem,specialNode)
+    special_node_follower_loads_jacobians!(problem,specialNode)
 
     ## Jacobian
     # --------------------------------------------------------------------------
-    special_node_jacobian!(problem,model,specialNode,F_p,M_p)
+    special_node_jacobian!(problem,model,specialNode)
 
 end
 
@@ -139,14 +137,15 @@ function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1
     @unpack r = element
 
     # Translational velocity
-    v_b = σ * R_AT * (v_A(timeNow) + cross(ω_A(timeNow),R_AT'*r))
+    v = σ * R_AT * (v_A(timeNow) + cross(ω_A(timeNow),R_AT'*r))
 
     # Angular velocity
-    ω_b = σ * R_AT * ω_A(timeNow)
+    ω = σ * R_AT * ω_A(timeNow)
 
-    @pack! element = v_b,ω_b
+    @pack! element = v,ω
 
-    return v_b,ω_b
+    return v,ω
+
 end
 
 
@@ -167,14 +166,15 @@ function element_accelerations_basis_b!(model::Model,element::Element,σ::Float6
     @unpack r = element
 
     # Translational acceleration
-    vdot_b = σ * R_AT * (vdot_A(timeNow) + cross(ωdot_A(timeNow),R_AT'*r) + cross(ω_A(timeNow),cross(ω_A(timeNow),R_AT'*r)) - cross(ω_A(timeNow),R_AT'*v_A(timeNow)))
+    vdot = σ * R_AT * (vdot_A(timeNow) + cross(ωdot_A(timeNow),R_AT'*r) + cross(ω_A(timeNow),cross(ω_A(timeNow),R_AT'*r)) - cross(ω_A(timeNow),R_AT'*v_A(timeNow)))
 
     # Angular acceleration
-    ωdot_b = σ * R_AT * ωdot_A(timeNow)
+    ωdot = σ * R_AT * ωdot_A(timeNow)
 
-    @pack! element = vdot_b,ωdot_b
+    @pack! element = vdot,ωdot
 
-    return vdot_b,ωdot_b
+    return vdot,ωdot
+
 end
 
 
@@ -203,7 +203,6 @@ function element_states!(problem::Problem,model::Model,element::Element)
 
     @pack! element.states = u,p,F,M,V,Ω
 
-    return u,p,F,M,V,Ω
 end
 
 
@@ -225,7 +224,7 @@ function element_states_rates!(problem::Problem,element::Element)
 
         @pack! element.statesRates = udot,pdot,Vdot,Ωdot,uddot,pddot
 
-        return udot,pdot,Vdot,Ωdot
+        return 
     end
 
     # Unpack
@@ -252,8 +251,6 @@ function element_states_rates!(problem::Problem,element::Element)
     end
 
     @pack! element.statesRates = udot,pdot,Vdot,Ωdot,uddot,pddot
-
-    return udot,pdot,Vdot,Ωdot
 
 end
  
@@ -308,12 +305,10 @@ function element_rotation_variables!(problem::Problem,element::Element)
         # Derivatives of time derivative of rotation tensor from basis A to basis B w.r.t extended rotation parameters
         Rdot_p1,Rdot_p2,Rdot_p3 = rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,Θ_ps1,Θ_ps2,Θ_ps3,υ,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps1dot,ps2dot,ps3dot,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3)
     else
-        RdotR0,Rdot_p1,Rdot_p2,Rdot_p3 = Matrix(0.0I,3,3),Matrix(0.0I,3,3),Matrix(0.0I,3,3),Matrix(0.0I,3,3)
+        RdotR0,Rdot_p1,Rdot_p2,Rdot_p3 = zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3)
     end
 
-    @pack! element = R,RR0,RR0T,RRwR0,RdotR0,HT,HTinv
-
-    return R,RR0,RR0T,RRwR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3
+    @pack! element = R,RR0,RR0T,RRwR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3
     
 end
 
@@ -334,11 +329,11 @@ function element_distributed_loads!(problem::Problem,model::Model,element::Eleme
 
     ## Gravitational loads 
     # --------------------------------------------------------------------------
-    f_g,m_g,ηtilde_A = gravitational_loads(model,element,σ)
+    f_g,m_g = gravitational_loads(model,element,σ)
 
     ## Externally applied distributed loads
     # --------------------------------------------------------------------------
-    f1_d,f2_d,m1_d,m2_d,ff1_ANow,ff2_ANow,mf1_ANow,mf2_ANow,ff1_bNow,ff2_bNow,mf1_bNow,mf2_bNow = distributed_external_loads(problem,element,σ)
+    f1_d,f2_d,m1_d,m2_d = distributed_external_loads(problem,element,σ)
 
     ## Aerodynamic loads
     # --------------------------------------------------------------------------
@@ -352,7 +347,6 @@ function element_distributed_loads!(problem::Problem,model::Model,element::Eleme
 
     @pack! element = f1,f2,m1,m2
 
-    return f1,f2,m1,m2,ηtilde_A,f_g,ff1_ANow,ff2_ANow,mf1_ANow,mf2_ANow,ff1_bNow,ff2_bNow,mf1_bNow,mf2_bNow
 end
 
 
@@ -371,18 +365,17 @@ function gravitational_loads(model::Model,element::Element,σ::Float64)
     @unpack gravityVector,R_AT = model
     @unpack Δℓ,μ,ηtilde,RR0,RR0T = element
 
-    # Vector product operator of sectional centroid position vector with respect to reference point, resolved in basis A   
-    ηtilde_A = RR0 * ηtilde * RR0T
-
     # Nodal distributed weight force and moment vectors, resolved in basis A
     if any(!iszero(gravityVector)) 
         f_g = σ * Δℓ/2 * μ * R_AT * gravityVector
-        m_g = σ * ηtilde_A * f_g
+        m_g = σ * RR0 * ηtilde * RR0T * f_g
     else
         f_g,m_g = zeros(3),zeros(3)
     end
 
-    return f_g,m_g,ηtilde_A
+    @pack! element = f_g,m_g
+
+    return f_g,m_g
 end
 
 
@@ -405,81 +398,84 @@ function distributed_external_loads(problem::Problem,element::Element,σ::Float6
     f1_d,f2_d,m1_d,m2_d = zeros(3),zeros(3),zeros(3),zeros(3)
 
     # Initialize current values of nodal resultants from distributed follower loads
-    ff1_ANow,ff2_ANow,mf1_ANow,mf2_ANow,ff1_bNow,ff2_bNow,mf1_bNow,mf2_bNow = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
+    ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
 
     # Add dead forces initially resolved in basis A
     if hasDistributedDeadForcesBasisA
         # Interpolate, if needed
-        f1_ANow,f2_ANow = interpolate_distributed_loads(problem,σ*f_A)
+        f1_A,f2_A = interpolate_distributed_loads(problem,σ*f_A)
         # Add
-        f1_d += f1_ANow
-        f2_d += f2_ANow
+        f1_d += f1_A
+        f2_d += f2_A
     end
 
     # Add dead moments initially resolved in basis A
     if hasDistributedDeadMomentsBasisA
         # Interpolate, if needed
-        m1_ANow,m2_ANow = interpolate_distributed_loads(problem,σ*m_A)
+        m1_A,m2_A = interpolate_distributed_loads(problem,σ*m_A)
         # Add
-        m1_d += m1_ANow
-        m2_d += m2_ANow
+        m1_d += m1_A
+        m2_d += m2_A
     end
 
     # Add dead forces initially resolved in basis b
     if hasDistributedDeadForcesBasisb
         # Interpolate, if needed
-        f1_bNow,f2_bNow = interpolate_distributed_loads(problem,σ*f_b)
+        f1_b,f2_b = interpolate_distributed_loads(problem,σ*f_b)
         # Add
-        f1_d += R0 * f1_bNow
-        f2_d += R0 * f2_bNow
+        f1_d += R0 * f1_b
+        f2_d += R0 * f2_b
     end
 
     # Add dead moments initially resolved in basis b
     if hasDistributedDeadMomentsBasisb
         # Interpolate, if needed
-        m1_bNow,m2_bNow = interpolate_distributed_loads(problem,σ*m_b)
+        m1_b,m2_b = interpolate_distributed_loads(problem,σ*m_b)
         # Add
-        m1_d += R0 * m1_bNow
-        m2_d += R0 * m2_bNow
+        m1_d += R0 * m1_b
+        m2_d += R0 * m2_b
     end
 
     # Add follower forces initially resolved in basis A
     if hasDistributedFollowerForcesBasisA
         # Interpolate, if needed
-        ff1_ANow,ff2_ANow = interpolate_distributed_loads(problem,σ*ff_A)
+        ff1_A,ff2_A = interpolate_distributed_loads(problem,σ*ff_A)
         # Add
-        f1_d += R * ff1_ANow
-        f2_d += R * ff2_ANow
+        f1_d += R * ff1_A
+        f2_d += R * ff2_A
     end
 
     # Add follower moments initially resolved in basis A
     if hasDistributedFollowerMomentsBasisA
         # Interpolate, if needed
-        mf1_ANow,mf2_ANow = interpolate_distributed_loads(problem,σ*mf_A)
+        mf1_A,mf2_A = interpolate_distributed_loads(problem,σ*mf_A)
         # Add
-        m1_d += R * mf1_ANow
-        m2_d += R * mf2_ANow
+        m1_d += R * mf1_A
+        m2_d += R * mf2_A
     end
 
     # Add follower forces initially resolved in basis b
     if hasDistributedFollowerForcesBasisb
         # Interpolate, if needed
-        ff1_bNow,ff2_bNow = interpolate_distributed_loads(problem,σ*ff_b)
+        ff1_b,ff2_b = interpolate_distributed_loads(problem,σ*ff_b)
         # Add
-        f1_d += RR0 * ff1_bNow
-        f2_d += RR0 * ff2_bNow
+        f1_d += RR0 * ff1_b
+        f2_d += RR0 * ff2_b
     end
 
     # Add follower moments initially resolved in basis b
     if hasDistributedFollowerMomentsBasisb
         # Interpolate, if needed
-        mf1_bNow,mf2_bNow = interpolate_distributed_loads(problem,σ*mf_b)
+        mf1_b,mf2_b = interpolate_distributed_loads(problem,σ*mf_b)
         # Add
-        m1_d += RR0 * mf1_bNow
-        m2_d += RR0 * mf2_bNow
+        m1_d += RR0 * mf1_b
+        m2_d += RR0 * mf2_b
     end
 
-    return f1_d,f2_d,m1_d,m2_d,ff1_ANow,ff2_ANow,mf1_ANow,mf2_ANow,ff1_bNow,ff2_bNow,mf1_bNow,mf2_bNow
+    @pack! element = ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b
+
+    return f1_d,f2_d,m1_d,m2_d
+
 end
 
 
@@ -544,8 +540,6 @@ function element_strains!(element::Element)
     κ = strains[4:6]
 
     @pack! element.compStates = γ,κ
-
-    return γ,κ,strains
     
 end
 
@@ -572,8 +566,6 @@ function element_momenta!(element::Element)
     H = momenta[4:6]
 
     @pack! element.compStates = P,H
-
-    return P,H,momenta
     
 end
 
@@ -600,8 +592,6 @@ function element_momenta_rates!(element::Element)
     Hdot = momentaRates[4:6]
 
     @pack! element.compStatesRates = Pdot,Hdot
-
-    return Pdot,Hdot
     
 end
 
@@ -619,7 +609,7 @@ function element_residual!(problem::Problem,model::Model,element::Element)
 
     @unpack residual = problem
     @unpack forceScaling = model
-    @unpack Δℓ,R0,R0T,RR0,RR0T,RdotR0,HT,HTinv,v_b,ω_b,f1,f2,m1,m2,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element
+    @unpack Δℓ,R0,R0T,RR0,RR0T,RdotR0,HT,HTinv,v,ω,f1,f2,m1,m2,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element
     @unpack u,p,F,M,V,Ω = element.states
     @unpack γ,κ,P,H = element.compStates
     @unpack udot,pdot = element.statesRates
@@ -651,20 +641,20 @@ function element_residual!(problem::Problem,model::Model,element::Element)
     ## Steady terms
     # ------------------------------------------------------------------------- 
     # --- F_u --- #
-    tmp = Δℓ/2 * cross(ω_b,RR0*P)
+    tmp = Δℓ/2 * cross(ω,RR0*P)
     F_u1 += tmp
     F_u2 += tmp
 
     # --- F_p --- #
-    tmp = Δℓ/2 * (cross(ω_b,RR0*H) + RR0 * cross(V,P))
+    tmp = Δℓ/2 * (cross(ω,RR0*H) + RR0 * cross(V,P))
     F_p1 += tmp
     F_p2 += tmp
 
     # --- F_V --- #
-    F_V = RR0*V - v_b - cross(ω_b,u)
+    F_V = RR0*V - v - cross(ω,u)
     
     # --- F_Ω --- #
-    F_Ω = Ω - RR0T*ω_b
+    F_Ω = Ω - RR0T*ω
 
     ## Transient dynamic terms
     # -------------------------------------------------------------------------
@@ -757,29 +747,23 @@ end
 
 
 """
-distributed_loads_Jacobians(element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},ηtilde_A::Matrix{Float64},f_g::Vector{Float64})
+distributed_loads_Jacobians!(element::Element)
 
 Computes the contributions of the distributed loads to the Jacobian matrix
 
 # Arguments
 - element::Element
-- R_p1::Matrix{Float64}
-- R_p2::Matrix{Float64}
-- R_p3::Matrix{Float64}
-- ηtilde_A::Matrix{Float64}
-- f_g::Vector{Float64}
 """
-function distributed_loads_Jacobians(element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},ηtilde_A::Matrix{Float64},f_g::Vector{Float64},ff1_ANow::Vector{Float64},ff2_ANow::Vector{Float64},mf1_ANow::Vector{Float64},mf2_ANow::Vector{Float64},ff1_bNow::Vector{Float64},ff2_bNow::Vector{Float64},mf1_bNow::Vector{Float64},mf2_bNow::Vector{Float64})
+function distributed_loads_Jacobians!(element::Element)
 
-    @unpack R,R0 = element
 
     ## Derivatives of gravitational loads w.r.t. extended rotation parameters
     # --------------------------------------------------------------------------
-    mg_p = gravitational_loads_Jacobians(R,R_p1,R_p2,R_p3,ηtilde_A,f_g)
+    mg_p = gravitational_loads_Jacobians(element)
 
     ## Derivatives of externally applied follower distributed loads w.r.t. extended rotation parameters
     # --------------------------------------------------------------------------
-    f1d_p,f2d_p,m1d_p,m2d_p = distributed_external_loads_Jacobians(element,ff1_ANow,ff2_ANow,mf1_ANow,mf2_ANow,ff1_bNow,ff2_bNow,mf1_bNow,mf2_bNow,R_p1,R_p2,R_p3,R0)
+    f1d_p,f2d_p,m1d_p,m2d_p = distributed_external_loads_Jacobians(element)
 
     ## Derivatives of aerodynamic loads w.r.t. extended rotation parameters
     # --------------------------------------------------------------------------
@@ -799,29 +783,26 @@ function distributed_loads_Jacobians(element::Element,R_p1::Matrix{Float64},R_p2
     f2_p = f2a_p + f2d_p
     m2_p = mg_p + m2a_p + m2d_p
 
-    return f1_p,f2_p,m1_p,m2_p
+    @pack! element = f1_p,f2_p,m1_p,m2_p
 
 end
 
 
 """
-gravitational_loads_Jacobians(R::Matrix{Float64},R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},ηtilde_A::Matrix{Float64},f_g::Vector{Float64})
+gravitational_loads_Jacobians(element::Element)
 
 Computes the contributions of the gravitational loads to the Jacobian matrix
 
 # Arguments
-- R::Matrix{Float64}
-- R_p1::Matrix{Float64}
-- R_p2::Matrix{Float64}
-- R_p3::Matrix{Float64}
-- ηtilde_A::Matrix{Float64}
-- f_g::Vector{Float64}
+- element::Element
 """
-function gravitational_loads_Jacobians(R::Matrix{Float64},R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},ηtilde_A::Matrix{Float64},f_g::Vector{Float64})
+function gravitational_loads_Jacobians(element::Element)
+
+    @unpack R,RR0,R0T,R_p1,R_p2,R_p3,f_g,m_g,ηtilde = element
 
     # Distributed weight moment vector derivative w.r.t. extended rotation parameters
     if any(!iszero(f_g))
-        mg_p = mul3(R_p1,R_p2,R_p3,R'*ηtilde_A*f_g) + ηtilde_A*R*mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),f_g)
+        mg_p = mul3(R_p1,R_p2,R_p3,R'*m_g) + RR0*ηtilde*R0T*mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),f_g)
     else
         mg_p = zeros(3,3)
     end
@@ -839,35 +820,35 @@ Computes the contributions of the externally applied distributed loads to the Ja
 # Arguments
 - element::Element
 """
-function distributed_external_loads_Jacobians(element::Element,ff1_ANow::Vector{Float64},ff2_ANow::Vector{Float64},mf1_ANow::Vector{Float64},mf2_ANow::Vector{Float64},ff1_bNow::Vector{Float64},ff2_bNow::Vector{Float64},mf1_bNow::Vector{Float64},mf2_bNow::Vector{Float64},R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},R0::Matrix{Float64})
+function distributed_external_loads_Jacobians(element::Element)
 
-    @unpack hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = element
+    @unpack ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,R_p1,R_p2,R_p3,R0,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = element
 
     # Initialize derivatives of externally applied distributed loads w.r.t. extended rotation parameters
     f1d_p,f2d_p,m1d_p,m2d_p = zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3)
 
     # Contributions from follower forces initially resolved in basis A
     if hasDistributedFollowerForcesBasisA
-        f1d_p += mul3(R_p1,R_p2,R_p3,ff1_ANow)
-        f2d_p += mul3(R_p1,R_p2,R_p3,ff2_ANow)
+        f1d_p += mul3(R_p1,R_p2,R_p3,ff1_A)
+        f2d_p += mul3(R_p1,R_p2,R_p3,ff2_A)
     end
 
     # Contributions from follower moments initially resolved in basis A
     if hasDistributedFollowerMomentsBasisA
-        m1d_p += mul3(R_p1,R_p2,R_p3,mf1_ANow)
-        m2d_p += mul3(R_p1,R_p2,R_p3,mf2_ANow)
+        m1d_p += mul3(R_p1,R_p2,R_p3,mf1_A)
+        m2d_p += mul3(R_p1,R_p2,R_p3,mf2_A)
     end
 
     # Contributions from follower forces initially resolved in basis b
     if hasDistributedFollowerForcesBasisb
-        f1d_p += mul3(R_p1,R_p2,R_p3,R0*ff1_bNow)
-        f2d_p += mul3(R_p1,R_p2,R_p3,R0*ff2_bNow)
+        f1d_p += mul3(R_p1,R_p2,R_p3,R0*ff1_b)
+        f2d_p += mul3(R_p1,R_p2,R_p3,R0*ff2_b)
     end
 
     # Contributions from follower moements initially resolved in basis b
     if hasDistributedFollowerMomentsBasisb
-        m1d_p += mul3(R_p1,R_p2,R_p3,R0*mf1_bNow)
-        m2d_p += mul3(R_p1,R_p2,R_p3,R0*mf2_bNow)
+        m1d_p += mul3(R_p1,R_p2,R_p3,R0*mf1_b)
+        m2d_p += mul3(R_p1,R_p2,R_p3,R0*mf2_b)
     end
 
     return f1d_p,f2d_p,m1d_p,m2d_p
@@ -876,18 +857,20 @@ end
 
 
 """
-element_jacobian!(problem::Problem,model::Model,element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},HT_p1::Matrix{Float64},HT_p2::Matrix{Float64},HT_p3::Matrix{Float64},HTinv_p1::Matrix{Float64},HTinv_p2::Matrix{Float64},HTinv_p3::Matrix{Float64},Rdot_p1::Matrix{Float64},Rdot_p2::Matrix{Float64},Rdot_p3::Matrix{Float64},f1_p::Matrix{Float64},f2_p::Matrix{Float64},m1_p::Matrix{Float64},m2_p::Matrix{Float64})
+element_jacobian!(problem::Problem,model::Model,element::Element)
 
 Computes the contributions from the current element to the Jacobian matrix
 
 # Arguments
-- problem::Problem,model::Model,element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},HT_p1::Matrix{Float64},HT_p2::Matrix{Float64},HT_p3::Matrix{Float64},HTinv_p1::Matrix{Float64},HTinv_p2::Matrix{Float64},HTinv_p3::Matrix{Float64},Rdot_p1::Matrix{Float64},Rdot_p2::Matrix{Float64},Rdot_p3::Matrix{Float64},f1_p::Matrix{Float64},f2_p::Matrix{Float64},m1_p::Matrix{Float64},m2_p::Matrix{Float64}
+- problem::Problem
+- model::Model
+- element::Element
 """
-function element_jacobian!(problem::Problem,model::Model,element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64},HT_p1::Matrix{Float64},HT_p2::Matrix{Float64},HT_p3::Matrix{Float64},HTinv_p1::Matrix{Float64},HTinv_p2::Matrix{Float64},HTinv_p3::Matrix{Float64},Rdot_p1::Matrix{Float64},Rdot_p2::Matrix{Float64},Rdot_p3::Matrix{Float64},f1_p::Matrix{Float64},f2_p::Matrix{Float64},m1_p::Matrix{Float64},m2_p::Matrix{Float64})
+function element_jacobian!(problem::Problem,model::Model,element::Element)
 
     @unpack jacobian = problem
     @unpack forceScaling = model
-    @unpack Δℓ,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,R0,R0T,RR0,RRwR0,RdotR0,HT,HTinv,ω_b,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_FV,eqs_FΩ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element
+    @unpack Δℓ,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,ω,R0,R0T,RR0,RRwR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,f1_p,f2_p,m1_p,m2_p,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_FV,eqs_FΩ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element
     @unpack F,M,V,Ω = element.states
     @unpack pdot,Vdot,Ωdot = element.statesRates
     @unpack γ,κ,P,H = element.compStates
@@ -961,43 +944,43 @@ function element_jacobian!(problem::Problem,model::Model,element::Element,R_p1::
     ## Steady-state terms
     # --------------------------------------------------------------------------
     # Repeatedly used variables
-    ω_b_tilde = tilde(ω_b)
-    ω_b_tilde_RR0 = ω_b_tilde*RR0
+    ω_tilde = tilde(ω)
+    ω_tilde_RR0 = ω_tilde*RR0
     V_tilde = tilde(V)
     R0P = R0*P
     R0H = R0*H
     
     # --- F_u --- #
     # F_u_p
-    tmp = Δℓ/2 * ω_b_tilde * mul3(R_p1,R_p2,R_p3,R0P)
+    tmp = Δℓ/2 * ω_tilde * mul3(R_p1,R_p2,R_p3,R0P)
     F_u1_p += tmp
     F_u2_p += tmp 
     # F_u_V
-    tmp = Δℓ/2 * ω_b_tilde_RR0 * I_11
+    tmp = Δℓ/2 * ω_tilde_RR0 * I_11
     F_u1_V = tmp - f1a_V
     F_u2_V = tmp - f2a_V 
     # F_u_Ω
-    tmp = Δℓ/2 * ω_b_tilde_RR0 * I_12
+    tmp = Δℓ/2 * ω_tilde_RR0 * I_12
     F_u1_Ω = tmp - f1a_Ω
     F_u2_Ω = tmp - f2a_Ω
     
     # --- F_p --- # 
     # F_p_p
-    tmp = Δℓ/2 * (ω_b_tilde*mul3(R_p1,R_p2,R_p3,R0H) + mul3(R_p1,R_p2,R_p3,R0*cross(V,P)))
+    tmp = Δℓ/2 * (ω_tilde*mul3(R_p1,R_p2,R_p3,R0H) + mul3(R_p1,R_p2,R_p3,R0*cross(V,P)))
     F_p1_p += tmp
     F_p2_p += tmp  
     # F_p_V
-    tmp = Δℓ/2 * (ω_b_tilde_RR0*I_21 + RR0*(V_tilde*I_11-tilde(P)))
+    tmp = Δℓ/2 * (ω_tilde_RR0*I_21 + RR0*(V_tilde*I_11-tilde(P)))
     F_p1_V = tmp - m1a_V
     F_p2_V = tmp - m2a_V   
     # F_p_Ω
-    tmp = Δℓ/2 * (ω_b_tilde_RR0*I_22 + RR0*V_tilde*I_12)
+    tmp = Δℓ/2 * (ω_tilde_RR0*I_22 + RR0*V_tilde*I_12)
     F_p1_Ω = tmp - m1a_Ω
     F_p2_Ω = tmp - m2a_Ω
     
     # --- F_V --- #    
     # F_V_u
-    F_V_u = -ω_b_tilde   
+    F_V_u = -ω_tilde   
     # F_V_p
     F_V_p = mul3(R_p1,R_p2,R_p3,R0*V) 
     # F_V_V
@@ -1005,7 +988,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element,R_p1::
     
     # --- F_Ω --- #   
     # F_Ω_p
-    F_Ω_p = -R0T * mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),ω_b)  
+    F_Ω_p = -R0T * mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),ω)  
     # F_Ω_Ω
     F_Ω_Ω = I3  
 
@@ -1175,18 +1158,20 @@ end
 
 
 """
-element_inertia!(problem::Problem,model::Model,element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64})
+element_inertia!(problem::Problem,model::Model,element::Element)
 
 Computes the contributions from the current element to the inertia matrix
 
 # Arguments
-- problem::Problem,model::Model,element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64}
+- problem::Problem
+- model::Model
+- element::Element
 """
-function element_inertia!(problem::Problem,model::Model,element::Element,R_p1::Matrix{Float64},R_p2::Matrix{Float64},R_p3::Matrix{Float64})
+function element_inertia!(problem::Problem,model::Model,element::Element)
 
     @unpack inertia = problem
     @unpack forceScaling = model
-    @unpack Δℓ,I_11,I_12,I_21,I_22,R0,R0T,RR0,RRwR0,HT,HTinv,ω_b,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FV,eqs_FΩ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,DOF_u,DOF_p,DOF_V,DOF_Ω = element
+    @unpack Δℓ,I_11,I_12,I_21,I_22,R0,R0T,RR0,RRwR0,HT,HTinv,ω,R_p1,R_p2,R_p3,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FV,eqs_FΩ,DOF_u,DOF_p,DOF_V,DOF_Ω,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2 = element
     @unpack V,Ω = element.states
     @unpack Vdot,Ωdot = element.statesRates
     @unpack P,H = element.compStates
@@ -1318,12 +1303,11 @@ function element_nodal_states!(element::Element)
  
     @pack! element.nodalStates = u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
 
-    return u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
-
 end
 
+
 """
-special_node_states(problem::Problem,model::Model,specialNode::SpecialNode)
+special_node_states!(problem::Problem,model::Model,specialNode::SpecialNode)
 
 Gets the nodal states
 
@@ -1332,10 +1316,10 @@ Gets the nodal states
 - model::Model
 - specialNode::SpecialNode
 """
-function special_node_states(problem::Problem,model::Model,specialNode::SpecialNode)
+function special_node_states!(problem::Problem,model::Model,specialNode::SpecialNode)
 
     @unpack x,σ = problem
-    @unpack isLoad,BCs,DOF_uF,DOF_pM,DOF_trimLoads = specialNode
+    @unpack uIsPrescribed,pIsPrescribed,trimIsPrescribed,BCs,DOF_uF,DOF_pM,DOF_trimLoads = specialNode
 
     # Check if node is not BC'ed - all nodal states are generalized displacements, externally applied forces are null
     if isempty(BCs)
@@ -1343,7 +1327,8 @@ function special_node_states(problem::Problem,model::Model,specialNode::SpecialN
         p = x[DOF_pM]
         F = zeros(3)
         M = zeros(3)
-        return u,p,F,M
+        @pack! specialNode = u,p,F,M
+        return
     end
 
     @unpack forceScaling = model
@@ -1354,28 +1339,27 @@ function special_node_states(problem::Problem,model::Model,specialNode::SpecialN
     # Loop boundary conditions
     for BC in BCs
 
-        @unpack currentValue,isFollower,isTrim,R0_n = BC
+        @unpack currentValue,isLoad,isFollower,isTrim,R0_n = BC
 
         ## Generalized displacements
         # ----------------------------------------------------------------------
         # Loop directions and set displacements and rotations, resolved in basis A, as either nodal states or prescribed values
         for i=1:3
-            if isLoad[i]
-                # u[i] is a nodal state      
-                u[i] = x[DOF_uF[i]]        
-            else
+            if uIsPrescribed[i] && !isLoad[i]
                 # u[i] is a prescribed value
-                u[i] = σ*currentValue[i]          
+                u[i] = σ*currentValue[i]
+            elseif !uIsPrescribed[i] && isLoad[i]
+                # u[i] is a nodal state      
+                u[i] = x[DOF_uF[i]]                 
             end
-            if isLoad[i+3]
-                # p[i] is a nodal state 
-                p[i] = x[DOF_pM[i]]        
-            else
+            if pIsPrescribed[i] && !isLoad[i+3]
                 # p[i] is a prescribed value
                 p[i] = σ*currentValue[i+3]        
+            elseif !pIsPrescribed[i] && isLoad[i+3]
+                # p[i] is a nodal state 
+                p[i] = x[DOF_pM[i]]       
             end
         end
-
 
         ## Prescribed values of generalized forces, resolved in basis A
         # ----------------------------------------------------------------------
@@ -1431,7 +1415,7 @@ function special_node_states(problem::Problem,model::Model,specialNode::SpecialN
             elseif isTrim[i]
                 # F[i] is a trim value
                 F[i] = Ftrim[i]                   
-            else
+            elseif !trimIsPrescribed[i]
                 # F[i] is a nodal state
                 F[i] = x[DOF_uF[i]]*forceScaling
             end
@@ -1441,19 +1425,19 @@ function special_node_states(problem::Problem,model::Model,specialNode::SpecialN
             elseif isTrim[i+3] 
                 # M[i] is a trim value
                 M[i] = Mtrim[i]                   
-            else
+            elseif !trimIsPrescribed[i+3]
                 # M[i] is a nodal state
                 M[i] = x[DOF_pM[i]]*forceScaling   
             end
         end
     end
 
-    return u,p,F,M
+    @pack! specialNode = u,p,F,M
 end
 
 
 """
-special_node_residual!(problem::Problem,model::Model,specialNode::SpecialNode,u::Vector{Float64},p::Vector{Float64},F::Vector{Float64},M::Vector{Float64})
+special_node_residual!(problem::Problem,model::Model,specialNode::SpecialNode)
 
 Computes the contributions from the current node to the residual array
 
@@ -1461,19 +1445,15 @@ Computes the contributions from the current node to the residual array
 - problem::Problem
 - model::Model
 - specialNode::SpecialNode
-- u::Vector{Float64}
-- p::Vector{Float64}
-- F::Vector{Float64}
-- M::Vector{Float64}
 """
-function special_node_residual!(problem::Problem,model::Model,specialNode::SpecialNode,u::Vector{Float64},p::Vector{Float64},F::Vector{Float64},M::Vector{Float64})
+function special_node_residual!(problem::Problem,model::Model,specialNode::SpecialNode)
 
     @unpack residual = problem
     @unpack forceScaling = model
-    @unpack connectedElementsID,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep = specialNode
+    @unpack ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,u,p,F,M = specialNode
 
     # Loop connected elements of the node
-    for e in 1:length(connectedElementsID)
+    for e in eachindex(ζonElements)
         # Check if the node has separate compatibility equations
         if isempty(eqs_FF_sep[e])   
             # Add to node's equilibrium and compatibility equations' residuals
@@ -1494,7 +1474,7 @@ end
 
 
 """
-special_node_follower_loads_jacobians(problem::Problem,specialNode::SpecialNode)
+special_node_follower_loads_jacobians!(problem::Problem,specialNode::SpecialNode)
 
 Gets the contributions from the nodal follower loads to the Jacobian matrix
 
@@ -1502,78 +1482,68 @@ Gets the contributions from the nodal follower loads to the Jacobian matrix
 - problem::Problem
 - specialNode::SpecialNode
 """
-function special_node_follower_loads_jacobians(problem::Problem,specialNode::SpecialNode)
+function special_node_follower_loads_jacobians!(problem::Problem,specialNode::SpecialNode)
 
     @unpack x,σ = problem
     @unpack forceScaling = problem.model
-    @unpack isLoad,BCs,DOF_pM = specialNode
+    @unpack BCs,p = specialNode
 
     # Initialize
     F_p,M_p = zeros(3,3),zeros(3,3)
 
-    # Check if the node is BC'ed
-    if isempty(BCs)
-        return F_p,M_p
+    # Check if the node is BC'ed or if there are any follower loads
+    followers = vcat([BC.isFollower for BC in BCs]...)
+    if isempty(BCs) || !any(followers)
+        @pack! specialNode = F_p,M_p
+        return 
     end
+
+    # Get nodal rotation tensor's derivatives w.r.t. the extended rotation parameters
+    R_p1,R_p2,R_p3 = rotation_tensor_derivatives_extended_parameters(p)
 
     # Loop boundary conditions
     for BC in BCs
 
-        @unpack currentValue,isFollower,isTrim,R0_n = BC
+        @unpack currentValue,isLoad,isFollower,isTrim,R0_n = BC
 
-        # If there are no follower loads, Jacobian contributions are null
+        # Skip if there are no follower loads
         if !any(isFollower)
             continue
         end
 
-        # Get nodal rotation parameters 
-        p = zeros(3)
-        for i=1:3
-            if isLoad[i+3]
-                # p[i] is a nodal state 
-                p[i] = x[DOF_pM[i]]
-            else
-                # p[i] is a prescribed value
-                p[i] = σ*currentValue[i+3]
-            end
-        end
-
-        # Get nodal rotation tensor's derivatives w.r.t. the extended rotation parameters
-        R_p1,R_p2,R_p3 = rotation_tensor_derivatives_extended_parameters(p)
-
-        # Current nodal follower forces and moments 
-        F,M = zeros(3),zeros(3)
+        # Nodal follower load components in the undeformed configuration, resolved in basis A
+        F₀,M₀ = zeros(3),zeros(3)
         for i=1:3
             # Forces
             if isTrim[i] && isFollower[i]  
                 # Trim variable 
-                F[i] = x[DOF_trimLoads[i]]*forceScaling
+                F₀[i] = x[DOF_trimLoads[i]]*forceScaling
             elseif isFollower[i]           
                 # Not a trim variable
-                F[i] = σ*currentValue[i]
+                F₀[i] = σ*currentValue[i]
             end
             # Moments
             if isTrim[i+3] && isFollower[i+3]
                 # Trim variable 
-                M[i] = x[DOF_trimLoads[i]]*forceScaling
+                M₀[i] = x[DOF_trimLoads[i+3]]*forceScaling
             elseif isFollower[i+3]       
                 # Not a trim variable
-                M[i] = σ*currentValue[i]
+                M₀[i] = σ*currentValue[i]
             end
         end
 
         # Add to derivatives of the follower loads w.r.t. the extended rotation parameters 
-        F_p += mul3(R_p1,R_p2,R_p3,F)
-        M_p += mul3(R_p1,R_p2,R_p3,M)
+        F_p += mul3(R_p1,R_p2,R_p3,F₀)
+        M_p += mul3(R_p1,R_p2,R_p3,M₀)
     end
 
-    return F_p,M_p
+    @pack! specialNode = F_p,M_p
 
 end
 
 
 """
-special_node_jacobian!(problem::Problem,model::Model,specialNode::SpecialNode,F_p::Matrix{Float64},M_p::Matrix{Float64})
+special_node_jacobian!(problem::Problem,model::Model,specialNode::SpecialNode)
 
 Computes the contributions from the current node to the Jacobian matrix
 
@@ -1581,24 +1551,22 @@ Computes the contributions from the current node to the Jacobian matrix
 - problem::Problem
 - model::Model
 - specialNode::SpecialNode
-- F_p::Matrix{Float64}
-- M_p::Matrix{Float64}
 """
-function special_node_jacobian!(problem::Problem,model::Model,specialNode::SpecialNode,F_p::Matrix{Float64},M_p::Matrix{Float64})
+function special_node_jacobian!(problem::Problem,model::Model,specialNode::SpecialNode)
 
     @unpack jacobian = problem
     @unpack forceScaling = model
-    @unpack connectedElements,ζonElements,BCs,isLoad,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads = specialNode
+    @unpack ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p = specialNode
 
     # Check if the node is BC'ed
     if !isempty(BCs)
         # Loop applied BCs
         for BC in BCs
-            @unpack isTrim = BC
-            jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,connectedElements,ζonElements,isLoad,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,isTrim)
+            @unpack isLoad,isTrim = BC
+            jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed,isLoad,isTrim)
         end
     else
-        jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,connectedElements,ζonElements,isLoad,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads)
+        jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
     end
 
     @pack! problem = jacobian
@@ -1606,64 +1574,75 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
 end
 
 
+"""
+update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed,isLoad=trues(6),isTrim=falses(6))
 
-function update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,connectedElements,ζonElements,isLoad,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,isTrim=falses(6))
+Updates the Jacobian matrix with the contributions from the current BC (if any) on the current node 
+
+# Arguments
+- problem::Problem
+- model::Model
+- specialNode::SpecialNode
+"""
+function update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed,isLoad=trues(6),isTrim=falses(6))
 
     # Loop connected elements of the node
-    for e in 1:length(connectedElements)
+    for e in eachindex(ζonElements)
         # If the node does not have separate compatibility equations
         if isempty(eqs_FF_sep[e])
             # Loop directions and set Jacobian components for the node's equilibrium and compatibility equations
             for i=1:3
                 # Forces/displacements DOFs
-                if isLoad[i]
+                if isLoad[i] && !uIsPrescribed[i]
                     # If F[i] is prescribed, u[i] is the nodal state: Set compatibility equation's Jacobian component [d(-/+u)/d(u) = -/+1 = ζonElements[e]] 
                     jacobian[eqs_FF[e][i],DOF_uF[i]] = ζonElements[e] 
                     for j=1:3 
                         # Loop over node's moments/rotations DOFs
-                        if isLoad[j+3]
+                        if isLoad[j+3] && !pIsPrescribed[j]
                             # If M(j) is prescribed, p(j) is the nodal state: Set equilibrium equation's Jacobian component (follower load component)
                             jacobian[eqs_Fu[e][i],DOF_pM[j]] = -F_p[i,j]/forceScaling  
                         end
                     end
-                else                                                        # If u[i] is prescribed, F[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
-                    jacobian[eqs_Fu[e][i],DOF_uF[i]] = -1
-                    if isTrim[i]
-                        # If F[i] is also a trim variable: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
-                        jacobian[eqs_Fu[e][i],DOF_trimLoads[i]] = -1
-                    end    
+                else                                                        
+                    # If u[i] is prescribed, F[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
+                    jacobian[eqs_Fu[e][i],DOF_uF[i]] = -1   
                 end
+                if isTrim[i]
+                    # If F[i] is also a trim variable: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
+                    jacobian[eqs_Fu[e][i],DOF_trimLoads[i]] = -1
+                end 
                 # Moments/rotations DOFs
-                if isLoad[i+3]
+                if isLoad[i+3] && !pIsPrescribed[i]
                     # If M[i] is prescribed, p[i] is the nodal state: Set compatibility equation's Jacobian component [d(-/+p)/d(p) = -/+1 = ζonElements[e]] 
                     jacobian[eqs_FM[e][i],DOF_pM[i]] = ζonElements[e]
                     for j=1:3
                         # Loop over node's moments/rotations DOFs
-                        if isLoad[j+3]
+                        if isLoad[j+3] && !pIsPrescribed[j]
                             # If M(j) is prescribed, p(j) is the nodal state: Add equilibrium equation's Jacobian component (follower load component)
                             jacobian[eqs_Fp[e][i],DOF_pM[j]] = -M_p[i,j]/forceScaling   
                         end
                     end
-                else                                                        # If p[i] is prescribed, M[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-M)/d(M) = -1]
+                else                                                        
+                    # If p[i] is prescribed, M[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-M)/d(M) = -1]
                     jacobian[eqs_Fp[e][i],DOF_pM[i]] = -1
-                    if isTrim[i+3]
-                        # If M[i] is a trim variable: Set equilibrium equation's Jacobian component [d(-M)/d(M) = -1]
-                        jacobian[eqs_Fp[e][i],DOF_trimLoads[i+3]] = -1
-                    end
+                end
+                if isTrim[i+3]
+                    # If M[i] is a trim variable: Set equilibrium equation's Jacobian component [d(-M)/d(M) = -1]
+                    jacobian[eqs_Fp[e][i],DOF_trimLoads[i+3]] = -1
                 end
             end  
         # Else, set Jacobian components for the node's separate compatibility equations   
-        else                                                                    # Loop over node's forces/displacements DOFs
+        else                                                                        # Loop over node's forces/displacements DOFs
             for i=1:3
                 # If F[i] is prescribed, u[i] is the nodal state: Set separate compatibility equation's Jacobian component [d(-/+u)/d(u) = -/+1 = ζonElements[e]]              
-                if isLoad[i]                            
+                if isLoad[i] && !uIsPrescribed[i]                         
                     jacobian[eqs_FF_sep[e][i],DOF_uF[i]] = ζonElements[e]  
                 end
             end
             # Loop over node's moments/rotations DOFs
             for i=1:3
                 # If M[i] is prescribed, p[i] is the nodal state: Set separate compatibility equation's Jacobian component [d(-/+p)/d(p) = -/+1 = ζonElements[e]]
-                if isLoad[i+3] 
+                if isLoad[i+3] && !pIsPrescribed[i]
                     jacobian[eqs_FM_sep[e][i],DOF_pM[i]] = ζonElements[e]
                 end
             end

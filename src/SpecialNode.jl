@@ -11,39 +11,45 @@
     # Fields
     localID::Int64
     globalID::Int64 
-    connectedElementsID::Vector{Int64} 
+    connectedElementsGlobalIDs::Vector{Int64} 
     connectedElements::Vector{Element} 
     ζonElements::Vector{Int64} 
-    BCs::Vector{BC} = Vector{BC}()
-    isLoad::Vector{Bool} = trues(6)
-    eqs_Fu::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
-    eqs_Fp::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
-    eqs_FF::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
-    eqs_FM::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
-    eqs_FF_sep::Vector{Vector{Int64}} = Vector{Vector{Int64}}() 
-    eqs_FM_sep::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
+    BCs::Vector{BC}
+    uIsPrescribed::BitVector
+    pIsPrescribed::BitVector
+    trimIsPrescribed::BitVector
+    eqs_Fu::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
+    eqs_Fp::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
+    eqs_FF::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
+    eqs_FM::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
+    eqs_FF_sep::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
+    eqs_FM_sep::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
     DOF_uF::Vector{Int64} = Vector{Int64}()
     DOF_pM::Vector{Int64} = Vector{Int64}()
-    DOF_trimLoads::Vector{Int64} = zeros(Int64,6)
+    DOF_trimLoads::Vector{Int64} = Vector{Int64}()
+    u::Vector{Float64} = Vector{Float64}()
+    p::Vector{Float64} = Vector{Float64}()
+    F::Vector{Float64} = Vector{Float64}()
+    M::Vector{Float64} = Vector{Float64}()
+    F_p::Matrix{Float64} = zeros(3,3)
+    M_p::Matrix{Float64} = zeros(3,3)
 
 end
 
-# Constructor for special nodes with BCs
-function SpecialNode(localID::Int64,globalID::Int64,connectedElementsID::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64},BCs::Vector{BC})
+# Constructor 
+function SpecialNode(localID::Int64,globalID::Int64,connectedElementsGlobalIDs::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64},BCs::Vector{BC}=Vector{BC}())
 
-    # Set isLoad TF
+    # Set TFs for generalized displacements and trim loads being prescribed 
     isLoad = trues(6)
+    isTrim = falses(6)
     for BC in BCs
         isLoad = isLoad .& BC.isLoad
+        isTrim = isTrim .| BC.isTrim
     end
+    uIsPrescribed = .!isLoad[1:3]
+    pIsPrescribed = .!isLoad[4:6]
+    trimIsPrescribed = isTrim
 
-    return SpecialNode(localID,globalID,connectedElementsID,connectedElements,ζonElements,BCs,isLoad,[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],Vector{Int64}(),Vector{Int64}(),zeros(Int64,6))
-
-end
-
-# Constructor for special nodes without BCs
-function SpecialNode(localID::Int64,globalID::Int64,connectedElementsID::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64})
-
-    return SpecialNode(localID,globalID,connectedElementsID,connectedElements,ζonElements,Vector{BC}(),trues(6),[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],[Vector{Int64}() for _ in 1:length(connectedElements)],Vector{Int64}(),Vector{Int64}(),zeros(Int64,6))
+    return SpecialNode(localID=localID,globalID=globalID,connectedElementsGlobalIDs=connectedElementsGlobalIDs,connectedElements=connectedElements,ζonElements=ζonElements,BCs=BCs,uIsPrescribed=uIsPrescribed,pIsPrescribed=pIsPrescribed,trimIsPrescribed=trimIsPrescribed)
 
 end

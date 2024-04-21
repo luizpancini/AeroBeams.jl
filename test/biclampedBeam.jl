@@ -16,7 +16,7 @@ EA,GA,GJ,EIy,EIz = 1e6,1e4,1e9,1.0,1e9
 nElem = 40
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,ρI,ρI,ρI])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 if initialConditions == "displacement"
     beam.u0_of_x1=x1->[0; 0; u₃(x1)]
 elseif initialConditions == "rotation"
@@ -34,7 +34,7 @@ clamp1 = create_BC(name="clamp1",beam=beam,node=1,types=["u1A","u2A","u3A","p1A"
 clamp2 = create_BC(name="clamp2",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-biclampedBeam = Model(name="biclampedBeam",beams=[beam],BCs=[clamp1,clamp2])
+biclampedBeam = create_Model(name="biclampedBeam",beams=[beam],BCs=[clamp1,clamp2])
 
 # Time and frequency variables
 ω = 2*π*3.5653
@@ -44,7 +44,7 @@ tf = cycles*T
 Δt = T/100
 
 # Create and solve the problem
-problem = DynamicProblem(model=biclampedBeam,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=biclampedBeam,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

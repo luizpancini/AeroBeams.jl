@@ -17,10 +17,9 @@ EA,GA,GJ,EI = 2.8e7,1e7,1.4e4,1.4e4
 nElements = 3
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
-beam = Beam(name="beam",length=L,nElements=nElements,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElements,C=[stiffnessMatrix],I=[inertiaMatrix])
 if !rotateBasisA
-    beam.pdot0_of_x1=x1->[0; 0; pdot(0)]
-    update_beam!(beam)
+    add_initial_displacements_and_velocities_to_beam!(beam,conditionTypes=["pdot0_of_x1"],conditionFuns=[(x1)->[0; 0; pdot(0)]])
 end
 
 # BCs
@@ -29,17 +28,18 @@ pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A"
 
 # Model
 if rotateBasisA
-    spinupRobotArm = Model(name="spinupRobotArm",beams=[beam],BCs=[pin],ω_A=t->[0;0;-θdot(t)])
+    spinupRobotArm = create_Model(name="spinupRobotArm",beams=[beam],BCs=[pin],ω_A=t->[0;0;-θdot(t)])
 else
-    spinupRobotArm = Model(name="spinupRobotArm",beams=[beam],BCs=[driver])
+    spinupRobotArm = create_Model(name="spinupRobotArm",beams=[beam],BCs=[driver])
 end
 
 # Time variables
 tf = 20
-Δt = 2e-2
+Δt = 4e-2
+time = unique(vcat(collect(0:Δt/2:tf/2),collect(tf/2:Δt:tf)))
 
 # Create and solve the problem
-problem = DynamicProblem(model=spinupRobotArm,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=spinupRobotArm,timeVector=time)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

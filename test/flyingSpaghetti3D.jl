@@ -8,7 +8,7 @@ EA,GA,GJ,EI = 1e4,1e4,5e2,5e2
 nElem = 10
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0;θ₀;0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0;θ₀;0])
 
 # BCs - stable up to 18 s with M₀ = 100
 M₀ = 200
@@ -19,14 +19,14 @@ F1 = t -> M2(t)/10
 forces = create_BC(name="forces",beam=beam,node=nElem+1,types=["F1A","M2A","M3A"],values=[t->F1(t),t->M2(t),t->M3(t)])
 
 # Model
-flyingSpaghetti3D = Model(name="flyingSpaghetti3D",beams=[beam],BCs=[forces])
+flyingSpaghetti3D = create_Model(name="flyingSpaghetti3D",beams=[beam],BCs=[forces])
 
 # Time variables
 tf = 3.75
 Δt = 1e-3
 
 # Create and solve the problem
-problem = DynamicProblem(model=flyingSpaghetti3D,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=flyingSpaghetti3D,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

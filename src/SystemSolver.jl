@@ -14,7 +14,7 @@
     maximumIterations::Int64 = 20
     desiredIterations::Int64 = 5
     maximumRelativeError::Float64 = 1e6
-    initialLoadFactor::Float64 = 1.0
+    initialLoadFactor::Number = 1.0
     minimumLoadFactor::Float64 = 0.01
     maximumLoadFactorStep::Float64 = 0.5
     minimumLoadFactorStep::Float64 = 0.01
@@ -28,7 +28,14 @@
     convergedFinalSolution::Bool = false
 
 end
-export NewtonRaphson
+
+# Constructor
+function create_NewtonRaphson(;absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumRelativeError::Float64=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,trackingLoadSteps::Bool=true,displayStatus::Bool=false)
+
+    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus)
+
+end
+export create_NewtonRaphson
 
 
 """
@@ -75,7 +82,8 @@ function solve_NewtonRaphson!(problem::Problem)
             # Stop if Jacobian becomes singular
             @unpack jacobianDeterminant = problem
             if isapprox(jacobianDeterminant,0)
-                divergedPartialSolution = true 
+                divergedPartialSolution = true
+                println("Singular Jacobian, stopping...") 
                 return
             end 
             # Solve the linear system (update states array)

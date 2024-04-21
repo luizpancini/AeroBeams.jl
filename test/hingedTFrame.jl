@@ -9,8 +9,8 @@ EI = 200e9*5e-6
 ∞ = 1e12
 stiffnessMatrix = diagm([∞,∞,∞,∞,EI,EI])
 nElem = 20
-beam1 = Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[true,false,true]])
-beam2 = Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[π/2;0;0],hingedNodes=[1],hingedNodesDoF=[[true,false,true]],connectedBeams=[beam1],connectedNodesThis=[1],connectedNodesOther=[div(nElem,2)+1])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[true,false,true]])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[π/2;0;0],hingedNodes=[1],hingedNodesDoF=[[true,false,true]],connectedBeams=[beam1],connectedNodesThis=[1],connectedNodesOther=[div(nElem,2)+1])
 
 # BCs
 q = 1e5
@@ -20,17 +20,17 @@ clamp2 = create_BC(name="clamp2",beam=beam1,node=nElem+1,types=["u1A","u2A","u3A
 pin = create_BC(name="pin",beam=beam2,node=nElem+1,types=["u1A","u3A","p2A"],values=[0,0,0])
 
 # Model
-hingedTFrame = Model(name="hingedTFrame",beams=[beam1,beam2],BCs=[clamp1,clamp2,pin])
+hingedTFrame = create_Model(name="hingedTFrame",beams=[beam1,beam2],BCs=[clamp1,clamp2,pin])
 
 # Setup nonlinear system solver
 σ0 = 0.01
 σstep = 0.01
 atol = 1e-4
 maxit = 50
-NR = NewtonRaphson(absoluteTolerance=atol,initialLoadFactor=σ0,maximumLoadFactorStep=σstep,maximumIterations=maxit,displayStatus=true)
+NR = create_NewtonRaphson(absoluteTolerance=atol,initialLoadFactor=σ0,maximumLoadFactorStep=σstep,maximumIterations=maxit,displayStatus=true)
 
 # Create and solve the problem
-problem = SteadyProblem(model=hingedTFrame,systemSolver=NR,getLinearSolution=linearSolution)
+problem = create_SteadyProblem(model=hingedTFrame,systemSolver=NR,getLinearSolution=linearSolution)
 solve!(problem)
 
 # Get nodal arclength positions, displacements and forces over the beams

@@ -9,7 +9,7 @@ E = 70.4e9
 EA,GAy,GAz,GJ,EIy,EIz = E*A,∞,∞,∞,E*Iy,∞
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 nElem = 80
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;1/R;0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;1/R;0])
 
 # BCs
 λ = 8.7
@@ -19,15 +19,15 @@ clamp1 = create_BC(name="clamp1",beam=beam,node=1,types=["u1A","u2A","u3A","p1A"
 clamp2 = create_BC(name="clamp2",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-archUnderDeadPressure = Model(name="archUnderDeadPressure",beams=[beam],BCs=[clamp1,clamp2])
+archUnderDeadPressure = create_Model(name="archUnderDeadPressure",beams=[beam],BCs=[clamp1,clamp2])
 
 # Set system solver options
 σ0 = 0
 σstep = 0.02
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=archUnderDeadPressure,systemSolver=NR)
+problem = create_SteadyProblem(model=archUnderDeadPressure,systemSolver=NR)
 solve!(problem)
 
 # Get solution at partial load steps

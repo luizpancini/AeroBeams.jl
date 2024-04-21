@@ -6,7 +6,7 @@ EI = 200e9*5e-6
 ∞ = 1e12
 stiffnessMatrix = diagm([∞,∞,∞,∞,EI,∞])
 nElem = 20
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
 
 # BCs
 q₀ = 1e4
@@ -16,10 +16,10 @@ pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"
 clamp = create_BC(name="clamp",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-hingedBeam = Model(name="hingedBeam",beams=[beam],BCs=[pin,clamp])
+hingedBeam = create_Model(name="hingedBeam",beams=[beam],BCs=[pin,clamp])
 
 # Create and solve the problem
-problem = SteadyProblem(model=hingedBeam,getLinearSolution=true)
+problem = create_SteadyProblem(model=hingedBeam,getLinearSolution=true)
 solve!(problem)
 
 # Get nodal arclength positions, displacements and forces over the beams

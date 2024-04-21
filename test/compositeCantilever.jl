@@ -15,7 +15,7 @@ inertiaMatrix = [ 258.053        0.0      0.0       0.0  7.07839  -71.6871;
                       0.0   -7.07839  71.6871     48.59      0.0       0.0;
                   7.07839        0.0      0.0       0.0    2.172       0.0;
                  -71.6871        0.0      0.0       0.0      0.0    46.418]
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 F = 1e5
@@ -24,14 +24,14 @@ force = create_BC(name="force",beam=beam,node=nElem+1,types=["F3A"],values=[t->F
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-compositeCantilever = Model(name="compositeCantilever",beams=[beam],BCs=[clamp,force])
+compositeCantilever = create_Model(name="compositeCantilever",beams=[beam],BCs=[clamp,force])
 
 # Time variables
 tf = 2
 Δt = 1e-3
 
 # Create and solve the problem
-problem = DynamicProblem(model=compositeCantilever,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=compositeCantilever,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

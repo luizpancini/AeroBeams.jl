@@ -6,7 +6,7 @@ EI = 1e3/48
 ∞ = 1e14
 stiffnessMatrix = diagm([∞,∞,∞,∞,EI,∞])
 nElem = 30
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
 
 # BCs
 F = 1
@@ -14,13 +14,16 @@ u3_mid = -F*L/(48*EI)
 midDisp = create_BC(name="midDisp",beam=beam,node=div(nElem,2)+1,types=["u3A"],values=[u3_mid])
 pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
 roller = create_BC(name="roller",beam=beam,node=nElem+1,types=["u2A","u3A","p1A","p3A"],values=[0,0,0,0])
-rollerReaction = create_BC(name="rollerReaction",beam=beam,node=nElem+1,types=["F3b"],values=[0],toBeTrimmed=[true])
+rollerReaction = create_BC(name="rollerReaction",beam=beam,node=nElem+1,types=["F3A"],values=[0],toBeTrimmed=[true])
 
 # Model
-midLoadedBeamTrim = Model(name="midLoadedBeamTrim",beams=[beam],BCs=[pin,roller,midDisp,rollerReaction])
+midLoadedBeamTrim = create_Model(name="midLoadedBeamTrim",beams=[beam],BCs=[pin,roller,midDisp,rollerReaction])
+
+# Set NR system solver with increased number of maximum iterations
+NR = create_NewtonRaphson(maximumIterations=50,displayStatus=true)
 
 # Create and solve the problem
-problem = TrimProblem(model=midLoadedBeamTrim)
+problem = create_TrimProblem(model=midLoadedBeamTrim,systemSolver=NR)
 solve!(problem)
 
 # Get solution 

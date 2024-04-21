@@ -9,7 +9,7 @@ E = 1.5e6
 EA,GAy,GAz,GJ,EIy,EIz = E*A,∞,∞,∞,E*Iy,∞
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 nElem = 80
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;1/R;0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;1/R;0])
 
 # BCs
 λ = 8.9
@@ -19,15 +19,15 @@ clamp = create_BC(name="clamp",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","
 force = create_BC(name="force",beam=beam,node=elemForce+1,types=["F3A"],values=[-λ*E*Iy/R^2])
 
 # Model
-hingedClampedArch = Model(name="hingedClampedArch",beams=[beam],BCs=[hinge,clamp,force])
+pinnedClampedArch = create_Model(name="pinnedClampedArch",beams=[beam],BCs=[hinge,clamp,force])
 
 # Set system solver options
 σ0 = 0.0
 σstep = 0.02
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=hingedClampedArch,systemSolver=NR)
+problem = create_SteadyProblem(model=pinnedClampedArch,systemSolver=NR)
 solve!(problem)
 
 # Get solution at partial load steps
@@ -46,4 +46,4 @@ annotate!(x[1][halfNσ], σVector[halfNσ]*λ, text(labels[1], :bottom, :right, 
 annotate!(x[2][halfNσ], σVector[halfNσ]*λ, text(labels[2], :top, :left, colors[2]))
 display(plt1)
 
-println("Finished hingedClampedArch.jl")
+println("Finished pinnedClampedArch.jl")

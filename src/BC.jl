@@ -18,17 +18,20 @@ Boundary conditions composite type
     node::Int64 
     types::Vector{String} 
     values
-    toBeTrimmed::Union{BitVector,Vector{Bool}} = falses(length(types))
+    toBeTrimmed::Union{BitVector,Vector{Bool}}
 
     # Secondary fields (outputs)
     currentValue::Vector{Float64}
     isLoad::BitVector
     isFollower::BitVector
     isTrim::BitVector
+    initialTrimValue::Vector{Float64}
     R0_n::Matrix{Float64}
     globalNodeID::Int64
 
 end
+export BC
+
 
 # Constructor
 function create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
@@ -74,7 +77,7 @@ function create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String}
     # globalNodeID is updated upon assembly of the model
 
     # Initialize BC
-    bc = BC(name,beam,node,types,values,toBeTrimmed,Vector{Float64}(),BitVector(),BitVector(),BitVector(),R0_n,0)
+    bc = BC(name,beam,node,types,values,toBeTrimmed,Vector{Float64}(),BitVector(),BitVector(),BitVector(),Vector{Float64}(),R0_n,0)
 
     # Get initial BC data
     update_BC_data!(bc)
@@ -82,6 +85,7 @@ function create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String}
     return bc
 end
 export create_BC
+
 
 """
 update_BC_data!(bc::BC,timeNow::Float64=0.0)
@@ -267,9 +271,6 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
         end
     end
 
-    # Set current prescribed values (as those already defined on basis A)
-    currentValue = displacementsOnA + deadLoadsOnA + followerLoadsOnA
-
     # Set current TFs for being loads (those already defined on basis A)
     isLoad = isLoadOnA
 
@@ -279,20 +280,29 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
     # Set current TFs for being trim loads (those already defined on basis A)
     isTrim = isTrimOnA
 
-    # Update current values on basis A (after transfer from basis b)
-    currentValue += vcat(R0_n * (displacementsOnb[1:3]+deadLoadsOnb[1:3]+followerLoadsOnb[1:3]), R0_n * (displacementsOnb[4:6]+deadLoadsOnb[4:6]+followerLoadsOnb[4:6]))
+    # Set current prescribed values (as those already defined on basis A, excluding trim values)
+    currentValue = (displacementsOnA + deadLoadsOnA + followerLoadsOnA) .* .!isTrim
+
+    # Set initial trim values (those already defined on basis A)
+    initialTrimValue = (deadLoadsOnA + followerLoadsOnA) .* isTrim
 
     # Update current TFs for being loads on basis A (after transfer from basis b)
-    isLoad = isLoad .& vcat([abs(x)>0 for x in R0_n * isLoadOnb[1:3]], [abs(x)>0 for x in R0_n * isLoadOnb[4:6]]) 
+    isLoad = isLoad .& vcat([x!=0 for x in R0_n * isLoadOnb[1:3]], [x!=0 for x in R0_n * isLoadOnb[4:6]]) 
 
     # Update current TFs for being follower loads on basis A (after transfer from basis b)
-    isFollower = isFollower .| vcat([x==true for x in R0_n * isFollowerOnb[1:3]], [x==true for x in R0_n * isFollowerOnb[4:6]]) 
+    isFollower = isFollower .| vcat([x!=0 for x in R0_n * isFollowerOnb[1:3]], [x!=0 for x in R0_n * isFollowerOnb[4:6]]) 
 
     # Update current TFs for being trim loads on basis A (after transfer from basis b)
-    isTrim = isTrim .| vcat([x==true for x in R0_n * isTrimOnb[1:3]], [x==true for x in R0_n * isTrimOnb[4:6]])
+    isTrim = isTrim .| vcat([x!=0 for x in R0_n * isTrimOnb[1:3]], [x!=0 for x in R0_n * isTrimOnb[4:6]])
+
+    # Update current prescribed values (excludes trim values) on basis A (after transfer from basis b)
+    currentValue += vcat(R0_n * (displacementsOnb[1:3]+deadLoadsOnb[1:3]+followerLoadsOnb[1:3]), R0_n * (displacementsOnb[4:6]+deadLoadsOnb[4:6]+followerLoadsOnb[4:6])) .* .!isTrim
+    
+    # Update initial trim values on basis A
+    initialTrimValue += vcat(R0_n * (deadLoadsOnb[1:3]+followerLoadsOnb[1:3]), R0_n * (deadLoadsOnb[4:6]+followerLoadsOnb[4:6])) .* isTrim
     
     # Pack
-    @pack! bc = currentValue,isLoad,isFollower,isTrim
+    @pack! bc = currentValue,isLoad,isFollower,isTrim,initialTrimValue
 
 end
 

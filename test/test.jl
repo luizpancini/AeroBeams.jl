@@ -1,10 +1,15 @@
+using Parameters, LinearAlgebra
 
-A = nothing
-
-global s=0
-
-for i=1:length(A)
-    s+=1
+@with_kw mutable struct MyStruct
+    C::Vector{Matrix{<:Number}}
 end
 
-println(s)
+function create_mystruct(;C::Vector{<:Matrix{<:Number}})
+    return MyStruct(C)
+end
+
+c = diagm([1.0,1.0])
+
+s = create_mystruct(C=[c])
+
+s.C

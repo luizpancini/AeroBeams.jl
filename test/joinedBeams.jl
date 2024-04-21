@@ -8,10 +8,10 @@ L = 4*3.586301959539938
 stiffnessMatrix = diagm(1.0 ./ [2.93944738387698e-10, 8.42991725049126e-10, 3.38313996669689e-08, 4.69246721094557e-08, 6.79584100559513e-08, 1.37068861370898e-09])
 inertiaMatrix = diagm([4.86e-2, 4.86e-2, 4.86e-2, 1.0632465e-2, 2.10195e-4, 1.042227e-2])
 nElem = 8
-beam1 = Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[α;-β;γ+π])
-beam2 = Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-α;-β;-γ])
-beam3 = Beam(name="beam3",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-π+α;β;-γ])
-beam4 = Beam(name="beam4",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π-α;β;γ+π],connectedBeams=[beam1],connectedNodesThis=[nElem+1],connectedNodesOther=[1])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[α;-β;γ+π])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-α;-β;-γ])
+beam3 = create_Beam(name="beam3",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-π+α;β;-γ])
+beam4 = create_Beam(name="beam4",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π-α;β;γ+π],connectedBeams=[beam1],connectedNodesThis=[nElem+1],connectedNodesOther=[1])
 
 # BCs
 Fₗ = 1e6
@@ -25,14 +25,14 @@ force1 = create_BC(name="force1",beam=beam2,node=1,types=["F1A","F2A","F3A"],val
 force2 = create_BC(name="force2",beam=beam4,node=1,types=["F1A","F2A","F3A"],values=[t->F₁(t),t->F₂(t),t->F₃(t)])
 
 # Model
-joinedBeams = Model(name="joinedBeams",beams=[beam1,beam2,beam3,beam4],BCs=[clamp1,clamp2,force1,force2])
+joinedBeams = create_Model(name="joinedBeams",beams=[beam1,beam2,beam3,beam4],BCs=[clamp1,clamp2,force1,force2])
 
 # Time variables
 tf = τ
 Δt = τ/1e3
 
 # Create and solve the problem
-problem = DynamicProblem(model=joinedBeams,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=joinedBeams,finalTime=tf,Δt=Δt)
 solve!(problem)
 
 # Get solution over time

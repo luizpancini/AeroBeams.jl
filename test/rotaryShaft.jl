@@ -21,14 +21,14 @@ G = E/(2*(1+0.3))
 nElem = 5
 stiffnessMatrix = diagm([E*A,G*A,G*A,G*J,E*Iy,E*Iz])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],pdot0_of_x1=x1->[pdot₁(0); 0.0; 0.0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],pdot0_of_x1=x1->[pdot₁(0); 0.0; 0.0])
 
 # BCs
 driver = create_BC(name="driver",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,t -> p₁(t),0,0])
 journal = create_BC(name="journal",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p2A","p3A"],values=[0,0,0,0,0])
 
 # Model
-rotaryShaft = Model(name="rotaryShaft",beams=[beam],BCs=[driver,journal])
+rotaryShaft = create_Model(name="rotaryShaft",beams=[beam],BCs=[driver,journal])
 
 # Time variables
 cycles = 1
@@ -36,7 +36,7 @@ tf = cycles*T
 Δt = 5e-4
 
 # Create and solve the problem
-problem = DynamicProblem(model=rotaryShaft,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=rotaryShaft,finalTime=tf,Δt=Δt)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)

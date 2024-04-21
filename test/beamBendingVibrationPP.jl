@@ -7,18 +7,18 @@ EA,GA,GJ,EIy,EIz = 1e6,1e6,1e6,1,1e6
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,0,0,0])
 nElem = 100
-beam = Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs: pinned - pinned
 pin1 = create_BC(name="pin1",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
 pin2 = create_BC(name="pin2",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
 
 # Model
-beamBendingVibrationPP = Model(name="beamBendingVibrationPP",beams=[beam],BCs=[pin1,pin2])
+beamBendingVibrationPP = create_Model(name="beamBendingVibrationPP",beams=[beam],BCs=[pin1,pin2])
 
 # Create and solve the problem
 nModes=6
-problem = EigenProblem(model=beamBendingVibrationPP,nModes=nModes,getLinearSolution=true,normalizeModeShapes=true)
+problem = create_EigenProblem(model=beamBendingVibrationPP,nModes=nModes,getLinearSolution=true,normalizeModeShapes=true)
 solve!(problem)
 
 # Get frequencies and mode shapes

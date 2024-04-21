@@ -13,8 +13,8 @@ G = E/(2*(1+ν))
 EA,GAy,GAz,GJ,EIy,EIz = E*A,∞,∞,∞,E*Iy,∞
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 nElem = 20
-beam1 = Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-π/2;0])
-beam2 = Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-π/2;0])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix])
 
 # BCs
 elemForce = div(nElem,5)
@@ -31,15 +31,15 @@ else
 end
 
 # Model
-LeeFrame = Model(name="LeeFrame",beams=[beam1,beam2],BCs=[support1,support2,force])
+LeeFrame = create_Model(name="LeeFrame",beams=[beam1,beam2],BCs=[support1,support2,force])
 
 # Set system solver options
 σ0 = 0.0
 σstep = 0.02
-NR = NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
-problem = SteadyProblem(model=LeeFrame,systemSolver=NR)
+problem = create_SteadyProblem(model=LeeFrame,systemSolver=NR)
 solve!(problem)
 
 # Get solution at partial load steps

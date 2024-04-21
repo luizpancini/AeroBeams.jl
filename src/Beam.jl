@@ -1,6 +1,5 @@
 abstract type BeamElement end
 
-
 """
 @with_kw mutable struct Beam
 
@@ -26,56 +25,62 @@ Beam composite type
  - Some fields have meaningful default values, others need inputs
 """
 @with_kw mutable struct Beam
-    # Name and ID
-    name::String = ""
-    ID::Int64 = 0
-    # Connection relative to other beams
-    connectedBeams::Union{Nothing,Vector{Beam}} = nothing
-    connectedNodesThis::Vector{Int64} = Vector{Int64}()
-    connectedNodesOther::Vector{Int64} = Vector{Int64}()
+
+    # Primary (inputs to beam creation)
+    # -------------------------------------------
+    # Name 
+    name::String
     # Geometry 
     length::Number 
-    rotationParametrization::String = "WM"
-    p0::Vector{Float64} = zeros(3)
-    k::Vector{Float64} = zeros(3)
-    R0::Matrix{Float64} = I3
-    R_cs::Matrix{Float64} = I3
+    rotationParametrization::String
+    p0::Vector{Float64}
+    k::Vector{Float64}
     # Discretization
     nElements::Int64 
-    normalizedNodalPositions::Vector{Float64} = Vector{Float64}()
+    normalizedNodalPositions::Vector{Float64}
+    # Sectional properties (stiffness and inertia matrices)
+    C::Vector{<:Matrix{<:Number}} 
+    I::Vector{<:Matrix{<:Number}}
+    # Connection relative to other beams
+    connectedBeams::Union{Nothing,Vector{Beam}}
+    connectedNodesThis::Vector{Int64}
+    connectedNodesOther::Vector{Int64}
+    # Attached point inertias
+    pointInertias::Vector{PointInertia}
+    # Hinged nodes and hinged DoF
+    hingedNodes::Vector{Int64}
+    hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}
+    # Initial displacements/rotations/velocities
+    u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
+    p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
+    udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
+    pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
+    # Distributed loads
+    f_A_of_x1t::Union{Nothing,<:Function}
+    m_A_of_x1t::Union{Nothing,<:Function}
+    f_b_of_x1t::Union{Nothing,<:Function}
+    m_b_of_x1t::Union{Nothing,<:Function}
+    ff_A_of_x1t::Union{Nothing,<:Function}
+    mf_A_of_x1t::Union{Nothing,<:Function}
+    ff_b_of_x1t::Union{Nothing,<:Function}
+    mf_b_of_x1t::Union{Nothing,<:Function}
+    # Secondary (outputs from beam creation)
+    # --------------------------------------
+    # Elements
+    elements::Vector{<:BeamElement} = Vector{Element}()
+    # Rotation tensors
+    R0::Matrix{Float64} = I3
+    R_cs::Matrix{Float64} = I3
     # Assembly variables
+    ID::Int64 = 0
     elementRange::Vector{Int64} = Vector{Int64}()
     nodeRange::Vector{Int64} = Vector{Int64}()
     r_n::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
-    # Sectional properties (stiffness and inertia matrices)
-    C::Union{Vector{Matrix{Float64}},Vector{Matrix{Int64}}} 
-    I::Union{Vector{Matrix{Float64}},Vector{Matrix{Int64}}} = [I6]
-    # Elements
-    elements::Vector{<:BeamElement} = Vector{Element}()
-    # Point inertias
-    pointInertias::Vector{PointInertia} = Vector{PointInertia}()
     # Velocity DoFs to update on initial conditions
     velDoFToUpdate::BitVector = trues(6)
-    # Hinged nodes and hinged DoF
-    hingedNodes::Vector{Int64} = Vector{Int64}()
-    hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}} = Vector{BitVector}()
-    # Initial displacements/rotations/velocities
-    u0_of_x1::Union{Vector{<:Number},<:Function,Nothing} = nothing
-    p0_of_x1::Union{Vector{<:Number},<:Function,Nothing} = nothing
-    udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing} = nothing
-    pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing} = nothing
     # Derivatives of initial generalized displacements with respect to arclength coordinate
     uprime0_of_x1::Function = x1 -> zeros(3)
     pprime0_of_x1::Function = x1 -> zeros(3)
-    # Distributed loads
-    f_A_of_x1t::Union{Nothing,<:Function} = nothing
-    m_A_of_x1t::Union{Nothing,<:Function} = nothing
-    f_b_of_x1t::Union{Nothing,<:Function} = nothing
-    m_b_of_x1t::Union{Nothing,<:Function} = nothing
-    ff_A_of_x1t::Union{Nothing,<:Function} = nothing
-    mf_A_of_x1t::Union{Nothing,<:Function} = nothing
-    ff_b_of_x1t::Union{Nothing,<:Function} = nothing
-    mf_b_of_x1t::Union{Nothing,<:Function} = nothing
     # TFs for non-zero distributed loads
     hasDistributedDeadForcesBasisA::Bool = false
     hasDistributedDeadMomentsBasisA::Bool = false
@@ -86,19 +91,22 @@ Beam composite type
     hasDistributedFollowerForcesBasisb::Bool = false
     hasDistributedFollowerMomentsBasisb::Bool = false
 
-    # Beam constructor
-    function Beam(name::String,ID::Int64,connectedBeams::Union{Nothing,Vector{Beam}},connectedNodesThis::Vector{Int64},connectedNodesOther::Vector{Int64},length::Number,rotationParametrization::String,p0::Vector{Float64},k::Vector{Float64},R0::Matrix{Float64},R_cs::Matrix{Float64},nElements::Int64,normalizedNodalPositions::Vector{Float64},elementRange::Vector{Int64},nodeRange::Vector{Int64},r_n::Vector{Vector{Float64}},C::Union{Vector{Matrix{Float64}},Vector{Matrix{Int64}}},I::Union{Vector{Matrix{Float64}},Vector{Matrix{Int64}}},elements::Vector{<:BeamElement},pointInertias::Vector{PointInertia},velDoFToUpdate::BitVector,hingedNodes::Vector{Int64},hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}},u0_of_x1::Union{Vector{<:Number},<:Function,Nothing},p0_of_x1::Union{Vector{<:Number},<:Function,Nothing},udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing},pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing},uprime0_of_x1::Function,pprime0_of_x1::Function,f_A_of_x1t::Union{Nothing,<:Function},m_A_of_x1t::Union{Nothing,<:Function},f_b_of_x1t::Union{Nothing,<:Function},m_b_of_x1t::Union{Nothing,<:Function},ff_A_of_x1t::Union{Nothing,<:Function},mf_A_of_x1t::Union{Nothing,<:Function},ff_b_of_x1t::Union{Nothing,<:Function},mf_b_of_x1t::Union{Nothing,<:Function},hasDistributedDeadForcesBasisA::Bool,hasDistributedDeadMomentsBasisA::Bool,hasDistributedDeadForcesBasisb::Bool,hasDistributedDeadMomentsBasisb::Bool,hasDistributedFollowerForcesBasisA::Bool,hasDistributedFollowerMomentsBasisA::Bool,hasDistributedFollowerForcesBasisb::Bool,hasDistributedFollowerMomentsBasisb::Bool) 
-
-        # Initialize the beam
-        self = new(name,ID,connectedBeams,connectedNodesThis,connectedNodesOther,length,rotationParametrization,p0,k,R0,R_cs,nElements,normalizedNodalPositions,elementRange,nodeRange,r_n,C,I,elements,pointInertias,velDoFToUpdate,hingedNodes,hingedNodesDoF,u0_of_x1,p0_of_x1,udot0_of_x1,pdot0_of_x1,uprime0_of_x1,pprime0_of_x1,f_A_of_x1t,m_A_of_x1t,f_b_of_x1t,m_b_of_x1t,ff_A_of_x1t,mf_A_of_x1t,ff_b_of_x1t,mf_b_of_x1t,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb)
-
-        # Validate and update the beam 
-        update_beam!(self)
-
-        return self
-    end
 end
 export Beam
+
+
+# Constructor
+function create_Beam(;name::String="",length::Number,rotationParametrization::String="WM",p0::Vector{Float64}=zeros(3),k::Vector{Float64}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),C::Vector{<:Matrix{<:Number}},I::Vector{<:Matrix{<:Number}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing)
+
+    # Initialize the beam
+    self = Beam(name=name,length=length,rotationParametrization=rotationParametrization,p0=p0,k=k,nElements=nElements,normalizedNodalPositions=normalizedNodalPositions,C=C,I=I,connectedBeams=connectedBeams,connectedNodesThis=connectedNodesThis,connectedNodesOther=connectedNodesOther,pointInertias=pointInertias,hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,u0_of_x1=u0_of_x1,p0_of_x1=p0_of_x1,udot0_of_x1=udot0_of_x1,pdot0_of_x1=pdot0_of_x1,f_A_of_x1t=f_A_of_x1t,m_A_of_x1t=m_A_of_x1t,f_b_of_x1t=f_b_of_x1t,m_b_of_x1t=m_b_of_x1t,ff_A_of_x1t=ff_A_of_x1t,mf_A_of_x1t=mf_A_of_x1t,ff_b_of_x1t=ff_b_of_x1t,mf_b_of_x1t=mf_b_of_x1t)
+
+    # Validate and update the beam 
+    update_beam!(self)
+
+    return self
+end
+export create_Beam
 
 
 """
@@ -111,8 +119,45 @@ Validates and updates the beam construction
 """
 function update_beam!(beam::Beam)
 
+    # Validate beam
+    validate_beam!(beam)
+
+    # Get velocity DoFs to update on initial dynamic time step
+    get_velocity_dofs_to_update!(beam)
+
+    # Get rotation tensors 
+    get_rotation_tensors!(beam)
+
+    # Get derivatives of generalized initial displacements 
+    get_initial_displacements_derivatives!(beam)
+
+    # Create beam elements
+    create_beam_elements!(beam)
+
+    # Set nodal coordinates
+    set_nodal_coordinates!(beam)
+
+    return beam
+
+end
+export update_beam!
+
+
+"""
+validate_beam!(beam::Beam)
+
+Validates the beam inputs
+
+# Arguments
+- beam::Beam
+"""
+function validate_beam!(beam::Beam)
+
     # Validate sectional matrices
     validate_sectional_matrices(beam)
+
+    # Validate rotation parametrization
+    validate_rotation_parametrization(beam)
 
     # Validate beam connections
     validate_connected_beams(beam)
@@ -129,25 +174,7 @@ function update_beam!(beam::Beam)
     # Validate and update distributed loads inputs
     validate_distributed_loads!(beam)
 
-    # Get velocity DoFs to update on initial dynamic time step
-    get_velocity_dofs_to_update!(beam)
-
-    # Validate rotation parameters and get rotation tensors 
-    get_rotation_tensors!(beam)
-
-    # Get derivatives of generalized initial displcements 
-    get_initial_displacements_derivatives!(beam)
-
-    # Create beam elements
-    create_beam_elements!(beam)
-
-    # Set nodal coordinates
-    set_nodal_coordinates!(beam)
-
-    return beam
-
 end
-export update_beam!
 
 
 """
@@ -172,6 +199,24 @@ end
 
 
 """
+validate_rotation_parametrization(beam::Beam)
+
+Validates the input rotation parameters and rotation parametrization
+
+# Arguments
+- beam::Beam
+"""
+function validate_rotation_parametrization(beam::Beam)
+
+    @unpack p0,rotationParametrization = beam
+
+    @assert rotationParametrization in ["E321","E313","WM"]
+    @assert length(p0) == 3
+
+end
+
+
+"""
 validate_connected_beams(beam::Beam)
 
 Checks that the beam connections are consistent
@@ -186,46 +231,6 @@ function validate_connected_beams(beam::Beam)
     if !isnothing(connectedBeams)
         @assert length(connectedBeams) == length(connectedNodesThis) == length(connectedNodesOther) "connectedBeams, connectedNodesThis and connectedNodesOther arrays must have the same length"
     end
-
-end
-
-
-"""
-get_velocity_dofs_to_update!(beam::Beam)
-
-Gets the velocity DOFs (V and Ω) to be updated on the initial dynamic solution
-
-# Arguments
-- beam::Beam
-"""
-function get_velocity_dofs_to_update!(beam::Beam)
-
-    @unpack u0_of_x1,p0_of_x1,udot0_of_x1,pdot0_of_x1,length = beam
-
-    # Length discretization
-    N = 101
-    x1 = LinRange(0,length,N)
-
-    # Initialize
-    velDoFToUpdate = trues(6)
-
-    # Loop directions of initial linear velocities
-    for i=1:3
-        # Get values in current direction
-        udot0_of_x1_i = [udot0_of_x1.(x1)[j][i] for j in 1:N]
-        # Set flag to update velocity in that direction only if it was input as zero (not input by user)
-        velDoFToUpdate[i] = any(!iszero,vcat(udot0_of_x1_i...)) ? false : true
-    end
-
-    # Loop directions of initial angular velocities
-    for i=4:6
-        # Get values in current direction
-        pdot0_of_x1_i = [pdot0_of_x1.(x1)[j][i-3] for j in 1:N]
-        # Set flag to update angular velocity in that direction only if it was input as zero (not input by user)
-        velDoFToUpdate[i] = any(!iszero,vcat(pdot0_of_x1_i...)) ? false : true
-    end
-
-    @pack! beam = velDoFToUpdate
 
 end
 
@@ -411,6 +416,47 @@ function validate_distributed_loads!(beam::Beam)
     end
 
     @pack! beam = f_A_of_x1t,m_A_of_x1t,f_b_of_x1t,m_b_of_x1t,ff_A_of_x1t,mf_A_of_x1t,ff_b_of_x1t,mf_b_of_x1t,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb
+
+end
+
+
+"""
+get_velocity_dofs_to_update!(beam::Beam)
+
+Gets the velocity DOFs (V and Ω) to be updated on the initial dynamic solution
+
+# Arguments
+- beam::Beam
+"""
+function get_velocity_dofs_to_update!(beam::Beam)
+
+    @unpack u0_of_x1,p0_of_x1,udot0_of_x1,pdot0_of_x1,length = beam
+
+    # Length discretization
+    N = 101
+    x1 = LinRange(0,length,N)
+
+    # Initialize
+    velDoFToUpdate = trues(6)
+
+    # Loop directions of initial linear velocities
+    for i=1:3
+        # Get values in current direction
+        udot0_of_x1_i = [udot0_of_x1.(x1)[j][i] for j in 1:N]
+        # Set flag to update velocity in that direction only if it was input as zero (not input by user)
+        velDoFToUpdate[i] = any(!iszero,vcat(udot0_of_x1_i...)) ? false : true
+    end
+
+    # Loop directions of initial angular velocities
+    for i=4:6
+        # Get values in current direction
+        pdot0_of_x1_i = [pdot0_of_x1.(x1)[j][i-3] for j in 1:N]
+        # Set flag to update angular velocity in that direction only if it was input as zero (not input by user)
+        velDoFToUpdate[i] = any(!iszero,vcat(pdot0_of_x1_i...)) ? false : true
+    end
+
+    @pack! beam = velDoFToUpdate
+
 end
 
 
@@ -425,10 +471,6 @@ Validates the input rotation parameters and rotation parametrization, and gets t
 function get_rotation_tensors!(beam::Beam)
 
     @unpack p0,rotationParametrization = beam
-
-    # Validate
-    @assert in(rotationParametrization,["E321","E313","WM"])
-    @assert length(p0) == 3
 
     # Get rotation tensors
     if rotationParametrization == "E321"
@@ -525,31 +567,31 @@ end
 
 
 """
-add_point_inertias_to_beam!(;beam::Beam,inputPointInertias::Vector{PointInertia})
+add_point_inertias_to_beam!(;beam::Beam,inertias::Vector{PointInertia})
 
-Adds loads to the beam
+Adds point inertias to the beam
 
 # Arguments
 - beam::Beam
-- inputPointInertias::Vector{PointInertia}
+- inertias::Vector{PointInertia}
 """
-function add_point_inertias_to_beam!(beam::Beam;inputPointInertias::Vector{PointInertia})
+function add_point_inertias_to_beam!(beam::Beam;inertias::Vector{PointInertia})
 
     @unpack nElements,elements,pointInertias = beam
 
     # Loop point inertias
-    for pointInertia in inputPointInertias
+    for pointInertia in inertias
 
-        @unpack elementLocalID = pointInertia
+        @unpack elementID = pointInertia
 
         # Check that the beam has the element to which the point inertia was assigned
-        @assert elementLocalID <= nElements
+        @assert elementID <= nElements
 
         # Add point inertia to beam
         push!(pointInertias,pointInertia)
 
         # Add point inertia to element (increment its sectional inertia matrix)
-        add_point_inertia_to_element!(elements[elementLocalID],pointInertia)
+        add_point_inertia_to_element!(elements[elementID],pointInertia)
     end
 
     @pack! beam = pointInertias
@@ -605,11 +647,17 @@ function add_loads_to_beam!(beam::Beam;loadTypes::Vector{String},loadFuns::Vecto
             beam.hasDistributedFollowerMomentsBasisb = true
         end
 
+    end
+
+    # Check validity
+    validate_distributed_loads!(beam)
+
+    # Loop load types and respective functions
+    for (load,fun) in zip(loadTypes,loadFuns)
         # Loop elements
         for element in beam.elements
             update_element_distributed_loads!(element,load,fun)
         end
-
     end
 
 end
@@ -636,7 +684,7 @@ function add_initial_displacements_and_velocities_to_beam!(beam::Beam;conditionT
         @assert isa(fun(0),Vector{<:Number})
         @assert length(fun(0)) == 3
 
-        # Update initial condition on beam
+        # Set initial condition on beam
         if type == "u0_of_x1"
             beam.u0_of_x1 = fun
         elseif type == "p0_of_x1"
@@ -649,6 +697,12 @@ function add_initial_displacements_and_velocities_to_beam!(beam::Beam;conditionT
 
         # The update of elemental states occurs on the model creation/update (because V and Ω depend on the model's v_A and ω_A)
     end
+
+    # Check validity  
+    validate_initial_conditions!(beam)
+
+    # Get derivatives of generalized initial displacements 
+    get_initial_displacements_derivatives!(beam)
 
 end
 export add_initial_displacements_and_velocities_to_beam!
