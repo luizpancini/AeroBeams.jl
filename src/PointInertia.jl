@@ -20,16 +20,16 @@ PointInertia composite type
     elementID::Int64
     η::Vector{<:Number} = zeros(3)
     mass::Number 
-    Ixx::Number = 0
     Iyy::Number = 0
     Izz::Number = 0
+    Ixx::Number = Iyy+Izz
     Ixy::Number = 0
     Ixz::Number = 0
     Iyz::Number = 0
     inertiaMatrix::Union{Matrix{<:Number},Matrix{Nothing}} = fill(nothing,3,3)
 
     # Constructor
-    function PointInertia(elementID::Int64,η::Vector{<:Number},mass::Number,Ixx::Number,Iyy::Number,Izz::Number,Ixy::Number,Ixz::Number,Iyz::Number,inertiaMatrix::Union{Matrix{<:Number},Matrix{Nothing}})
+    function PointInertia(elementID::Int64,η::Vector{<:Number},mass::Number,Iyy::Number,Izz::Number,Ixx::Number,Ixy::Number,Ixz::Number,Iyz::Number,inertiaMatrix::Union{Matrix{<:Number},Matrix{Nothing}})
 
         # Validate inputs
         @assert mass >= 0
@@ -41,10 +41,10 @@ PointInertia composite type
 
         # Initialize inertia matrix if it was not input
         if all(x -> x === nothing, inertiaMatrix)
-            inertiaMatrix = [Ixx Ixy Ixz; Ixy Iyy Iyz; Iyz Ixz Izz]
+            inertiaMatrix = [Ixx Ixy Ixz; Ixy Iyy Iyz; Ixz Iyz Izz]
         end
 
-        return new(elementID,η,mass,Ixx,Iyy,Izz,Ixy,Ixz,Iyz,inertiaMatrix)
+        return new(elementID,η,mass,Iyy,Izz,Ixx,Ixy,Ixz,Iyz,inertiaMatrix)
 
     end
 end

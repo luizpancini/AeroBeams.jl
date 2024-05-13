@@ -1,83 +1,11 @@
 """
-@with_kw mutable struct UnitSystem 
-
-A composite type with fields for length, force, angle and frequency units (this is only for plotting purposes and does not influence calculations)
-
-# Fields:
-- length::String
-- force::String
-- angle::String
-- frequency::String
-"""
-@with_kw mutable struct UnitSystem
-
-    # Fields
-    length::String = "m"
-    force::String = "N"
-    angle::String = "rad"
-    frequency::String = "rad/s"
-
-    # Constructor
-    function UnitSystem(length::String,force::String,angle::String,frequency::String)
-
-        self = new(length,force,angle,frequency)
-
-        # Validate
-        validate_unit_system(self)
-
-        return self
-
-    end
-end
-
-
-"""
-validate_unit_system(units::UnitSystem)
-
-Validates the unit system
-
-# Fields:
-- units::UnitSystem
-"""
-function validate_unit_system(units::UnitSystem)
-
-    @unpack length,force,angle,frequency = units
-
-    # Length 
-    possible_length_units = ["m","cm","mm","ft","in"]
-    if !(length in possible_length_units)
-        error("'length' must be one of $(possible_lengths)")
-    end 
-    
-    # Force 
-    possible_force_units = ["N","lbf"]
-    if !(force in possible_force_units)
-        error("'force' must be one of $(possible_force_units)")
-    end
-
-    # Angle 
-    possible_angle_units = ["rad","deg"]
-    if !(angle in possible_angle_units)
-        error("'angle' must be one of $(possible_angle_units)")
-    end
-
-    # Frequency 
-    possible_frequency_units = ["rad/s","Hz","rpm"]
-    if !(frequency in possible_frequency_units)
-        error("'frequency' must be one of $(possible_frequency_units)")
-    end
-
-end
-
-
-"""
 @with_kw mutable struct Model
 
 Model composite type
 
 # Fields
 - name::String = name of the model
-- units::UnitSystem = unit system (length, force, angle and frequency) 
+- units::UnitsSystem = unit system (length, force, angle and frequency) 
 - beams::Vector{Beam} = beams that compose the model's assembly
 - initialPosition::Vector{<:Number} = initial position of the first node of the first beam of the model, defined in basis A 
 - gravityVector::Vector{<:Number} = gravity vector, defined in the I (inertial) frame
@@ -97,7 +25,7 @@ Model composite type
     # Primary (inputs for the definition of the model)
     # ------------------------------------------------
     name::String
-    units::UnitSystem
+    units::UnitsSystem
     beams::Vector{Beam}
     initialPosition::Vector{<:Number}
     gravityVector::Vector{<:Number}
@@ -108,6 +36,9 @@ Model composite type
     ω_A::Union{Vector{<:Number},<:Function,Nothing}
     vdot_A::Union{Vector{<:Number},<:Function,Nothing}
     ωdot_A::Union{Vector{<:Number},<:Function,Nothing}
+    altitude::Union{Nothing,Number}
+    atmosphere::Union{Nothing,Atmosphere}
+    gust::Union{Nothing,Gust}
 
     # Secondary (outputs from model creation)
     # ---------------------------------------
@@ -132,10 +63,10 @@ export Model
 
 
 # Constructor
-function create_Model(;name::String="",units::UnitSystem=UnitSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing) 
+function create_Model(;name::String="",units::UnitsSystem=UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing) 
     
     # Initialize 
-    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A)
+    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust)
 
     # Update  
     update_model!(self)
@@ -162,6 +93,12 @@ function update_model!(model::Model)
 
     # Assemble the beams into model  
     assemble_model!(model,beams)
+
+    # Set atmosphere, if applicable
+    set_atmosphere!(model)
+
+    # Update number of gust states 
+    update_number_gust_states!(model) 
 
     # Update the nodes' global IDs of the loads trim links
     update_loads_trim_links_global_ids!(model)
@@ -197,7 +134,7 @@ Validates the inputs to the model
 """
 function validate_model!(model::Model)
 
-    @unpack units,initialPosition,gravityVector,p_A0 = model
+    @unpack units,initialPosition,gravityVector,p_A0,altitude = model
 
     # Validate unit system
     validate_unit_system(units)
@@ -213,6 +150,11 @@ function validate_model!(model::Model)
 
     # Validate basis A displacements, velocities and accelerations
     validate_and_update_motion_basis_A!(model)
+
+    # Validate altitude
+    if !isnothing(altitude) 
+        @assert altitude >= 0
+    end
 
 end
 
@@ -513,6 +455,82 @@ end
 
 
 """
+set_atmosphere!(model::Model)
+
+Sets the atmosphere data
+
+# Arguments
+- model::Model
+"""
+function set_atmosphere!(model::Model)
+
+    @unpack altitude,atmosphere = model
+
+    # Altitude was input: set corresponding International Standard Atmosphere (ISA)   
+    if !isnothing(altitude)
+        atmosphere = standard_atmosphere(altitude)
+    # Neither altidude nor atmosphere was input, but there are aerodynamic surfaces: set altitude as zero and corresponding ISA  
+    elseif any(x -> x !== nothing, [beam.aeroSurface for beam in model.beams]) && isnothing(atmosphere)
+        altitude = 0
+        atmosphere = standard_atmosphere(altitude)
+    end
+
+    @pack! model = altitude,atmosphere
+
+end
+
+
+"""
+update_number_gust_states!(model::Model)
+
+Updates the number of gust states in every element with aerodynamic surface
+
+# Arguments
+- model::Model
+"""
+function update_number_gust_states!(model::Model) 
+
+    @unpack gust,elements = model
+
+    # Skip if there is no active gust
+    if isnothing(gust)
+        return 
+    end
+
+    # Loop over elements
+    for element in elements
+        @unpack aero = element
+        # Skip if element does not have aerodynamic surface
+        if isnothing(aero)
+            continue
+        end
+        @unpack solver,gustLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,airfoil,c,normSparPos = aero
+        # Update gust states range
+        nGustStates = gustLoadsSolver.nStates
+        gustStatesRange = nTotalAeroStates+1:nTotalAeroStates+nGustStates
+        # Update number of total aerodynamic states
+        nTotalAeroStates += nGustStates
+        # Resize arrays
+        A = zeros(nTotalAeroStates,nTotalAeroStates)
+        B = zeros(nTotalAeroStates)
+        f1χ_χ = zeros(3,nTotalAeroStates)
+        f2χ_χ = zeros(3,nTotalAeroStates)
+        m1χ_χ = zeros(3,nTotalAeroStates)
+        m2χ_χ = zeros(3,nTotalAeroStates)
+        F_χ_V = zeros(nTotalAeroStates,3)
+        F_χ_Ω = zeros(nTotalAeroStates,3)
+        F_χ_χ = initial_F_χ_χ(solver,nTotalAeroStates)
+        F_χ_Vdot = initial_F_χ_Vdot(solver,nTotalAeroStates,pitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
+        F_χ_Ωdot = initial_F_χ_Ωdot(solver,nTotalAeroStates,pitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
+        F_χ_χdot = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
+        # Pack data
+        @pack! nTotalAeroStates,nGustStates,gustStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.aero
+    end
+
+end
+
+
+"""
 update_loads_trim_links_global_ids!(model::Model)
 
 Updates the nodes' global IDs of the loads trim links
@@ -585,7 +603,7 @@ function update_initial_conditions!(model::Model)
         for element in beam.elements
 
             # Unpack
-            @unpack states,statesRates,compStates,nodalStates,Δℓ,x1,x1_n1,x1_n2,R0,R0T,S,I,k = element
+            @unpack states,statesRates,compStates,nodalStates,Δℓ,x1,x1_n1,x1_n2,R0,R0T,R0T_n1,R0T_n2,S,I,k = element
 
             # b basis' generalized velocities at element's midpoint, resolved in basis A
             v,ω = element_velocities_basis_b!(model,element)
@@ -601,10 +619,11 @@ function update_initial_conditions!(model::Model)
             u_prime = R0*uprime0_of_x1(x1)
             p_prime = R0*pprime0_of_x1(x1)
 
-            # Rotation tensors, resolved in basis A
+            # Rotation and tangent tensors and derivatives, resolved in basis A
             R, = rotation_tensor_WM(p)
             HT = tangent_operator_transpose_WM(p)
             RR0 = R*R0
+            RT = Matrix(R')
             RR0T = Matrix(RR0')
 
             # Strains, resolved in basis b
@@ -617,13 +636,13 @@ function update_initial_conditions!(model::Model)
             F = sectionalForces[1:3]
             M = sectionalForces[4:6]
 
-            # Generalized displacement rates, resolved in basis A
+            # Generalized displacements' rates, resolved in basis A
             udot = R0*udot0_of_x1(x1)
             pdot = R0*pdot0_of_x1(x1)
 
             # Generalized sectional velocities, resolved in basis B
             V = RR0T*(v+cross(ω,u)+udot)
-            Ω = R0T*(HT*pdot+R'*ω)
+            Ω = R0T*(HT*pdot+RT*ω)
             
             # Sectional linear and angular momenta, resolved in basis B 
             P = I[1:3,:]*[V; Ω]
@@ -632,17 +651,27 @@ function update_initial_conditions!(model::Model)
             # Midpoint deformed curvature vector, resolved in basis B
             K = k+κ
 
-            # Midpoint generalized forces' derivatives with respect to x1 (disregarding momenta rates)
+            # Midpoint generalized forces' derivatives with respect to x1 (neglecting the unknown momenta rates)
             F_prime = cross(Ω,P)-cross(K,F)
             M_prime = cross(Ω,H)+cross(V,P)-cross(a1+γ,F)-cross(K,M)
 
-            # Nodal displacements and rotations
+            # Nodal displacements and rotations, resolved in basis A
             u_n1 = u0_of_x1(x1_n1)
             u_n2 = u0_of_x1(x1_n2)
             p_n1 = p0_of_x1(x1_n1)
             p_n2 = p0_of_x1(x1_n2)
 
-            # Nodal forces and moments (disregarding distributed loads' resultants)
+            # Nodal displacements and rotation parameters' vectors, resolved in basis b
+            u_n1_b = R0T_n1*u_n1
+            u_n2_b = R0T_n2*u_n2
+            p_n1_b = R0T_n1*p_n1
+            p_n2_b = R0T_n2*p_n2
+
+            # Nodal rotation angles
+            θ_n1 = rotation_angle(p_n1)
+            θ_n2 = rotation_angle(p_n2)
+
+            # Nodal forces and moments (neglecting distributed loads' resultants)
             F_n1 = F - (Δℓ/2*F_prime)
             F_n2 = F + (Δℓ/2*F_prime)
             M_n1 = M - (Δℓ/2*M_prime)
@@ -650,9 +679,9 @@ function update_initial_conditions!(model::Model)
 
             # Pack variables onto element
             @pack! states = u,p,F,M,V,Ω
-            @pack! compStates = γ,κ
+            @pack! compStates = γ,κ,P,H
             @pack! statesRates = udot,pdot
-            @pack! nodalStates = u_n1,u_n2,p_n1,p_n2,F_n1,F_n2,M_n1,M_n2
+            @pack! nodalStates = u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,θ_n1,θ_n2,F_n1,F_n2,M_n1,M_n2
             @pack! element = states,statesRates,compStates,nodalStates,v,ω,vdot,ωdot,R,HT,RR0,RR0T
 
         end
@@ -799,7 +828,7 @@ function get_system_indices!(model::Model)
     # Loop over elements
     for (e, element) in enumerate(elements)
         # Unpack element data
-        @unpack nodesGlobalID,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set = element      
+        @unpack nodesGlobalID,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,eqs_FF1_sep,eqs_FM1_sep,eqs_FF2_sep,eqs_FM2_sep,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set = element      
         # Get element's first node's global ID
         n = nodesGlobalID[1]
         # Check if the node's equations/states have been assigned indices
@@ -923,13 +952,33 @@ function get_system_indices!(model::Model)
             end
         end
         # Pack element data
-        @pack! element = eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set
+        @pack! element = eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,eqs_FF1_sep,eqs_FM1_sep,eqs_FF2_sep,eqs_FM2_sep,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set
+    end
+
+    ## Set indices of elemental aerodynamic equations/states
+    #---------------------------------------------------------------------------
+    # Loop over elements
+    for element in elements
+        # Skip if there are no aerodynamic loads
+        if isnothing(element.aero)
+            continue
+        end
+        # Unpack element data
+        @unpack nTotalAeroStates = element.aero
+        # Set states and equations
+        DOF_χ = i_states+0:i_states+nTotalAeroStates-1
+        eqs_Fχ = i_equations+0:i_equations+nTotalAeroStates-1
+        # Update indices
+        i_equations += nTotalAeroStates
+        i_states += nTotalAeroStates
+        # Pack element data
+        @pack! element = DOF_χ,eqs_Fχ
     end
 
     # Number of states/equations (system's order)
     systemOrder = i_equations - 1
 
-    ## Set indices for nodal equations
+    ## Set indices for special nodes' equations
     # --------------------------------------------------------------------------
     # Loop over special nodes
     for specialNode in specialNodes
@@ -1054,6 +1103,31 @@ function get_system_indices!(model::Model)
     @pack! model = systemOrder,elements,specialNodes,nTrimVariables
 
 end
+
+
+"""
+set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing)
+
+Sets the motion of basis A into the model
+
+# Arguments
+- model::Model
+- u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
+- v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
+- ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
+- vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
+- ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
+"""
+function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing)
+
+    # Reset values that were not input back to nothing on model
+    @pack! model = u_A,v_A,ω_A,vdot_A,ωdot_A 
+
+    # Update model
+    update_model!(model)
+    
+end
+export set_motion_basis_A!
 
 
 """

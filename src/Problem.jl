@@ -248,7 +248,6 @@ Defines the problem of eigen type
 """
 @with_kw mutable struct EigenProblem <: Problem
 
-
     # Primary (inputs to problem creation)
     # ------------------------------------
     # Model
@@ -291,6 +290,7 @@ Defines the problem of eigen type
     frequenciesFiltered::Vector{Float64} = Vector{Float64}()
     dampingsFiltered::Vector{Float64} = Vector{Float64}()
     eigenvectorsFiltered::Matrix{ComplexF64} = zeros(ComplexF64, 0, 0)
+    dampingsNonOscillatory::Vector{Float64} = Vector{Float64}()
     frequenciesOscillatory::Vector{Float64} = Vector{Float64}()
     dampingsOscillatory::Vector{Float64} = Vector{Float64}()
     eigenvectorsOscillatoryCplx::Matrix{ComplexF64} = zeros(ComplexF64, 0, 0)
@@ -386,6 +386,7 @@ Defines the problem of dynamic type
     compElementalStatesOverTime::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
     elementalStatesRatesOverTime::Vector{Vector{ElementalStatesRates}} = Vector{Vector{ElementalStatesRates}}()
     compElementalStatesRatesOverTime::Vector{Vector{ComplementaryElementalStatesRates}} = Vector{Vector{ComplementaryElementalStatesRates}}()
+    flowVariablesOverTime::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
 
 end
 export DynamicProblem
@@ -408,9 +409,6 @@ function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=NewtonRa
 
     # Update initial load factor
     problem.σ = systemSolver.initialLoadFactor
-
-    # Update initial saved states
-    save_time_step_data!(problem,problem.timeNow)
 
     # Update display frequency if not input
     if displayProgress == true && displayFrequency == 0
@@ -446,9 +444,9 @@ function set_initial_states!(problem::Problem,skipSizeAssertion::Bool=false)
     # Initialize states array
     x = zeros(systemOrder+nTrimVariables)
 
-    # Loop over elements and assign initial states
+    # Loop over elements and assign initial states (aerodynamic states are assigned later, upon update of initial states' rates)
     for element in elements
-        @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω = element
+        @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ = element
         @unpack u,p,F,M,V,Ω = element.states
         x[DOF_u] = u
         x[DOF_p] = p
@@ -553,8 +551,8 @@ function precompute_distributed_loads!(problem::Problem)
         timeVector = [0.0]
     end
 
-    # Define shape function over element domain
-    ϕ(node,ζ) = (1 - ζ) * (node == 1) + ζ * (node == 2)
+    # Shape function over element domain
+    ϕ(n,ζ) = ifelse.(n==1, 1-ζ, ζ) 
 
     # Loop over beams
     for beam in model.beams
@@ -563,14 +561,14 @@ function precompute_distributed_loads!(problem::Problem)
             # Unpack
             @unpack Δℓ,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = element
             # Initialize array of distributed loads on element's nodes over time
-            f_A = zeros(Float64,2,3,sizeOfTime)
-            m_A = zeros(Float64,2,3,sizeOfTime)
-            f_b = zeros(Float64,2,3,sizeOfTime)
-            m_b = zeros(Float64,2,3,sizeOfTime)
-            ff_A = zeros(Float64,2,3,sizeOfTime)
-            mf_A = zeros(Float64,2,3,sizeOfTime)
-            ff_b = zeros(Float64,2,3,sizeOfTime)
-            mf_b = zeros(Float64,2,3,sizeOfTime)
+            f_A = zeros(2,3,sizeOfTime)
+            m_A = zeros(2,3,sizeOfTime)
+            f_b = zeros(2,3,sizeOfTime)
+            m_b = zeros(2,3,sizeOfTime)
+            ff_A = zeros(2,3,sizeOfTime)
+            mf_A = zeros(2,3,sizeOfTime)
+            ff_b = zeros(2,3,sizeOfTime)
+            mf_b = zeros(2,3,sizeOfTime)
             # Loop over element's nodes
             for node = 1:2
                 # Loop over time
@@ -712,7 +710,14 @@ function solve_eigen!(problem::Problem)
     dampingsFiltered = dampings[filteredIndices]
     eigenvectorsFiltered = eigenvectors[:,filteredIndices]
 
-    ## Get oscillatory (structural, flight dynamics) modes
+    ## Non-oscillatory (aerodynamic, divergence) modes
+    #---------------------------------------------------------------------------
+    # Get indices of non-oscillatory modes
+    nonOscillatoryIndices = findall( x -> x == 0, imag(eigenvalues))
+    # Non-oscillatory dampings 
+    dampingsNonOscillatory = real.(eigenvalues[nonOscillatoryIndices])
+
+    ## Get oscillatory (structural, dynamic aeroelastic, flight dynamics) modes
     #---------------------------------------------------------------------------# Starting index of oscillatory modes 
     indexStartOscillatory = findfirst( x -> x > 0, frequenciesFiltered)
     # Frequencies, dampings and eigenvectors of oscillatory modes
@@ -745,7 +750,7 @@ function solve_eigen!(problem::Problem)
     # Indices whose real part is larger
     realLarger = @. abs(eigenvectorsOscillatoryRe) > abs(eigenvectorsOscillatoryIm)   
     # Indices whose imaginary part is larger
-    imagLarger = @. !realLarger                                       
+    imagLarger = .!realLarger                                       
     # Sign of larger part determines true sign of solution
     signs = @. sign(eigenvectorsOscillatoryRe) * realLarger + sign(eigenvectorsOscillatoryIm) * imagLarger                    
     # Correctly signed absolute value of eigenvectors
@@ -754,7 +759,7 @@ function solve_eigen!(problem::Problem)
     get_mode_shapes!(problem,eigenvectorsOscillatoryCplx,frequenciesOscillatory,dampingsOscillatory)
     get_mode_shapes!(problem,eigenvectorsOscillatoryAbs,frequenciesOscillatory,dampingsOscillatory)
 
-    @pack! problem = frequencies,dampings,eigenvectors,frequenciesFiltered,dampingsFiltered,eigenvectorsFiltered,frequenciesOscillatory,dampingsOscillatory,eigenvectorsOscillatoryCplx,eigenvectorsOscillatoryAbs
+    @pack! problem = frequencies,dampings,eigenvectors,frequenciesFiltered,dampingsFiltered,eigenvectorsFiltered,dampingsNonOscillatory,frequenciesOscillatory,dampingsOscillatory,eigenvectorsOscillatoryCplx,eigenvectorsOscillatoryAbs
 
 end
 
@@ -787,21 +792,24 @@ function get_mode_shapes!(problem::Problem,eigenvectorsOscillatory::Matrix{T},fr
         modeShape = ModeShape{T}(mode,freq,damp,nElementsTotal)
         # Current mode's eigenvector
         eigenvector = eigenvectorsOscillatory[:,mode]
-        # Initialize maxima
-        displacementMax,rotationMax,forceMax,momentMax,velocityMax,strainMax,momentumMax,angleMax = 0,0,0,0,0,0,0,0
+        # Initialize arrays
+        uArray,pArray,FArray,MArray,VArray,ΩArray,γArray,κArray,PArray,HArray,θArray = Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}()
         # Loop elements
         for (e,element) in enumerate(elements)
             # Get modal states for current element
             u,p,F,M,V,Ω,γ,κ,P,H,u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2 = element_modal_states(element,eigenvector,forceScaling)
-            # Update maxima
-            displacementMax = maximum(abs.(vcat([displacementMax,u_n1,u_n2]...)))
-            rotationMax = maximum(abs.(vcat([rotationMax,p_n1,p_n2]...)))
-            forceMax = maximum(abs.(vcat([forceMax,F_n1,F_n2]...)))
-            momentMax = maximum(abs.(vcat([momentMax,M_n1,M_n2]...)))
-            velocityMax = maximum(abs.(vcat([velocityMax,V,Ω]...)))
-            strainMax = maximum(abs.(vcat([strainMax,γ,κ]...)))
-            momentumMax = maximum(abs.(vcat([momentumMax,P,H]...)))
-            angleMax = maximum(abs.(vcat([angleMax,θ_n1,θ_n2]...)))
+            # Update arrays
+            append!(uArray,u_n1,u,u_n2)
+            append!(pArray,p_n1,p,p_n2)
+            append!(FArray,F_n1,F,F_n2)
+            append!(MArray,M_n1,M,M_n2)
+            append!(VArray,V)
+            append!(ΩArray,Ω)
+            append!(γArray,γ)
+            append!(κArray,κ)
+            append!(PArray,P)
+            append!(HArray,H)
+            append!(θArray,θ_n1,θ_n2)
             # Add states to current mode 
             @pack! modeShape.elementalStates[e] = u,p,F,M,V,Ω
             @pack! modeShape.complementaryElementalStates[e] = γ,κ,P,H
@@ -809,19 +817,35 @@ function get_mode_shapes!(problem::Problem,eigenvectorsOscillatory::Matrix{T},fr
         end
         # Normalize mode shapes by maxima, if applicable
         if normalizeModeShapes
+            # Compute norms
+            uNorm = maximum(abs.(uArray)) > 0.0 ? maximum(abs.(uArray)) : 1.0
+            pNorm = maximum(abs.(pArray)) > 0.0 ? maximum(abs.(pArray)) : 1.0
+            FNorm = maximum(abs.(FArray)) > 0.0 ? maximum(abs.(FArray)) : 1.0
+            MNorm = maximum(abs.(MArray)) > 0.0 ? maximum(abs.(MArray)) : 1.0
+            VNorm = maximum(abs.(VArray)) > 0.0 ? maximum(abs.(VArray)) : 1.0
+            ΩNorm = maximum(abs.(ΩArray)) > 0.0 ? maximum(abs.(ΩArray)) : 1.0
+            γNorm = maximum(abs.(γArray)) > 0.0 ? maximum(abs.(γArray)) : 1.0
+            κNorm = maximum(abs.(κArray)) > 0.0 ? maximum(abs.(κArray)) : 1.0
+            PNorm = maximum(abs.(PArray)) > 0.0 ? maximum(abs.(PArray)) : 1.0
+            HNorm = maximum(abs.(HArray)) > 0.0 ? maximum(abs.(HArray)) : 1.0
+            θNorm = maximum(abs.(θArray)) > 0.0 ? maximum(abs.(θArray)) : 1.0
             # Loop elements 
             for (e,element) in enumerate(elements)
+                # Unpack
                 @unpack u,p,F,M,V,Ω = modeShape.elementalStates[e]
                 @unpack γ,κ,P,H = modeShape.complementaryElementalStates[e]
                 @unpack u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2 = modeShape.nodalStates[e] 
-                u,u_n1,u_n2,u_n1_b,u_n2_b = divide_inplace(displacementMax, u,u_n1,u_n2,u_n1_b,u_n2_b) 
-                p,p_n1,p_n2,p_n1_b,p_n2_b = divide_inplace(rotationMax, p,p_n1,p_n2,p_n1_b,p_n2_b) 
-                F,F_n1,F_n2 = divide_inplace(forceMax, F,F_n1,F_n2)
-                M,M_n1,M_n2 = divide_inplace(momentMax, M,M_n1,M_n2)
-                V,Ω = divide_inplace(velocityMax, V,Ω)
-                γ,κ = divide_inplace(strainMax, γ,κ)
-                P,H = divide_inplace(momentumMax, P,H)
-                θ_n1,θ_n2 = divide_inplace(angleMax, θ_n1,θ_n2)
+                u,u_n1,u_n2,u_n1_b,u_n2_b = divide_inplace(uNorm, u,u_n1,u_n2,u_n1_b,u_n2_b) 
+                p,p_n1,p_n2,p_n1_b,p_n2_b = divide_inplace(pNorm, p,p_n1,p_n2,p_n1_b,p_n2_b) 
+                F,F_n1,F_n2 = divide_inplace(FNorm, F,F_n1,F_n2)
+                M,M_n1,M_n2 = divide_inplace(MNorm, M,M_n1,M_n2)
+                V ./= VNorm
+                Ω ./= ΩNorm
+                γ ./= γNorm
+                κ ./= κNorm
+                P ./= PNorm
+                H ./= HNorm
+                θ_n1,θ_n2 = divide_inplace(θNorm, θ_n1,θ_n2)
                 @pack! modeShape.elementalStates[e] = u,p,F,M,V,Ω
                 @pack! modeShape.complementaryElementalStates[e] = γ,κ,P,H
                 @pack! modeShape.nodalStates[e] = u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
@@ -857,6 +881,8 @@ function solve_dynamic!(problem::Problem)
     if !problem.skipInitialStatesUpdate
         solve_initial_dynamic!(problem)
     end
+    # Save initial states
+    save_time_step_data!(problem,problem.timeNow)
     # Time march
     time_march!(problem)
 
@@ -922,7 +948,7 @@ Gets consistent initial conditions and solves the first time step
 function solve_initial_dynamic!(problem::Problem)
 
     problemCopy = deepcopy(problem)
-    @unpack model,trackingTimeSteps = problemCopy
+    @unpack model = problemCopy
     @unpack BCs,BCedNodes = model
     
     # Initialize generalized displacements BCs 
@@ -945,11 +971,7 @@ function solve_initial_dynamic!(problem::Problem)
                 # Update flag
                 assigned[globalNode] = true
                 # Initial nodal generalized displacements
-                if n == 1 
-                    initialNodalDisplacements = vcat(u_n1,p_n1)
-                else
-                    initialNodalDisplacements = vcat(u_n2,p_n2)
-                end
+                initialNodalDisplacements = n == 1 ? vcat(u_n1,p_n1) : vcat(u_n2,p_n2)
                 # Indices of nonzero initial generalized displacements
                 nonzeroIndices = findall(!iszero,initialNodalDisplacements)
                 # Nonzero initial generalized displacements values and types
@@ -976,7 +998,7 @@ function solve_initial_dynamic!(problem::Problem)
     # Initialize system arrays with correct size
     initialize_system_arrays!(problemCopy)
 
-    # Update Δt
+    # Set infinite Δt
     problemCopy.Δt = Inf64
 
     # Get equivalent initial states rates
@@ -991,10 +1013,8 @@ function solve_initial_dynamic!(problem::Problem)
     # Update initial velocities states
     update_initial_velocities!(problem)
 
-    # Save time step data, if applicable    
-    if trackingTimeSteps 
-        save_time_step_data!(problem,problem.timeNow)           
-    end
+    # Update initial aerodynamic states
+    update_initial_aero_states!(problem,model)
     
 end
 
@@ -1089,9 +1109,9 @@ function update_initial_velocities!(problem::Problem)
     end   
     # Set default system solver (with default convergence tolerances and large number of maximum iterations)
     problem.systemSolver = NewtonRaphson(maximumIterations=100)
-    # Initialize velocity arrays at begin and end of time step
-    velInitial = zeros(6*nElementsTotal)
-    velFinal = zeros(6*nElementsTotal)
+    # Initial sectional velocities and displacement's rates
+    vel0 = velBegin = [[e.states.V; e.states.Ω] for e in elements]
+    dispRates0 = dispRatesBegin = [[e.statesRates.udot; e.statesRates.pdot] for e in elements]
     # Set velocity indices to update
     DoFToUpdate = [e.parent.velDoFToUpdate for e in elements]
     # Initialize convergence variables
@@ -1109,14 +1129,17 @@ function update_initial_velocities!(problem::Problem)
                 @unpack DOF_V,DOF_Ω = element
                 @unpack V,Ω = element.states
                 @unpack udot,pdot = element.statesRates
-                # Indices to update
-                VToUpdate = DoFToUpdate[e][1:3]
-                ΩToUpdate = DoFToUpdate[e][4:6]
-                # Multiply by relaxation factor, if applicable
-                udot[VToUpdate] = udot[VToUpdate]*relaxFactor
-                pdot[ΩToUpdate] = pdot[ΩToUpdate]*relaxFactor
-                x[DOF_V] = V[VToUpdate] = V[VToUpdate]*relaxFactor
-                x[DOF_Ω] = Ω[ΩToUpdate] = Ω[ΩToUpdate]*relaxFactor
+                # Linear and angular velocities' indices
+                Vind = 1:3
+                Ωind = 4:6
+                # DOF to update for current element
+                VIndToUpdate = DoFToUpdate[e][Vind]
+                ΩIndToUpdate = DoFToUpdate[e][Ωind]
+                # Update with relaxation factor, for applicable DOF
+                udot[VIndToUpdate] = udot[VIndToUpdate]*relaxFactor + dispRates0[e][Vind[VIndToUpdate]]*(1-relaxFactor)
+                pdot[ΩIndToUpdate] = pdot[ΩIndToUpdate]*relaxFactor + dispRates0[e][Ωind[ΩIndToUpdate]]*(1-relaxFactor)
+                x[DOF_V[VIndToUpdate]] = V[VIndToUpdate] = V[VIndToUpdate]*relaxFactor + vel0[e][Vind[VIndToUpdate]]*(1-relaxFactor)
+                x[DOF_Ω[ΩIndToUpdate]] = Ω[ΩIndToUpdate] = Ω[ΩIndToUpdate]*relaxFactor + vel0[e][Ωind[ΩIndToUpdate]]*(1-relaxFactor)
                 # Pack
                 @pack! problem = x
                 @pack! element.states = V,Ω
@@ -1124,8 +1147,9 @@ function update_initial_velocities!(problem::Problem)
             end
         end
         # Get velocities array at begin of time step 
-        velInitial = vcat([[e.states.V; e.states.Ω] for e in elements]...)
-        # Reset accelerations to zero
+        dispRatesBegin = [[e.statesRates.udot; e.statesRates.pdot] for e in elements]
+        velBegin = [[e.states.V; e.states.Ω] for e in elements]
+        # Reset accelerations to zero 
         for element in elements
             Vdot,Ωdot,uddot,pddot = zeros(3),zeros(3),zeros(3),zeros(3)
             @pack! element.statesRates = Vdot,Ωdot,uddot,pddot
@@ -1135,9 +1159,9 @@ function update_initial_velocities!(problem::Problem)
         # Solve the system at the current time step
         solve_time_step!(problem)
         # Get velocities array at end of time step 
-        velFinal = vcat([[e.states.V; e.states.Ω] for e in elements]...)
+        velEnd = [[e.states.V; e.states.Ω] for e in elements]
         # Update current difference between initial and final velocities 
-        ϵ = maximum(abs.(velInitial-velFinal) .* vcat(DoFToUpdate...))
+        ϵ = maximum(maximum([abs.(velBegin[e].-velEnd[e]) .* DoFToUpdate[e] for e in eachindex(elements)]))
         # Print iteration results
         if displayProgress
             println("iter: $iter, ϵ = $ϵ")
@@ -1152,11 +1176,11 @@ function update_initial_velocities!(problem::Problem)
     # Reset original time variables and system solver
     Δt = ΔtOriginal
     timeVector = timeVectorOriginal
-    timeNow = timeVector[1] + Δt
+    timeNow = timeVector[1] 
     indexBeginTimeStep = 1
     indexEndTimeStep = 2
-    timeBeginTimeStep = timeNow - Δt
-    timeEndTimeStep = timeNow 
+    timeBeginTimeStep = timeNow
+    timeEndTimeStep = timeNow + Δt
     problem.systemSolver = systemSolverOriginal
 
     @pack! problem = timeVector,Δt,timeNow,indexBeginTimeStep,indexEndTimeStep,timeBeginTimeStep,timeEndTimeStep,model
@@ -1274,17 +1298,18 @@ function get_equivalent_states_rates!(problem::Problem)
     # Loop over elements
     for element in elements
         # Unpack element data (element states and rates known at the begin of time step)
-        @unpack u,p,V,Ω = element.states
-        @unpack udot,pdot,Vdot,Ωdot,uddot,pddot = element.statesRates
+        @unpack u,p,V,Ω,χ = element.states
+        @unpack udot,pdot,Vdot,Ωdot,χdot,uddot,pddot = element.statesRates
         # Equivalent states' rates at the begin of time step 
         udotEquiv = udot + 2/Δt*u
         pdotEquiv = pdot + 2/Δt*p
         VdotEquiv = Vdot + 2/Δt*V
         ΩdotEquiv = Ωdot + 2/Δt*Ω
+        χdotEquiv = χdot + 2/Δt*χ
         uddotEquiv = uddot + 2/Δt*udot
         pddotEquiv = pddot + 2/Δt*pdot
         # Pack element data
-        @pack! element = udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,uddotEquiv,pddotEquiv
+        @pack! element = udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,uddotEquiv,pddotEquiv
     end
 end
 
@@ -1321,7 +1346,8 @@ Saves the solution at the current time step
 """
 function save_time_step_data!(problem::Problem,timeNow::Number)
 
-    @unpack x,savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,model = problem
+    @unpack x,savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,flowVariablesOverTime,model = problem
+    @unpack elements = model
 
     # Add current time
     push!(savedTimeVector,timeNow)
@@ -1331,40 +1357,50 @@ function save_time_step_data!(problem::Problem,timeNow::Number)
 
     # Add current elemental states 
     currentElementalStates = Vector{ElementalStates}()
-    for element in model.elements
+    for element in elements
         push!(currentElementalStates,deepcopy(element.states))
     end
     push!(elementalStatesOverTime,currentElementalStates)
 
     # Add current nodal states 
     currentNodalStates = Vector{NodalStates}()
-    for element in model.elements
+    for element in elements
         push!(currentNodalStates,deepcopy(element.nodalStates))
     end
     push!(nodalStatesOverTime,currentNodalStates)
 
     # Add current complementary elemental states 
     currentComplementaryElementalStates = Vector{ComplementaryElementalStates}()
-    for element in model.elements
+    for element in elements
         push!(currentComplementaryElementalStates,deepcopy(element.compStates))
     end
     push!(compElementalStatesOverTime,currentComplementaryElementalStates)
 
     # Add current states' rates
     currentStatesRates = Vector{ElementalStatesRates}()
-    for element in model.elements
+    for element in elements
         push!(currentStatesRates,deepcopy(element.statesRates))
     end
     push!(elementalStatesRatesOverTime,currentStatesRates)
 
     # Add current complementary elemental states' rates
     currentComplementaryElementalStatesRates = Vector{ComplementaryElementalStatesRates}()
-    for element in model.elements
+    for element in elements
         push!(currentComplementaryElementalStatesRates,deepcopy(element.compStatesRates))
     end
     push!(compElementalStatesRatesOverTime,currentComplementaryElementalStatesRates)
 
+    # Add current flow variables
+    currentFlowVariables = Vector{FlowVariables}()
+    for element in elements
+        # Skip elements without aero
+        if isnothing(element.aero)
+            continue
+        end
+        push!(currentFlowVariables,FlowVariables(deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients)))
+    end
+    push!(flowVariablesOverTime,currentFlowVariables)
 
-    @pack! problem = savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime
+    @pack! problem = savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,flowVariablesOverTime
 
 end

@@ -13,13 +13,14 @@ udot₃ = x1 -> σ*sin.(2*π*x1/L)
 pdot₂ = x1 -> sec.(0/4).^2 .* θdot₂(x1)
 
 # Beam
-L = 1.0
-EIy = 1.0
-ρA = 1.0
+L = 1
+EIy = 1
+ρA = 1
+ρI = 0
 Φ = 1e4
 nElem = 48
 stiffnessMatrix = diagm([Φ,Φ,Φ,Φ,EIy,Φ])
-inertiaMatrix = diagm([ρA,ρA,ρA,0,0,0])
+inertiaMatrix = diagm([ρA,ρA,ρA,ρI,ρI,0])
 beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 if initialConditions == "displacement"
     beam.udot0_of_x1=x1->[0; 0; udot₃(x1)]
@@ -46,22 +47,20 @@ end
 # Model
 initialVelocityBeam = create_Model(name="initialVelocityBeam",beams=[beam],BCs=bcs)
 
-# plot_undeformed_assembly(initialVelocityBeam)
-
 # Time and frequency variables
 ω₂ = (2*π/L)^2*sqrt(EIy/ρA)
 T = 2*π/ω₂
 cycles = 1
 tf = cycles*T
-Δt = 2.5e-4
+Δt = T/100
 
 # Initial velocities update options
 if initialConditions == "displacement"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-4, displayProgress=true, relaxFactor = 0.5, Δt = 2.5e-6)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=true, relaxFactor = 0.5, Δt=Δt/1e2)
 elseif initialConditions == "rotation"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=100,tol=1e-4, displayProgress=true)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=100,tol=1e-8, displayProgress=true)
 elseif initialConditions == "both"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-4, displayProgress=true, relaxFactor = 0.5, Δt = 2.5e-6)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-10, displayProgress=true, relaxFactor = 0.5, Δt=Δt/1e2)
 end
 
 # Create and solve the problem
@@ -90,41 +89,40 @@ Vdot₃_quarter_analytic = -σ*ω₂*sin.(ω₂*t)*sin(2*π*1/4)
 
 # Plots
 # ------------------------------------------------------------------------------
-# # Normalized displacement at quarter-length
 # Normalized displacement at quarter-length
 plt1 = Plots.plot()
 Plots.plot!(tNorm,u₃_quarter/σ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$u_3/\\delta\$ at \$x_1=L/4\$", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:20:end],u₃_quarter_analytic[1:20:end]/σ, c=:blue, markersize=3, label="Analytical", show=true)
+Plots.scatter!(tNorm[1:5:end],u₃_quarter_analytic[1:5:end]/σ, c=:blue, markersize=3, label="Analytical", show=true)
 display(plt1)
 savefig(string(pwd(),"/test/outputs/figures/initialVelocityBeam_1.pdf"))
 # Normalized velocity at quarter-length
 plt2 = Plots.plot()
 Plots.plot!(tNorm,V₃_quarter/σ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$V_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/s]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:20:end],V₃_quarter_analytic[1:20:end]/σ, c=:blue, markersize=3, label="Analytical", show=true)
+Plots.scatter!(tNorm[1:5:end],V₃_quarter_analytic[1:5:end]/σ, c=:blue, markersize=3, label="Analytical", show=true)
 display(plt2)
 savefig(string(pwd(),"/test/outputs/figures/initialVelocityBeam_2.pdf"))
 # Normalized acceleration at quarter-length
 plt3 = Plots.plot()
 Plots.plot!(tNorm,Vdot₃_quarter/σ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\dot{V}_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/\$s^2\$]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:20:end],Vdot₃_quarter_analytic[1:20:end]/σ, c=:blue, markersize=3, label="Analytical", show=true)
+Plots.scatter!(tNorm[1:5:end],Vdot₃_quarter_analytic[1:5:end]/σ, c=:blue, markersize=3, label="Analytical", show=true)
 display(plt3)
 savefig(string(pwd(),"/test/outputs/figures/initialVelocityBeam_3.pdf"))
 # Normalized rotation at root
 plt4 = Plots.plot()
 Plots.plot!(tNorm,θ₂_root/(2*π)/σ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi\\delta)\$ at \$x_1=0\$", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:20:end],θ₂_root_analytic[1:20:end]/(2*π)/σ, c=:blue, markersize=3, label="Analytical", show=true)
+Plots.scatter!(tNorm[1:5:end],θ₂_root_analytic[1:5:end]/(2*π)/σ, c=:blue, markersize=3, label="Analytical", show=true)
 display(plt4)
 savefig(string(pwd(),"/test/outputs/figures/initialVelocityBeam_4.pdf"))
 # Angular velocity at mid-length
 plt5 = Plots.plot()
 Plots.plot!(tNorm,Ω₂_mid, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\Omega_2\$ at \$x_1=L/2\$ [rad/s]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:20:end],Ω₂_mid_analytic[1:20:end], c=:blue, markersize=3, label="Analytical", show=true)
+Plots.scatter!(tNorm[1:5:end],Ω₂_mid_analytic[1:5:end], c=:blue, markersize=3, label="Analytical", show=true)
 display(plt5)
 savefig(string(pwd(),"/test/outputs/figures/initialVelocityBeam_5.pdf"))
 # Angular acceleration at mid-length
 plt6 = Plots.plot()
 Plots.plot!(tNorm,Ωdot₂_mid, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\dot{\\Omega}_2\$ at \$x_1=L/2\$ [rad/\$s^2\$]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:20:end],Ωdot₂_mid_analytic[1:20:end], c=:blue, markersize=3, label="Analytical", show=true)
+Plots.scatter!(tNorm[1:5:end],Ωdot₂_mid_analytic[1:5:end], c=:blue, markersize=3, label="Analytical", show=true)
 display(plt6)
 savefig(string(pwd(),"/test/outputs/figures/initialVelocityBeam_6.pdf"))
 

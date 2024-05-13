@@ -12,8 +12,8 @@ Beam composite type
 - connectedNodesOther::Int64 = to which node of the other beam it is connected
 - length::Float64 = total arclength of the beam
 - rotationParametrization::String = rotation parametrization for the undeformed geometry definition
-- p0::Vector{Float64} = corresponding rotation parameters
-- k::Vector{Float64} = initial curvatures of the beam in the undeformed geometry (torsional, flapwise bending, in-plane bending)
+- p0::Vector{<:Number} = corresponding rotation parameters
+- k::Vector{<:Number} = initial curvatures of the beam in the undeformed geometry (torsional, flapwise bending, in-plane bending)
 - nElements::Int64 = number of elements
 - normalizedNodalPositions::Vector{Float64} = nodal positions normalized by the length
 - elementRange::Vector{Int64} = current beam's range of elements in the model
@@ -27,14 +27,14 @@ Beam composite type
 @with_kw mutable struct Beam
 
     # Primary (inputs to beam creation)
-    # -------------------------------------------
+    # ---------------------------------
     # Name 
     name::String
     # Geometry 
     length::Number 
     rotationParametrization::String
-    p0::Vector{Float64}
-    k::Vector{Float64}
+    p0::Vector{<:Number}
+    k::Vector{<:Number}
     # Discretization
     nElements::Int64 
     normalizedNodalPositions::Vector{Float64}
@@ -50,7 +50,7 @@ Beam composite type
     # Hinged nodes and hinged DoF
     hingedNodes::Vector{Int64}
     hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}
-    # Initial displacements/rotations/velocities
+    # Initial generalized displacements and velocities
     u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
     p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
     udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
@@ -64,13 +64,15 @@ Beam composite type
     mf_A_of_x1t::Union{Nothing,<:Function}
     ff_b_of_x1t::Union{Nothing,<:Function}
     mf_b_of_x1t::Union{Nothing,<:Function}
+    # Attached aerodynamic surface
+    aeroSurface::Union{Nothing,AeroSurface}
+
     # Secondary (outputs from beam creation)
     # --------------------------------------
     # Elements
     elements::Vector{<:BeamElement} = Vector{Element}()
-    # Rotation tensors
+    # Rotation tensor from basis A to basis b
     R0::Matrix{Float64} = I3
-    R_cs::Matrix{Float64} = I3
     # Assembly variables
     ID::Int64 = 0
     elementRange::Vector{Int64} = Vector{Int64}()
@@ -96,10 +98,10 @@ export Beam
 
 
 # Constructor
-function create_Beam(;name::String="",length::Number,rotationParametrization::String="WM",p0::Vector{Float64}=zeros(3),k::Vector{Float64}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),C::Vector{<:Matrix{<:Number}},I::Vector{<:Matrix{<:Number}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing)
+function create_Beam(;name::String="",length::Number,rotationParametrization::String="WM",p0::Vector{<:Number}=zeros(3),k::Vector{<:Number}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),C::Vector{<:Matrix{<:Number}},I::Vector{<:Matrix{<:Number}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing,aeroSurface::Union{Nothing,AeroSurface}=nothing)
 
     # Initialize the beam
-    self = Beam(name=name,length=length,rotationParametrization=rotationParametrization,p0=p0,k=k,nElements=nElements,normalizedNodalPositions=normalizedNodalPositions,C=C,I=I,connectedBeams=connectedBeams,connectedNodesThis=connectedNodesThis,connectedNodesOther=connectedNodesOther,pointInertias=pointInertias,hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,u0_of_x1=u0_of_x1,p0_of_x1=p0_of_x1,udot0_of_x1=udot0_of_x1,pdot0_of_x1=pdot0_of_x1,f_A_of_x1t=f_A_of_x1t,m_A_of_x1t=m_A_of_x1t,f_b_of_x1t=f_b_of_x1t,m_b_of_x1t=m_b_of_x1t,ff_A_of_x1t=ff_A_of_x1t,mf_A_of_x1t=mf_A_of_x1t,ff_b_of_x1t=ff_b_of_x1t,mf_b_of_x1t=mf_b_of_x1t)
+    self = Beam(name=name,length=length,rotationParametrization=rotationParametrization,p0=p0,k=k,nElements=nElements,normalizedNodalPositions=normalizedNodalPositions,C=C,I=I,connectedBeams=connectedBeams,connectedNodesThis=connectedNodesThis,connectedNodesOther=connectedNodesOther,pointInertias=pointInertias,hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,u0_of_x1=u0_of_x1,p0_of_x1=p0_of_x1,udot0_of_x1=udot0_of_x1,pdot0_of_x1=pdot0_of_x1,f_A_of_x1t=f_A_of_x1t,m_A_of_x1t=m_A_of_x1t,f_b_of_x1t=f_b_of_x1t,m_b_of_x1t=m_b_of_x1t,ff_A_of_x1t=ff_A_of_x1t,mf_A_of_x1t=mf_A_of_x1t,ff_b_of_x1t=ff_b_of_x1t,mf_b_of_x1t=mf_b_of_x1t,aeroSurface=aeroSurface)
 
     # Validate and update the beam 
     update_beam!(self)
@@ -123,13 +125,13 @@ function update_beam!(beam::Beam)
     validate_beam!(beam)
 
     # Get velocity DoFs to update on initial dynamic time step
-    get_velocity_dofs_to_update!(beam)
+    velocity_dofs_to_update!(beam)
 
-    # Get rotation tensors 
-    get_rotation_tensors!(beam)
+    # Get rotation tensor from basis A to basis b 
+    get_rotation_tensor!(beam)
 
-    # Get derivatives of generalized initial displacements 
-    get_initial_displacements_derivatives!(beam)
+    # Get derivatives of generalized initial displacements with respect to arclength coordinate
+    initial_displacements_derivatives!(beam)
 
     # Create beam elements
     create_beam_elements!(beam)
@@ -190,10 +192,18 @@ function validate_sectional_matrices(beam::Beam)
     @unpack nElements,C,I = beam
 
     # Sectional stiffness matrix
-    @assert (length(C)==1 || length(C)==nElements)
+    @assert (length(C)==1 || length(C)==nElements) "input either one stiffness matrix for the entire beam, or one for each element"
+    for Ci in C
+        @assert size(Ci) == (6,6) "stiffness matrices must be of size (6,6)"
+        @assert all([Ci[j,j] > 0 for j in 1:6]) "diagonal elements of stiffness matrices must be positive"
+    end
 
     # Sectional inertia matrix
-    @assert (length(I)==1 || length(I)==nElements)
+    @assert (length(I)==1 || length(I)==nElements) "input either one inertia matrix for the entire beam, or one for each element"
+    for Ii in I
+        @assert size(Ii) == (6,6) "inertia matrices must be of size (6,6)"
+        @assert all([Ii[j,j] >= 0 for j in 1:6]) "diagonal elements of inertia matrices must be greater than or equal to zero"
+    end
 
 end
 
@@ -421,14 +431,14 @@ end
 
 
 """
-get_velocity_dofs_to_update!(beam::Beam)
+velocity_dofs_to_update!(beam::Beam)
 
 Gets the velocity DOFs (V and Ω) to be updated on the initial dynamic solution
 
 # Arguments
 - beam::Beam
 """
-function get_velocity_dofs_to_update!(beam::Beam)
+function velocity_dofs_to_update!(beam::Beam)
 
     @unpack u0_of_x1,p0_of_x1,udot0_of_x1,pdot0_of_x1,length = beam
 
@@ -461,48 +471,42 @@ end
 
 
 """
-get_rotation_tensors!(beam::Beam)
+get_rotation_tensor!(beam::Beam)
 
-Validates the input rotation parameters and rotation parametrization, and gets the corresponding rotation tensors from basis A to basis b and of the cross-section
+Validates the input rotation parameters and rotation parametrization, and gets the corresponding rotation tensor from basis A to basis b 
 
 # Arguments
 - beam::Beam
 """
-function get_rotation_tensors!(beam::Beam)
+function get_rotation_tensor!(beam::Beam)
 
     @unpack p0,rotationParametrization = beam
 
     # Get rotation tensors
     if rotationParametrization == "E321"
         R0 = rotation_tensor_E321(p0)
-        # R_cs = rotation_tensor_E321([0.0,0.0,p0[3]])
     elseif rotationParametrization == "E313"
         R0 = get_rotation_tensor_E313(p0)
-        # R_cs = get_rotation_tensor_E313([0.0,p0[3],0.0])
     elseif rotationParametrization == "WM"
         R0,_ = rotation_tensor_WM(p0)
-        # R_cs,_ = rotation_tensor_WM([p0[3],0.0,0.0])
     end
 
-    R_cs = I3
-
-    @pack! beam = R0,R_cs
+    @pack! beam = R0
 end
 
 
 """
-get_initial_displacements_derivatives!(beam::Beam)
+initial_displacements_derivatives!(beam::Beam)
 
-Gets the derivatives of the initial generalized displacements
+Computes the derivatives of the initial generalized displacements with respect to the beam arclength coordinate, x₁
 
 # Arguments
 - beam::Beam
 """
-function get_initial_displacements_derivatives!(beam::Beam)
+function initial_displacements_derivatives!(beam::Beam)
 
     @unpack u0_of_x1,p0_of_x1 = beam
 
-    # Get the derivative functions with respect to x1
     uprime0_of_x1 = x1 -> ForwardDiff.derivative(u0_of_x1, x1)
     pprime0_of_x1 = x1 -> ForwardDiff.derivative(p0_of_x1, x1)
 
@@ -702,7 +706,7 @@ function add_initial_displacements_and_velocities_to_beam!(beam::Beam;conditionT
     validate_initial_conditions!(beam)
 
     # Get derivatives of generalized initial displacements 
-    get_initial_displacements_derivatives!(beam)
+    initial_displacements_derivatives!(beam)
 
 end
 export add_initial_displacements_and_velocities_to_beam!

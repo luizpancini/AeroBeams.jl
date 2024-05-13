@@ -47,9 +47,8 @@ numFreqs = Matrix{Vector{Float64}}(undef,length(ωRange),length(tipAngleRange))
 
 # Loop over sweep variables
 for (i,ω) in enumerate(ωRange)
-    # Set angular velocity of basis A and update model
-    ω_A = [0; 0; ω]
-    sweptTipRotor.ω_A = ω_A
+    # Set angular velocity of basis A 
+    sweptTipRotor.ω_A = [0; 0; ω]
     # Loop tip angles
     for (j,tipAngle) in enumerate(tipAngleRange)
         # Display progress
@@ -64,7 +63,7 @@ for (i,ω) in enumerate(ωRange)
         update_model!(sweptTipRotor)
         # plot_undeformed_assembly(sweptTipRotor)
         # Create and solve eigenproblem
-        problem = create_EigenProblem(model=sweptTipRotor,nModes=nModes)
+        global problem = create_EigenProblem(model=sweptTipRotor,nModes=nModes)
         solve!(problem)
         # Get outputs
         numFreqs[i,j] = problem.frequenciesOscillatory

@@ -13,13 +13,14 @@ u₃ = x1 -> δ*sin.(2*π*x1/L)
 p₂ = x1 -> 4*tan.(θ₂(x1)/4)
 
 # Beam
-L = 1.0
-EIy = 1.0
-ρA = 1.0
+L = 1
+EIy = 1
+ρA = 1
+ρI = 0
 Φ = 1e4
 nElem = 48
 stiffnessMatrix = diagm([Φ,Φ,Φ,Φ,EIy,Φ])
-inertiaMatrix = diagm([ρA,ρA,ρA,0,0,0])
+inertiaMatrix = diagm([ρA,ρA,ρA,ρI,ρI,0])
 beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 if initialConditions == "displacement"
     beam.u0_of_x1=x1->[0; 0; u₃(x1)]
@@ -51,15 +52,15 @@ initialDisplacementBeam = create_Model(name="initialDisplacementBeam",beams=[bea
 T = 2*π/ω₂
 cycles = 1
 tf = cycles*T
-Δt = 1e-3
+Δt = T/100
 
 # Initial velocities update options
 if initialConditions == "displacement"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-4, displayProgress=true, relaxFactor = 0.5)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-4, displayProgress=true, relaxFactor = 0.5, Δt=Δt/1e3)
 elseif initialConditions == "rotation"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=300,tol=1e-4, displayProgress=true, relaxFactor = 0.5, Δt=Δt/10)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=300,tol=1e-8, displayProgress=true, relaxFactor = 0.5, Δt=Δt/1e2)
 elseif initialConditions == "both"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=100,tol=1e-5, displayProgress=true, relaxFactor = 0.5, Δt=1e-4)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=100,tol=1e-8, displayProgress=true, relaxFactor = 0.5, Δt=Δt/1e2)
 end
 
 # Create and solve the problem

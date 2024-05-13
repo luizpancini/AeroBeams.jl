@@ -6,6 +6,7 @@ version = "1.0.0-DEV"
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

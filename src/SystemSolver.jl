@@ -111,7 +111,8 @@ function solve_NewtonRaphson!(problem::Problem)
         if !convergedPartialSolution                            
             # Case of unconverged iterations not dealt yet from trim analyses
             if typeof(problem) == TrimProblem
-                error("Trim analysis unconverged")
+                println("Trim analysis unconverged")
+                return
             end
             # Reduce load factor (limit to minimum) 
             σ = max(σ/2,minimumLoadFactor)

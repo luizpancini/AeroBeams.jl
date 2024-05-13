@@ -1,15 +1,14 @@
-using Parameters, LinearAlgebra
 
-@with_kw mutable struct MyStruct
-    C::Vector{Matrix{<:Number}}
+function get_b(a)
+
+    if a > 1
+        b = 1
+    else
+        b = 0
+    end
+
+    return b
 end
 
-function create_mystruct(;C::Vector{<:Matrix{<:Number}})
-    return MyStruct(C)
-end
-
-c = diagm([1.0,1.0])
-
-s = create_mystruct(C=[c])
-
-s.C
+a = 2
+b = get_b(a)
