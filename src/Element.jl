@@ -69,17 +69,15 @@ mutable struct ElementalStatesRates
     Vdot::Vector{Float64}
     Ωdot::Vector{Float64}
     χdot::Vector{Float64}
-    uddot::Vector{Float64}
-    pddot::Vector{Float64}
 
     # Constructor
     function ElementalStatesRates() 
 
-        udot,pdot,Vdot,Ωdot,uddot,pddot = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
+        udot,pdot,Vdot,Ωdot = zeros(3),zeros(3),zeros(3),zeros(3)
 
         χdot = zeros(0)
 
-        return new(udot,pdot,Vdot,Ωdot,χdot,uddot,pddot)
+        return new(udot,pdot,Vdot,Ωdot,χdot)
     end
 end
 
@@ -210,8 +208,6 @@ mutable struct Element <: BeamElement
     VdotEquiv::Vector{Float64}
     ΩdotEquiv::Vector{Float64}
     χdotEquiv::Vector{Float64}
-    uddotEquiv::Vector{Float64}
-    pddotEquiv::Vector{Float64}
     # Rotation variables
     R::Matrix{Float64}
     RR0::Matrix{Float64}
@@ -428,7 +424,7 @@ mutable struct Element <: BeamElement
         nodalStates = NodalStates{Float64}()
 
         # Initialize equivalent states' rates at begin of time step
-        udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,uddotEquiv,pddotEquiv = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
+        udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv = zeros(3),zeros(3),zeros(3),zeros(3)
         χdotEquiv = zeros(0)
 
         # Initialize rotation tensors
@@ -470,7 +466,7 @@ mutable struct Element <: BeamElement
         end
         
         # Create element
-        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,x1_norm,k,r,R0,R0T,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1_norm,x1_n2_norm,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,uddotEquiv,pddotEquiv,R,RR0,RR0T,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,v,ω,vdot,ωdot,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f1_χ,f2_χ,m1_χ,m2_χ,f1_p,f2_p,m1_p,m2_p,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,aero)
+        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,x1_norm,k,r,R0,R0T,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1_norm,x1_n2_norm,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,R,RR0,RR0T,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,v,ω,vdot,ωdot,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f1_χ,f2_χ,m1_χ,m2_χ,f1_p,f2_p,m1_p,m2_p,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,aero)
 
         # Add element to parent beam
         push!(parent.elements, self)

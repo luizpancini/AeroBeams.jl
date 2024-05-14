@@ -225,41 +225,31 @@ function element_states_rates!(problem::Problem,element::Element)
     # For all but dynamic problems, all states' rates are zero
     if !isa(problem,DynamicProblem)
 
-        udot,pdot,Vdot,Ωdot,uddot,pddot = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
+        udot,pdot,Vdot,Ωdot = zeros(3),zeros(3),zeros(3),zeros(3)
 
         χdot = !isnothing(element.aero) ? zeros(element.aero.nTotalAeroStates) : Vector{Float64}()
 
-        @pack! element.statesRates = udot,pdot,Vdot,Ωdot,χdot,uddot,pddot
+        @pack! element.statesRates = udot,pdot,Vdot,Ωdot,χdot
 
         return 
     end
 
     # Unpack
     @unpack Δt = problem   
-    @unpack udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,uddotEquiv,pddotEquiv = element
+    @unpack udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv = element
     @unpack u,p,V,Ω,χ = element.states
-    @unpack udot,pdot = element.statesRates
+    @unpack udot,pdot,Vdot,Ωdot,χdot = element.statesRates
     
     # Current rates
-    if isinf(Δt)
-        udot = udotEquiv
-        pdot = pdotEquiv
-        Vdot = VdotEquiv
-        Ωdot = ΩdotEquiv 
-        χdot = χdotEquiv
-        uddot = uddotEquiv
-        pddot = pddotEquiv
-    else
+    if !isinf(Δt)
         udot = 2/Δt*u - udotEquiv
         pdot = 2/Δt*p - pdotEquiv
         Vdot = 2/Δt*V - VdotEquiv
         Ωdot = 2/Δt*Ω - ΩdotEquiv
         χdot = 2/Δt*χ - χdotEquiv
-        uddot = 2/Δt*udot - uddotEquiv
-        pddot = 2/Δt*pdot - pddotEquiv
     end
 
-    @pack! element.statesRates = udot,pdot,Vdot,Ωdot,χdot,uddot,pddot
+    @pack! element.statesRates = udot,pdot,Vdot,Ωdot,χdot
 
 end
  

@@ -1004,7 +1004,7 @@ function solve_initial_dynamic!(problem::Problem)
     # Get equivalent initial states rates
     get_equivalent_states_rates!(problemCopy)
 
-    # Solve to find unspecified initial states
+    # Solve to find unspecified initial displacements and/or rotations
     solve_steady!(problemCopy)
 
     # Copy initial states to the original problem
@@ -1046,11 +1046,11 @@ function copy_initial_states!(problem::Problem,problemCopy::Problem)
         # Set elemental states
         u = x[DOF_u] = xCopy[DOF_uCopy]
         p = x[DOF_p] = xCopy[DOF_pCopy]
-        x[DOF_F] = xCopy[DOF_FCopy]
-        x[DOF_M] = xCopy[DOF_MCopy]
+        F = x[DOF_F] = xCopy[DOF_FCopy]
+        M = x[DOF_M] = xCopy[DOF_MCopy]
         V = x[DOF_V] = xCopy[DOF_VCopy]
         Ω = x[DOF_Ω] = xCopy[DOF_ΩCopy]
-        F,M = forceScaling*x[DOF_F],forceScaling*x[DOF_M]
+        F,M = forceScaling*F,forceScaling*M
         # Pack element states
         @pack! element.states = u,p,F,M,V,Ω
     end
@@ -1079,7 +1079,7 @@ update_initial_velocities!(problem::Problem)
 Updates the velocity states by running a very small time step
 
 # Arguments
-- problem::Problem
+- `problem::Problem`
 """
 function update_initial_velocities!(problem::Problem)
 
@@ -1151,8 +1151,8 @@ function update_initial_velocities!(problem::Problem)
         velBegin = [[e.states.V; e.states.Ω] for e in elements]
         # Reset accelerations to zero 
         for element in elements
-            Vdot,Ωdot,uddot,pddot = zeros(3),zeros(3),zeros(3),zeros(3)
-            @pack! element.statesRates = Vdot,Ωdot,uddot,pddot
+            Vdot,Ωdot = zeros(3),zeros(3)
+            @pack! element.statesRates = Vdot,Ωdot
         end
         # Get equivalent states' rates at the begin of the time step
         get_equivalent_states_rates!(problem)
@@ -1299,17 +1299,15 @@ function get_equivalent_states_rates!(problem::Problem)
     for element in elements
         # Unpack element data (element states and rates known at the begin of time step)
         @unpack u,p,V,Ω,χ = element.states
-        @unpack udot,pdot,Vdot,Ωdot,χdot,uddot,pddot = element.statesRates
+        @unpack udot,pdot,Vdot,Ωdot,χdot = element.statesRates
         # Equivalent states' rates at the begin of time step 
         udotEquiv = udot + 2/Δt*u
         pdotEquiv = pdot + 2/Δt*p
         VdotEquiv = Vdot + 2/Δt*V
         ΩdotEquiv = Ωdot + 2/Δt*Ω
         χdotEquiv = χdot + 2/Δt*χ
-        uddotEquiv = uddot + 2/Δt*udot
-        pddotEquiv = pddot + 2/Δt*pdot
         # Pack element data
-        @pack! element = udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,uddotEquiv,pddotEquiv
+        @pack! element = udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv
     end
 end
 
