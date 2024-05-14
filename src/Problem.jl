@@ -929,7 +929,7 @@ function initialize_time_variables!(problem::Problem)
 
     # Update time step for initial velocities update, if not input
     if initialVelocitiesUpdateOptions.Δt == 0
-        initialVelocitiesUpdateOptions.Δt = 0.1*Δt
+        initialVelocitiesUpdateOptions.Δt = 1e-2*Δt
     end
 
     @pack! problem = initialTime,Δt,finalTime,timeVector,timeNow,timeBeginTimeStep,timeEndTimeStep,sizeOfTime,initialVelocitiesUpdateOptions
@@ -1085,7 +1085,7 @@ function update_initial_velocities!(problem::Problem)
 
     @unpack timeVector,Δt,timeNow,indexBeginTimeStep,indexEndTimeStep,timeBeginTimeStep,timeEndTimeStep,initialVelocitiesUpdateOptions,model = problem
     @unpack maxIter,relaxFactor,tol,displayProgress = initialVelocitiesUpdateOptions
-    @unpack elements,nElementsTotal = model
+    @unpack elements = model
 
     # Get original values of time variables and the system solver
     ΔtOriginal = Δt
@@ -1107,11 +1107,12 @@ function update_initial_velocities!(problem::Problem)
     for BC in model.BCs
         update_BC_data!(BC,timeNow)
     end   
-    # Set default system solver (with default convergence tolerances and large number of maximum iterations)
-    problem.systemSolver = NewtonRaphson(maximumIterations=100)
-    # Initial sectional velocities and displacement's rates
-    vel0 = velBegin = [[e.states.V; e.states.Ω] for e in elements]
-    dispRates0 = dispRatesBegin = [[e.statesRates.udot; e.statesRates.pdot] for e in elements]
+    # Set default system solver (with reduced relative tolerance and large number of maximum iterations)
+    problem.systemSolver = NewtonRaphson(maximumIterations=100,relativeTolerance=1e-14)
+    # Initial displacements, sectional velocities and displacement's rates
+    disp0 = [[e.states.u; e.states.p] for e in elements]
+    vel0 = [[e.states.V; e.states.Ω] for e in elements]
+    dispRates0 = [[e.statesRates.udot; e.statesRates.pdot] for e in elements]
     # Set velocity indices to update
     DoFToUpdate = [e.parent.velDoFToUpdate for e in elements]
     # Initialize convergence variables
@@ -1135,7 +1136,12 @@ function update_initial_velocities!(problem::Problem)
                 # DOF to update for current element
                 VIndToUpdate = DoFToUpdate[e][Vind]
                 ΩIndToUpdate = DoFToUpdate[e][Ωind]
-                # Update with relaxation factor, for applicable DOF
+                # Reset velocities not to be updated
+                udot[.!VIndToUpdate] .= dispRates0[e][Vind[.!VIndToUpdate]]
+                pdot[.!ΩIndToUpdate] .= dispRates0[e][Ωind[.!ΩIndToUpdate]]
+                x[DOF_V[.!VIndToUpdate]] = V[.!VIndToUpdate] = vel0[e][Vind[.!VIndToUpdate]]
+                x[DOF_Ω[.!ΩIndToUpdate]] = Ω[.!ΩIndToUpdate] = vel0[e][Ωind[.!ΩIndToUpdate]]
+                # Update velocities with relaxation factor, for applicable DOF
                 udot[VIndToUpdate] = udot[VIndToUpdate]*relaxFactor + dispRates0[e][Vind[VIndToUpdate]]*(1-relaxFactor)
                 pdot[ΩIndToUpdate] = pdot[ΩIndToUpdate]*relaxFactor + dispRates0[e][Ωind[ΩIndToUpdate]]*(1-relaxFactor)
                 x[DOF_V[VIndToUpdate]] = V[VIndToUpdate] = V[VIndToUpdate]*relaxFactor + vel0[e][Vind[VIndToUpdate]]*(1-relaxFactor)
@@ -1146,9 +1152,9 @@ function update_initial_velocities!(problem::Problem)
                 @pack! element.statesRates = udot,pdot
             end
         end
-        # Get velocities array at begin of time step 
-        dispRatesBegin = [[e.statesRates.udot; e.statesRates.pdot] for e in elements]
+        # Sectional velocities and accelerations arrays at begin of time step 
         velBegin = [[e.states.V; e.states.Ω] for e in elements]
+        accBegin = [[e.statesRates.Vdot; e.statesRates.Ωdot] for e in elements]
         # Reset accelerations to zero 
         for element in elements
             Vdot,Ωdot = zeros(3),zeros(3)
@@ -1158,8 +1164,14 @@ function update_initial_velocities!(problem::Problem)
         get_equivalent_states_rates!(problem)
         # Solve the system at the current time step
         solve_time_step!(problem)
-        # Get velocities array at end of time step 
+        # Reset displacements to values at the begin of time step
+        for (e,element) in enumerate(elements)
+            u,p = disp0[e][1:3],disp0[e][4:6]
+            @pack! element.states = u,p
+        end
+        # Sectional velocities and accelerations arrays at end of time step 
         velEnd = [[e.states.V; e.states.Ω] for e in elements]
+        accEnd = [[e.statesRates.Vdot; e.statesRates.Ωdot] for e in elements]
         # Update current difference between initial and final velocities 
         ϵ = maximum(maximum([abs.(velBegin[e].-velEnd[e]) .* DoFToUpdate[e] for e in eachindex(elements)]))
         # Print iteration results

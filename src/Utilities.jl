@@ -81,22 +81,22 @@ export tilde
 
 
 """
-mul3(A1::Matrix{<:Number},A2::Matrix{<:Number},A3::Matrix{<:Number},b::Vector{<:Number})
+mul3(A1,A2,A3,b)
 
 Computes the scalar product of a third-order tensor represented by matrices A1, A2, and A3 with the vector b
 
 # Arguments
-- A1::Matrix{<:Number}
-- A2::Matrix{<:Number}
-- A3::Matrix{<:Number}
-- b::Vector{<:Number}
+- A1
+- A2
+- A3
+- b
 """
-function mul3(A1::Matrix{<:Number},A2::Matrix{<:Number},A3::Matrix{<:Number},b::Vector{<:Number})
+function mul3(A1,A2,A3,b)
     
     return hcat(A1*b, A2*b, A3*b)
     
 end
-
+export mul3
 
 """
 isotropic_stiffness_matrix(;EA::Number,GAy::Number,GAz::Number,GJ::Number,EIy::Number,EIz::Number)
@@ -663,6 +663,7 @@ function tangent_operator_transpose_WM(p::Vector{Float64})
     return 2*υ²*(ps0*I3 .+ 1/4*ps*(ps') .- tilde(ps))
 
 end
+export tangent_operator_transpose_WM
 
 
 """
@@ -802,7 +803,7 @@ function tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Floa
     return HT_p1,HT_p2,HT_p3
 
 end
-
+export tangent_tensor_transpose_derivatives_extended_parameters
 
 """
 force_scaling(S::Vector{Matrix{Float64}})

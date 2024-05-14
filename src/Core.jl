@@ -272,7 +272,7 @@ function element_rotation_variables!(problem::Problem,element::Element)
     ## Rotation tensors
     # --------------------------------------------------------------------------
     # Rotation tensor from basis b to basis B, resolved in basis A, and associated variables
-    R,Θ,pNorm,λ,ps,ps1,ps2,ps3,ps0,υ,υ²,ps1s,ps2s,ps3s,ps1ps2,ps2ps3,ps1ps3 = rotation_tensor_WM(p) 
+    R,Θ,pNorm,λ,ps,ps1,ps2,ps3,ps0,υ,υ²,ps1s,ps2s,ps3s,ps1ps2,ps2ps3,ps1ps3 = rotation_tensor_WM(p)
     # Rotation tensor from basis A to basis B, resolved in basis A, and its transpose
     RR0 = R*R0 
     RR0T = Matrix(RR0')
