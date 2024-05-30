@@ -313,6 +313,7 @@ mutable struct Element <: BeamElement
     DOF_V::Vector{Int64}
     DOF_Ω::Vector{Int64}
     DOF_χ::Vector{Int64} 
+    DOF_δ::Union{Vector{Int64},Int64}
     isSpecialNode1::Bool
     isSpecialNode2::Bool
     eqsNode1Set::Bool
@@ -452,21 +453,22 @@ mutable struct Element <: BeamElement
         hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = false,false,false,false,false,false,false,false
 
         # Initialize system indices
-        eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ = Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}()
+        eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ = Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}()
 
         isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set = false,false,false,false
 
         # Initialize aerodynamic properties 
         aero = !isnothing(parent.aeroSurface) ? AeroProperties(parent.aeroSurface,R0,x1,x1_norm,x1_n1_norm,x1_n2_norm) : nothing
 
-        # Update aerodynamic states and rates to correct size
+        # Update aerodynamic states and rates vectors to correct size
         if !isnothing(aero)
             states.χ = zeros(aero.nTotalAeroStates)
             statesRates.χdot = zeros(aero.nTotalAeroStates)
+            χdotEquiv = zeros(aero.nTotalAeroStates)
         end
         
         # Create element
-        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,x1_norm,k,r,R0,R0T,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1_norm,x1_n2_norm,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,R,RR0,RR0T,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,v,ω,vdot,ωdot,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f1_χ,f2_χ,m1_χ,m2_χ,f1_p,f2_p,m1_p,m2_p,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,aero)
+        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,x1_norm,k,r,R0,R0T,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1_norm,x1_n2_norm,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,R,RR0,RR0T,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,v,ω,vdot,ωdot,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f1_χ,f2_χ,m1_χ,m2_χ,f1_p,f2_p,m1_p,m2_p,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,aero)
 
         # Add element to parent beam
         push!(parent.elements, self)

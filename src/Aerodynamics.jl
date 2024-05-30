@@ -105,7 +105,7 @@ function nondimensional_flow_parameters!(model::Model,element::Element)
     Ma = Uᵢ/a  
 
     # Prandtl-Glauert compressibility factor and its square
-    βₚ² = Ma < 1 ? 1-Ma^2 : 0.0
+    βₚ² = Ma < 1 ? 1-Ma^2 : 1.0
     βₚ = sqrt(βₚ²)
 
     @pack! element.aero = Re,Ma,βₚ,βₚ²
@@ -138,67 +138,64 @@ end
 
 
 """
-flap_deflection_and_rates!(problem,element::Element)
+flap_deflection_rates!(problem,element::Element)
 
-Computes the current values of flap deflection and its rates
+Computes the current values of flap deflection rates
 
 # Arguments
 - problem
 - element::Element
 """
-function flap_deflection_and_rates!(problem,element::Element)
+function flap_deflection_rates!(problem,element::Element)
 
-    # Set current values for non-trim problems
-    if !isa(problem,TrimProblem)
-        @unpack timeNow = problem
-        @unpack δ,δdot,δddot = element.aero
-        δNow,δdotNow,δddotNow = δ(timeNow),δdot(timeNow),δddot(timeNow)
-    end
+    @unpack timeNow = problem
+    @unpack δdot,δddot = element.aero
+    δdotNow,δddotNow = δdot(timeNow),δddot(timeNow)
 
-    @pack! element.aero = δNow,δdotNow,δddotNow
+    @pack! element.aero = δdotNow,δddotNow
 
 end
 
 
 """
-aero_coefficients!(element::Element,airfoil::Airfoil)
+aero_coefficients!(element::Element,δNow)
 
 Computes the aerodynamic coefficients
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
+- δNow
 """
-function aero_coefficients!(element::Element,airfoil::Airfoil)
+function aero_coefficients!(element::Element,δNow)
 
     @unpack solver = element.aero
 
     if typeof(solver) in [QuasiSteady,Indicial,Inflow]
-        attached_flow_aero_coefficients!(element,airfoil)
+        attached_flow_aero_coefficients!(element,δNow)
     elseif typeof(solver) == BLi
-        BLi_aero_coefficients!(element,airfoil)
+        BLi_aero_coefficients!(element)
     elseif typeof(solver) == BLc
-        BLc_aero_coefficients!(element,airfoil)    
+        BLc_aero_coefficients!(element)    
     end   
 
 end
 
 
 """
-aero_state_matrices!(element::Element,airfoil::Airfoil)
+aero_state_matrices!(element::Element,δNow)
 
 Computes the aerodynamic state matrices
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
+- δNow
 """
-function aero_state_matrices!(element::Element,airfoil::Airfoil)
+function aero_state_matrices!(element::Element,δNow)
 
     @unpack solver = element.aero
 
     if typeof(solver) in [QuasiSteady,Indicial,Inflow]
-        A,B = attached_flow_state_matrices!(element,airfoil)
+        A,B = attached_flow_state_matrices!(element,δNow)
     elseif typeof(solver) == BLi
         A,B = BLi_state_matrices!(element)
     elseif typeof(solver) == BLc
@@ -259,40 +256,39 @@ end
 
 
 """
-attached_flow_aero_coefficients!(element::Element,airfoil::Airfoil)
+attached_flow_aero_coefficients!(element::Element,δNow)
 
 Computes the aerodynamic coefficients under attached flow conditions
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
+- δNow
 """
-function attached_flow_aero_coefficients!(element::Element,airfoil::Airfoil)
+function attached_flow_aero_coefficients!(element::Element,δNow)
 
     # Normal force coefficient
-    attached_flow_cn!(element,airfoil)
+    attached_flow_cn!(element,δNow)
 
     # Pitching moment coefficient about the spar position
-    attached_flow_cm!(element,airfoil)
+    attached_flow_cm!(element,δNow)
 
     # Tangential flow coefficient
-    attached_flow_ct!(element,airfoil)
+    attached_flow_ct!(element,δNow)
 
 end
 
 
 """
-update_airfoil_parameters!(element::Element,airfoil::Airfoil)
+update_airfoil_parameters!(element::Element)
 
 Updates the aerodynamic parameters of the airfoil according to current nondimensional flow parameters 
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
 """
-function update_airfoil_parameters!(element::Element,airfoil::Airfoil)
+function update_airfoil_parameters!(element::Element)
 
-    @unpack updateAirfoilParameters,Re,Ma,flapSiteID = element.aero
+    @unpack airfoil,updateAirfoilParameters,Re,Ma,flapSiteID = element.aero
     @unpack name = airfoil
 
     # Skip if parameters are not to be updated
@@ -304,28 +300,30 @@ function update_airfoil_parameters!(element::Element,airfoil::Airfoil)
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)
 
     @pack! airfoil = attachedFlowParameters
+    @pack! element.aero = airfoil
 
 end
 
 
 """
-effective_angle_of_attack!(element::Element,airfoil::Airfoil,χ)
+effective_angle_of_attack!(element::Element,χ,δNow)
 
 Computes the effective (unsteady) angle of attack
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
 - χ
+- δNow
 """
-function effective_angle_of_attack!(element::Element,airfoil::Airfoil,χ)
+function effective_angle_of_attack!(element::Element,χ,δNow)
 
+    @unpack airfoil = element.aero
     @unpack Uₜ,UₜGust = element.aero.flowVelocitiesAndRates
     @unpack ϵₙ = airfoil.attachedFlowParameters
 
     # Effective normalwash: pitch-plunge-induced, flap-induced, gust-induced, and total
-    wₑp = pitch_plunge_effective_normalwash(element,airfoil,χ)
-    wₑf = flap_effective_normalwash(element)
+    wₑp = pitch_plunge_effective_normalwash(element,χ)
+    wₑf = flap_effective_normalwash(element,δNow)
     wₑg = gust_effective_normalwash(element)
     wₑ = wₑp + ϵₙ*wₑf + wₑg
 
@@ -338,20 +336,20 @@ end
 
 
 """
-attached_flow_cn!(element::Element,airfoil::Airfoil)
+attached_flow_cn!(element::Element,δNow)
 
 Computes the normal force aerodynamic coefficient for attached flow
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
+- δNow
 """
-function attached_flow_cn!(element::Element,airfoil::Airfoil)
+function attached_flow_cn!(element::Element,δNow)
 
-    @unpack flapLoadsSolver,flapped,b,δNow,δdotNow,δddotNow,ϖMid = element.aero
+    @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙdotMid = element.aero.flowVelocitiesAndRates
-    @unpack ϵₙ,cnα,cnδ = airfoil.attachedFlowParameters
+    @unpack ϵₙ,cnα,cnδ = element.aero.airfoil.attachedFlowParameters
 
     # Circulatory component 
     cnC = cnα*αₑ
@@ -377,21 +375,21 @@ end
 
 
 """
-attached_flow_cm!(element::Element,airfoil::Airfoil)
+attached_flow_cm!(element::Element,δNow)
 
 Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for attached flow
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
+- δNow
 """
-function attached_flow_cm!(element::Element,airfoil::Airfoil)
+function attached_flow_cm!(element::Element,δNow)
 
-    @unpack flapLoadsSolver,flapped,b,normSparPos,normFlapPos,δNow,δdotNow,δddotNow,ϖMid = element.aero
+    @unpack flapLoadsSolver,flapped,b,normSparPos,normFlapPos,δdotNow,δddotNow,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
     @unpack cnC = element.aero.aeroCoefficients
-    @unpack ϵₘ,cm₀,cmα,cmδ = airfoil.attachedFlowParameters
+    @unpack ϵₘ,cm₀,cmα,cmδ = element.aero.airfoil.attachedFlowParameters
 
     # Circulatory component
     cmC = cm₀+cmα*αₑ+(cnC/ϖMid)*(normSparPos-1/4)
@@ -421,19 +419,19 @@ end
 
 
 """
-attached_flow_ct!(element::Element,airfoil::Airfoil)
+attached_flow_ct!(element::Element,δNow)
 
 Computes the tangential force aerodynamic coefficient for attached flow
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
+- δNow
 """
-function attached_flow_ct!(element::Element,airfoil::Airfoil)
+function attached_flow_ct!(element::Element,δNow)
 
-    @unpack flapped,flapLoadsSolver,δNow,ϖMid = element.aero
+    @unpack flapped,flapLoadsSolver,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack cd₀,cdδ,cnα = airfoil.attachedFlowParameters
+    @unpack cd₀,cdδ,cnα = element.aero.airfoil.attachedFlowParameters
 
     # Circulatory component
     ct = -cd₀/cos(αₑ)+cnα*αₑ^2
@@ -450,20 +448,19 @@ end
 
 
 """
-pitch_plunge_effective_normalwash(element::Element,airfoil::Airfoil,χ)
+pitch_plunge_effective_normalwash(element::Element,χ)
 
 Computes the effective (unsteady) pitch-plunge-induced normalwash
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
 - χ
 """
-function pitch_plunge_effective_normalwash(element::Element,airfoil::Airfoil,χ)
+function pitch_plunge_effective_normalwash(element::Element,χ)
 
     @unpack solver,pitchPlungeStatesRange = element.aero
     @unpack UₙTQC = element.aero.flowVelocitiesAndRates
-    @unpack cnα = airfoil.attachedFlowParameters
+    @unpack cnα = element.aero.airfoil.attachedFlowParameters
 
     if typeof(solver) == QuasiSteady
         wₑp = UₙTQC
@@ -479,14 +476,15 @@ end
 
 
 """
-flap_effective_normalwash(element::Element)
+flap_effective_normalwash(element::Element,δNow)
 
 Computes the effective (unsteady) flap-induced normalwash
 
 # Arguments
 - element::Element
+- δNow
 """
-function flap_effective_normalwash(element::Element)
+function flap_effective_normalwash(element::Element,δNow)
 
     @unpack χ = element.states
     @unpack flapStatesRange = element.aero
@@ -497,7 +495,7 @@ function flap_effective_normalwash(element::Element)
     end
     
     # Quasi-steady flap-induced normalwash
-    wFlap = flap_normalwash(element)
+    wFlap = flap_normalwash(element,δNow)
 
     # Effective flap-induced normalwash
     wₑf = wFlap-sum(χ[flapStatesRange])
@@ -507,16 +505,17 @@ end
 
 
 """
-flap_normalwash(element::Element)
+flap_normalwash(element::Element,δNow)
 
-Computes the instantaneous flap-induced normalwash
+Computes the instantaneous (quasi-steady) flap-induced normalwash
 
 # Arguments
 - element::Element
+- δNow
 """
-function flap_normalwash(element::Element)
+function flap_normalwash(element::Element,δNow)
 
-    @unpack b,δNow,δdotNow = element.aero
+    @unpack b,δdotNow = element.aero
     @unpack Th = element.aero.flapLoadsSolver
     @unpack Uᵢ = element.aero.flowVelocitiesAndRates
 
@@ -556,16 +555,17 @@ end
 
 
 """
-flap_normalwash_rate(element::Element)
+flap_normalwash_rate(element::Element,δNow)
 
 Computes the time rate of the instantaneous flap-induced normalwash
 
 # Arguments
 - element::Element
+- δNow
 """
-function flap_normalwash_rate(element::Element)
+function flap_normalwash_rate(element::Element,δNow)
 
-    @unpack b,δNow,δdotNow,δddotNow = element.aero
+    @unpack b,δdotNow,δddotNow = element.aero
     @unpack Th = element.aero.flapLoadsSolver
     @unpack Uᵢ,Uᵢdot = element.aero.flowVelocitiesAndRates
 
@@ -576,19 +576,18 @@ end
 
 
 """
-cnαUₙTQC_rate(element::Element,airfoil::Airfoil)
+cnαUₙTQC_rate(element::Element)
 
 Computes the time rate of the product of cnα by UₙTQC
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
 """
-function cnαUₙTQC_rate(element::Element,airfoil::Airfoil)
+function cnαUₙTQC_rate(element::Element)
 
     @unpack Ma,βₚ,βₚ² = element.aero
     @unpack Uᵢ,Uᵢdot,UₙTQC,UₙdotTQC = element.aero.flowVelocitiesAndRates
-    @unpack cnα = airfoil.attachedFlowParameters
+    @unpack cnα = element.aero.airfoil.attachedFlowParameters
 
     # Time derivative of cnα (assuming it scales with 1/βₚ)
     βₚdot = -Uᵢ*Uᵢdot/((Uᵢ/Ma)^2*βₚ)
@@ -600,15 +599,15 @@ end
 
 
 """
-attached_flow_state_matrices!(element::Element,airfoil::Airfoil)
+attached_flow_state_matrices!(element::Element,δNow)
 
 Computes the aerodynamic state matrices for the indicial and inflow solvers
 
 # Arguments
 - element::Element
-- airfoil::Airfoil
+- δNow
 """
-function attached_flow_state_matrices!(element::Element,airfoil::Airfoil)
+function attached_flow_state_matrices!(element::Element,δNow)
 
     @unpack solver,nTotalAeroStates,pitchPlungeStatesRange,flapStatesRange,gustStatesRange,b,βₚ² = element.aero
     @unpack Uᵢ,UₙdotTQC = element.aero.flowVelocitiesAndRates
@@ -629,7 +628,7 @@ function attached_flow_state_matrices!(element::Element,airfoil::Airfoil)
     if typeof(solver) == Indicial
         @unpack AW,bWDiag = element.aero.solver
         # Get the rate of cnαUₙTQC
-        cnαUₙTQCdot = cnαUₙTQC_rate(element,airfoil)
+        cnαUₙTQCdot = cnαUₙTQC_rate(element)
         # Set state matrices
         A[pitchPlungeStatesRange,pitchPlungeStatesRange] = tmp*bWDiag
         B[pitchPlungeStatesRange] = cnαUₙTQCdot*AW
@@ -644,7 +643,7 @@ function attached_flow_state_matrices!(element::Element,airfoil::Airfoil)
     if !isnothing(flapStatesRange)
         @unpack AWf,bWfDiag = element.aero.flapLoadsSolver
         # Get flap normalwash rate
-        wdotFlap = flap_normalwash_rate(element)
+        wdotFlap = flap_normalwash_rate(element,δNow)
         # Set state matrices
         A[flapStatesRange,flapStatesRange] = tmp*bWfDiag
         B[flapStatesRange] = wdotFlap*AWf
@@ -666,17 +665,16 @@ end
 
 
 """
-update_initial_aero_states!(problem::Problem,model::Model)
+update_initial_aero_states!(problem::Problem)
 
 Updates the initial aerodynamic states assuming their rates are zero
 
 # Arguments
 - problem::Problem
-- model::Model
 """
-function update_initial_aero_states!(problem::Problem,model::Model)
+function update_initial_aero_states!(problem::Problem)
 
-    @unpack x = problem
+    @unpack x,model = problem
 
     # Loop over elements
     for element in model.elements

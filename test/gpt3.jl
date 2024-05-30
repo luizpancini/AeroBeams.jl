@@ -1,38 +1,26 @@
-using Plots
+using Plots, Statistics
 
-function make_batman()
-    p = [(0, 0), (0.5, 0.2), (1, 0), (1, 2),  (0.3, 1.2), (0.2, 2), (0, 1.7)]
-    s = [(0.2, 1), (0.4, 1), (2, 0), (0.5, -0.6), (0, 0), (0, -0.15)]
-    m = [(p[i] .+ p[i + 1]) ./ 2 .+ s[i] for i in 1:length(p) - 1]
+gr(size=(600,600))
 
-    pts = similar(m, 0)
-    for (i, mi) in enumerate(m)
-        append!(
-            pts,
-            map(BezierCurve([p[i], m[i], p[i + 1]]), range(0, 1, length = 30))
-        )
-    end
-    x, y = Plots.unzip(Tuple.(pts))
-    Shape(vcat(x, -reverse(x)), vcat(y, reverse(y)))
+function plot_iso3d(xs, ys, zs; lw=3, lc=:red, title="Isometric 3D plot",label=false, camera=(45,30))
+    # condition data for nearly isometric 3D plot 
+    x12, y12, z12 = extrema(xs), extrema(ys), extrema(zs)
+    d = maximum([diff([x12...]),diff([y12...]),diff([z12...])])[1] / 2
+    xm, ym, zm = mean(x12),  mean(y12),  mean(z12) 
+
+    # plot data
+    p = plot(; xlabel="x",ylabel="y",zlabel="z", aspect_ratio=:equal, grid=:true)
+    plot!(xlims=(xm-d,xm+d), ylims=(ym-d,ym+d), zlims=(zm-d,zm+d))
+    plot!(;camera=camera)    #(azimuth,elevation) ???
+    plot!(xs, ys, zs, title=title,lw=lw,lc=lc,label=label)
+    plot!(xs, ys, zlims(p)[1] .+ 0*zs, lw=1, lc=:lightgray, label=false)
+    plot!(xs, ylims(p)[2]  .+ 0*ys, zs, lw=1, lc=:lightgray, label=false)
+    plot!(xlims(p)[1]  .+ 0*xs, ys, zs, lw=1, lc=:lightgray, label=false)
 end
 
-# background and limits
-plt = plot(
-    bg = :black,
-    xlim = (0.1, 0.9),
-    ylim = (0.2, 1.5),
-    framestyle = :none,
-    size = (400, 400),
-    legend = false,
-)
-
-# create an ellipse in the sky
-pts = Plots.partialcircle(0, 2π, 100, 0.1)
-x, y = Plots.unzip(pts)
-x = 1.5x .+ 0.7
-y .+= 1.3
-pts = collect(zip(x, y))
-
-# beam
-beam = Shape([(0.3, 0.0), pts[95], pts[50], (0.3, 0.0)])
-plot!(beam, fillcolor = plot_color(:yellow, 0.3))
+#input data
+N = 100
+xs = LinRange(0,100,N)
+ys = LinRange(0,20,N) .+ 10*sin.(xs)
+zs = LinRange(-10,50,N) .+ 15*sin.(xs)
+plot_iso3d(xs, ys, zs)

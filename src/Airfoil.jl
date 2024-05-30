@@ -122,11 +122,33 @@
                 cnδRng =   1.0*ones(length(MaRng))
             else
                 error("Unavailable flap site ID")
-            end 
-        elseif name in ["HeliosPodAirfoil"]
-            # Bound Mach and corresponding compressibility factor
+            end
+        elseif name in ["HeliosWingAirfoil"]
+            # Bound Mach 
             Ma = max(0.001,min(0.3,Ma))
-            β = sqrt(1-Ma^2) 
+            # Mach-dependent parameters
+            MaRng  =       [0.001; 0.3]
+            α₀NRng = π/180*[  0.0; 0.0]
+            ϵₙRng =        [  1.0; 1.0]
+            ϵₘRng =        [  1.0; 1.0]
+            cd₀Rng =  1e-2*[  1.0; 1.0]  
+            cm₀Rng =  1e-2*[  2.5; 2.5]
+            cmαRng =       [  0.0; 0.0]
+            cnαRng =    2π*[  1.0; 1.0] 
+            if flapSiteID == 100
+                cdδRng = 0.0*ones(length(MaRng))
+                cmδRng = 0.0*ones(length(MaRng))
+                cnδRng = 0.0*ones(length(MaRng))
+            elseif flapSiteID == 75
+                cdδRng =   0.0*ones(length(MaRng))
+                cmδRng = -0.25*ones(length(MaRng))
+                cnδRng =   1.0*ones(length(MaRng))
+            else
+                error("Unavailable flap site ID")
+            end     
+        elseif name in ["HeliosPodAirfoil"]
+            # Bound Mach 
+            Ma = max(0.001,min(0.3,Ma))
             # Mach-dependent parameters
             MaRng  =       [0.001; 0.3]
             α₀NRng = π/180*[  0.0; 0.0]
@@ -140,10 +162,6 @@
                 cdδRng = 0.0*ones(length(MaRng))
                 cmδRng = 0.0*ones(length(MaRng))
                 cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
             else
                 error("Unavailable flap site ID")
             end
@@ -243,7 +261,7 @@ Initializes the airfoil with the predefined name and flap site ID
 """
 function create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0)
 
-    attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID)
+    attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)
 
     return Airfoil(name,attachedFlowParameters)
 end
@@ -255,6 +273,7 @@ NACA0006 = create_Airfoil(name="NACA0006")
 NACA0012 = create_Airfoil(name="NACA0012")
 NACA0018 = create_Airfoil(name="NACA0018")
 NACA23012A = create_Airfoil(name="NACA23012A")
+HeliosWingAirfoil = create_Airfoil(name="HeliosWingAirfoil")
 HeliosPodAirfoil = create_Airfoil(name="HeliosPodAirfoil")
 BWBAirfoil = create_Airfoil(name="BWBAirfoil")
-export flatPlate, NACA0002, NACA0006, NACA0012, NACA0018, NACA23012A, HeliosPodAirfoil, BWBAirfoil
+export flatPlate, NACA0002, NACA0006, NACA0012, NACA0018, NACA23012A, HeliosWingAirfoil, HeliosPodAirfoil, BWBAirfoil

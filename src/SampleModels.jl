@@ -1,0 +1,466 @@
+"""
+Pazy_nodal_positions()
+
+Gets the normalized nodal positions of the Pazy wing
+
+# Arguments
+"""
+function Pazy_nodal_positions()
+    return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
+end
+
+
+"""
+Pazy_stiffness_matrices(GAy::Number,GAz::Number)
+
+Gets the sectional stiffness matrices of the Pazy wing
+
+# Arguments
+- GAy::Number
+- GAz::Number
+"""
+function Pazy_stiffness_matrices(GAy::Number,GAz::Number)
+
+    @assert GAy > 0
+    @assert GAz > 0
+
+    # Load elemental sectional stiffness values
+    EA = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/EA.txt")))
+    GJ = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/GJ.txt")))
+    EIy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/EIy.txt")))
+    EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/EIz.txt")))
+    c_EA_GJ = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EA_GJ.txt")))
+    c_EA_EIy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EA_EIy.txt")))
+    c_EA_EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EA_EIz.txt")))
+    c_GJ_EIy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_GJ_EIy.txt")))
+    c_GJ_EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_GJ_EIz.txt")))
+    c_EIy_EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EIy_EIz.txt")))
+
+    # Set matrices
+    C = [[    EA[i]  0    0  c_EA_GJ[i]  c_EA_EIy[i]  c_EA_EIz[i];
+                  0 GAy   0           0            0            0;
+                  0  0  GAz           0            0            0;
+         c_EA_GJ[i]  0    0       GJ[i]  c_GJ_EIy[i]  c_GJ_EIz[i];
+        c_EA_EIy[i]  0    0 c_GJ_EIy[i]       EIy[i] c_EIy_EIz[i];
+        c_EA_EIz[i]  0    0 c_GJ_EIz[i] c_EIy_EIz[i]       EIz[i]] for i in 1:15]
+
+    return C
+end
+
+"""
+Pazy_inertia_matrices()
+
+Gets the sectional inertia matrices of the Pazy wing
+
+"""
+function Pazy_inertia_matrices()
+
+    # Length and nodal position
+    L = 0.549843728 
+    nodalPositions = Pazy_nodal_positions()
+
+    # Load nodal inertia values
+    m = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m.txt")))
+    m_x1 = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m_x1.txt")))
+    m_x2 = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m_x2.txt")))
+    m_x3 = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m_x3.txt")))
+    Ixx = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Ixx.txt")))
+    Ixy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Ixy.txt")))
+    Ixz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Ixz.txt")))
+    Iyy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Iyy.txt")))
+    Iyz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Iyz.txt")))
+    Izz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Izz.txt")))
+
+    # Set matrices
+    I = Vector{Matrix{Float64}}(undef,15)
+    for n=2:16
+        Δℓ = L*(nodalPositions[n]-nodalPositions[n-1])
+        η = [Δℓ/2+m_x1[n]; m_x2[n]; m_x3[n]]
+        inertiaMatrix = [Ixx[n] Ixy[n] Ixz[n]; Ixy[n] Iyy[n] Iyz[n]; Ixz[n] Iyz[n] Izz[n]]
+        I[n-1] = 1/Δℓ*[       m[n]*I3                -m[n]*tilde(η);
+                        m[n]*tilde(η) inertiaMatrix-m[n]*tilde(η)^2]
+        if n==2
+            η = [-Δℓ/2+m_x1[1]; m_x2[1]; m_x3[1]]
+            inertiaMatrix = [Ixx[1] Ixy[1] Ixz[1]; Ixy[1] Iyy[1] Iyz[1]; Ixz[1] Iyz[1] Izz[1]]
+            I[1] += 1/Δℓ*[        m[1]*I3                -m[1]*tilde(η);
+                            m[1]*tilde(η) inertiaMatrix-m[1]*tilde(η)^2]
+        end
+    end
+
+    return I
+end
+
+
+"""
+create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy)
+
+Creates the Pazy wing
+
+# Arguments
+- p0::Vector{<:Number}
+- airfoil::Airfoil=NACA0018
+- aeroSolver::AeroSolver=Indicial()
+- derivationMethod::DerivationMethod=AD()
+- withTipCorrection::Bool=true
+- GAy::Number=1e16
+- GAz::Number=GAy
+"""
+function create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy)
+
+    # Length
+    L = 0.549843728
+
+    # Number of elements
+    nElem = 15
+
+    # Normalized nodal positions
+    nodalPositions = Pazy_nodal_positions()
+
+    # Stiffness matrices
+    C = Pazy_stiffness_matrices(GAy,GAz)
+
+    # Inertia matrices
+    I = Pazy_inertia_matrices()
+
+    # Chord
+    chord = 0.0989
+
+    # Normalized spar position
+    normSparPos = 0.44096
+
+    # Aerodynamic surface
+    surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection)
+
+    # Wing 
+    wing = create_Beam(name="pazy",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,C=C,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf)
+
+    return wing,L,nElem,chord,normSparPos,airfoil,surf
+end
+export create_Pazy
+
+
+"""
+Pazy_tip_loss_factor(αᵣ::Number,U::Number)
+
+Computes the tip loss factor for the Pazy wing's tip correction function
+
+# Arguments
+- αᵣ::Number
+- U::Number
+"""
+function Pazy_tip_loss_factor(αᵣ::Number,U::Number)
+
+    # Bound inputs
+    αᵣ = min(7,max(αᵣ,0))
+    U = min(60,max(U,0))
+
+    # Coefficients as a function of root angle of attack
+    αᵣRange = [0; 1; 2; 3; 4; 5; 6; 7]
+    τ₀Range = [6.58; 6.29; 6.00; 5.92; 5.91; 6.08; 6.43; 6.88]
+    τ₁Range = 1e-2*[0; 3.33; 5.19; 6.01; 6.49; 5.98; 4.43; 2.30]
+    τ₂Range = -1e-4*[0; 5.56; 8.59; 10.6; 12.3; 12.8; 11.9; 10.2]
+    τ₀ = interpolate(αᵣRange,τ₀Range,αᵣ)
+    τ₁ = interpolate(αᵣRange,τ₁Range,αᵣ)
+    τ₂ = interpolate(αᵣRange,τ₂Range,αᵣ)
+    
+    return τ₀ + τ₁*U + τ₂*U^2
+end
+export Pazy_tip_loss_factor
+
+
+"""
+create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool)
+
+Creates a model based on the flying-wing aircraft described by Patil and Hodges in: Flight Dynamics of Highly Flexible Flying Wings (2006)
+
+# Keyword arguments
+- `altitude::Number` = altitude
+- `aeroSolver::AeroSolver` = aerodynamic solver for pitch and plunge loads
+- `derivationMethod::DerivationMethod`
+- `wingAirfoil::Airfoil`
+- `podAirfoil::Airfoil`
+- `beamPods::Bool`
+- `stiffnessFactor::Number`
+- `∞::Number`
+- `nElemStraightSemispan::Int64`
+- `nElemDihedralSemispan::Int64`
+- `nElemPod::Int64`
+- `payloadPounds::Number`
+- `airspeed::Number`
+- `δIsTrimVariable::Bool`
+- `thrustIsTrimVariable::Bool`
+- `δ::Union{Nothing,Number,<:Function}`
+- `thrust::Union{Number,<:Function}`
+- `reducedChord::Bool`
+"""
+function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false)
+
+    # Validate
+    @assert ∞ > 1e8
+    @assert stiffnessFactor > 0
+    @assert payloadPounds >= 0
+    @assert airspeed >= 0
+    @assert iseven(nElemStraightSemispan)
+    δIsInput = !isnothing(δ)
+    if δIsInput
+        @assert !δIsTrimVariable
+    end
+    if δ isa Number
+        δconst = deepcopy(δ)
+        δ = t -> δconst
+    end
+    if thrust isa Number
+        thrustConst = deepcopy(thrust)
+        thrust = t -> thrustConst
+    end
+
+    # Wing surface
+    wChord = reducedChord ? 7*0.3048 : 8*0.3048
+    wNormSparPos = 0.25
+    wNormFlapPos = 0.75
+    wNormFlapSpan = [0,1]
+    wingSurf = δIsInput ? create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=wingAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,δ=δ,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=wingAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,δIsTrimVariable=δIsTrimVariable,updateAirfoilParameters=false)
+
+    # Wing properties
+    wingSection = 40*0.3048
+    Γ = 10*π/180
+    GJ,EIy,EIz = 1.6530e5,1.0331e6,1.2398e7
+    wρA,wρIy,wρIz = 8.929,0.691,3.456
+    GJ,EIy,EIz = multiply_inplace(stiffnessFactor, GJ,EIy,EIz)
+    wingC = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    wingI = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
+
+    # Wing beams
+    leftWingDihedral = create_Beam(name="leftWingDihedral",length=wingSection,nElements=nElemDihedralSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf),rotationParametrization="E321",p0=[0;Γ;0])
+
+    leftWingStraight = create_Beam(name="leftWingStraight",length=2*wingSection,nElements=nElemStraightSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf))
+
+    rightWingStraight = create_Beam(name="rightWingStraight",length=2*wingSection,nElements=nElemStraightSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf))
+
+    rightWingDihedral = create_Beam(name="rightWingDihedral",length=wingSection,nElements=nElemDihedralSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf),rotationParametrization="E321",p0=[0;-Γ;0])
+
+    # Link elevators
+    elevatorLink = create_FlapLink(masterBeam=rightWingStraight,slaveBeams=[leftWingDihedral,leftWingStraight,rightWingDihedral])
+
+    # Pods' point inertias
+    podLength = 6*0.3048
+    podMassVertOffset = podLength/2
+    sidePodMass = 50*0.453592
+    centerPodMass = 60*0.453592
+    payloadMass = payloadPounds*0.453592
+
+    leftSidePod = PointInertia(elementID=1,η=[-(2*wingSection/nElemStraightSemispan)/2;0;-podMassVertOffset],mass=sidePodMass)
+
+    centerPod = PointInertia(elementID=nElemStraightSemispan,η=[(2*wingSection/nElemStraightSemispan)/2;0;-podMassVertOffset],mass=centerPodMass+payloadMass)
+
+    rightSidePod = PointInertia(elementID=nElemStraightSemispan,η=[(2*wingSection/nElemStraightSemispan)/2;0;-podMassVertOffset],mass=sidePodMass)
+
+    add_point_inertias_to_beam!(leftWingStraight,inertias=[leftSidePod,centerPod])
+
+    add_point_inertias_to_beam!(rightWingStraight,inertias=[rightSidePod])
+
+    # Pod surface
+    podSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=podAirfoil,c=wChord,normSparPos=wNormSparPos,updateAirfoilParameters=false)
+
+    # Pod properties
+    pρA,pρIy,pρIz = 0,wρIy,wρIz
+    podC = isotropic_stiffness_matrix(∞=∞)
+    podI = inertia_matrix(ρA=pρA,ρIy=pρIy,ρIz=pρIz)
+
+    # Pod beams
+    leftPod = create_Beam(name="leftPod",length=podLength,nElements=nElemPod,C=[podC],I=[podI],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[leftWingStraight],connectedNodesThis=[1],connectedNodesOther=[1])
+
+    centerPod = create_Beam(name="centerPod",length=podLength,nElements=nElemPod,C=[podC],I=[podI],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[rightWingStraight],connectedNodesThis=[1],connectedNodesOther=[1])
+
+    rightPod = create_Beam(name="rightPod",length=podLength,nElements=nElemPod,C=[podC],I=[podI],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[rightWingStraight],connectedNodesThis=[1],connectedNodesOther=[nElemStraightSemispan+1])
+
+    # Generate copies for wing model (has to be done before aircraft model creation)
+    wingStraight = deepcopy(rightWingStraight)
+    wingDihedral = deepcopy(rightWingDihedral)
+    wingPod = deepcopy(rightPod)
+
+    # Propellers thrust force
+    thrustValue = thrustIsTrimVariable ? t -> 0 : thrust
+
+    thrustLeftOut = create_BC(name="thrustLeftOut",beam=leftWingStraight,node=1,types=["Ff2b"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    thrustLeftIn = create_BC(name="thrustLeftIn",beam=leftWingStraight,node=div(nElemStraightSemispan,2)+1,types=["Ff2b"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    thrustCenter = create_BC(name="thrustCenter",beam=leftWingStraight,node=nElemStraightSemispan+1,types=["Ff2b"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    thrustRightIn = create_BC(name="thrustRightIn",beam=rightWingStraight,node=div(nElemStraightSemispan,2)+1,types=["Ff2b"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    thrustRightOut = create_BC(name="thrustRightOut",beam=rightWingStraight,node=nElemStraightSemispan+1,types=["Ff2b"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    aircraftBCs = [thrustLeftOut,thrustLeftIn,thrustCenter,thrustRightIn,thrustRightOut]
+
+    # Link propellers' thrust, if applicable
+    thrustsLink = thrustIsTrimVariable ? [create_TrimLoadsLink(masterBC=thrustCenter,slaveBCs=[thrustLeftOut,thrustLeftIn,thrustRightIn,thrustRightOut])] : Vector{TrimLoadsLink}()
+
+    # Beams of aircraft model
+    aircraftBeams = beamPods ? [leftWingDihedral,leftWingStraight,rightWingStraight,rightWingDihedral,leftPod,centerPod,rightPod] : [leftWingDihedral,leftWingStraight,rightWingStraight,rightWingDihedral]
+
+    # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
+    aircraft = create_Model(name="Helios",beams=aircraftBeams,BCs=aircraftBCs,initialPosition=[-wingSection*(2+cos(Γ));0;wingSection*sin(Γ)],altitude=altitude,gravityVector=[0;0;-9.80665],v_A=[0;airspeed;0],flapLinks=[elevatorLink],trimLoadsLinks=thrustsLink)
+
+    # Set midpsan element for the aircraft model
+    midSpanElem = nElemDihedralSemispan + nElemStraightSemispan
+
+    # Beams of wing model
+    wingBeams = beamPods ? [wingStraight,wingDihedral,wingPod] : [wingStraight,wingDihedral]
+
+    # Clamp for wing model
+    clamp = create_BC(name="clamp",beam=wingStraight,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+
+    # Link elevators
+    elevatorLinkWing = create_FlapLink(masterBeam=wingStraight,slaveBeams=[wingDihedral])
+
+    # Wing model
+    wing = create_Model(name="HeliosWing",beams=wingBeams,BCs=[clamp],altitude=altitude,gravityVector=[0;0;-9.80665],v_A=[0;airspeed;0],flapLinks=[elevatorLinkWing])
+
+    return aircraft,midSpanElem,wing,leftWingStraight,rightWingStraight,leftWingDihedral,rightWingDihedral,leftPod,rightPod,centerPod
+
+end
+export create_Helios
+
+
+"""
+create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=5,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,wingCd0::Number=0)
+
+Creates a model based on the conventional HALE aircraft described by Patil, Hodges and Cesnik in: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
+
+# Keyword arguments
+- `altitude::Number` = altitude
+- `aeroSolver::AeroSolver` = aerodynamic solver for pitch and plunge loads
+- `flapLoadsSolver::FlapAeroSolver` = aerodynamic solver for flap loads
+- `stabilizersAero::Bool` = TF for stabilizers with aerodynamic surfaces
+- `includeVS::Bool=true` = TF to include a vertical stabilizer in the model   
+- `nElemWing::Int64` = # of elements of the full wing
+- `nElemHorzStabilizer::Int64` = # of elements of the horizontal stabilizer
+- `nElemTailBoom::Int64` = # of elements of the tail boom
+- `nElemVertStabilizer::Int64` = # of elements of the vertical stabilizer
+- `∞::Number=1e12` = value of rigid sectional stiffness properties
+- `stiffnessFactor::Number=1` = multiplier factor for the wing's sectional stiffness properties
+- `wingCd0::Number=0` = parisite drag coefficient for the wing
+"""
+function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,wingCd0::Number=0,stabsCd0::Number=0,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0)
+
+    # Validate
+    @assert iseven(nElemWing)
+    @assert iseven(nElemHorzStabilizer)
+    @assert ∞ > 1e8
+    @assert stiffnessFactor > 0
+    @assert wingCd0 >= 0
+    @assert stabsCd0 >= 0
+    @assert airspeed >= 0
+    δElevIsInput = !isnothing(δElev)
+    if δElevIsInput
+        @assert !δElevIsTrimVariable
+    end
+    if δElev isa Number
+        δElevConst = deepcopy(δElev)
+        δElev = t -> δElevConst
+    end
+    if thrust isa Number
+        thrustConst = deepcopy(thrust)
+        thrust = t -> thrustConst
+    end
+
+    # Wing surface
+    wAirfoil = deepcopy(flatPlate)
+    wChord = 1
+    wNormSparPos = 0.5
+    wNormFlapPos = 0.75
+    wNormFlapSpan = [0.75,1]
+    wingSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,updateAirfoilParameters=false)
+    wingSurf.airfoil.attachedFlowParameters.cd₀ = wingCd0
+
+    # Wing properties
+    Lw = 16
+    wGJ,wEIy,wEIz = 1e4,2e4,4e6
+    wGJ,wEIy,wEIz = multiply_inplace(stiffnessFactor, wGJ,wEIy,wEIz)
+    wρA,wρIs = 0.75,0.1
+    wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
+    Cwing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
+    Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz,ρIs=wρIs)
+
+    # Initial position for first node of left wing
+    ρ = 1/k2
+    θ = Lw/ρ
+    x = ρ*sin(θ)
+    y = ρ*(1-cos(θ))
+    initialPosition = k2 == 0 ? [-Lw; 0; 0] : [-x; 0; -y]
+
+    # Initial angle of twist
+    r = 1/k1
+    ψ = Lw/r
+
+    # Wing beams
+    leftWing = create_Beam(name="leftWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=deepcopy(wingSurf),k=[-k1;k2;0],rotationParametrization="E321",p0=[0;-θ;-ψ])
+
+    rightWing = create_Beam(name="rightWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=deepcopy(wingSurf),k=[k1;k2;0],connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
+
+    # Link wing ailerons
+    aileronLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[-1])
+
+    # Tail boom
+    Lt = 10
+    tρA,tρIs = 0.08,0.1
+    tailBoom = create_Beam(name="tailBoom",length=Lt,nElements=nElemTailBoom,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIs=tρIs)],rotationParametrization="E321",p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])
+
+    # Payload (at wing's spar position)
+    payloadMass = 50
+    payloadInertia = 200
+    payload = PointInertia(elementID=1,η=[-Lt/nElemTailBoom/2;0;0],mass=payloadMass,Iyy=payloadInertia,Izz=payloadInertia,Ixx=payloadInertia)
+    add_point_inertias_to_beam!(tailBoom,inertias=[payload])
+
+    # Horizontal stabilizer surface
+    hAirfoil = deepcopy(flatPlate)
+    hChord = 0.5
+    hNormSparPos = 0.5
+    hNormFlapPos = 0.75
+    hNormFlapSpan = [0,1]
+    hsSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=hAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δ=δElev,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=hAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=false)
+    hsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
+
+    # Horizontal stabilizer beam
+    Lh = 5
+    hρA,hρIs = 0.08,0.01
+    horzStabilizer = create_Beam(name="horzStabilizer",length=Lh,initialPosition=[-Lh/2;0;0],nElements=nElemHorzStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=hρA,ρIs=hρIs)],connectedBeams=[tailBoom],connectedNodesThis=[div(nElemHorzStabilizer,2)+1],connectedNodesOther=[nElemTailBoom+1])
+    if stabilizersAero
+        horzStabilizer.aeroSurface = hsSurf
+        update_beam!(horzStabilizer)
+    end
+
+    # Vertical stabilizer surface
+    vAirfoil = deepcopy(flatPlate)
+    vChord = 0.5
+    vNormSparPos = 0.5
+    vNormFlapPos = 0.75
+    vNormFlapSpan = [0,1]
+    vsSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=vAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,updateAirfoilParameters=false)
+    vsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
+
+    # Vertical stabilizer beam
+    Lv = 2.5
+    vρA,vρIs = 0.08,0.01
+    vertStabilizer = create_Beam(name="vertStabilizer",length=Lv,nElements=nElemVertStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=vρA,ρIs=vρIs)],rotationParametrization="E321",p0=[0;-π/2;0],connectedBeams=[tailBoom],connectedNodesThis=[1],connectedNodesOther=[nElemTailBoom+1])
+    if stabilizersAero
+        vertStabilizer.aeroSurface = vsSurf
+        update_beam!(vertStabilizer)
+    end
+
+    # Propeller thrust force 
+    thrustValue = thrustIsTrimVariable ? t -> 0 : thrust
+
+    propThrust = create_BC(name="propThrust",beam=rightWing,node=1,types=["Ff2b"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    # Beams of the model
+    beams = includeVS ? [leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer] : [leftWing,rightWing,tailBoom,horzStabilizer]
+
+    # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
+    aircraft = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;-9.80665],flapLinks=[aileronLink])
+
+    return aircraft,leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer
+end
+export create_conventional_HALE

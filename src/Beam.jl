@@ -7,6 +7,7 @@ Beam composite type
 
 # Fields
 - name::String = name of the beam
+- initialPosition::Vector{<:Number} = initial position of the beam, relative to its connection node
 - connectedNodesThis::Int64 = which node is connected to another beam
 - connectedBeams::Union{Nothing, Beam} = to which beam the current beam is connected
 - connectedNodesOther::Int64 = to which node of the other beam it is connected
@@ -35,6 +36,7 @@ Beam composite type
     rotationParametrization::String
     p0::Vector{<:Number}
     k::Vector{<:Number}
+    initialPosition::Vector{<:Number}
     # Discretization
     nElements::Int64 
     normalizedNodalPositions::Vector{Float64}
@@ -98,10 +100,10 @@ export Beam
 
 
 # Constructor
-function create_Beam(;name::String="",length::Number,rotationParametrization::String="WM",p0::Vector{<:Number}=zeros(3),k::Vector{<:Number}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),C::Vector{<:Matrix{<:Number}},I::Vector{<:Matrix{<:Number}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing,aeroSurface::Union{Nothing,AeroSurface}=nothing)
+function create_Beam(;name::String="",length::Number,rotationParametrization::String="WM",p0::Vector{<:Number}=zeros(3),k::Vector{<:Number}=zeros(3),initialPosition::Vector{<:Number}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),C::Vector{<:Matrix{<:Number}},I::Vector{<:Matrix{<:Number}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing,aeroSurface::Union{Nothing,AeroSurface}=nothing)
 
     # Initialize the beam
-    self = Beam(name=name,length=length,rotationParametrization=rotationParametrization,p0=p0,k=k,nElements=nElements,normalizedNodalPositions=normalizedNodalPositions,C=C,I=I,connectedBeams=connectedBeams,connectedNodesThis=connectedNodesThis,connectedNodesOther=connectedNodesOther,pointInertias=pointInertias,hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,u0_of_x1=u0_of_x1,p0_of_x1=p0_of_x1,udot0_of_x1=udot0_of_x1,pdot0_of_x1=pdot0_of_x1,f_A_of_x1t=f_A_of_x1t,m_A_of_x1t=m_A_of_x1t,f_b_of_x1t=f_b_of_x1t,m_b_of_x1t=m_b_of_x1t,ff_A_of_x1t=ff_A_of_x1t,mf_A_of_x1t=mf_A_of_x1t,ff_b_of_x1t=ff_b_of_x1t,mf_b_of_x1t=mf_b_of_x1t,aeroSurface=aeroSurface)
+    self = Beam(name=name,length=length,rotationParametrization=rotationParametrization,p0=p0,k=k,initialPosition=initialPosition,nElements=nElements,normalizedNodalPositions=normalizedNodalPositions,C=C,I=I,connectedBeams=connectedBeams,connectedNodesThis=connectedNodesThis,connectedNodesOther=connectedNodesOther,pointInertias=pointInertias,hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,u0_of_x1=u0_of_x1,p0_of_x1=p0_of_x1,udot0_of_x1=udot0_of_x1,pdot0_of_x1=pdot0_of_x1,f_A_of_x1t=f_A_of_x1t,m_A_of_x1t=m_A_of_x1t,f_b_of_x1t=f_b_of_x1t,m_b_of_x1t=m_b_of_x1t,ff_A_of_x1t=ff_A_of_x1t,mf_A_of_x1t=mf_A_of_x1t,ff_b_of_x1t=ff_b_of_x1t,mf_b_of_x1t=mf_b_of_x1t,aeroSurface=aeroSurface)
 
     # Validate and update the beam 
     update_beam!(self)
@@ -154,6 +156,9 @@ Validates the beam inputs
 - beam::Beam
 """
 function validate_beam!(beam::Beam)
+
+    # Validate initial position of the first node of the beam
+    @assert length(beam.initialPosition) == 3
 
     # Validate sectional matrices
     validate_sectional_matrices(beam)
@@ -557,7 +562,7 @@ function set_nodal_coordinates!(beam::Beam)
     # Reset nodal coordinates
     r_n = Vector{Vector{Float64}}()
 
-    # Set nodal coordinates of each element into the beam
+    # Set nodal coordinates of each element into the beam (excluding the initial position)
     for element in beam.elements
         push!(r_n,element.r_n1,element.r_n2)
     end

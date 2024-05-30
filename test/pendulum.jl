@@ -30,7 +30,7 @@ tf = cycles*T
 Δt = T/100
 
 # Create and solve the problem
-problem = create_DynamicProblem(model=pendulum,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=pendulum,finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true)
 solve!(problem)
 # @time solve!(problem)
 # @profview solve!(problem)
@@ -39,7 +39,6 @@ solve!(problem)
 t = problem.timeVector
 u1_tip = [problem.nodalStatesOverTime[i][end].u_n2[1] for i in 1:length(t)]
 u3_tip = [problem.nodalStatesOverTime[i][end].u_n2[3] for i in 1:length(t)]
-
 
 # Analytical solution (valid for small θ₀)
 θ = θ₀*cos.(ω*t)

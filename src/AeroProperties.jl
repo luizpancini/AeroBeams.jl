@@ -240,8 +240,8 @@ end
     flapSiteID::Int64
     normFlapPos::Float64
     flapped::Bool
-    # Flap deflection TF, values and its rates as functions of time
-    δIsInput::Bool
+    # Flap deflection trim TF, values and its rates as functions of time
+    δIsTrimVariable::Bool
     δ::Function
     δdot::Function
     δddot::Function
@@ -249,6 +249,8 @@ end
     δNow::Number
     δdotNow::Number
     δddotNow::Number
+    # Flap deflection multiplier for slave surfaces
+    δMultiplier::Number
     # TF to update airfoil parameters according to flow parameters
     updateAirfoilParameters::Bool
     # Tip loss correction factor as a function of the element's local coordinate (ζ), and value at midpoint 
@@ -283,6 +285,10 @@ end
     f2χ_χ::Matrix{Float64} = zeros(3,nTotalAeroStates)
     m1χ_χ::Matrix{Float64} = zeros(3,nTotalAeroStates)
     m2χ_χ::Matrix{Float64} = zeros(3,nTotalAeroStates)
+    f1χ_δ::Vector{Float64} = zeros(3)
+    f2χ_δ::Vector{Float64} = zeros(3)
+    m1χ_δ::Vector{Float64} = zeros(3)
+    m2χ_δ::Vector{Float64} = zeros(3)
     F_χ_V::Matrix{Float64} = zeros(nTotalAeroStates,3)
     F_χ_Ω::Matrix{Float64} = zeros(nTotalAeroStates,3)
     F_χ_χ::Matrix{Float64} = initial_F_χ_χ(solver,nTotalAeroStates)
@@ -322,13 +328,13 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
     end
     flapped = normFlapPos < 1 ? true : false
 
-    # Set aerodynamic solvers and total number of aerodynamic states
+    # Set aerodynamic solvers and number of aerodynamic states
     solver = aeroSurface.solver
     flapLoadsSolver = aeroSurface.flapLoadsSolver
     gustLoadsSolver = aeroSurface.gustLoadsSolver
 
-    # TF for flap states
-    hasFlapStates = flapped && typeof(flapLoadsSolver) == ThinAirfoilTheory ? true : false
+    # TF for flap states (the element is flapped, solver is thin-airfoil theory, and flap deflection is either an user input or a trim variable)
+    hasFlapStates = flapped && typeof(flapLoadsSolver) == ThinAirfoilTheory && (aeroSurface.δIsInput || aeroSurface.δIsTrimVariable) ? true : false
 
     # Update Theodorsen's flap constants, if applicable
     if hasFlapStates
@@ -348,14 +354,17 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
     # Set aerodynamic derivatives calculation method
     derivationMethod = aeroSurface.derivationMethod
 
-    # Set flap deflection TF, value and rates
-    δIsInput = aeroSurface.δIsInput
+    # Set flap deflection trim TF, value and rates
+    δIsTrimVariable = aeroSurface.δIsTrimVariable
     δ = aeroSurface.δ
     δdot = aeroSurface.δdot
     δddot = aeroSurface.δddot
     δNow = δ(0)
     δdotNow = δdot(0)
     δddotNow = δddot(0)
+
+    # Initialize flap deflection multiplier for slave surfaces (updated later on model assembly)
+    δMultiplier = 1.0
 
     # Set TF to update airfoil parameters according to flow parameters
     updateAirfoilParameters = aeroSurface.updateAirfoilParameters
@@ -374,7 +383,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
         end
     end
 
-    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsInput=δIsInput,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ)
+    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ)
 end
 
 

@@ -8,7 +8,7 @@ Boundary conditions composite type
 - beam::Beam = beam at which the BC is applied
 - node::Int64 = node of the beam at which the BC is applied
 - types::Vector{String} = types of BCs applied to the node (generalized forces and displacements)
-- values::Vector{Union{<:Number,<:Function}} = corresponding values of the applied BCs (constants or functions of time)
+- values = corresponding values of the applied BCs (constants or functions of time)
 """
 @with_kw mutable struct BC
 
@@ -43,8 +43,8 @@ function create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String}
     @assert length(types) == length(toBeTrimmed) "set a toBeTrimmed value for each BC type"
     for (i,type) in enumerate(types)
         @assert in(type,["u1A","u2A","u3A","p1A","p2A","p3A","u1b","u2b","u3b","p1b","p2b","p3b","F1A","F2A","F3A","M1A","M2A","M3A","F1b","F2b","F3b","M1b","M2b","M3b","Ff1A","Ff2A","Ff3A","Mf1A","Mf2A","Mf3A","Ff1b","Ff2b","Ff3b","Mf1b","Mf2b","Mf3b"])
-        if !(type in ["F1A","F2A","F3A","M1A","M2A","M3A","Ff1A","Ff2A","Ff3A","Mf1A","Mf2A","Mf3A"]) && toBeTrimmed[i]
-            error("Trim variables must be loads specified on basis A")
+        if !(type in ["F1A","F2A","F3A","M1A","M2A","M3A","F1b","F2b","F3b","M1b","M2b","M3b","Ff1A","Ff2A","Ff3A","Mf1A","Mf2A","Mf3A","Ff1b","Ff2b","Ff3b","Mf1b","Mf2b","Mf3b"]) && toBeTrimmed[i]
+            error("Trim variables must be loads")
         end
     end
     for value in values
@@ -150,11 +150,7 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
                 displacementSpecifiedOnA[i] = true
                 isLoadOnA[i] = false
                 # Check whether the BC is a constant or a function of time and set current value accordingly
-                if value isa Function
-                    displacementsOnA[i] = value(timeNow)          
-                else
-                    displacementsOnA[i] = value
-                end
+                displacementsOnA[i] = value isa Function ? value(timeNow) : value     
             end
 
             # The specified BC is a generalized displacement in basis b
@@ -171,11 +167,7 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
                 displacementSpecifiedOnb[i] = true
                 isLoadOnb[i] = false
                 # Check whether the BC is a constant or a function of time and set current value accordingly
-                if value isa Function
-                    displacementsOnb[i] = value(timeNow)          
-                else
-                    displacementsOnb[i] = value
-                end
+                displacementsOnb[i] = value isa Function ? value(timeNow) : value      
             end
 
             # The specified BC is a dead generalized force on basis A  
@@ -189,11 +181,7 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
                 # Update TFs
                 deadLoadSpecifiedOnA[i] = true
                 # Check whether the BC is a constant or a function of time and set current value accordingly
-                if value isa Function
-                    deadLoadsOnA[i] = value(timeNow)          
-                else
-                    deadLoadsOnA[i] = value
-                end
+                deadLoadsOnA[i] = value isa Function ? value(timeNow) : value   
                 # Check if is trim variable
                 if toTrim
                     isTrimOnA[i] = true
@@ -211,11 +199,7 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
                 # Update TFs
                 deadLoadSpecifiedOnb[i] = true
                 # Check whether the BC is a constant or a function of time and set current value accordingly
-                if value isa Function
-                    deadLoadsOnb[i] = value(timeNow)          
-                else
-                    deadLoadsOnb[i] = value
-                end
+                deadLoadsOnb[i] = value isa Function ? value(timeNow) : value         
                 # Check if is trim variable
                 if toTrim
                     isTrimOnb[i] = true
@@ -234,11 +218,7 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
                 followerLoadSpecifiedOnA[i] = true
                 isFollowerOnA[i] = true
                 # Check whether the BC is a constant or a function of time and set current value accordingly
-                if value isa Function
-                    followerLoadsOnA[i] = value(timeNow)          
-                else
-                    followerLoadsOnA[i] = value
-                end
+                followerLoadsOnA[i] = value isa Function ? value(timeNow) : value
                 # Check if is trim variable
                 if toTrim
                     isTrimOnA[i] = true
@@ -257,11 +237,7 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
                 followerLoadSpecifiedOnb[i] = true
                 isFollowerOnb[i] = true
                 # Check whether the BC is a constant or a function of time and set current value accordingly
-                if value isa Function
-                    followerLoadsOnb[i] = value(timeNow)          
-                else
-                    followerLoadsOnb[i] = value
-                end
+                followerLoadsOnb[i] = value isa Function ? value(timeNow) : value     
                 # Check if is trim variable
                 if toTrim
                     isTrimOnb[i] = true
@@ -283,9 +259,6 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
     # Set current prescribed values (as those already defined on basis A, excluding trim values)
     currentValue = (displacementsOnA + deadLoadsOnA + followerLoadsOnA) .* .!isTrim
 
-    # Set initial trim values (those already defined on basis A)
-    initialTrimValue = (deadLoadsOnA + followerLoadsOnA) .* isTrim
-
     # Update current TFs for being loads on basis A (after transfer from basis b)
     isLoad = isLoad .& vcat([x!=0 for x in R0_n * isLoadOnb[1:3]], [x!=0 for x in R0_n * isLoadOnb[4:6]]) 
 
@@ -297,12 +270,20 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
 
     # Update current prescribed values (excludes trim values) on basis A (after transfer from basis b)
     currentValue += vcat(R0_n * (displacementsOnb[1:3]+deadLoadsOnb[1:3]+followerLoadsOnb[1:3]), R0_n * (displacementsOnb[4:6]+deadLoadsOnb[4:6]+followerLoadsOnb[4:6])) .* .!isTrim
-    
-    # Update initial trim values on basis A
-    initialTrimValue += vcat(R0_n * (deadLoadsOnb[1:3]+followerLoadsOnb[1:3]), R0_n * (deadLoadsOnb[4:6]+followerLoadsOnb[4:6])) .* isTrim
-    
+
     # Pack
-    @pack! bc = currentValue,isLoad,isFollower,isTrim,initialTrimValue
+    @pack! bc = currentValue,isLoad,isFollower,isTrim
+
+    # If in initial time
+    if timeNow == 0
+        # Set initial trim values (those already defined on basis A)
+        initialTrimValue = (deadLoadsOnA + followerLoadsOnA) .* isTrim
+        
+        # Update initial trim values on basis A
+        initialTrimValue += vcat(R0_n * (deadLoadsOnb[1:3]+followerLoadsOnb[1:3]), R0_n * (deadLoadsOnb[4:6]+followerLoadsOnb[4:6])) .* isTrim
+        
+        @pack! bc = initialTrimValue
+    end
 
 end
 

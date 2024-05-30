@@ -22,7 +22,7 @@ wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_m
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-g = 9.807
+g = 9.80665
 h = 20e3
 SMWFlutterTipDispRange = create_Model(name="SMWFlutterTipDispRange",beams=[wing],BCs=[clamp],gravityVector=[0;0;-g],altitude=h)
 

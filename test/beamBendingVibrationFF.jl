@@ -1,8 +1,8 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 
 # Beam
-L = 10
-EA,GA,GJ,EIy,EIz = 1e6,1e6,1e6,1,1e6
+L = 100
+EA,GA,GJ,EIy,EIz = 1e6,1e9,1e9,1,1e6
 ρA = 1
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,0,0,0])
@@ -17,7 +17,7 @@ beamBendingVibrationFF = create_Model(name="beamBendingVibrationFF",beams=[beam]
 
 # Create and solve the problem
 nModes=6
-problem = create_EigenProblem(model=beamBendingVibrationFF,nModes=nModes,frequencyFilterLimits=[1e-3,Inf64],getLinearSolution=true,normalizeModeShapes=true)
+problem = create_EigenProblem(model=beamBendingVibrationFF,nModes=nModes,frequencyFilterLimits=[0,Inf64],getLinearSolution=true,normalizeModeShapes=true)
 solve!(problem)
 
 # Get frequencies and mode shapes
@@ -43,9 +43,9 @@ freqsAnalytical = (βL/L).^2*sqrt(EIy/ρA)
 
 # Plot
 colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
-plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$u_3/L\$")
+plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$u_3\$")
 for m in 1:nModes
-    plot!(x1/L, u3_modeShapes[m]/L, lw=2, c=colors[m], label=string("Mode ",string(m)))
+    plot!(x1/L, u3_modeShapes[m], lw=2, c=colors[m], label=string("Mode ",string(m)))
 end
 display(plt1)
 

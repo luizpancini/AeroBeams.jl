@@ -43,7 +43,7 @@ trimForceAnalytical = F/2
 println("Trim force relative error: $ϵ_rel")
 
 # Plots
-plt2 = plot(x1/L, F3/F, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3/F\$ [N]")
+plt2 = plot(x1/L, F3/F, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3/F\$")
 display(plt2)
 plt3 = plot(x1/L, M2/(F*L/4), lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2/(FL/4)\$")
 display(plt3)

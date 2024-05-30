@@ -29,7 +29,7 @@ TrimLoadsLink composite type
 end
 
 # Constructor
-function create_TrimLoadsLink(;masterBC::Union{Nothing,BC},slaveBCs::Union{Nothing,Vector{BC}})
+function create_TrimLoadsLink(;masterBC::BC,slaveBCs::Vector{BC})
 
     # Get BCs information
     masterBeam = masterBC.beam
@@ -38,7 +38,7 @@ function create_TrimLoadsLink(;masterBC::Union{Nothing,BC},slaveBCs::Union{Nothi
     slaveNodesLocalIDs = [BC.node for BC in slaveBCs]
 
     # Validate
-    validLoadTypes = ["F1A","F2A","F3A","M1A","M2A","M3A","Ff1A","Ff2A","Ff3A","Mf1A","Mf2A","Mf3A"]
+    validLoadTypes = ["F1A","F2A","F3A","M1A","M2A","M3A","F1b","F2b","F3b","M1b","M2b","M3b","Ff1A","Ff2A","Ff3A","Mf1A","Mf2A","Mf3A","Ff1b","Ff2b","Ff3b","Mf1b","Mf2b","Mf3b"]
     for masterLoadType in masterBC.types
         @assert masterLoadType in validLoadTypes "invalid load type for master load BC"
     end
@@ -59,3 +59,40 @@ function create_TrimLoadsLink(;masterBC::Union{Nothing,BC},slaveBCs::Union{Nothi
 
 end
 export create_TrimLoadsLink
+
+
+"""
+@with_kw mutable struct FlapLink
+
+    FlapLink composite type
+
+# Fields
+- masterBeam::Beam
+- slaveBeams::Vector{Beam}
+- δMultipliers::Vector{<:Number}
+"""
+@with_kw mutable struct FlapLink
+
+    masterBeam::Beam
+    slaveBeams::Vector{Beam}
+    δMultipliers::Vector{<:Number}
+
+end
+
+# Constructor
+function create_FlapLink(;masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Number}=ones(length(slaveBeams)))
+
+    # Validate 
+    @assert !isnothing(masterBeam.aeroSurface) "master beam has no aerodynamic surface"
+    @assert !isnothing(masterBeam.aeroSurface.normFlapSpan) "master beam's aerodynamic surface has no flap"
+    for beam in slaveBeams
+        @assert beam !== masterBeam "beam set as both slave and master"
+        @assert !isnothing(beam.aeroSurface) "slave beam has no aerodynamic surface"
+        @assert !isnothing(beam.aeroSurface.normFlapSpan) "slave beam's aerodynamic surface has no flap"
+    end
+    @assert length(δMultipliers) == length(slaveBeams) "specify one deflection multiplier for each slave surface"
+
+    return FlapLink(masterBeam,slaveBeams,δMultipliers)
+
+end
+export create_FlapLink

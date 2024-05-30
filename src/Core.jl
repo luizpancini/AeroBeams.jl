@@ -1,7 +1,7 @@
 """
 element_arrays!(problem::Problem,model::Model,element::Element)
 
-Gets the elemental contributions to the system's arrays (residual, Jacobian, inertia)
+Computes the elemental contributions to the system's arrays (residual, Jacobian, inertia)
 
 # Arguments
 - problem::Problem
@@ -54,7 +54,7 @@ function element_arrays!(problem::Problem,model::Model,element::Element)
     ## Residual array
     # --------------------------------------------------------------------------
     element_residual!(problem,model,element)
-    if problem.getExternalForcesArray
+    if problem.getExternalForcesArray || problem.getResidual
         return
     end
     
@@ -86,7 +86,7 @@ end
 """
 special_node_arrays!(problem::Problem,model::Model,specialNode::SpecialNode)
 
-Gets the nodal contributions to the system's arrays (residual, Jacobian, inertia)
+Computes the nodal contributions to the system's arrays (residual, Jacobian, inertia)
 
 # Arguments
 - problem::Problem
@@ -109,7 +109,7 @@ function special_node_arrays!(problem::Problem,model::Model,specialNode::Special
     ## Residual
     # --------------------------------------------------------------------------
     special_node_residual!(problem,model,specialNode)
-    if problem.getExternalForcesArray
+    if problem.getExternalForcesArray || problem.getResidual
         return
     end
 
@@ -127,7 +127,7 @@ end
 """
 element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Float64=0.0)
 
-Gets the generalized velocities of basis b at the element's midpoint, resolved in basis A
+Computes the generalized velocities of basis b at the element's midpoint, resolved in basis A
 
 # Arguments
 - model::Model
@@ -156,7 +156,7 @@ end
 """
 element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Float64=0.0)
 
-Gets the generalized accelerations of basis b at the element's midpoint, resolved in basis A
+Computes the generalized accelerations of basis b at the element's midpoint, resolved in basis A
 
 # Arguments
 - model::Model
@@ -185,7 +185,7 @@ end
 """
 element_states!(problem::Problem,model::Model,element::Element)
 
-Gets the states (generalized displacements, forces and velocities) of the element
+Gets the states (generalized displacements, forces, velocities and aerodynamic) of the element
 
 # Arguments
 - problem::Problem
@@ -214,7 +214,7 @@ end
 """
 element_states_rates!(problem::Problem,element::Element)
 
-Gets the states' rates of the current element
+Computes the states' rates of the current element
 
 # Arguments
 - problem::Problem
@@ -222,15 +222,8 @@ Gets the states' rates of the current element
 """
 function element_states_rates!(problem::Problem,element::Element)
 
-    # For all but dynamic problems, all states' rates are zero
+    # Skip for all but dynamic problems
     if !isa(problem,DynamicProblem)
-
-        udot,pdot,Vdot,Ωdot = zeros(3),zeros(3),zeros(3),zeros(3)
-
-        χdot = !isnothing(element.aero) ? zeros(element.aero.nTotalAeroStates) : Vector{Float64}()
-
-        @pack! element.statesRates = udot,pdot,Vdot,Ωdot,χdot
-
         return 
     end
 
@@ -257,7 +250,7 @@ end
 """
 element_rotation_variables!(problem::Problem,element::Element)
 
-Gets the rotation variables for the current element
+Computes the rotation variables for the current element
 
 # Arguments
 - problem::Problem
@@ -311,7 +304,7 @@ end
 """
 element_distributed_loads!(problem::Problem,model::Model,element::Element)
 
-Gets the nodal resultants from distributed loads on the current element, resolved in basis A
+Computes the nodal resultants from distributed loads on the current element, resolved in basis A
 
 # Arguments
 - problem::Problem
@@ -483,7 +476,6 @@ Computes the nodal resultants from the aerodynamic loads on the current element
 function aerodynamic_loads!(problem::Problem,model::Model,element::Element)
 
     @unpack aero = element
-    @unpack timeNow = problem
 
     # Initialize 
     f1_χ,f2_χ,m1_χ,m2_χ = zeros(3),zeros(3),zeros(3),zeros(3)
@@ -494,16 +486,18 @@ function aerodynamic_loads!(problem::Problem,model::Model,element::Element)
         return f1_χ,f2_χ,m1_χ,m2_χ
     end
 
-    # Unpack element data
+    @unpack x,timeNow = problem
+    @unpack DOF_δ = element
     @unpack V,Ω,χ = element.states
     @unpack Vdot,Ωdot = element.statesRates
-    @unpack nTotalAeroStates,airfoil = element.aero
+    @unpack nTotalAeroStates,airfoil,δ,δMultiplier = aero
+    δNow = !isempty(DOF_δ) ? x[DOF_δ]*δMultiplier : δ(timeNow)
 
     # Compute aerodynamic nodal resutants and state matrices
-    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,airfoil,V,Ω,χ,Vdot,Ωdot)
+    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
 
     @pack! element = f1_χ,f2_χ,m1_χ,m2_χ
-    @pack! element.aero = A,B
+    @pack! element.aero = A,B,δNow
 
     return f1_χ,f2_χ,m1_χ,m2_χ
 
@@ -511,7 +505,7 @@ end
 
 
 """
-wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::Model,element::Element,airfoil::Airfoil)
+wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::Model,element::Element)
 
 Wrapper function for aerodynamic loads using elemental states as inputs
 
@@ -520,16 +514,19 @@ Wrapper function for aerodynamic loads using elemental states as inputs
 - problem::Problem
 - model::Model
 - element::Element
-- airfoil::Airfoil
 """
-function wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::Model,element::Element,airfoil::Airfoil)
+function wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::Model,element::Element)
 
     # Unpack states and states' rates
-    V,Ω,χ = states[1:3],states[4:6],states[7:end]
+    if isempty(element.DOF_δ)
+        V,Ω,χ,δNow = states[1:3],states[4:6],states[7:end],element.aero.δ(problem.timeNow)
+    else
+        V,Ω,χ,δNow = states[1:3],states[4:6],states[7:end-1],states[end]
+    end
     @unpack Vdot,Ωdot = element.statesRates
 
     # Nodal resutants and state matrices
-    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,airfoil,V,Ω,χ,Vdot,Ωdot)
+    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
 
     # Set outputs array
     out = vcat([f1_χ,f2_χ,m1_χ,m2_χ,vec(A),B]...)
@@ -539,7 +536,7 @@ end
 
 
 """
-wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Problem,model::Model,element::Element,airfoil::Airfoil)
+wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Problem,model::Model,element::Element)
 
 Wrapper function for aerodynamic loads using elemental states' rates as inputs
 
@@ -548,16 +545,16 @@ Wrapper function for aerodynamic loads using elemental states' rates as inputs
 - problem::Problem
 - model::Model
 - element::Element
-- airfoil::Airfoil
 """
-function wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Problem,model::Model,element::Element,airfoil::Airfoil)
+function wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Problem,model::Model,element::Element)
 
     # Unpack states and states' rates
     Vdot,Ωdot = statesRates[1:3],statesRates[4:6]
     @unpack V,Ω,χ = element.states
+    δNow = !isempty(element.DOF_δ) ? problem.x[element.DOF_δ]*element.aero.δMultiplier : element.aero.δ(problem.timeNow)
 
     # Nodal resutants and state matrices
-    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,airfoil,V,Ω,χ,Vdot,Ωdot)
+    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
 
     # Set outputs array
     out = vcat([f1_χ,f2_χ,m1_χ,m2_χ,vec(A),B]...)
@@ -567,7 +564,7 @@ end
 
 
 """
-aero_loads_core!(problem::Problem,model::Model,element::Element,airfoil::Airfoil,V::Vector{Float64},Ω::Vector{Float64},χ::Vector{Float64},Vdot::Vector{Float64},Ωdot::Vector{Float64})
+aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ,Vdot,Ωdot,δNow)
 
 Computes the nodal resutants from aerodynamic loads and aerodynamic state matrices
 
@@ -575,14 +572,14 @@ Computes the nodal resutants from aerodynamic loads and aerodynamic state matric
 - problem::Problem
 - model::Model
 - element::Element
-- airfoil::Airfoil
 - V
 - Ω
 - χ
 - Vdot
 - Ωdot
+- δNow
 """
-function aero_loads_core!(problem::Problem,model::Model,element::Element,airfoil::Airfoil,V,Ω,χ,Vdot,Ωdot)
+function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ,Vdot,Ωdot,δNow)
 
     # Steady aerodynamic kinematics
     aero_steady_kinematics!(element,V,Ω)
@@ -600,22 +597,22 @@ function aero_loads_core!(problem::Problem,model::Model,element::Element,airfoil
     nondimensional_flow_parameters!(model,element)
 
     # Update airfoil parameters
-    update_airfoil_parameters!(element,airfoil)
+    update_airfoil_parameters!(element)
 
     # Local gust velocity
     # local_gust_velocity!(model,element,timeNow)
 
-    # Flap deflection and its rates
-    flap_deflection_and_rates!(problem,element)
+    # Flap deflection rates
+    flap_deflection_rates!(problem,element)
 
     # Effective (unsteady) angle of attack
-    effective_angle_of_attack!(element,airfoil,χ)
+    effective_angle_of_attack!(element,χ,δNow)
 
     # Aerodynamic coefficients 
-    aero_coefficients!(element,airfoil)
+    aero_coefficients!(element,δNow)
 
     # Aerodynamic state matrices 
-    A,B = aero_state_matrices!(element,airfoil)
+    A,B = aero_state_matrices!(element,δNow)
     
     # Aerodynamic loads' nodal resultants
     f1_χ,f2_χ,m1_χ,m2_χ = aero_loads_resultants!(model,element)
@@ -1052,41 +1049,35 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     @unpack aero = element
 
-    # Skip if there are no aero loads
+    # Skip if there are no aero loads or angle of attack is undefined
     if isnothing(aero) || isnan(aero.flowAnglesAndRates.α)
         return
     end
 
     # Unpack element data
+    @unpack DOF_δ = element
     @unpack V,Ω,χ = element.states
-    @unpack nTotalAeroStates,derivationMethod,A = aero
+    @unpack nTotalAeroStates,derivationMethod,A,δMultiplier = aero
 
-    # Copy aerodynamic properties before differentiation
-    aeroCopy = deepcopy(aero)
-    airfoilCopy = aeroCopy.airfoil
-
-    # Set input states for aero loads wrapper function
-    states = vcat([V,Ω,χ]...)
+    # Set input states for aero loads wrapper functions
+    states = isempty(DOF_δ) ? vcat([V,Ω,χ]...) : vcat([V,Ω,χ,problem.x[DOF_δ]*δMultiplier]...)
 
     # Get derivatives of aerodynamic loads and state matrices w.r.t. states
     if typeof(derivationMethod) == AD
-        derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element,airfoilCopy), states)
+        derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
     elseif typeof(derivationMethod) == FD
-        derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element,airfoilCopy), states)
+        derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
         derivatives = derivatives[1]
     end
 
-    # Reset aerodynamic properties in element 
-    element.aero = aeroCopy
-
-    # Reshape derivatives
+    # Extract derivatives
     f1χ_V = derivatives[1:3,1:3]
-    f1χ_Ω = derivatives[1:3,4:6]
     f2χ_V = derivatives[4:6,1:3]
-    f2χ_Ω = derivatives[4:6,4:6]
     m1χ_V = derivatives[7:9,1:3]
-    m1χ_Ω = derivatives[7:9,4:6]
     m2χ_V = derivatives[10:12,1:3]
+    f1χ_Ω = derivatives[1:3,4:6]
+    f2χ_Ω = derivatives[4:6,4:6]
+    m1χ_Ω = derivatives[7:9,4:6]
     m2χ_Ω = derivatives[10:12,4:6]
     f1χ_χ = derivatives[1:3,7:6+nTotalAeroStates]
     f2χ_χ = derivatives[4:6,7:6+nTotalAeroStates]
@@ -1096,10 +1087,18 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     A_Ω = reshape(derivatives[13:12+nTotalAeroStates^2,4:6],(nTotalAeroStates,nTotalAeroStates,3))
     B_V = derivatives[13+nTotalAeroStates^2:end,1:3]
     B_Ω = derivatives[13+nTotalAeroStates^2:end,4:6]
+    if !isempty(DOF_δ)
+        f1χ_δ = derivatives[1:3,end]
+        f2χ_δ = derivatives[4:6,end]
+        m1χ_δ = derivatives[7:9,end]
+        m2χ_δ = derivatives[10:12,end]
+    else
+        f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = zeros(3),zeros(3),zeros(3),zeros(3)
+    end
 
     # Set derivatives of aerodynamic states w.r.t. states
-    F_χ_V,F_χ_Ω = zeros(nTotalAeroStates,3),zeros(nTotalAeroStates,3)
     F_χ_χ = -A
+    F_χ_V,F_χ_Ω = zeros(nTotalAeroStates,3),zeros(nTotalAeroStates,3)
     if !isempty(χ)
         for i=1:3
             F_χ_V[:,i] = -(A_V[:,:,i]*χ+B_V[:,i])
@@ -1107,7 +1106,7 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
         end
     end
 
-    @pack! element.aero = f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ
+    @pack! element.aero = f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ
 
     # Skip if not an EigenProblem
     if !isa(problem,EigenProblem)
@@ -1122,23 +1121,20 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     # Get derivatives of aerodynamic loads and state matrices w.r.t. states' rates
     if typeof(derivationMethod) == AD
-        derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element,airfoilCopy), statesRates)
+        derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates)
     elseif typeof(derivationMethod) == FD
-        derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element,airfoilCopy), statesRates)
+        derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates)
         derivatives = derivatives[1]
     end
 
-    # Reset aerodynamic properties in element 
-    element.aero = aeroCopy
-
-    # Reshape derivatives
+    # Extract derivatives
     f1χ_Vdot = derivatives[1:3,1:3]
-    f1χ_Ωdot = derivatives[1:3,4:6]
     f2χ_Vdot = derivatives[4:6,1:3]
-    f2χ_Ωdot = derivatives[4:6,4:6]
     m1χ_Vdot = derivatives[7:9,1:3]
-    m1χ_Ωdot = derivatives[7:9,4:6]
     m2χ_Vdot = derivatives[10:12,1:3]
+    f1χ_Ωdot = derivatives[1:3,4:6]
+    f2χ_Ωdot = derivatives[4:6,4:6]
+    m1χ_Ωdot = derivatives[7:9,4:6]
     m2χ_Ωdot = derivatives[10:12,4:6]
     A_Vdot = reshape(derivatives[13:12+nTotalAeroStates^2,1:3],(nTotalAeroStates,nTotalAeroStates,3))
     A_Ωdot = reshape(derivatives[13:12+nTotalAeroStates^2,4:6],(nTotalAeroStates,nTotalAeroStates,3))
@@ -1174,7 +1170,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
 
     @unpack jacobian = problem
     @unpack forceScaling = model
-    @unpack Δℓ,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,ω,R0,R0T,RR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,f1_p,f2_p,m1_p,m2_p,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_FV,eqs_FΩ,eqs_Fχ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,aero = element
+    @unpack Δℓ,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,ω,R0,R0T,RR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,f1_p,f2_p,m1_p,m2_p,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_FV,eqs_FΩ,eqs_Fχ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,aero = element
     @unpack F,M,V,Ω = element.states
     @unpack pdot,Vdot,Ωdot = element.statesRates
     @unpack γ,κ,P,H = element.compStates
@@ -1333,7 +1329,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
 
     end
 
-    ## Aerodynamic terms
+    ## Aerodynamic terms 
     # --------------------------------------------------------------------------
     if !isnothing(aero)
         @unpack nTotalAeroStates,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ = element.aero
@@ -1444,19 +1440,16 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         jacobian[eqs_Fχ,DOF_χ] = F_χ_χ
     end
 
-    # ## Flap trim states' Jacobians
-    # if analysis == "trim" && !isempty(DOF_f)
-    #     # --- F_u --- #
-    #     jacobian[eqs_Fu1,DOF_f] = -f1χ_f/forceScaling
-    #     jacobian[eqs_Fu2,DOF_f] = -f2χ_f/forceScaling
-    #     # --- F_p --- #
-    #     jacobian[eqs_Fp1,DOF_f] = -m1χ_f/forceScaling
-    #     jacobian[eqs_Fp2,DOF_f] = -m2χ_f/forceScaling
-    #     # --- F_χ --- #
-    #     if !isempty(eqs_Fχ)
-    #         jacobian[eqs_Fχ,DOF_f] = F_χ_f
-    #     end
-    # end
+    ## Flap trim state's Jacobians
+    if !isempty(DOF_δ)
+        @unpack f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = element.aero
+        # --- F_u --- #
+        jacobian[eqs_Fu1,DOF_δ] = -f1χ_δ/forceScaling
+        jacobian[eqs_Fu2,DOF_δ] = -f2χ_δ/forceScaling
+        # --- F_p --- #
+        jacobian[eqs_Fp1,DOF_δ] = -m1χ_δ/forceScaling
+        jacobian[eqs_Fp2,DOF_δ] = -m2χ_δ/forceScaling
+    end
 
     # ## Propeller states' Jacobians
     # if analysis == "trim" && !isempty(DOF_P)
@@ -1571,7 +1564,6 @@ function element_inertia!(problem::Problem,model::Model,element::Element)
         inertia[eqs_Fχ,DOF_χ] = F_χ_χdot
     end
 
-
     @pack! problem = inertia
 
 end
@@ -1633,7 +1625,7 @@ end
 """
 special_node_states!(problem::Problem,model::Model,specialNode::SpecialNode)
 
-Gets the nodal states
+Computes the nodal states
 
 # Arguments
 - problem::Problem
@@ -1689,8 +1681,6 @@ function special_node_states!(problem::Problem,model::Model,specialNode::Special
         # ----------------------------------------------------------------------
         # Nodal rotation tensor from basis b to basis B 
         R,_ = rotation_tensor_WM(p) 
-        # Nodal rotation tensor from basis A to basis B
-        RR0_n = R*R0_n
 
         # Initialize prescribed nodal values (hatted values) for the loads of current BC
         F̂,M̂ = zeros(3),zeros(3)
@@ -1800,7 +1790,7 @@ end
 """
 special_node_follower_loads_derivatives_rotation_parameters!(problem::Problem,specialNode::SpecialNode)
 
-Gets the contributions from the nodal follower loads to the Jacobian matrix
+Computes the contributions from the nodal follower loads to the Jacobian matrix
 
 # Arguments
 - problem::Problem
@@ -1810,7 +1800,7 @@ function special_node_follower_loads_derivatives_rotation_parameters!(problem::P
 
     @unpack x,σ = problem
     @unpack forceScaling = problem.model
-    @unpack BCs,p = specialNode
+    @unpack BCs,p,DOF_trimLoads = specialNode
 
     # Initialize
     F_p,M_p = zeros(3,3),zeros(3,3)
@@ -1980,7 +1970,7 @@ end
 """
 element_modal_states(element::Element,eigenvector::Vector{T},forceScaling::Float64)
 
-Gets the modal states (generalized displacements, forces, strains, velocities and momenta) of the element at midpoint and at the nodes
+Computes the modal states (generalized displacements, forces, strains, velocities and momenta) of the element at midpoint and at the nodes
 
 # Arguments
 - element::Element
@@ -2064,13 +2054,6 @@ function update_states!(problem::Problem)
     @unpack elements = model
 
     for element in elements
-
-        ## Generalized velocities and accelerations of basis b at element's midpoint, resolved in basis A
-        # ----------------------------------------------------------------------
-        # Velocities
-        element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
-        # Accelerations
-        element_accelerations_basis_b!(model,element,problem.σ,problem.timeNow)
 
         ## States and states' rates
         # ----------------------------------------------------------------------

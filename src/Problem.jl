@@ -136,31 +136,39 @@ Defines the problem of steady type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
+    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
+    getResidual::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
     xOverσ::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
+    flowVariablesOverσ::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
 
 end
 export SteadyProblem
 
 
 # Constructor
-function create_SteadyProblem(;model::Model,systemSolver::SystemSolver=NewtonRaphson(),getLinearSolution::Bool=false)
+function create_SteadyProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = SteadyProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution)
 
+    # Update initial load factor
+    problem.σ = systemSolver.initialLoadFactor
+
     # Set initial elemental and nodal states
-    set_initial_states!(problem)
+    if !isempty(x0)
+        @assert length(x0) == model.systemOrder
+        problem.x = x0*problem.σ
+    else
+        set_initial_states!(problem)
+    end
 
     # Initialize system arrays with correct size
     initialize_system_arrays!(problem)
-
-    # Update initial load factor
-    problem.σ = systemSolver.initialLoadFactor
 
     return problem
 
@@ -204,31 +212,39 @@ Defines the problem of trim type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
+    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
+    getResidual::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
     xOverσ::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
+    flowVariablesOverσ::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
 
 end
 export TrimProblem
 
 
 # Constructor
-function create_TrimProblem(;model::Model,systemSolver::SystemSolver=NewtonRaphson(),getLinearSolution::Bool=false)
+function create_TrimProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = TrimProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution)
 
+    # Update initial load factor
+    problem.σ = systemSolver.initialLoadFactor
+
     # Set initial elemental and nodal states
-    set_initial_states!(problem)
+    if !isempty(x0)
+        @assert length(x0) == model.systemOrder+model.nTrimVariables
+        problem.x = x0*problem.σ
+    else
+        set_initial_states!(problem)
+    end
 
     # Initialize system arrays with correct size
     initialize_system_arrays!(problem)
-
-    # Update initial load factor
-    problem.σ = systemSolver.initialLoadFactor
 
     return problem
 
@@ -277,12 +293,15 @@ Defines the problem of eigen type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
+    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
+    getResidual::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
     xOverσ::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
+    flowVariablesOverσ::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
     # Frequencies, dampings and eigenvectors
     frequencies::Vector{Float64} = Vector{Float64}()
     dampings::Vector{Float64} = Vector{Float64}()
@@ -293,30 +312,37 @@ Defines the problem of eigen type
     dampingsNonOscillatory::Vector{Float64} = Vector{Float64}()
     frequenciesOscillatory::Vector{Float64} = Vector{Float64}()
     dampingsOscillatory::Vector{Float64} = Vector{Float64}()
+    eigenvectorsNonOscillatory::Matrix{ComplexF64} = zeros(ComplexF64, 0, 0)
     eigenvectorsOscillatoryCplx::Matrix{ComplexF64} = zeros(ComplexF64, 0, 0)
     eigenvectorsOscillatoryAbs::Matrix{Float64} = zeros(0, 0)
     # Mode shapes (complex-valued and absolute-valued)
     modeShapesCplx::Vector{ModeShape{ComplexF64}} = Vector{ModeShape{ComplexF64}}()
     modeShapesAbs::Vector{ModeShape{Float64}} = Vector{ModeShape{Float64}}()
+    modeShapesAbsNonOsc::Vector{ModeShape{Float64}} = Vector{ModeShape{Float64}}()
 
 end
 export EigenProblem
 
 
 # Constructor
-function create_EigenProblem(;model::Model,systemSolver::SystemSolver=NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=false)
+function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=false,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes)
 
+    # Update initial load factor
+    problem.σ = systemSolver.initialLoadFactor
+
     # Set initial elemental and nodal states
-    set_initial_states!(problem)
+    if !isempty(x0)
+        @assert length(x0) == model.systemOrder
+        problem.x = x0*problem.σ
+    else
+        set_initial_states!(problem)
+    end
 
     # Initialize system arrays with correct size
     initialize_system_arrays!(problem)
-
-    # Update initial load factor
-    problem.σ = systemSolver.initialLoadFactor
 
     return problem
 
@@ -378,6 +404,8 @@ Defines the problem of dynamic type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
+    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
+    getResidual::Bool = false
     # Arrays of saved time steps, respective solutions and states
     savedTimeVector::Vector{Float64} = Vector{Float64}()
     xOverTime::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
@@ -393,22 +421,30 @@ export DynamicProblem
 
 
 # Constructor
-function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0)
+function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency)
 
+    # Update initial load factor
+    problem.σ = systemSolver.initialLoadFactor
+
     # Set initial elemental and nodal states
-    set_initial_states!(problem)   
+    if !isempty(x0)
+        @assert length(x0) == model.systemOrder
+        problem.x = x0*problem.σ
+        problem.Δt = Inf64
+        update_states!(problem)
+        problem.Δt = Δt
+    else
+        set_initial_states!(problem)
+    end   
 
     # Check and initialize time variables
     initialize_time_variables!(problem)
 
     # Initialize system arrays with correct size
     initialize_system_arrays!(problem)
-
-    # Update initial load factor
-    problem.σ = systemSolver.initialLoadFactor
 
     # Update display frequency if not input
     if displayProgress == true && displayFrequency == 0
@@ -422,31 +458,29 @@ export create_DynamicProblem
 
 
 """
-set_initial_states!(problem::Problem,skipSizeAssertion::Bool=false)
+set_initial_states!(problem::Problem)
 
 Sets the initial elemental and nodal states into the states array
 
 # Arguments
 - problem::Problem
-- skipSizeAssertion::Bool
 """
-function set_initial_states!(problem::Problem,skipSizeAssertion::Bool=false)
+function set_initial_states!(problem::Problem)
 
-    @unpack x,model = problem
+    @unpack x,model,σ = problem
     @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling = model
 
-    # Check if states array was input with correct size
-    if !skipSizeAssertion && !isempty(x) 
-        @assert length(x) == systemOrder+nTrimVariables
+    # Skip if states were input
+    if !isempty(x)
         return
     end
 
     # Initialize states array
     x = zeros(systemOrder+nTrimVariables)
 
-    # Loop over elements and assign initial states (aerodynamic states are assigned later, upon update of initial states' rates)
+    # Loop over elements and assign initial states (aerodynamic states χ are assigned later, upon update of initial states' rates)
     for element in elements
-        @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ = element
+        @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ = element
         @unpack u,p,F,M,V,Ω = element.states
         x[DOF_u] = u
         x[DOF_p] = p
@@ -454,6 +488,7 @@ function set_initial_states!(problem::Problem,skipSizeAssertion::Bool=false)
         x[DOF_M] = M/forceScaling
         x[DOF_V] = V
         x[DOF_Ω] = Ω
+        x[DOF_δ] = isempty(DOF_δ) ? Vector{Float64}() : element.aero.δNow
     end
 
     # Loop over special nodes and assign initial states
@@ -474,6 +509,9 @@ function set_initial_states!(problem::Problem,skipSizeAssertion::Bool=false)
             end
         end
     end
+
+    # Scale by initial load factor
+    x *= σ
 
     @pack! problem = x
 
@@ -712,10 +750,12 @@ function solve_eigen!(problem::Problem)
 
     ## Non-oscillatory (aerodynamic, divergence) modes
     #---------------------------------------------------------------------------
-    # Get indices of non-oscillatory modes
+    # Get indices of non-oscillatory (zero frequency) modes
     nonOscillatoryIndices = findall( x -> x == 0, imag(eigenvalues))
     # Non-oscillatory dampings 
     dampingsNonOscillatory = real.(eigenvalues[nonOscillatoryIndices])
+    # Non-oscillatory eigenvectors
+    eigenvectorsNonOscillatory = eigenvectors[:,nonOscillatoryIndices]
 
     ## Get oscillatory (structural, dynamic aeroelastic, flight dynamics) modes
     #---------------------------------------------------------------------------# Starting index of oscillatory modes 
@@ -734,64 +774,68 @@ function solve_eigen!(problem::Problem)
     # Available number of modes
     availableNModes = length(frequenciesOscillatory)
     # Filter, if possible                 
-    if availableNModes > nModes
+    if availableNModes >= nModes
         frequenciesOscillatory = frequenciesOscillatory[1:nModes]
         dampingsOscillatory = dampingsOscillatory[1:nModes]
         eigenvectorsOscillatoryCplx = eigenvectorsOscillatoryCplx[:,1:nModes]
     else
-        display("Only $availableNModes modes could be calculated, due to limited number of elements")
+        display("Only $availableNModes modes could be calculated, due to limited number of elements or frequency filter limits")
     end
     
     ## Post-process oscillatory eigenvectors
     #---------------------------------------------------------------------------
     # Real and imaginary parts of eigenvector
-    eigenvectorsOscillatoryRe = real.(eigenvectorsOscillatoryCplx)
-    eigenvectorsOscillatoryIm = imag.(eigenvectorsOscillatoryCplx)
+    eigenvectorsRe = real.(eigenvectorsOscillatoryCplx)
+    eigenvectorsIm = imag.(eigenvectorsOscillatoryCplx)
+    eigenvectorsNonOscillatoryRe = real.(eigenvectorsNonOscillatory)
+    eigenvectorsNonOscillatoryIm = imag.(eigenvectorsNonOscillatory)
     # Indices whose real part is larger
-    realLarger = @. abs(eigenvectorsOscillatoryRe) > abs(eigenvectorsOscillatoryIm)   
+    realLargerOsc = @. abs(eigenvectorsRe) > abs(eigenvectorsIm)   
+    realLargerNonOsc = @. abs(eigenvectorsNonOscillatoryRe) > abs(eigenvectorsNonOscillatoryIm)
     # Indices whose imaginary part is larger
-    imagLarger = .!realLarger                                       
+    imagLargerOsc = .!realLargerOsc
+    imagLargerNonOsc = .!realLargerNonOsc                                       
     # Sign of larger part determines true sign of solution
-    signs = @. sign(eigenvectorsOscillatoryRe) * realLarger + sign(eigenvectorsOscillatoryIm) * imagLarger                    
+    signsOsc = @. sign(eigenvectorsRe) * realLargerOsc + sign(eigenvectorsIm) * imagLargerOsc
+    signsNonOsc = @. sign(eigenvectorsNonOscillatoryRe) * realLargerNonOsc + sign(eigenvectorsNonOscillatoryIm) * imagLargerNonOsc                  
     # Correctly signed absolute value of eigenvectors
-    eigenvectorsOscillatoryAbs = @. signs * abs(eigenvectorsOscillatoryCplx)   
+    eigenvectorsOscillatoryAbs = @. signsOsc * abs(eigenvectorsOscillatoryCplx)
+    eigenvectorsNonOscillatoryAbs = @. signsNonOsc * abs(eigenvectorsNonOscillatory)
     # Get mode shapes of complex-valued and absolute-valued eigenvectors
-    get_mode_shapes!(problem,eigenvectorsOscillatoryCplx,frequenciesOscillatory,dampingsOscillatory)
-    get_mode_shapes!(problem,eigenvectorsOscillatoryAbs,frequenciesOscillatory,dampingsOscillatory)
+    modeShapesCplx = get_mode_shapes!(problem,eigenvectorsOscillatoryCplx,frequenciesOscillatory,dampingsOscillatory)
+    modeShapesAbs = get_mode_shapes!(problem,eigenvectorsOscillatoryAbs,frequenciesOscillatory,dampingsOscillatory)
+    modeShapesAbsNonOsc = get_mode_shapes!(problem,eigenvectorsNonOscillatoryAbs,zeros(length(dampingsNonOscillatory)),dampingsNonOscillatory)
 
-    @pack! problem = frequencies,dampings,eigenvectors,frequenciesFiltered,dampingsFiltered,eigenvectorsFiltered,dampingsNonOscillatory,frequenciesOscillatory,dampingsOscillatory,eigenvectorsOscillatoryCplx,eigenvectorsOscillatoryAbs
+    @pack! problem = frequencies,dampings,eigenvectors,frequenciesFiltered,dampingsFiltered,eigenvectorsFiltered,dampingsNonOscillatory,frequenciesOscillatory,dampingsOscillatory,eigenvectorsOscillatoryCplx,eigenvectorsOscillatoryAbs,eigenvectorsNonOscillatory,modeShapesCplx,modeShapesAbs,modeShapesAbsNonOsc
 
 end
 
 
 """
-get_mode_shapes!(problem::Problem,eigenvectorsOscillatory::Matrix{T},frequenciesOscillatory::Vector{Float64},dampingsOscillatory::Vector{Float64})
+get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::Vector{Float64},dampings::Vector{Float64})
 
 Gets the mode shapes given by the eigenvectors
 
 # Arguments
 - problem::Problem
-- eigenvectorsOscillatory::Matrix{T}
-- frequenciesOscillatory::Vector{Float64}
-- dampingsOscillatory::Vector{Float64}
+- eigenvectors::Matrix{T}
+- frequencies::Vector{Float64}
+- dampings::Vector{Float64}
 """
-function get_mode_shapes!(problem::Problem,eigenvectorsOscillatory::Matrix{T},frequenciesOscillatory::Vector{Float64},dampingsOscillatory::Vector{Float64}) where T<:Union{Float64,ComplexF64}
+function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::Vector{Float64},dampings::Vector{Float64}) where T<:Union{Float64,ComplexF64}
 
     @unpack model,normalizeModeShapes = problem
     @unpack forceScaling,elements,nElementsTotal = model
 
-    if T === ComplexF64
-        @unpack modeShapesCplx = problem
-    else
-        @unpack modeShapesAbs = problem
-    end
+    # Initialize array of mode shapes
+    modeShapes = Vector{ModeShape{T}}()
 
     # Loop modes
-    for (mode,freq,damp) in zip(1:size(eigenvectorsOscillatory,2),frequenciesOscillatory,dampingsOscillatory)
+    for (mode,freq,damp) in zip(1:size(eigenvectors,2),frequencies,dampings)
         # Initialize current mode shape
         modeShape = ModeShape{T}(mode,freq,damp,nElementsTotal)
         # Current mode's eigenvector
-        eigenvector = eigenvectorsOscillatory[:,mode]
+        eigenvector = eigenvectors[:,mode]
         # Initialize arrays
         uArray,pArray,FArray,MArray,VArray,ΩArray,γArray,κArray,PArray,HArray,θArray = Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}(),Vector{T}()
         # Loop elements
@@ -852,18 +896,10 @@ function get_mode_shapes!(problem::Problem,eigenvectorsOscillatory::Matrix{T},fr
             end
         end
         # Add to mode shapes array
-        if T === ComplexF64
-            push!(modeShapesCplx,modeShape)
-        else
-            push!(modeShapesAbs,modeShape)
-        end
+        push!(modeShapes,modeShape)
     end
-
-    if T === ComplexF64
-        @pack! problem = modeShapesCplx
-    else
-        @pack! problem = modeShapesAbs
-    end
+    
+    return modeShapes
 end
 
 
@@ -992,8 +1028,7 @@ function solve_initial_dynamic!(problem::Problem)
     @pack! problemCopy = model
  
     # Set initial states
-    skipSizeAssertion = true
-    set_initial_states!(problemCopy,skipSizeAssertion)
+    set_initial_states!(problemCopy)
 
     # Initialize system arrays with correct size
     initialize_system_arrays!(problemCopy)
@@ -1014,7 +1049,7 @@ function solve_initial_dynamic!(problem::Problem)
     update_initial_velocities!(problem)
 
     # Update initial aerodynamic states
-    update_initial_aero_states!(problem,model)
+    update_initial_aero_states!(problem)
     
 end
 
@@ -1108,7 +1143,7 @@ function update_initial_velocities!(problem::Problem)
         update_BC_data!(BC,timeNow)
     end   
     # Set default system solver (with reduced relative tolerance and large number of maximum iterations)
-    problem.systemSolver = NewtonRaphson(maximumIterations=100,relativeTolerance=1e-14)
+    problem.systemSolver = create_NewtonRaphson(maximumIterations=100,relativeTolerance=1e-14)
     # Initial displacements, sectional velocities and displacement's rates
     disp0 = [[e.states.u; e.states.p] for e in elements]
     vel0 = [[e.states.V; e.states.Ω] for e in elements]

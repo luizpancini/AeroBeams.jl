@@ -39,6 +39,8 @@ Model composite type
     altitude::Union{Nothing,Number}
     atmosphere::Union{Nothing,Atmosphere}
     gust::Union{Nothing,Gust}
+    trimLoadsLinks::Vector{TrimLoadsLink}
+    flapLinks::Vector{FlapLink}
 
     # Secondary (outputs from model creation)
     # ---------------------------------------
@@ -56,17 +58,16 @@ Model composite type
     R_AT::Matrix{Float64} = I3
     skipValidationMotionBasisA::Bool = false
     nTrimVariables::Int64 = 0
-    trimLoadsLinks::Vector{TrimLoadsLink} = Vector{TrimLoadsLink}()
 
 end
 export Model
 
 
 # Constructor
-function create_Model(;name::String="",units::UnitsSystem=UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing) 
+function create_Model(;name::String="",units::UnitsSystem=UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}()) 
     
     # Initialize 
-    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust)
+    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks)
 
     # Update  
     update_model!(self)
@@ -102,6 +103,9 @@ function update_model!(model::Model)
 
     # Update the nodes' global IDs of the loads trim links
     update_loads_trim_links_global_ids!(model)
+
+    # Update linked flap deflections
+    update_linked_flap_deflections!(model)
 
     # Set BCs on model 
     set_BCs!(model,BCs)
@@ -139,7 +143,7 @@ function validate_model!(model::Model)
     # Validate unit system
     validate_unit_system(units)
 
-    # Validate initial position of the first node of the model
+    # Validate initial position of the first beam of the model
     @assert length(initialPosition) == 3
 
     # Validate gravity vector
@@ -372,20 +376,27 @@ function assemble_model!(model::Model,beams::Vector{Beam})
             elementNodes[elementRange] .= [x .- [diff,diff] for x in elementNodes[elementRange]]
         end
         for (connectedBeam,connectedNodeThis,connectedNodeOther) in zip( connectedBeams,connectedNodesThis,connectedNodesOther)
-            # Local ID of the first element of the current beam to which the connected node belongs
-            currentBeamConnectedElementLocalID = connectedNodeThis == 1 ? connectedNodeThis : connectedNodeThis-1
-            # Global ID of the above
-            currentBeamConnectedElementGlobalID = elementRange[currentBeamConnectedElementLocalID]
-            # Side of the node on the current beam
-            currentBeamNodeSide = connectedNodeThis == currentBeamConnectedElementLocalID ? 1 : 2
+            # Local IDs of the elements of the current beam to which the connected node belongs
+            currentBeamConnectedElementsLocalID = ifelse(connectedNodeThis==1,[1],ifelse(connectedNodeThis==nElements+1,[nElements],[connectedNodeThis-1;connectedNodeThis]))
+            # Global IDs of the above
+            currentBeamConnectedElementsGlobalID = elementRange[currentBeamConnectedElementsLocalID]
+            # Sides of the connected node on the current beam's connected elements
+            currentBeamNodeSides = ifelse(connectedNodeThis==1,[1],ifelse(connectedNodeThis==nElements+1,[2],[2;1]))
             # Local ID of the first element of the connected beam to which the connected node belongs
             connectedBeamConnectedElementLocalID = connectedNodeOther == 1 ? connectedNodeOther : connectedNodeOther-1
             # Side of the node on the connected beam
             connectedBeamNodeSide = connectedNodeOther == connectedBeamConnectedElementLocalID ? 1 : 2
             # Global ID of the node on the connected beam
             connectedBeamsConnectedNodeGlobalID = elementNodes[connectedBeam.elementRange[connectedBeamConnectedElementLocalID]][connectedBeamNodeSide]
-            # Set connected element's nodes' global ID
-            elementNodes[currentBeamConnectedElementGlobalID][currentBeamNodeSide] = connectedBeamsConnectedNodeGlobalID
+            # In case there is more than one connected element in the current beam, increase the indices of the nodes up to the connected node
+            if length(currentBeamConnectedElementsGlobalID) > 1
+                elementNodes[elementRange[1:currentBeamConnectedElementsLocalID[1]]] .= [x .+ [1,1] for x in elementNodes[elementRange[1:currentBeamConnectedElementsLocalID[1]]]]
+            end
+            # Loop current beam's connected elements
+            for (currentBeamConnectedElementGlobalID,currentBeamNodeSide) in zip(currentBeamConnectedElementsGlobalID,currentBeamNodeSides)
+                # Set connected element's nodes' global ID
+                elementNodes[currentBeamConnectedElementGlobalID][currentBeamNodeSide] = connectedBeamsConnectedNodeGlobalID
+            end
         end
 
         # Update global ID of the elements' nodes
@@ -406,7 +417,11 @@ function assemble_model!(model::Model,beams::Vector{Beam})
             element.r_n1 = position_vector_from_curvature(beam.R0,beam.k,element.x1_n1)
             element.r_n2 = position_vector_from_curvature(beam.R0,beam.k,element.x1_n2)
             element.r = position_vector_from_curvature(beam.R0,beam.k,element.x1)
-            # Add the initialPosition of the model to element's nodal and midpoint coordinates, if in the first beam
+            # Add the initial position of the beam to element's nodal and midpoint coordinates
+            element.r_n1 .+= beam.initialPosition 
+            element.r_n2 .+= beam.initialPosition 
+            element.r .+= beam.initialPosition
+            # Add the initial position of the model to element's nodal and midpoint coordinates, if in the first beam
             if ID == 1
                 element.r_n1 .+= model.initialPosition 
                 element.r_n2 .+= model.initialPosition 
@@ -414,7 +429,7 @@ function assemble_model!(model::Model,beams::Vector{Beam})
             end
             # Add coordinates of the beam's first node starting at the second beam
             if ID > 1
-                firstNodeOfBeam = nodeRange[1]
+                firstNodeOfBeam = minimum(nodeRange)
                 coordinatesOfFirstNode = r_n[firstNodeOfBeam]
                 element.r_n1 .+= coordinatesOfFirstNode 
                 element.r_n2 .+= coordinatesOfFirstNode
@@ -520,11 +535,12 @@ function update_number_gust_states!(model::Model)
         F_χ_V = zeros(nTotalAeroStates,3)
         F_χ_Ω = zeros(nTotalAeroStates,3)
         F_χ_χ = initial_F_χ_χ(solver,nTotalAeroStates)
+        F_χ_δ = zeros(nTotalAeroStates)
         F_χ_Vdot = initial_F_χ_Vdot(solver,nTotalAeroStates,pitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
         F_χ_Ωdot = initial_F_χ_Ωdot(solver,nTotalAeroStates,pitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
         F_χ_χdot = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
         # Pack data
-        @pack! nTotalAeroStates,nGustStates,gustStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.aero
+        @pack! nTotalAeroStates,nGustStates,gustStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_δ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.aero
     end
 
 end
@@ -559,6 +575,50 @@ function update_loads_trim_links_global_ids!(model::Model)
     end
 
     @pack! model = trimLoadsLinks
+end
+
+
+"""
+update_linked_flap_deflections!(model::Model)
+
+Updates the linked flap deflections for the slave beams
+
+# Arguments
+- model::Model
+"""
+function update_linked_flap_deflections!(model::Model)
+
+    @unpack flapLinks = model
+
+    # Loop flap links
+    for flapLink in flapLinks
+        @unpack masterBeam,slaveBeams,δMultipliers = flapLink
+        # Loop slave beams
+        for (i,slaveBeam) in enumerate(slaveBeams)
+            # Flapped elements of the beam
+            flappedElements = slaveBeam.elements[[element.aero.flapped for element in slaveBeam.elements]]
+            # Update TF for trim flap deflection
+            [setfield!(element.aero, :δIsTrimVariable, masterBeam.elements[1].aero.δIsTrimVariable) for element in flappedElements]
+            # Get flap deflection and rates of elements equal to the values of the master beam times the slave's deflection multiplier
+            δSlave = t -> masterBeam.elements[1].aero.δ(t)*δMultipliers[i]
+            δdotSlave = t -> masterBeam.elements[1].aero.δdot(t)*δMultipliers[i]
+            δddotSlave = t -> masterBeam.elements[1].aero.δddot(t)*δMultipliers[i]
+            # Set flap deflection, its rates and deflection multipliers of the slave elements 
+            [setfield!(element.aero, :δ, δSlave) for element in flappedElements]
+            [setfield!(element.aero, :δdot, δdotSlave) for element in flappedElements]
+            [setfield!(element.aero, :δddot, δddotSlave) for element in flappedElements]
+            [setfield!(element.aero, :δNow, element.aero.δ(0)) for element in flappedElements]
+            [setfield!(element.aero, :δdotNow, element.aero.δdot(0)) for element in flappedElements]
+            [setfield!(element.aero, :δddotNow, element.aero.δddot(0)) for element in flappedElements]
+            [setfield!(element.aero, :δMultiplier, δMultipliers[i]) for element in flappedElements]
+        end
+        # Loop beams
+        for beam in vcat(masterBeam,slaveBeams...)
+            # Update flag
+            beam.aeroSurface.hasIndependentFlap = false
+        end
+    end
+
 end
 
 
@@ -811,7 +871,7 @@ Gets the indices (for equations and DOFs) of the system of equations
 """
 function get_system_indices!(model::Model)
 
-    @unpack elements,nNodesTotal,specialNodes,specialNodesGlobalIDs,BCedNodes,nTrimVariables,trimLoadsLinks = model
+    @unpack beams,elements,nNodesTotal,specialNodes,specialNodesGlobalIDs,BCedNodes,nTrimVariables,trimLoadsLinks,flapLinks = model
     
     ## Initialize flags
     #---------------------------------------------------------------------------
@@ -883,7 +943,7 @@ function get_system_indices!(model::Model)
             end
         end
 
-        # Indices for elemental states (u, p, F, M, V, Ω)
+        # Indices for structural elemental states (u, p, F, M, V, Ω)
         DOF_u = i_states+0:i_states+2
         DOF_p = i_states+3:i_states+5
         DOF_F = i_states+6:i_states+8
@@ -1007,8 +1067,8 @@ function get_system_indices!(model::Model)
         @pack! specialNode = eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep
     end
 
-    # Initialize number of independent trim loads
-    nTrimLoads = 0
+    # Initialize number of independent trim loads and trim flap deflections
+    nTrimLoads,nTrimδ = 0,0
 
     # Set nodal trim loads indices for master nodes
     for (specialNode,specialNodeGlobalID) in zip(specialNodes,specialNodesGlobalIDs)
@@ -1097,8 +1157,58 @@ function get_system_indices!(model::Model)
         @pack! specialNode = DOF_trimLoads 
     end
 
-    # Update number of trim variables, if is master node
-    nTrimVariables = nTrimLoads
+    # Set elemental trim flap deflections indices for master and independent beams
+    for beam in beams
+        # Skip if element does not have a trim flap deflection
+        if isnothing(beam.aeroSurface) || !beam.aeroSurface.δIsTrimVariable
+            continue
+        end
+        # Treat cases with and without flap links separately
+        if isempty(flapLinks) || beam.aeroSurface.hasIndependentFlap
+            # Increment trim flap deflections count
+            nTrimδ += 1
+            # Flapped elements of the beam
+            flappedElements = beam.elements[[element.aero.flapped for element in beam.elements]]
+            # Set the same DOF_δ for all flapped elements of the beam
+            [setfield!(element, :DOF_δ, systemOrder+nTrimLoads+nTrimδ) for element in flappedElements]
+        else
+            # Loop flap links
+            for flapLink in flapLinks
+                # Skip if not a master beam
+                if beam !== flapLink.masterBeam
+                    continue
+                end
+                # Increment trim flap deflections count
+                nTrimδ += 1
+                # Flapped elements of the beam
+                flappedElements = beam.elements[[element.aero.flapped for element in beam.elements]]
+                # Set the same DOF_δ for all flapped elements of the beam
+                [setfield!(element, :DOF_δ, systemOrder+nTrimLoads+nTrimδ) for element in flappedElements]
+            end
+        end
+    end
+
+    # Set elemental trim flap deflections indices for slave beams
+    for beam in beams
+        # Skip if element does not have a trim flap deflection
+        if isnothing(beam.aeroSurface) || !beam.aeroSurface.δIsTrimVariable
+            continue
+        end
+        # Loop flap links
+        for flapLink in flapLinks
+            # Skip if not a slave beam
+            if !(beam in flapLink.slaveBeams)
+                continue
+            end
+            # Flapped elements of the beam
+            flappedElements = beam.elements[[element.aero.flapped for element in beam.elements]]
+            # Set DOF_δ for flapped element of the beam as that of the master beam
+            [setfield!(element, :DOF_δ, flapLink.masterBeam.elements[1].DOF_δ) for element in flappedElements]
+        end
+    end
+
+    # Update number of trim variables
+    nTrimVariables = nTrimLoads+nTrimδ
     
     @pack! model = systemOrder,elements,specialNodes,nTrimVariables
 
@@ -1144,7 +1254,10 @@ function plot_undeformed_assembly(model::Model,view=(45,45))
     gr()
 
     # Initialize plot
-    plt = scatter()
+    plt = plot(;xlabel="\$x_1\$",ylabel="\$x_2\$",zlabel="\$x_3\$",title="Undeformed assembly",camera=view,aspect_ratio=:equal,grid=:true)
+
+    # Initialize plot limits
+    x1min,x1max,x2min,x2max,x3min,x3max=0,0,0,0,0,0
 
     # Loop over beams
     for beam in model.beams
@@ -1152,27 +1265,27 @@ function plot_undeformed_assembly(model::Model,view=(45,45))
         # Nodal coordinates for the current beam
         @unpack r_n = beam
 
-        # Extract x1, x2, and x3 coordinates from the r_n
+        # Extract x1, x2, and x3 coordinates from the nodal coordinates
         x1 = [point[1] for point in r_n]
         x2 = [point[2] for point in r_n]
         x3 = [point[3] for point in r_n]
+
+        # Update plot limits
+        x1ext, x2ext, x3ext = extrema(x1), extrema(x2), extrema(x3)
+        x1min,x1max = min(x1min,x1ext[1]),max(x1max,x1ext[2])
+        x2min,x2max = min(x2min,x2ext[1]),max(x2max,x2ext[2])
+        x3min,x3max = min(x3min,x3ext[1]),max(x3max,x3ext[2])
+        # plot!(xlims=(x1min,x1max), ylims=(x2min,x2max), zlims=(x3min,x3max))
         
-        # Plot r_n
-        scatter!(x1, x2, x3, markersize=3, c=:black, label=false, aspect_ratio=:equal)
+        # Plot nodes
+        scatter!(x1, x2, x3, c=:black, ms=3, label=false)
         
         # Plot lines 
         for i in 1:length(r_n)-1
-            plot!([r_n[i][1], r_n[i+1][1]], [r_n[i][2], r_n[i+1][2]], [r_n[i][3], r_n[i+1][3]], c=:black, linewidtth=2, label=false)
+            plot!([r_n[i][1], r_n[i+1][1]], [r_n[i][2], r_n[i+1][2]], [r_n[i][3], r_n[i+1][3]], c=:black, lw=2, label=false)
         end
 
     end
-
-    plot!(camera=view)
-    
-    xlabel!("x1")
-    ylabel!("x2")
-    zlabel!("x3")
-    title!("Undeformed assembly")
 
     display(plt)
 

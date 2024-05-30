@@ -65,6 +65,20 @@ end
 
 
 """
+multiply_inplace(divisor::Number, vars...)
+
+Multiplies the input variables in-place
+
+# Arguments
+- multiplier::Number = multiplier
+- vars... = variables to be multiplied
+"""
+function multiply_inplace(multiplier::Number, vars...)
+    return (var .* multiplier for var in vars)
+end
+
+
+"""
 tilde(v::Vector{<:Number})
 
 Computes the skew-symmetric matrix associated with a vector
@@ -101,7 +115,7 @@ export mul3
 """
 isotropic_stiffness_matrix(;EA::Number,GAy::Number,GAz::Number,GJ::Number,EIy::Number,EIz::Number)
 
-Creates a 6x6 stiffness matrix
+Creates a 6x6 sectional stiffness matrix
 
 # Arguments
 - ∞::Number
@@ -131,7 +145,7 @@ export isotropic_stiffness_matrix
 """
 inertia_matrix(;ρA::Number,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
 
-Creates a 6x6 inertia matrix
+Creates a 6x6 sectional inertia matrix
 
 # Arguments
 - ρA::Number
@@ -143,7 +157,7 @@ Creates a 6x6 inertia matrix
 """
 function inertia_matrix(;ρA::Number,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
 
-    @assert ρA > 0
+    @assert ρA >= 0
     @assert ρIy >= 0
     @assert ρIz >= 0
     @assert ρIs >= 0
@@ -1025,12 +1039,7 @@ function mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float6
         # Mode matching index matrix: eigenvector alignment
         I = [abs(dot(eigenvectors[c-1][:,m1],eigenvectors[c][:,m2])) for m1 in 1:nModes, m2 in 1:nModes]
         # Set matched modes by highest index
-        matchedModes[c] = [argmax(I[m,:]) for m=1:nModes]
-        # Check case with repeated best match
-        if unique(matchedModes[c]) != matchedModes[c]
-            I2 = [dot(abs.(eigenvectors[c-1][:,m1]),abs.(eigenvectors[c][:,m2])) for m1 in 1:nModes, m2 in 1:nModes]
-            matchedModes[c] = [argmax(I2[m,:]) for m=1:nModes]
-        end
+        matchedModes[c] = highest_in_rowcol(I)
         # Skip if matched modes are in order
         if matchedModes[c] == collect(1:nModes)
             continue
@@ -1044,3 +1053,46 @@ function mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float6
     return freqs,damps,eigenvectors,matchedModes
 end
 export mode_tracking
+
+
+"""
+highest_in_rowcol(O::Matrix{<:Number})
+
+Finds the unrepeated columns of the n highest values in matrix O, where n is the size of O
+
+# Arguments
+- O::Matrix{<:Number}
+"""
+function highest_in_rowcol(O::Matrix{<:Number})
+
+    # Size of the original matrix
+    n = size(O, 1)
+
+    # Initialize output vector
+    v = fill(0,n)
+
+    # Array of leftover rows and columns of original matrix
+    rowO = collect(1:n)
+    colO = collect(1:n)
+
+    # Copy of original matrix
+    C = deepcopy(O)
+
+    # Loop
+    for _ in 1:n
+        # Cartesian index of highest value in copy matrix
+        ind = argmax(C)
+        # Corresponding row and column
+        rowC = ind[1]
+        colC = ind[2]
+        # ith entry is the corresponding column of the original matrix 
+        v[rowO[rowC]] = colO[colC]
+        # Remove row and column from copy matrix
+        C = C[setdiff(1:end, colC), setdiff(1:end, colC)]
+        # Remove row and column from leftover arrays
+        popat!(rowO,rowC)
+        popat!(colO,colC)
+    end
+
+    return v
+end

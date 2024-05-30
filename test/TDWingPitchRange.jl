@@ -46,8 +46,8 @@ for (i,θ) in enumerate(θRange)
     tip_u3[i] = problem.nodalStatesOverσ[end][nElem].u_n2_b[3]
     tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
     R,_ = rotation_tensor_WM(tip_p)
-    _,_,roll = ypr_from_rotation_tensor(R)
-    tip_twist[i] = roll*180/π
+    Δ = R*[0; 1; 0]
+    tip_twist[i] = asind(Δ[3])
 end
 
 # Load reference solutions
