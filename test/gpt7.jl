@@ -1,28 +1,21 @@
-# Define the parameters
-trimδ = 1
-Δδ = 1
-t1 = 1
-t2 = t1 + 1
-t3 = t2 + 1
+# Define the structures
+struct Spring
+    node::Int
+end
 
-# Define the triangle pulse function
-δ = t -> ifelse(
-    t <= t1, 
-    trimδ,  # Linearly increasing from trimδ to trimδ + Δδ
-    ifelse(
-        t <= t2, 
-        trimδ + Δδ * ((t-t1) / (t2-t1)),  # Linearly decreasing from trimδ + Δδ to trimδ
-        ifelse(
-            t <= t3, 
-            trimδ + Δδ - Δδ * ((t-t2) / (t3-t2)),  # Linearly decreasing from trimδ to 0
-            trimδ  # Zero after t3
-        )
-    )
-)
+struct Beam
+    springs::Vector{Spring}
+end
 
-# Example usage
-times = 0:0.1:4  # Time range for testing
-values = [δ(t) for t in times]
+# Sample data: Vector of Beams with their Springs
+beams = [
+    Beam([Spring(1), Spring(2)]),
+    Beam([Spring(3), Spring(4)]),
+    Beam([Spring(5)])
+]
 
-# Print the results
-plot(times,δ.(times))
+# Extracting all nodes from all springs of all beams
+all_nodes = [spring.node for beam in beams for spring in beam.springs]
+
+# Print the result
+println(all_nodes)

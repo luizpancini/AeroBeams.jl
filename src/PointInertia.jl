@@ -19,7 +19,7 @@ PointInertia composite type
 
     elementID::Int64
     η::Vector{<:Number} = zeros(3)
-    mass::Number 
+    mass::Number = 0
     Iyy::Number = 0
     Izz::Number = 0
     Ixx::Number = Iyy+Izz

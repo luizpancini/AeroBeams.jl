@@ -104,6 +104,9 @@ function update_model!(model::Model)
     # Update the nodes' global IDs of the loads trim links
     update_loads_trim_links_global_ids!(model)
 
+    # Update the global IDs of the springs' nodes
+    update_spring_nodes_global_ids!(model::Model)
+
     # Update linked flap deflections
     update_linked_flap_deflections!(model)
 
@@ -579,6 +582,36 @@ end
 
 
 """
+update_spring_nodes_global_ids!(model::Model)
+
+Updates the nodes' global IDs of the attached springs
+
+# Arguments
+- model::Model
+"""
+function update_spring_nodes_global_ids!(model::Model)
+
+    @unpack beams = model
+
+    # Loop beams 
+    for beam in beams
+        @unpack springs,elements = beam
+        # Loop springs
+        for spring in springs
+            @unpack elementID,localNode = spring
+            # Global ID of the spring node
+            nodeGlobalID = elements[elementID].nodesGlobalID[localNode]
+            # Rotation tensor from basis A to basis b
+            R0 = localNode == 1 ? elements[elementID].R0_n1 : elements[elementID].R0_n2
+            # Pack
+            @pack! spring = nodeGlobalID,R0
+        end
+    end
+
+end
+
+
+"""
 update_linked_flap_deflections!(model::Model)
 
 Updates the linked flap deflections for the slave beams
@@ -796,7 +829,7 @@ Gets the special nodes in the system of equations: connection, boundary, and BC'
 """
 function get_special_nodes!(model::Model)
 
-    @unpack elements,nNodesTotal,elementNodes,BCs,BCedNodes = model
+    @unpack elements,nNodesTotal,elementNodes,BCs,BCedNodes,beams = model
 
     # Initialize array of special nodes
     specialNodes = Vector{SpecialNode}()
@@ -808,7 +841,16 @@ function get_special_nodes!(model::Model)
     special = falses(nNodesTotal)
 
     # BC'ed nodes (any essential or non-zero natural BC) are special 
-    special[BCedNodes] .= true 
+    special[BCedNodes] .= true
+    
+    # Nodes with attached springs and their properties
+    springNodes = [spring.nodeGlobalID for beam in beams for spring in beam.springs]
+    springNodesku = [spring.ku for beam in beams for spring in beam.springs]
+    springNodeskp = [spring.kp for beam in beams for spring in beam.springs]
+    springNodesR0 = [spring.R0 for beam in beams for spring in beam.springs]
+
+    # Nodes with attached springs are special
+    special[springNodes] .= true
 
     # Loop over nodes
     for node in nodesList  
@@ -837,6 +879,15 @@ function get_special_nodes!(model::Model)
             special[node] = true                
         end
 
+        # Add stiffness constants resolved in basis A for current beam, if applicable
+        R0_ku = zeros(3)
+        R0_kp = zeros(3)
+        ids = findall(x -> x==node, springNodes)
+        for id in ids
+            R0_ku += springNodesR0[id] * springNodesku[id]
+            R0_kp += springNodesR0[id] * springNodeskp[id]
+        end
+
         # Add special node to array
         if special[node]
             # Find if that node is BC'ed and get the BCs
@@ -847,9 +898,9 @@ function get_special_nodes!(model::Model)
                         push!(nodesBCs,BC)
                     end
                 end
-                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,nodesBCs))
+                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,R0_ku,R0_kp,nodesBCs))
             else
-                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements))
+                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,R0_ku,R0_kp))
             end
         end
     end

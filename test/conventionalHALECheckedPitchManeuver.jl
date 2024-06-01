@@ -7,7 +7,7 @@ aeroSolver = Indicial()
 λ = 1
 
 # Airspeed [m/s]
-U = 15
+U = 25
 
 # Wing and stabilizers parasite drag
 wingCd0 = stabsCd0 = 1e-2
@@ -30,7 +30,7 @@ trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
 trimδ = trimProblem.x[end]
 
 # Set checked elevator deflection profile
-Δδ = 1*π/180
+Δδ = 5*π/180
 tδinit = 0.5
 tδpeak = 1+tδinit
 tδfinal = 1+tδpeak
@@ -49,7 +49,7 @@ tδfinal = 1+tδpeak
 )
 
 # Model for dynamic problem
-conventionalHALEdynamic,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,airspeed=U,nElemWing=nElemWing,wingCd0=wingCd0,stabsCd0=stabsCd0,δ=δ,thrust=trimThrust)
+conventionalHALEdynamic,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,airspeed=U,nElemWing=nElemWing,wingCd0=wingCd0,stabsCd0=stabsCd0,δElev=δ,thrust=trimThrust)
 
 # Time variables
 Δt = 1e-3

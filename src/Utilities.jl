@@ -155,7 +155,7 @@ Creates a 6x6 sectional inertia matrix
 - e2::Number
 - e3::Number
 """
-function inertia_matrix(;ρA::Number,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
+function inertia_matrix(;ρA::Number=0,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
 
     @assert ρA >= 0
     @assert ρIy >= 0

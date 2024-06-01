@@ -17,7 +17,7 @@ pin = create_BC(name="pin",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A"
 beamBendingVibrationCP = create_Model(name="beamBendingVibrationCP",beams=[beam],BCs=[clamp,pin])
 
 # Create and solve the problem
-nModes=6
+nModes = 6
 problem = create_EigenProblem(model=beamBendingVibrationCP,nModes=nModes,getLinearSolution=true,normalizeModeShapes=true)
 solve!(problem)
 

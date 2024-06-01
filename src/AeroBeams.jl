@@ -6,6 +6,7 @@ module AeroBeams
 include("Utilities.jl")
 include("UnitsSystem.jl")
 include("PointInertia.jl")
+include("Spring.jl")
 include("Atmosphere.jl")
 include("Airfoil.jl")
 include("AeroSolver.jl")
