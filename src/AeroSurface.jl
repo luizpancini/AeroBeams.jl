@@ -77,21 +77,14 @@ export AeroSurface
 function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64)
 
     # Validate
-    x1 = LinRange(0,1,101)
     if c isa Number
         @assert c > 0 "chord must be positive"
-    else
-        @assert all(x-> x>0, c.(x1)) "chord must be positive over entire span"
     end
     if Λ isa Number
         @assert -π/2 < Λ < π/2 "sweep angle too large (input must be in radians and smaller than π/2)"
-    else
-        @assert all(x-> -π/2 < x < π/2, Λ.(x1)) "sweep angle too large (input must be in radians and smaller than π/2)"
     end
     if normSparPos isa Number
         @assert 0 < normSparPos < 1 "normSparPos must be between 0 and 1"
-    else
-        @assert all(x-> 0<x<1, normSparPos.(x1)) "normSparPos must be between 0 and 1 over entire span"
     end
     if !isnothing(normFlapSpan)
         @assert !isnothing(normFlapPos) "flap span was set, but position was not"
@@ -115,7 +108,7 @@ function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::Flap
     end
 
     # Update airfoil parameters with known flap position in the case of flap loads by table lookup
-    if typeof(flapLoadsSolver) == TableLookup
+    if typeof(flapLoadsSolver) == TableLookup && !isnothing(flapSiteID)
         airfoil = create_flapped_Airfoil(name=airfoil.name,flapSiteID=flapSiteID)
     end
 

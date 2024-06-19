@@ -1756,7 +1756,7 @@ end
 """
 spring_loads!(specialNode::SpecialNode)
 
-Adds the contributions of attached asprings to the special node's loads
+Adds the contributions of attached springs to the special node's loads
 
 # Arguments
 - specialNode::SpecialNode
@@ -1908,7 +1908,7 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
 
     # Add spring loads' contributions, if applicable
     if hasSprings
-        jacobian = add_spring_load_jacobians!(jacobian,forceScaling,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
+        jacobian = spring_loads_jacobians!(jacobian,forceScaling,ζonElements,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
     end
 
     @pack! problem = jacobian
@@ -1996,7 +1996,7 @@ end
 
 
 """
-add_spring_load_jacobians!(jacobian,forceScaling,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
+spring_loads_jacobians!(jacobian,forceScaling,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
 
 Adds the contributions of the spring loads to the Jacobian matrix
 
@@ -2010,14 +2010,17 @@ Adds the contributions of the spring loads to the Jacobian matrix
 - R0_ku
 - R0_kp
 """
-function add_spring_load_jacobians!(jacobian,forceScaling,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
+function spring_loads_jacobians!(jacobian,forceScaling,ζonElements,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
 
-    # Loop DOFs
-    for i in 1:3
-        # d(-F_spring)/d(u) = R0_ku/forceScaling
-        jacobian[eqs_Fu[1][i],DOF_uF[i]] += R0_ku[i]/forceScaling
-        # d(-M_spring)/d(p) = R0_kp/forceScaling
-        jacobian[eqs_Fp[1][i],DOF_pM[i]] += R0_kp[i]/forceScaling
+    # Loop connected elements of the node
+    for e in eachindex(ζonElements)
+        # Loop DOFs
+        for i in 1:3
+            # d(-F_spring)/d(u) = R0_ku/forceScaling
+            jacobian[eqs_Fu[e][i],DOF_uF[i]] += R0_ku[i]/forceScaling
+            # d(-M_spring)/d(p) = R0_kp/forceScaling
+            jacobian[eqs_Fp[e][i],DOF_pM[i]] += R0_kp[i]/forceScaling
+        end
     end
 
     return jacobian

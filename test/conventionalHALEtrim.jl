@@ -10,7 +10,7 @@ NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=displayStatus)
 
 # Set stiffness factor and airspeed ranges, and initialize outputs
 λRange = [1; 50]
-URange = collect(20:0.5:33)
+URange = collect(20:1:35)
 trimAoA = Array{Float64}(undef,length(λRange),length(URange))
 trim_u1 = Array{Vector{Float64}}(undef,length(λRange),length(URange))
 trim_u3 = Array{Vector{Float64}}(undef,length(λRange),length(URange))
@@ -40,6 +40,7 @@ for (i,λ) in enumerate(λRange)
         trimAoA[i,j] = problem.flowVariablesOverσ[end][rWGlobalElemRange[1]].αₑ*180/π
         trim_u1[i,j] = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[1],problem.nodalStatesOverσ[end][e].u_n2[1]) for e in rWGlobalElemRange]...)
         trim_u3[i,j] = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[3],problem.nodalStatesOverσ[end][e].u_n2[3]) for e in rWGlobalElemRange]...)
+        println("AoA = $(trimAoA[i,j]) deg")
     end
 end
 

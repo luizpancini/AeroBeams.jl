@@ -328,6 +328,11 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
     end
     flapped = normFlapPos < 1 ? true : false
 
+    # Validate
+    @assert c > 0 "element chord must be positive"
+    @assert -π/2 < Λ < π/2 "element sweep angle too large (input must be in radians and smaller than π/2)"
+    @assert 0 < normSparPos < 1 "element normSparPos must be between 0 and 1"
+
     # Set aerodynamic solvers and number of aerodynamic states
     solver = aeroSurface.solver
     flapLoadsSolver = aeroSurface.flapLoadsSolver
@@ -377,7 +382,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
         ϖ = ζ -> 1
     else
         if isnothing(tipLossFunction)
-            ϖ = tipLossDecayFactor >= 0 ? ζ -> 1-exp(-tipLossDecayFactor*(1-(x1_n1_norm+ζ*(x1_n2_norm-x1_n1_norm)))) : ϖ = ζ -> 1-exp(-tipLossDecayFactor*(x1_n1_norm+ζ*(x1_n2_norm-x1_n1_norm)))
+            ϖ = tipLossDecayFactor >= 0 ? ζ -> 1-exp(-tipLossDecayFactor*(1-(x1_n1_norm+ζ*(x1_n2_norm-x1_n1_norm)))) : ϖ = ζ -> 1-exp(tipLossDecayFactor*(1-((1-x1_n1_norm)+ζ*((1-x1_n2_norm)-(1-x1_n1_norm)))))
         else
             ϖ = ζ -> tipLossFunction(ζ)
         end

@@ -387,12 +387,12 @@ function attached_flow_cm!(element::Element,δNow)
 
     @unpack flapLoadsSolver,flapped,b,normSparPos,normFlapPos,δdotNow,δddotNow,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
     @unpack cnC = element.aero.aeroCoefficients
-    @unpack ϵₘ,cm₀,cmα,cmδ = element.aero.airfoil.attachedFlowParameters
+    @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
+    @unpack ϵₘ,cm₀,cmα,cmδ,cnα = element.aero.airfoil.attachedFlowParameters
 
     # Circulatory component
-    cmC = cm₀+cmα*αₑ+(cnC/ϖMid)*(normSparPos-1/4)
+    cmC = cm₀+cmα*αₑ+cnC*(normSparPos-1/4)
     if flapped && typeof(flapLoadsSolver) == TableLookup
         cmC += cmδ*δNow
     end
@@ -431,12 +431,13 @@ function attached_flow_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
+    @unpack cnC = element.aero.aeroCoefficients
     @unpack cd₀,cdδ,cnα = element.aero.airfoil.attachedFlowParameters
 
     # Circulatory component
     ct = -cd₀/cos(αₑ)+cnα*αₑ^2
     if flapped && typeof(flapLoadsSolver) == TableLookup
-        ct -= cdδ*δNow/cos(αₑ)
+        ct -= cdδ*abs(δNow)/cos(αₑ)
     end
 
     # Scale by tip loss correction factor at element's midpoint

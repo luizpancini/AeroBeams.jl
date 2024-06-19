@@ -1,32 +1,38 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 
-# Option for reduced chord
-reducedChord = true
-
 # Stiffness factor
 λ = 1
 
+# Wing airfoil
+wingAirfoil = NACA23012A
+
+# Option for reduced chord
+reducedChord = true
+
 # TF to include beam pods and number of elements
-beamPods = false
+beamPods = true
+
+# Option to set payload on wing
+payloadOnWing = true
 
 # Number of elements of beams
 nElemStraightSemispan = 10
-nElemPod = 3
+nElemPod = 2
 
 # Aerodynamic solver
 aeroSolver = Indicial()
 
 # Payload [lb]
-P = 0
+P = 200
 
 # Airspeed [m/s]
 U = 40*0.3048
 
 # Set NR system solver for trim problem
-NR = create_NewtonRaphson(ρ=0.5,relativeTolerance=1e-12,maximumIterations=50,displayStatus=false)
+NR = create_NewtonRaphson(ρ=0.5,relativeTolerance=1e-12,maximumIterations=100,displayStatus=false)
 
 # Model for trim problem
-heliosTrim,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,nElemStraightSemispan=nElemStraightSemispan,nElemPod=nElemPod,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true,reducedChord=reducedChord)
+heliosTrim,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,nElemStraightSemispan=nElemStraightSemispan,nElemPod=nElemPod,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing)
 
 # Create and solve trim problem
 trimProblem = create_TrimProblem(model=heliosTrim,systemSolver=NR)
@@ -35,10 +41,11 @@ solve!(trimProblem)
 # Extract trim variables
 trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
 trimδ = trimProblem.x[end]
+println("T = $(trimThrust), δ = $(trimδ*180/π)")
 
 # Set checked elevator deflection profile
-Δδ = 1*π/180
-tδinit = 0.5
+Δδ = 5*π/180
+tδinit = 1
 tδpeak = 1+tδinit
 tδfinal = 1+tδpeak
 δ = t -> ifelse(
@@ -56,13 +63,13 @@ tδfinal = 1+tδpeak
 )
 
 # Model for dynamic problem
-heliosDynamic,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,nElemStraightSemispan=nElemStraightSemispan,nElemPod=nElemPod,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=δ,thrust=trimThrust,reducedChord=reducedChord)
+heliosDynamic,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,nElemStraightSemispan=nElemStraightSemispan,nElemPod=nElemPod,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=δ,thrust=trimThrust,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing)
 
 # Time variables
-Δt = 1e-3
-tf = 5
+Δt = 1e-2
+tf = 10
 
-# Set NR system solver for trim problem
+# Set NR system solver for dynamic problem
 maxit = 100
 NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=false)
 

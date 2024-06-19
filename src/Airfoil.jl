@@ -49,7 +49,7 @@
                 cmδRng = 0.0*ones(length(MaRng))
                 cnδRng = 0.0*ones(length(MaRng))
             elseif flapSiteID == 75
-                cdδRng =  0.0*ones(length(MaRng))
+                cdδRng =  0.25*ones(length(MaRng))
                 cmδRng = -0.25*ones(length(MaRng))
                 cnδRng =  1.0*ones(length(MaRng))
             else
@@ -111,7 +111,7 @@
             cd₀Rng =  1e-2*[    0.3;     0.3] 
             cm₀Rng =  1e-2*[    5.0;     5.0]
             cmαRng =       [-0.0573; -0.0573]
-            cnαRng =  2π/β*[   1.08;    1.08]
+            cnαRng =    2π*[   1.08;    1.08]
             if flapSiteID == 100
                 cdδRng = 0.0*ones(length(MaRng))
                 cmδRng = 0.0*ones(length(MaRng))
@@ -175,7 +175,7 @@
             ϵₙRng =        [ 1.0; 1.0]
             ϵₘRng =        [ 1.0; 1.0]
             cd₀Rng =  1e-2*[ 1.0; 1.0]
-            cm₀Rng =  1e-2*[ 1.0; 1.0]
+            cm₀Rng =  1e-1*[ 1.0; 1.0]
             cmαRng =       [ 0.0; 0.0]
             cnαRng =  2π/β*[ 1.0; 1.0]
             if flapSiteID == 100

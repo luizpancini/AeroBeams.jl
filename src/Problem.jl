@@ -197,6 +197,8 @@ Defines the problem of trim type
     systemSolver::SystemSolver
     # TF to get linear solution
     getLinearSolution::Bool
+    # TF to get the inertia matrix upon converged solution
+    getInertiaMatrix::Bool
     # Secondary (outputs from problem creation)
     # -----------------------------------------
     # States, residual, Jacobian and inertia arrays
@@ -227,10 +229,10 @@ export TrimProblem
 
 
 # Constructor
-function create_TrimProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,x0::Vector{Float64}=zeros(0))
+function create_TrimProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,getInertiaMatrix::Bool=true,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
-    problem = TrimProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution)
+    problem = TrimProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,getInertiaMatrix=getInertiaMatrix)
 
     # Update initial load factor
     problem.σ = systemSolver.initialLoadFactor
@@ -325,7 +327,7 @@ export EigenProblem
 
 
 # Constructor
-function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=false,x0::Vector{Float64}=zeros(0))
+function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=false,x0::Vector{Float64}=zeros(0),jacobian::Matrix{Float64}=zeros(0,0),inertia::Matrix{Float64}=zeros(0,0))
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes)
@@ -341,8 +343,16 @@ function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_New
         set_initial_states!(problem)
     end
 
-    # Initialize system arrays with correct size
-    initialize_system_arrays!(problem)
+    # Initialize system arrays
+    @assert size(jacobian) == size(inertia) "jacobian and inertia matrices must have the same size"
+    if !isempty(jacobian)
+        @assert size(jacobian) == (model.systemOrder,model.systemOrder) "size of the input jacobian does not correspond to the number of states of the model"
+        problem.jacobian = jacobian
+        problem.inertia = inertia
+        problem.jacobianDeterminant = det(jacobian)
+    else
+        initialize_system_arrays!(problem)
+    end
 
     return problem
 
@@ -809,7 +819,7 @@ function solve_eigen!(problem::Problem)
     @pack! problem = frequencies,dampings,eigenvectors,frequenciesFiltered,dampingsFiltered,eigenvectorsFiltered,dampingsNonOscillatory,frequenciesOscillatory,dampingsOscillatory,eigenvectorsOscillatoryCplx,eigenvectorsOscillatoryAbs,eigenvectorsNonOscillatory,modeShapesCplx,modeShapesAbs,modeShapesAbsNonOsc
 
 end
-
+export solve_eigen!
 
 """
 get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::Vector{Float64},dampings::Vector{Float64})

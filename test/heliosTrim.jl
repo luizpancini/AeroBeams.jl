@@ -1,14 +1,24 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
 
-# TF to include beam pods
+# Wing airfoil
+# wingAirfoil = NACA23012A
+wingAirfoil = HeliosWingAirfoil
+
+# Option for reduced chord
+reducedChord = false
+
+# TF to include beam pods 
 beamPods = true
+
+# Option to set payload on wing
+payloadOnWing = false
 
 # Aerodynamic solver
 aeroSolver = Indicial()
 
 # Set NR system solver 
 relaxFactor = 0.5
-displayStatus = true
+displayStatus = false
 NR = create_NewtonRaphson(ρ=relaxFactor,displayStatus=displayStatus)
 
 # Airspeed
@@ -16,7 +26,7 @@ U = 40*0.3048
 
 # Set stiffness factor and payload ranges, and initialize outputs
 λRange = [1,50]
-PRange = collect(0:25:500)
+PRange = collect(0:20:500)
 trimAoA = Array{Float64}(undef,length(λRange),length(PRange))
 trimThrust = Array{Float64}(undef,length(λRange),length(PRange))
 trimδ = Array{Float64}(undef,length(λRange),length(PRange))
@@ -28,7 +38,7 @@ for (i,λ) in enumerate(λRange)
         # Display progress
         println("Trimming for λ = $λ payload = $P lb")
         # Model and its beams
-        helios,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
+        helios,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
         # plt = plot_undeformed_assembly(helios)
         # display(plt)
         # Set initial guess solution as previous known solution

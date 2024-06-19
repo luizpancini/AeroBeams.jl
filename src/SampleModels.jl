@@ -169,7 +169,7 @@ export Pazy_tip_loss_factor
 
 
 """
-create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool)
+create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),g::Number=-9.80665,wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool,payloadOnWing::Bool=false)
 
 Creates a model based on the flying-wing aircraft described by Patil and Hodges in: Flight Dynamics of Highly Flexible Flying Wings (2006)
 
@@ -177,6 +177,7 @@ Creates a model based on the flying-wing aircraft described by Patil and Hodges 
 - `altitude::Number` = altitude
 - `aeroSolver::AeroSolver` = aerodynamic solver for pitch and plunge loads
 - `derivationMethod::DerivationMethod`
+- `g::Number`
 - `wingAirfoil::Airfoil`
 - `podAirfoil::Airfoil`
 - `beamPods::Bool`
@@ -192,8 +193,9 @@ Creates a model based on the flying-wing aircraft described by Patil and Hodges 
 - `δ::Union{Nothing,Number,<:Function}`
 - `thrust::Union{Number,<:Function}`
 - `reducedChord::Bool`
+- `payloadOnWing::Bool`
 """
-function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false)
+function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),g::Number=-9.80665,wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false)
 
     # Validate
     @assert ∞ > 1e8
@@ -244,16 +246,16 @@ function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),der
 
     # Pods' point inertias
     podLength = 6*0.3048
-    podMassVertOffset = podLength/2
+    podMassVertOffset = payloadOnWing ? 0 : -podLength/2
     sidePodMass = 50*0.453592
     centerPodMass = 60*0.453592
     payloadMass = payloadPounds*0.453592
 
-    leftSidePod = PointInertia(elementID=1,η=[-(2*wingSection/nElemStraightSemispan)/2;0;-podMassVertOffset],mass=sidePodMass)
+    leftSidePod = PointInertia(elementID=1,η=[-(2*wingSection/nElemStraightSemispan)/2;0;podMassVertOffset],mass=sidePodMass)
 
-    centerPod = PointInertia(elementID=nElemStraightSemispan,η=[(2*wingSection/nElemStraightSemispan)/2;0;-podMassVertOffset],mass=centerPodMass+payloadMass)
+    centerPod = PointInertia(elementID=nElemStraightSemispan,η=[(2*wingSection/nElemStraightSemispan)/2;0;podMassVertOffset],mass=centerPodMass+payloadMass)
 
-    rightSidePod = PointInertia(elementID=nElemStraightSemispan,η=[(2*wingSection/nElemStraightSemispan)/2;0;-podMassVertOffset],mass=sidePodMass)
+    rightSidePod = PointInertia(elementID=nElemStraightSemispan,η=[(2*wingSection/nElemStraightSemispan)/2;0;podMassVertOffset],mass=sidePodMass)
 
     add_point_inertias_to_beam!(leftWingStraight,inertias=[leftSidePod,centerPod])
 
@@ -301,7 +303,7 @@ function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),der
     aircraftBeams = beamPods ? [leftWingDihedral,leftWingStraight,rightWingStraight,rightWingDihedral,leftPod,centerPod,rightPod] : [leftWingDihedral,leftWingStraight,rightWingStraight,rightWingDihedral]
 
     # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
-    aircraft = create_Model(name="Helios",beams=aircraftBeams,BCs=aircraftBCs,initialPosition=[-wingSection*(2+cos(Γ));0;wingSection*sin(Γ)],altitude=altitude,gravityVector=[0;0;-9.80665],v_A=[0;airspeed;0],flapLinks=[elevatorLink],trimLoadsLinks=thrustsLink)
+    helios = create_Model(name="Helios",beams=aircraftBeams,BCs=aircraftBCs,initialPosition=[-wingSection*(2+cos(Γ));0;wingSection*sin(Γ)],altitude=altitude,gravityVector=[0;0;g],v_A=[0;airspeed;0],flapLinks=[elevatorLink],trimLoadsLinks=thrustsLink)
 
     # Set midpsan element for the aircraft model
     midSpanElem = nElemDihedralSemispan + nElemStraightSemispan
@@ -316,9 +318,9 @@ function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),der
     elevatorLinkWing = create_FlapLink(masterBeam=wingStraight,slaveBeams=[wingDihedral])
 
     # Wing model
-    wing = create_Model(name="HeliosWing",beams=wingBeams,BCs=[clamp],altitude=altitude,gravityVector=[0;0;-9.80665],v_A=[0;airspeed;0],flapLinks=[elevatorLinkWing])
+    wing = create_Model(name="HeliosWing",beams=wingBeams,BCs=[clamp],altitude=altitude,gravityVector=[0;0;g],v_A=[0;airspeed;0],flapLinks=[elevatorLinkWing])
 
-    return aircraft,midSpanElem,wing,leftWingStraight,rightWingStraight,leftWingDihedral,rightWingDihedral,leftPod,rightPod,centerPod
+    return helios,midSpanElem,wing,leftWingStraight,rightWingStraight,leftWingDihedral,rightWingDihedral,leftPod,rightPod,centerPod
 
 end
 export create_Helios
@@ -343,7 +345,7 @@ Creates a model based on the conventional HALE aircraft described by Patil, Hodg
 - `stiffnessFactor::Number=1` = multiplier factor for the wing's sectional stiffness properties
 - `wingCd0::Number=0` = parisite drag coefficient for the wing
 """
-function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,wingCd0::Number=0,stabsCd0::Number=0,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0)
+function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
 
     # Validate
     @assert iseven(nElemWing)
@@ -366,14 +368,19 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
         thrust = t -> thrustConst
     end
 
-    # Wing surface
+    # Wing airfoil
     wAirfoil = deepcopy(flatPlate)
+
+    # Wing surface
     wChord = 1
     wNormSparPos = 0.5
     wNormFlapPos = 0.75
     wNormFlapSpan = [0.75,1]
     wingSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,updateAirfoilParameters=false)
     wingSurf.airfoil.attachedFlowParameters.cd₀ = wingCd0
+    wingSurf.airfoil.attachedFlowParameters.cnδ = wingcnδ
+    wingSurf.airfoil.attachedFlowParameters.cmδ = wingcmδ
+    wingSurf.airfoil.attachedFlowParameters.cdδ = wingcdδ
 
     # Wing properties
     Lw = 16
@@ -405,46 +412,53 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
 
     # Tail boom
     Lt = 10
-    tρA,tρIs = 0.08,0.1
-    tailBoom = create_Beam(name="tailBoom",length=Lt,nElements=nElemTailBoom,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIs=tρIs)],rotationParametrization="E321",p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])
+    tρA,tρIy,tρIz = 0.08,wρIy/10,wρIz/10
+    tailBoom = create_Beam(name="tailBoom",length=Lt,nElements=nElemTailBoom,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIy=tρIy,ρIz=tρIz)],rotationParametrization="E321",p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])
 
     # Payload (at wing's spar position)
     payloadMass = 50
     payloadInertia = 200
-    payload = PointInertia(elementID=1,η=[-Lt/nElemTailBoom/2;0;0],mass=payloadMass,Iyy=payloadInertia,Izz=payloadInertia,Ixx=payloadInertia)
-    add_point_inertias_to_beam!(tailBoom,inertias=[payload])
+    payload = PointInertia(elementID=1,η=[-Lw/div(nElemWing,2)/2;0;0],mass=payloadMass,Iyy=payloadInertia,Izz=payloadInertia,Ixx=payloadInertia)
+    add_point_inertias_to_beam!(rightWing,inertias=[payload])
+
+    # Stabilizers airfoil
+    sAirfoil = deepcopy(flatPlate)
 
     # Horizontal stabilizer surface
-    hAirfoil = deepcopy(flatPlate)
     hChord = 0.5
     hNormSparPos = 0.5
     hNormFlapPos = 0.75
     hNormFlapSpan = [0,1]
-    hsSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=hAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δ=δElev,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=hAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=false)
+    hsSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δ=δElev,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=false)
     hsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
+    hsSurf.airfoil.attachedFlowParameters.cnδ = stabscnδ
+    hsSurf.airfoil.attachedFlowParameters.cmδ = stabscmδ
+    hsSurf.airfoil.attachedFlowParameters.cdδ = stabscdδ
 
     # Horizontal stabilizer beam
     Lh = 5
-    hρA,hρIs = 0.08,0.01
-    horzStabilizer = create_Beam(name="horzStabilizer",length=Lh,initialPosition=[-Lh/2;0;0],nElements=nElemHorzStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=hρA,ρIs=hρIs)],connectedBeams=[tailBoom],connectedNodesThis=[div(nElemHorzStabilizer,2)+1],connectedNodesOther=[nElemTailBoom+1])
+    hρA,hρIy,hρIz = 0.08,wρIy/10,wρIz/10
+    horzStabilizer = create_Beam(name="horzStabilizer",length=Lh,initialPosition=[-Lh/2;0;0],nElements=nElemHorzStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=hρA,ρIy=hρIy,ρIz=hρIz)],connectedBeams=[tailBoom],connectedNodesThis=[div(nElemHorzStabilizer,2)+1],connectedNodesOther=[nElemTailBoom+1])
     if stabilizersAero
         horzStabilizer.aeroSurface = hsSurf
         update_beam!(horzStabilizer)
     end
 
     # Vertical stabilizer surface
-    vAirfoil = deepcopy(flatPlate)
     vChord = 0.5
     vNormSparPos = 0.5
     vNormFlapPos = 0.75
     vNormFlapSpan = [0,1]
-    vsSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=vAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,updateAirfoilParameters=false)
+    vsSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,updateAirfoilParameters=false)
     vsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
+    vsSurf.airfoil.attachedFlowParameters.cnδ = stabscnδ
+    vsSurf.airfoil.attachedFlowParameters.cmδ = stabscmδ
+    vsSurf.airfoil.attachedFlowParameters.cdδ = stabscdδ
 
     # Vertical stabilizer beam
     Lv = 2.5
-    vρA,vρIs = 0.08,0.01
-    vertStabilizer = create_Beam(name="vertStabilizer",length=Lv,nElements=nElemVertStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=vρA,ρIs=vρIs)],rotationParametrization="E321",p0=[0;-π/2;0],connectedBeams=[tailBoom],connectedNodesThis=[1],connectedNodesOther=[nElemTailBoom+1])
+    vρA,vρIy,vρIz = 0.08,hρIy,hρIz
+    vertStabilizer = create_Beam(name="vertStabilizer",length=Lv,nElements=nElemVertStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=vρA,ρIy=vρIy,ρIz=vρIz)],rotationParametrization="E321",p0=[0;-π/2;0],connectedBeams=[tailBoom],connectedNodesThis=[1],connectedNodesOther=[nElemTailBoom+1])
     if stabilizersAero
         vertStabilizer.aeroSurface = vsSurf
         update_beam!(vertStabilizer)
@@ -459,8 +473,149 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     beams = includeVS ? [leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer] : [leftWing,rightWing,tailBoom,horzStabilizer]
 
     # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
-    aircraft = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;-9.80665],flapLinks=[aileronLink])
+    conventional_HALE = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[aileronLink])
 
-    return aircraft,leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer
+    return conventional_HALE,leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer
 end
 export create_conventional_HALE
+
+
+"""
+create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),nElemWing::Int64=16,nElemFus::Int64=6,∞::Number=1e12,stiffnessFactor::Number=1,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Number=40)
+
+Creates a model based on the conventional HALE aircraft described by Patil, Hodges and Cesnik in: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
+
+# Keyword arguments
+- `altitude::Number` = altitude
+- `aeroSolver::AeroSolver` = aerodynamic solver for pitch and plunge loads
+- `flapLoadsSolver::FlapAeroSolver` = aerodynamic solver for flap loads  
+- `nElemWing::Int64` = # of elements of the full wing
+- `nElemFus::Int64` = # of elements of the fuselage
+- `∞::Number=1e12` = value of rigid sectional stiffness properties
+- `stiffnessFactor::Number=1` = multiplier factor for the wing's sectional stiffness properties
+"""
+function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),∞::Number=1e12,stiffnessFactor::Number=1,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Number=40)
+
+    # Validate
+    @assert ∞ > 1e8
+    @assert stiffnessFactor > 0
+    @assert airspeed >= 0
+    δElevIsInput = !isnothing(δElev)
+    if δElevIsInput
+        @assert !δElevIsTrimVariable
+    end
+    if δElev isa Number
+        δElevConst = deepcopy(δElev)
+        δElev = t -> δElevConst
+    end
+    if thrust isa Number
+        thrustConst = deepcopy(thrust)
+        thrust = t -> thrustConst
+    end
+
+    # Keypoints
+    kp1 = [0; -1.126236+1.126236; 0]
+    kp2 = [0.889; -0.997712+1.126236; 0]
+    kp3 = [3.248152; -2.359914+1.126236; 0]
+
+    # Length of fuselage section
+    fusLength = sqrt((kp2[1]-kp1[1])^2+(kp2[2]-kp1[2])^2)
+
+    # Angle of sweep of the fuselage section 
+    fΛ = acos((kp2[1]-kp1[1])/fusLength)             
+
+    # Length of wing section
+    wingSemispan = sqrt((kp3[1]-kp2[1])^2+(kp3[2]-kp2[2])^2)  
+    
+    # Angle of sweep of the wing section 
+    wΛ = acos((kp3[1]-kp2[1])/wingSemispan)
+    
+    # Chord and spar position
+    rootChord = 1.38557
+    tipChord = 0.54864
+    rootSparPos = 0.6438
+    tipSparPos = 0.4560
+
+    # Wing surfaces
+    wChord = tipChord
+    wNormSparPos = tipSparPos
+    wNormFlapPos = 0.75
+
+    leftWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor)
+
+    rightWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor)
+
+    # Wing properties
+    nElemWing = 8
+    wEA,wGJ,wEIy,wEIz = 155_000_000,11_000,11_700,130_000
+    wGJ,wEIy,wEIz = multiply_inplace(stiffnessFactor, wGJ,wEIy,wEIz)
+    wρA,wρIy,wρIz = 6.2,0.0005,0.00462
+    Cwing = isotropic_stiffness_matrix(∞=∞,EA=wEA,GJ=wGJ,EIy=wEIy,EIz=wEIz)
+    Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
+
+    # Concentrated wing inertias
+    wConMass = 2
+    wLConInertias = Vector{PointInertia}()
+    wRConInertias = Vector{PointInertia}()
+    push!(wLConInertias,PointInertia(elementID=1,η=[-wingSemispan/nElemWing/2;0;0],mass=wConMass))
+    push!(wRConInertias,PointInertia(elementID=nElemWing,η=[wingSemispan/nElemWing/2;0;0],mass=wConMass))
+    for e=1:8
+        push!(wLConInertias,PointInertia(elementID=e,η=[wingSemispan/nElemWing/2;0;0],mass=wConMass))
+        push!(wRConInertias,PointInertia(elementID=e,η=[-wingSemispan/nElemWing/2;0;0],mass=wConMass))
+    end
+
+    # Wing beams
+    leftWing = create_Beam(name="leftWing",length=wingSemispan,nElements=nElemWing,C=[Cwing],I=[Iwing],aeroSurface=leftWingSurf,rotationParametrization="E321",p0=[wΛ;0;0],pointInertias=wLConInertias)
+
+    rightWing = create_Beam(name="rightWing",length=wingSemispan,nElements=nElemWing,C=[Cwing],I=[Iwing],aeroSurface=rightWingSurf,rotationParametrization="E321",p0=[-wΛ;0;0],pointInertias=wRConInertias)
+
+    # Link wing elevons
+    elevonLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[1])
+
+    # Fuselage surfaces
+    leftFusChord = x1 -> tipChord + (rootChord-tipChord)*x1/fusLength
+    rightFusChord = x1 -> rootChord + (tipChord-rootChord)*x1/fusLength
+    leftFusSparPos = x1 -> tipSparPos + (rootSparPos-tipSparPos)*x1/fusLength
+    rightFusSparPos = x1 -> rootSparPos + (tipSparPos-rootSparPos)*x1/fusLength
+
+    leftFusSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=-fΛ,c=leftFusChord,normSparPos=leftFusSparPos,updateAirfoilParameters=updateAirfoilParameters)
+
+    rightFusSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=fΛ,c=rightFusChord,normSparPos=rightFusSparPos,updateAirfoilParameters=updateAirfoilParameters)
+
+    # Fuselage properties
+    nElemFus = 3
+    fEA,fGJ,fEIy,fEIz = 169_000_000,2_250_000,750_000,35_000_000
+    fρA,fρIy,fρIz = 50,0.7,22.0
+    Cfus = isotropic_stiffness_matrix(∞=∞,EA=fEA,GJ=fGJ,EIy=fEIy,EIz=fEIz)
+    Ifus = inertia_matrix(ρA=fρA,ρIy=fρIy,ρIz=fρIz)
+
+    # Concentrated fuselage inertias
+    fConMass = 40
+    fConMassOffset = 0.891968
+    fLeftConInertia = PointInertia(elementID=3,η=[fusLength/nElemFus/2;fConMassOffset;0],mass=fConMass)
+    fRightConInertia = PointInertia(elementID=1,η=[-fusLength/nElemFus/2;fConMassOffset;0],mass=fConMass)
+
+    # Fuselage beams
+    leftFus = create_Beam(name="leftFus",length=fusLength,nElements=nElemFus,C=[Cfus],I=[Ifus],aeroSurface=leftFusSurf,rotationParametrization="E321",p0=[-fΛ;0;0],pointInertias=[fLeftConInertia])
+
+    rightFus = create_Beam(name="rightFus",length=fusLength,nElements=nElemFus,C=[Cfus],I=[Ifus],aeroSurface=rightFusSurf,rotationParametrization="E321",p0=[fΛ;0;0],pointInertias=[fRightConInertia])
+
+    # Propellers thrust force
+    thrustValue = thrustIsTrimVariable ? t -> 0 : thrust
+
+    thrustLeft = create_BC(name="thrustLeft",beam=leftFus,node=1,types=["Ff2A"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    thrustRight = create_BC(name="thrustRight",beam=rightFus,node=nElemFus+1,types=["Ff2A"],values=[t->thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])
+
+    # Link propellers' thrust
+    thrustsLink = thrustIsTrimVariable ? [create_TrimLoadsLink(masterBC=thrustRight,slaveBCs=[thrustLeft])] : Vector{TrimLoadsLink}()
+
+    # Initial position for left wingtip
+    initialPosition = [-kp3[1]; kp3[2]; kp3[3]]
+
+    # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
+    BWB = create_Model(name="BWB",beams=[leftWing,leftFus,rightFus,rightWing],BCs=[thrustLeft,thrustRight],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[elevonLink],trimLoadsLinks=thrustsLink)
+
+    return BWB
+end
+export create_BWB

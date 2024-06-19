@@ -16,7 +16,9 @@ wingCd0 = stabsCd0 = 1e-2
 nElemWing = 20
 
 # Set NR system solver for trim problem
-NR = create_NewtonRaphson(ρ=0.5,relativeTolerance=1e-12,maximumIterations=50,displayStatus=false)
+relaxFac = 0.5
+maxIter = 50
+NR = create_NewtonRaphson(ρ=relaxFac,maximumIterations=maxIter,displayStatus=false)
 
 # Model for trim problem
 conventionalHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,airspeed=U,nElemWing=nElemWing,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
@@ -53,7 +55,7 @@ conventionalHALEdynamic,leftWing,rightWing,_ = create_conventional_HALE(aeroSolv
 
 # Time variables
 Δt = 1e-3
-tf = 5
+tf = 1e-2
 
 # Set NR system solver for trim problem
 maxit = 100
@@ -61,7 +63,8 @@ NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=false)
 
 # Create and solve dynamic problem
 dynamicProblem = create_DynamicProblem(model=conventionalHALEdynamic,x0=trimProblem.x[1:end-2],finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true,systemSolver=NR)
-solve!(dynamicProblem)
+# solve!(dynamicProblem)
+@time solve!(dynamicProblem)
 # @profview solve!(dynamicProblem)
 
 # Get wing root elements

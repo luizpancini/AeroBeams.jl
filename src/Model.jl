@@ -58,6 +58,9 @@ Model composite type
     R_AT::Matrix{Float64} = I3
     skipValidationMotionBasisA::Bool = false
     nTrimVariables::Int64 = 0
+    mass::Number = 0
+    centerOfMass::Vector{<:Number} = zeros(3)
+    I::Vector{<:Number} = zeros(3)
 
 end
 export Model
@@ -94,6 +97,9 @@ function update_model!(model::Model)
 
     # Assemble the beams into model  
     assemble_model!(model,beams)
+
+    # Compute inertia properties of the assembly
+    inertia_properties!(model)
 
     # Set atmosphere, if applicable
     set_atmosphere!(model)
@@ -357,15 +363,17 @@ function assemble_model!(model::Model,beams::Vector{Beam})
         elementRange = Vector(1:nElements)
 
         # Update the element range for the current beam in the assembly
+        elementRangeIncrement = 0
         for id=2:ID
-            elementRange .+= beams[id-1].nElements
+            elementRangeIncrement += beams[id-1].nElements
         end
+        elementRange .+= elementRangeIncrement
         @pack! beam = elementRange
 
         # Add elements to model and update their global IDs on the assembly
-        for (e, element) in enumerate(elements)
+        for element in elements
             push!(model.elements,element)
-            element.globalID = (ID-1)*nElements + e
+            element.globalID = element.localID + elementRangeIncrement
         end
 
         # Initialize elements' nodes' global ID array for simply connected beam
@@ -468,6 +476,45 @@ function assemble_model!(model::Model,beams::Vector{Beam})
     forceScaling = force_scaling(S)
 
     @pack! model = beams,nElementsTotal,nNodesTotal,elementNodes,r_n,forceScaling
+
+end
+
+
+"""
+inertia_properties!(model::Model)
+
+Computes the inertia properties of the undeformed assembly
+
+# Arguments
+- model::Model
+"""
+function inertia_properties!(model::Model)
+
+    @unpack elements = model
+
+    # Mass and mass moment of inertia of the elements (including attached point inertias)
+    elementsMass = [element.I[1,1]*element.Δℓ for element in elements] 
+    elementsI = [abs.(element.Δℓ*element.R0*[element.I[4,4]; element.I[5,5]; element.I[6,6]]) for element in elements]
+
+    # Mass times position of point inertias attached to the elements, resolved in basis A
+    elementsMassη = [-element.Δℓ*element.R0*[element.I[5,3]; element.I[6,1]; element.I[4,2]] for element in elements]
+
+    # Position of the elements
+    elements_x1 = [element.r[1] for element in elements]
+    elements_x2 = [element.r[2] for element in elements]
+    elements_x3 = [element.r[3] for element in elements]
+
+    # Mass and mass moments of inertia of the model
+    mass = sum(elementsMass)
+    I = sum(elementsI)
+
+    # Mass times position of all attached point inertias
+    massη = sum(elementsMassη)
+    
+    # Position of the center of mass, resolved in basis A
+    centerOfMass = [(massη[1]+dot(elements_x1,elementsMass))/mass; (massη[2]+dot(elements_x2,elementsMass))/mass; (massη[3]+dot(elements_x3,elementsMass))/mass]
+
+    @pack! model = mass,I,centerOfMass
 
 end
 

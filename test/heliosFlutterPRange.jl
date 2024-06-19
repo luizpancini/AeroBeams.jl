@@ -3,8 +3,18 @@ using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 # Stiffness factor
 λ = 1
 
-# TF to include beam pods
-beamPods = false
+# Wing airfoil
+# wingAirfoil = NACA23012A
+wingAirfoil = HeliosWingAirfoil
+
+# Option for reduced chord
+reducedChord = false
+
+# TF to include beam pods 
+beamPods = true
+
+# Option to set payload on wing
+payloadOnWing = false
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -23,7 +33,7 @@ relaxFactor = 0.5
 NR = create_NewtonRaphson(ρ=relaxFactor)
 
 # Set payload range, and initialize outputs
-PRange = collect(0:25:500)
+PRange = collect(0:20:500)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(PRange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(PRange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(PRange))
@@ -35,7 +45,7 @@ for (i,P) in enumerate(PRange)
     # Display progress
     println("Solving for payload = $P lb")
     # Model for trim problem
-    heliosTrim,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
+    heliosTrim,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
     # Set initial guess solution as previous known solution
     x0Trim = (i==1) ? zeros(0) : trimProblem.x
     # Create and solve trim problem
@@ -45,7 +55,7 @@ for (i,P) in enumerate(PRange)
     trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
     trimδ = trimProblem.x[end]
     # Model for eigen problem
-    heliosEigen,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=trimδ,thrust=trimThrust)
+    heliosEigen,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=trimδ,thrust=trimThrust)
     # Set initial solution as trim solution
     x0Eigen = trimProblem.x[1:end-2]
     # Create and solve eigen problem

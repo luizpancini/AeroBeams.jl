@@ -609,7 +609,7 @@ Adds the point inertia's matrix to the element's sectional inertia matrix
 """
 function add_point_inertia_to_element!(element::Element,pointInertia::PointInertia)
 
-    @unpack I,Δℓ = element
+    @unpack I,Δℓ,attachedPointInertias = element
     @unpack η,mass,inertiaMatrix = pointInertia
 
     # Add to inertia matrix 
@@ -626,6 +626,9 @@ function add_point_inertia_to_element!(element::Element,pointInertia::PointInert
     μ = I[1,1]
     ηtilde = μ > 0 ? I_21/μ : zeros(3,3)
 
-    @pack! element = I,I_11,I_12,I_21,I_22,μ,ηtilde
+    # Add to element's list of attached point inertias
+    push!(attachedPointInertias,pointInertia)
+
+    @pack! element = I,I_11,I_12,I_21,I_22,μ,ηtilde,attachedPointInertias
 
 end

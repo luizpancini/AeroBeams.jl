@@ -4,10 +4,10 @@ using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 λ = 1
 
 # TF to include beam pod
-beamPods = true
+beamPods = false
 
 # Aerodynamic solver
-aeroSolver = Indicial()
+aeroSolver = Inflow(6)
 
 # Option for mode tracking
 modeTracking = true

@@ -1,23 +1,40 @@
 using AeroBeams, LinearAlgebra, Plots
 
 # Stiffness factor
-λ = 1
+λ = 1e0
+
+# Aerodynamic solver
+aeroSolver = Indicial()
+
+# Option for stabilizers
+stabilizersAero = true
+includeVS = true
+
+# Parasite drag coefficients
+wingCd0 = 1e-2
+stabsCd0 = 1e-2
 
 # Model and its beams
-conventionalHALE,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=Inflow(),nElemWing=20,stiffnessFactor=λ,stabilizersAero=true,includeVS=true,wingCd0=1e-2,stabsCd0=1e-2,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
-# plt = plot_undeformed_assembly(conventionalHALE)
-# display(plt)
+conventionalHALE,leftWing,rightWing,tailboom,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true)
 
 # Set NR system solver 
 relaxFactor = 0.5
-displayStatus = true
+displayStatus = false
 NR = create_NewtonRaphson(ρ=relaxFactor,displayStatus=displayStatus)
 
 # Set airspeed range and initialize outputs
-URange = collect(20:0.5:35)
+URange = collect(20:1:35)
 trimAoA = Array{Float64}(undef,length(URange))
 trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))
+
+# Add attachment springs
+μ = 0e-8
+ku = μ*[1; 1; 1]
+kp = ku
+spring = create_Spring(elementID=1,localNode=1,ku=ku,kp=kp)
+add_springs_to_beam!(rightWing,springs=[spring])
+update_model!(conventionalHALE)
 
 # Sweep airspeed
 for (i,U) in enumerate(URange)
@@ -32,8 +49,9 @@ for (i,U) in enumerate(URange)
     solve!(problem)
     # Trim results
     trimAoA[i] = problem.flowVariablesOverσ[end][rightWing.elementRange[1]].αₑ*180/π
-    trimThrust[i] = problem.x[end-1]*problem.model.forceScaling
-    trimδ[i] = problem.x[end]*180/π
+    trimThrust[i] = stabilizersAero ? problem.x[end-1]*problem.model.forceScaling : problem.x[end]*problem.model.forceScaling
+    trimδ[i] = stabilizersAero ? problem.x[end]*180/π : 0
+    println("AoA = $(trimAoA[i]), T = $(trimThrust[i]), δ = $(trimδ[i])")
 end
 
 # Plots

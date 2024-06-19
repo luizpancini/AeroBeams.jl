@@ -142,6 +142,12 @@ function solve_NewtonRaphson!(problem::Problem)
         # Check for full load and convergence reached
         if abs(σ-1) < 1e-6 && convergedPartialSolution 
             convergedFinalSolution = true
+            # Get inertia matrix in trim problem, if applicable
+            if problem isa TrimProblem && problem.getInertiaMatrix
+                for element in problem.model.elements
+                    element_inertia!(problem,problem.model,element)
+                end
+            end
         end
     end    
 
@@ -197,19 +203,17 @@ function solve_linear_system!(problem::Problem)
     @unpack ρ = problem.systemSolver
 
     # Determinant of Jacobian
-    jacobianDeterminant = typeof(problem) != TrimProblem ? det(jacobian) : NaN
+    jacobianDeterminant = nTrimVariables == 0 ? det(jacobian) : NaN
     @pack! problem = jacobianDeterminant
 
     # Solve the linear system according to problem type
-    if typeof(problem) == TrimProblem || isapprox(jacobianDeterminant,0)
-        try 
-            Δx = -pinv(jacobian)*residual
+    if nTrimVariables > 0
+        Δx = -pinv(jacobian)*residual
+    elseif isapprox(jacobianDeterminant,0)
+        try
+            Δx = line_search(x,residual,jacobian)
         catch
-            try
-                Δx = line_search(x,residual,jacobian)
-            catch
-                return false
-            end
+            return false
         end
     else
         try

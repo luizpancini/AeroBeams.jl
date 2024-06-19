@@ -8,7 +8,7 @@ derivationMethod = AD()
 surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
 
 # Set root angle
-θ = π/180*10
+θ = π/180*0
 
 # Stiffness factor
 λ = 1
@@ -42,7 +42,7 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,displayStatus=false)
 nModes = 5
 
 # Set airspeed range and initialize outputs
-URange = collect(0:0.1:45)
+URange = collect(0:0.5:30)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
@@ -71,7 +71,7 @@ for (i,U) in enumerate(URange)
     # Update velocity of basis A 
     set_motion_basis_A!(model=SMWFlutter,v_A=[0;U;0])
     # Create and solve problem
-    problem[i] = create_EigenProblem(model=SMWFlutter,systemSolver=NR,nModes=nModes,frequencyFilterLimits=[1e-3,Inf64],normalizeModeShapes=true)
+    problem[i] = create_EigenProblem(model=SMWFlutter,systemSolver=NR,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],normalizeModeShapes=true)
     solve!(problem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem[i].frequenciesOscillatory
@@ -108,11 +108,13 @@ for i in eachindex(URange)
 end
 
 # Separate frequencies and damping ratios by mode
+modeFrequencies = Array{Vector{Float64}}(undef,nModes)
+modeDampings = Array{Vector{Float64}}(undef,nModes)
 modeDampingRatios = Array{Vector{Float64}}(undef,nModes)
-modeFrequencies =  Array{Vector{Float64}}(undef,nModes)
 for mode in 1:nModes
-    modeDampingRatios[mode] = [damps[i][mode]/freqs[i][mode] for i in eachindex(URange)]
+    modeDampings[mode] = [damps[i][mode] for i in eachindex(URange)]
     modeFrequencies[mode] = [freqs[i][mode] for i in eachindex(URange)]
+    modeDampingRatios[mode] = modeFrequencies[mode]./modeDampings[mode]
 end
 
 # Flutter speed and flutter frequency 
@@ -191,9 +193,9 @@ end
 display(plt11)
 savefig(string(pwd(),"/test/outputs/figures/SMWFlutter_11.pdf"))
 # Root locus
-plt2 = plot(xlabel="Damping ratio", ylabel="Frequency [rad/s]", xlims=[-0.5,0.1])
+plt2 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-5,1], ylims=[0,50])
 for mode in 1:nModes
-    plot!(modeDampingRatios[mode], modeFrequencies[mode], c=modeColors[mode], lw=lw, label="Mode $mode")
+    plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], lw=lw, label="Mode $mode")
 end
 display(plt2)
 savefig(string(pwd(),"/test/outputs/figures/SMWFlutter_2.pdf"))
