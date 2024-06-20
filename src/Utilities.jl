@@ -1,4 +1,4 @@
-using Revise, Parameters, BenchmarkTools, SparseArrays, LinearAlgebra, Statistics, Plots, QuadGK, LinearInterpolations, ForwardDiff, FiniteDifferences, DelimitedFiles
+using Revise, Parameters, BenchmarkTools, SparseArrays, LinearAlgebra, Statistics, Plots, QuadGK, LinearInterpolations, ForwardDiff, ReverseDiff, FiniteDifferences, DelimitedFiles
 
 """
 const a1 = [1.0; 0.0; 0.0]

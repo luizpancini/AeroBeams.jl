@@ -240,7 +240,8 @@ end
     flapSiteID::Int64
     normFlapPos::Float64
     flapped::Bool
-    # Flap deflection trim TF, values and its rates as functions of time
+    # Zero flap deflection TF, trim TF, values and its rates as functions of time
+    δIsZero::Bool
     δIsTrimVariable::Bool
     δ::Function
     δdot::Function
@@ -253,7 +254,8 @@ end
     δMultiplier::Number
     # TF to update airfoil parameters according to flow parameters
     updateAirfoilParameters::Bool
-    # Tip loss correction factor as a function of the element's local coordinate (ζ), and value at midpoint 
+    # TF for tip loss correction, tip loss correction factor as a function of the element's local coordinate (ζ), and value at midpoint
+    hasTipCorrection::Bool
     ϖ::Function
     ϖMid::Number = ϖ(1/2)
     # State matrices
@@ -360,6 +362,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
     derivationMethod = aeroSurface.derivationMethod
 
     # Set flap deflection trim TF, value and rates
+    δIsZero = aeroSurface.δIsZero
     δIsTrimVariable = aeroSurface.δIsTrimVariable
     δ = aeroSurface.δ
     δdot = aeroSurface.δdot
@@ -388,7 +391,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
         end
     end
 
-    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ)
+    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection)
 end
 
 

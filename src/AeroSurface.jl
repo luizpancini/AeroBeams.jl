@@ -50,6 +50,8 @@
     δIsInput::Bool
     # TF for flap deflection being a trim variable
     δIsTrimVariable::Bool
+    # TF for flap deflection being zero over time
+    δIsZero::Bool 
     # Flap deflection 
     δ::Union{Nothing,<:Function,Number}
     # Flap site ID (for flapLoadsSolver of type TableLookup)
@@ -113,7 +115,10 @@ function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::Flap
     end
 
     # Set TF for δ being user input
-    δIsInput = !isnothing(δ) ? true : false
+    δIsInput = !isnothing(δ) 
+
+    # Set TF for δ being zero over time
+    δIsZero = isnothing(δ) && !δIsTrimVariable
 
     # Set flap deflection and rates as functions of time
     if isnothing(δ)
@@ -130,7 +135,7 @@ function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::Flap
         δddot = t -> ForwardDiff.derivative(δdot, t)
     end
 
-    return AeroSurface(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=c,Λ=Λ,normSparPos=normSparPos,normFlapSpan=normFlapSpan,normFlapPos=normFlapPos,δIsInput=δIsInput,δIsTrimVariable=δIsTrimVariable,δ=δ,flapSiteID=flapSiteID,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossFunction=tipLossFunction,tipLossDecayFactor=tipLossDecayFactor,δdot=δdot,δddot=δddot,hasIndependentFlap=true)
+    return AeroSurface(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=c,Λ=Λ,normSparPos=normSparPos,normFlapSpan=normFlapSpan,normFlapPos=normFlapPos,δIsInput=δIsInput,δIsTrimVariable=δIsTrimVariable,δIsZero=δIsZero,δ=δ,flapSiteID=flapSiteID,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossFunction=tipLossFunction,tipLossDecayFactor=tipLossDecayFactor,δdot=δdot,δddot=δddot,hasIndependentFlap=true)
 
 end
 export create_AeroSurface

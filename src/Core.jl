@@ -75,10 +75,6 @@ function element_arrays!(problem::Problem,model::Model,element::Element)
     if problem isa EigenProblem
         element_inertia!(problem,model,element)
     end
-
-    ## Update nodal states of the element (mere outputs)
-    # --------------------------------------------------------------------------
-    element_nodal_states!(element)
      
 end
 
@@ -606,7 +602,9 @@ function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ
     # local_gust_velocity!(model,element,timeNow)
 
     # Flap deflection rates
-    flap_deflection_rates!(problem,element)
+    if !element.aero.δIsZero
+        flap_deflection_rates!(problem,element)
+    end
 
     # Effective (unsteady) angle of attack
     effective_angle_of_attack!(element,χ,δNow)
@@ -1052,8 +1050,8 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     @unpack aero = element
 
-    # Skip if there are no aero loads or angle of attack is undefined
-    if isnothing(aero) || isnan(aero.flowAnglesAndRates.α)
+    # Skip if there are no aero loads, or angle of attack is undefined, or the convergence rate in a dynamic problem is good enough
+    if isnothing(aero) || isnan(aero.flowAnglesAndRates.α) || (problem isa DynamicProblem && problem.systemSolver.convRate > problem.systemSolver.minConvRate)
         return
     end
 

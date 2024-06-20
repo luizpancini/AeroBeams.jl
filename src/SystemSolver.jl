@@ -22,20 +22,23 @@
     ρ::Float64
     trackingLoadSteps::Bool
     displayStatus::Bool
+    minConvRate::Number
 
     # Algorithm variables
     loadFactorStep::Float64 = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
     convergedPartialSolution::Bool = false
     convergedFinalSolution::Bool = false
+    convRate::Number = 0
 
 end
 
 # Constructor
-function create_NewtonRaphson(;absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false)
+function create_NewtonRaphson(;absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRate::Number=2.0)
 
-    @assert 0.5 <= ρ <= 1
+    @assert 0.5 <= ρ <= 1 "relaxation factor (ρ) must be between 0.5 and 1.0"
+    @assert minConvRate > 1 "minConvRate to skip calculation of aerodynamic derivatives must be greater than 1"
 
-    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus)
+    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRate=minConvRate)
 
 end
 export create_NewtonRaphson
@@ -70,6 +73,7 @@ function solve_NewtonRaphson!(problem::Problem)
         xKnown = deepcopy(x)
         residualKnown = deepcopy(residual)
         loadFactorKnown = loadstep == 1 ? 0.0 : (convergedPartialSolution ? σ-loadFactorStep : deepcopy(σ))
+        ϵ_abs_previous = 1
         # Reset partial convergence flag
         convergedPartialSolution = false
         # Update load factor 
@@ -95,6 +99,9 @@ function solve_NewtonRaphson!(problem::Problem)
             if displayStatus
                 println("i: $iter, σ: $σ, ϵ_abs: $ϵ_abs, ϵ_rel: $ϵ_rel")
             end
+            # Update converge rate
+            convRate = ϵ_abs_previous/ϵ_abs
+            @pack! problem.systemSolver = convRate
             # Check convergence norms
             if ϵ_abs < absoluteTolerance || ϵ_rel < relativeTolerance
                 convergedPartialSolution = true
@@ -202,24 +209,18 @@ function solve_linear_system!(problem::Problem)
     @unpack systemOrder,nTrimVariables = problem.model
     @unpack ρ = problem.systemSolver
 
-    # Determinant of Jacobian
-    jacobianDeterminant = nTrimVariables == 0 ? det(jacobian) : NaN
-    @pack! problem = jacobianDeterminant
-
     # Solve the linear system according to problem type
     if nTrimVariables > 0
         Δx = -pinv(jacobian)*residual
-    elseif isapprox(jacobianDeterminant,0)
-        try
-            Δx = line_search(x,residual,jacobian)
-        catch
-            return false
-        end
     else
         try
             Δx = -sparse(jacobian)\residual
         catch
-            Δx = -jacobian\residual
+            try
+                Δx = line_search(x,residual,jacobian)
+            catch
+                return false
+            end
         end
     end
 

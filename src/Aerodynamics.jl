@@ -220,7 +220,7 @@ function aero_loads_resultants!(model::Model,element::Element)
 
     @unpack ρ = model.atmosphere
     @unpack Δℓ,R = element
-    @unpack c,RwR0,Λ,ϖ,ϖMid = element.aero
+    @unpack c,RwR0,Λ,ϖ,ϖMid,hasTipCorrection = element.aero
     @unpack Uᵢ = element.aero.flowVelocitiesAndRates
     @unpack cn,cm,ct = element.aero.aeroCoefficients
 
@@ -232,11 +232,14 @@ function aero_loads_resultants!(model::Model,element::Element)
 
     # Loop over nodes - Set aerodynamic loads array, resolved in basis W
     F = zeros(typeof(cn),12)
-    for node=1:2   
-        # Integrand
-        integrand(ζ) = Δℓ * f(ζ) .* ϕ(node,ζ)
-        # Nodal loads array
-        F[6*node-4:6*node-2], = quadgk(integrand, 0, 1)
+    for node=1:2  
+        # Nodal loads array: perform integration only if tip correction is present, otherwise split equally among nodes
+        if hasTipCorrection
+            integrand(ζ) = Δℓ * f(ζ) .* ϕ(node,ζ) 
+            F[6*node-4:6*node-2], = quadgk(integrand, 0, 1)
+        else
+            F[6*node-4:6*node-2] = f(1/2)*Δℓ/2
+        end
     end
 
     # Rotation tensor from basis A to the deformed aerodynamic basis W, resolved in basis A

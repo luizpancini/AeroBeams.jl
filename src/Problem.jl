@@ -726,12 +726,12 @@ Solves an eigenproblem
 """
 function solve_eigen!(problem::Problem)
 
-    @unpack jacobianDeterminant,jacobian,inertia,frequencyFilterLimits,nModes = problem
+    @unpack jacobian,inertia,frequencyFilterLimits,nModes = problem
        
     ## Process eigenvalues and eigenvectors
     #---------------------------------------------------------------------------
     # Solve eigenproblem to get eigenvectors and inverse of eigenvalues
-    if isapprox(jacobianDeterminant,0)
+    if problem.model.nTrimVariables > 0 || isapprox(det(jacobian),0)
         inverseEigenvalues, eigenvectors = eigen(-pinv(jacobian)*inertia)
     else
         inverseEigenvalues, eigenvectors = eigen(-jacobian\inertia)

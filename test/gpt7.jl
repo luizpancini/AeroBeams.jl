@@ -1,21 +1,9 @@
-# Define the structures
-struct Spring
-    node::Int
-end
+using LinearAlgebra
 
-struct Beam
-    springs::Vector{Spring}
-end
+# Example matrices
+A = [1 2 3; 4 5 6; 7 8 9]  # 3x3 square matrix
+B = [1 2 3; 4 5 6]          # 2x3 non-square matrix
 
-# Sample data: Vector of Beams with their Springs
-beams = [
-    Beam([Spring(1), Spring(2)]),
-    Beam([Spring(3), Spring(4)]),
-    Beam([Spring(5)])
-]
-
-# Extracting all nodes from all springs of all beams
-all_nodes = [spring.node for beam in beams for spring in beam.springs]
-
-# Print the result
-println(all_nodes)
+# Check if the matrices are square
+println(issquare(A))  # Output: true
+println(issquare(B))  # Output: false
