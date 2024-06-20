@@ -69,12 +69,6 @@ function element_arrays!(problem::Problem,model::Model,element::Element)
     ## Jacobian matrix
     # --------------------------------------------------------------------------
     element_jacobian!(problem,model,element)
-    
-    ## Inertia matrix
-    # --------------------------------------------------------------------------
-    if problem isa EigenProblem
-        element_inertia!(problem,model,element)
-    end
      
 end
 

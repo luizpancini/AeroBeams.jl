@@ -149,8 +149,8 @@ function solve_NewtonRaphson!(problem::Problem)
         # Check for full load and convergence reached
         if abs(σ-1) < 1e-6 && convergedPartialSolution 
             convergedFinalSolution = true
-            # Get inertia matrix in trim problem, if applicable
-            if problem isa TrimProblem && problem.getInertiaMatrix
+            # Get inertia matrix in eigen and trim problems, if applicable
+            if problem isa EigenProblem || (problem isa TrimProblem && problem.getInertiaMatrix)
                 for element in problem.model.elements
                     element_inertia!(problem,problem.model,element)
                 end
