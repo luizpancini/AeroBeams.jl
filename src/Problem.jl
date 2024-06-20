@@ -127,7 +127,7 @@ Defines the problem of steady type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     inertia::Matrix{Float64} = zeros(0,0)
     jacobianDeterminant::Float64 = 0.0
     # Dummy time
@@ -205,9 +205,12 @@ Defines the problem of trim type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     inertia::Matrix{Float64} = zeros(0,0)
     jacobianDeterminant::Float64 = 0.0
+    row_indices::Vector{Int64} = zeros(Int64,0)
+    col_indices::Vector{Int64} = zeros(Int64,0)
+    values::Vector{Float64} = zeros(0)
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
@@ -286,7 +289,7 @@ Defines the problem of eigen type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     inertia::Matrix{Float64} = zeros(0,0)
     jacobianDeterminant::Float64 = 0.0
     # Dummy time
@@ -400,9 +403,12 @@ Defines the problem of dynamic type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     inertia::Matrix{Float64} = zeros(0,0)
     jacobianDeterminant::Float64 = 0.0
+    row_indices::Vector{Int64} = zeros(Int64,0)
+    col_indices::Vector{Int64} = zeros(Int64,0)
+    values::Vector{Float64} = zeros(0)
     # Time variables
     timeNow::Number = 0
     timeBeginTimeStep::Number = 0
@@ -543,7 +549,7 @@ function initialize_system_arrays!(problem::Problem)
 
     Δx = zeros(systemOrder+nTrimVariables)
     residual = zeros(systemOrder)
-    jacobian = zeros(systemOrder,systemOrder+nTrimVariables)
+    jacobian = spzeros(systemOrder,systemOrder+nTrimVariables)
     inertia = zeros(systemOrder,systemOrder)
 
     @pack! problem = Δx,residual,jacobian,inertia

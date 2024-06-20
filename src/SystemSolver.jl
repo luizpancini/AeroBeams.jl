@@ -175,15 +175,37 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
     @unpack model = problem
     @unpack elements,specialNodes = model
     @pack! problem = x
+    @unpack systemOrder,nTrimVariables = model
 
     # Reset Jacobian and inertia matrices (only for debugging purposes)
-    problem.jacobian .= 0
-    problem.inertia .= 0
+    # problem.jacobian .= 0
+    # problem.inertia .= 0
+
+    problem.row_indices = zeros(Int64,0)
+    problem.col_indices = zeros(Int64,0)
+    problem.values = zeros(0)
 
     # Get contributions from the elements
     for element in elements
         element_arrays!(problem,model,element)
     end
+
+    # Dictionary to store unique (i, j) pairs and their corresponding first values
+    unique_entries = Dict{Tuple{Int64, Int64}, Float64}()
+
+    for k in eachindex(problem.row_indices)
+        idx = (problem.row_indices[k], problem.col_indices[k])
+        if !haskey(unique_entries, idx)
+            unique_entries[idx] = problem.values[k]
+        end
+    end
+
+    # Extract unique indices and values
+    unique_i = [key[1] for key in keys(unique_entries)]
+    unique_j = [key[2] for key in keys(unique_entries)]
+    unique_v = collect(values(unique_entries))
+
+    problem.jacobian = sparse(unique_i, unique_j, unique_v, systemOrder, systemOrder+nTrimVariables)
 
     # Get contributions from the special nodes
     for specialNode in specialNodes
@@ -211,10 +233,10 @@ function solve_linear_system!(problem::Problem)
 
     # Solve the linear system according to problem type
     if nTrimVariables > 0
-        Δx = -pinv(jacobian)*residual
+        Δx = -pinv(Matrix(jacobian))*residual
     else
         try
-            Δx = -sparse(jacobian)\residual
+            Δx = -jacobian\residual
         catch
             try
                 Δx = line_search(x,residual,jacobian)

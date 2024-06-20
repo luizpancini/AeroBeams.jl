@@ -1353,104 +1353,104 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     end
 
 
-    ## Insert element resultants into the Jacobian matrix
-    # --------------------------------------------------------------------------
+    # ## Insert element resultants into the Jacobian matrix
+    # # --------------------------------------------------------------------------
 
-    ## Dynamic equilibrium and generalized displacements compatibility equations' contributions
-    # --------------------------------------------------------------------------
-    # ---------- Node 1 ----------- #
-    # Equilibrium equations' Jacobian entries for the element's first node
-    # --- F_u1 --- #
-    jacobian[eqs_Fu1,DOF_p] = F_u1_p/forceScaling
-    jacobian[eqs_Fu1,DOF_F] = F_u1_F
-    jacobian[eqs_Fu1,DOF_V] = F_u1_V/forceScaling
-    jacobian[eqs_Fu1,DOF_Ω] = F_u1_Ω/forceScaling
-    # --- F_p1 --- #
-    jacobian[eqs_Fp1,DOF_p] = notHingedNode1Mat*F_p1_p/forceScaling
-    jacobian[eqs_Fp1,DOF_F] = notHingedNode1Mat*F_p1_F
-    jacobian[eqs_Fp1,DOF_M] = notHingedNode1Mat*F_p1_M
-    jacobian[eqs_Fp1,DOF_V] = F_p1_V/forceScaling
-    jacobian[eqs_Fp1,DOF_Ω] = F_p1_Ω/forceScaling
-    # If the first compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
-    if eqsNode1Set && isSpecialNode1 
-        eqs_FF1 = eqs_FF1_sep                         
-        eqs_FM1 = eqs_FM1_sep
-    end
-    # Compatibility equations' Jacobian entries for the element's first node
-    # --- F_F1 --- #
-    jacobian[eqs_FF1,DOF_u] = F_F1_u
-    jacobian[eqs_FF1,DOF_p] = F_F1_p
-    jacobian[eqs_FF1,DOF_F] = F_F1_F*forceScaling
-    jacobian[eqs_FF1,DOF_M] = F_F1_M*forceScaling
-    # --- F_M1 --- #
-    jacobian[eqs_FM1,DOF_p] = notHingedNode1Mat*F_M1_p .+ hingedNode1Mat*F_p1_p/forceScaling
-    jacobian[eqs_FM1,DOF_F] = notHingedNode1Mat*F_M1_F*forceScaling .+ hingedNode1Mat*F_p1_F
-    jacobian[eqs_FM1,DOF_M] = notHingedNode1Mat*F_M1_M*forceScaling  .+ hingedNode1Mat*F_p1_M
+    # ## Dynamic equilibrium and generalized displacements compatibility equations' contributions
+    # # --------------------------------------------------------------------------
+    # # ---------- Node 1 ----------- #
+    # # Equilibrium equations' Jacobian entries for the element's first node
+    # # --- F_u1 --- #
+    # jacobian[eqs_Fu1,DOF_p] = F_u1_p/forceScaling
+    # jacobian[eqs_Fu1,DOF_F] = F_u1_F
+    # jacobian[eqs_Fu1,DOF_V] = F_u1_V/forceScaling
+    # jacobian[eqs_Fu1,DOF_Ω] = F_u1_Ω/forceScaling
+    # # --- F_p1 --- #
+    # jacobian[eqs_Fp1,DOF_p] = notHingedNode1Mat*F_p1_p/forceScaling
+    # jacobian[eqs_Fp1,DOF_F] = notHingedNode1Mat*F_p1_F
+    # jacobian[eqs_Fp1,DOF_M] = notHingedNode1Mat*F_p1_M
+    # jacobian[eqs_Fp1,DOF_V] = F_p1_V/forceScaling
+    # jacobian[eqs_Fp1,DOF_Ω] = F_p1_Ω/forceScaling
+    # # If the first compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
+    # if eqsNode1Set && isSpecialNode1 
+    #     eqs_FF1 = eqs_FF1_sep                         
+    #     eqs_FM1 = eqs_FM1_sep
+    # end
+    # # Compatibility equations' Jacobian entries for the element's first node
+    # # --- F_F1 --- #
+    # jacobian[eqs_FF1,DOF_u] = F_F1_u
+    # jacobian[eqs_FF1,DOF_p] = F_F1_p
+    # jacobian[eqs_FF1,DOF_F] = F_F1_F*forceScaling
+    # jacobian[eqs_FF1,DOF_M] = F_F1_M*forceScaling
+    # # --- F_M1 --- #
+    # jacobian[eqs_FM1,DOF_p] = notHingedNode1Mat*F_M1_p .+ hingedNode1Mat*F_p1_p/forceScaling
+    # jacobian[eqs_FM1,DOF_F] = notHingedNode1Mat*F_M1_F*forceScaling .+ hingedNode1Mat*F_p1_F
+    # jacobian[eqs_FM1,DOF_M] = notHingedNode1Mat*F_M1_M*forceScaling  .+ hingedNode1Mat*F_p1_M
 
-    # ---------- Node 2 ----------- #
-    # Equilibrium equations' Jacobian entries for the element's second node
-    # --- F_u2 --- #
-    jacobian[eqs_Fu2,DOF_p] = F_u2_p/forceScaling
-    jacobian[eqs_Fu2,DOF_F] = F_u2_F
-    jacobian[eqs_Fu2,DOF_V] = F_u2_V/forceScaling
-    jacobian[eqs_Fu2,DOF_Ω] = F_u2_Ω/forceScaling
-    # --- F_p2 --- #
-    jacobian[eqs_Fp2,DOF_p] = F_p2_p/forceScaling
-    jacobian[eqs_Fp2,DOF_F] = F_p2_F
-    jacobian[eqs_Fp2,DOF_M] = F_p2_M
-    jacobian[eqs_Fp2,DOF_V] = F_p2_V/forceScaling
-    jacobian[eqs_Fp2,DOF_Ω] = F_p2_Ω/forceScaling
-    # If the first compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
-    if eqsNode2Set && isSpecialNode2  
-        eqs_FF2 = eqs_FF2_sep                         
-        eqs_FM2 = eqs_FM2_sep
-    end
-    # Compatibility equations' Jacobian entries for the element's second node
-    # --- F_F2 --- #
-    jacobian[eqs_FF2,DOF_u] = F_F2_u
-    jacobian[eqs_FF2,DOF_p] = F_F2_p
-    jacobian[eqs_FF2,DOF_F] = F_F2_F*forceScaling
-    jacobian[eqs_FF2,DOF_M] = F_F2_M*forceScaling
-    # --- F_M2 --- #
-    jacobian[eqs_FM2,DOF_p] = notHingedNode2Mat*F_M2_p
-    jacobian[eqs_FM2,DOF_F] = notHingedNode2Mat*F_M2_F*forceScaling
-    jacobian[eqs_FM2,DOF_M] = notHingedNode2Mat*F_M2_M*forceScaling
+    # # ---------- Node 2 ----------- #
+    # # Equilibrium equations' Jacobian entries for the element's second node
+    # # --- F_u2 --- #
+    # jacobian[eqs_Fu2,DOF_p] = F_u2_p/forceScaling
+    # jacobian[eqs_Fu2,DOF_F] = F_u2_F
+    # jacobian[eqs_Fu2,DOF_V] = F_u2_V/forceScaling
+    # jacobian[eqs_Fu2,DOF_Ω] = F_u2_Ω/forceScaling
+    # # --- F_p2 --- #
+    # jacobian[eqs_Fp2,DOF_p] = F_p2_p/forceScaling
+    # jacobian[eqs_Fp2,DOF_F] = F_p2_F
+    # jacobian[eqs_Fp2,DOF_M] = F_p2_M
+    # jacobian[eqs_Fp2,DOF_V] = F_p2_V/forceScaling
+    # jacobian[eqs_Fp2,DOF_Ω] = F_p2_Ω/forceScaling
+    # # If the first compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
+    # if eqsNode2Set && isSpecialNode2  
+    #     eqs_FF2 = eqs_FF2_sep                         
+    #     eqs_FM2 = eqs_FM2_sep
+    # end
+    # # Compatibility equations' Jacobian entries for the element's second node
+    # # --- F_F2 --- #
+    # jacobian[eqs_FF2,DOF_u] = F_F2_u
+    # jacobian[eqs_FF2,DOF_p] = F_F2_p
+    # jacobian[eqs_FF2,DOF_F] = F_F2_F*forceScaling
+    # jacobian[eqs_FF2,DOF_M] = F_F2_M*forceScaling
+    # # --- F_M2 --- #
+    # jacobian[eqs_FM2,DOF_p] = notHingedNode2Mat*F_M2_p
+    # jacobian[eqs_FM2,DOF_F] = notHingedNode2Mat*F_M2_F*forceScaling
+    # jacobian[eqs_FM2,DOF_M] = notHingedNode2Mat*F_M2_M*forceScaling
 
-    ## Generalized velocities' Jacobian contributions
-    # --------------------------------------------------------------------------
-    # --- F_V --- #
-    jacobian[eqs_FV,DOF_u] = F_V_u
-    jacobian[eqs_FV,DOF_p] = F_V_p
-    jacobian[eqs_FV,DOF_V] = F_V_V
-    # --- F_Ω --- #
-    jacobian[eqs_FΩ,DOF_p] = F_Ω_p
-    jacobian[eqs_FΩ,DOF_Ω] = F_Ω_Ω
+    # ## Generalized velocities' Jacobian contributions
+    # # --------------------------------------------------------------------------
+    # # --- F_V --- #
+    # jacobian[eqs_FV,DOF_u] = F_V_u
+    # jacobian[eqs_FV,DOF_p] = F_V_p
+    # jacobian[eqs_FV,DOF_V] = F_V_V
+    # # --- F_Ω --- #
+    # jacobian[eqs_FΩ,DOF_p] = F_Ω_p
+    # jacobian[eqs_FΩ,DOF_Ω] = F_Ω_Ω
 
-    ## Aerodynamic states' Jacobians
-    # --------------------------------------------------------------------------
-    if !isempty(DOF_χ)
-        # --- F_u --- #
-        jacobian[eqs_Fu1,DOF_χ] = -f1χ_χ/forceScaling
-        jacobian[eqs_Fu2,DOF_χ] = -f2χ_χ/forceScaling
-        # --- F_p --- #
-        jacobian[eqs_Fp1,DOF_χ] = -m1χ_χ/forceScaling
-        jacobian[eqs_Fp2,DOF_χ] = -m2χ_χ/forceScaling
-        # --- F_χ --- #
-        jacobian[eqs_Fχ,DOF_V] = F_χ_V
-        jacobian[eqs_Fχ,DOF_Ω] = F_χ_Ω
-        jacobian[eqs_Fχ,DOF_χ] = F_χ_χ
-    end
+    # ## Aerodynamic states' Jacobians
+    # # --------------------------------------------------------------------------
+    # if !isempty(DOF_χ)
+    #     # --- F_u --- #
+    #     jacobian[eqs_Fu1,DOF_χ] = -f1χ_χ/forceScaling
+    #     jacobian[eqs_Fu2,DOF_χ] = -f2χ_χ/forceScaling
+    #     # --- F_p --- #
+    #     jacobian[eqs_Fp1,DOF_χ] = -m1χ_χ/forceScaling
+    #     jacobian[eqs_Fp2,DOF_χ] = -m2χ_χ/forceScaling
+    #     # --- F_χ --- #
+    #     jacobian[eqs_Fχ,DOF_V] = F_χ_V
+    #     jacobian[eqs_Fχ,DOF_Ω] = F_χ_Ω
+    #     jacobian[eqs_Fχ,DOF_χ] = F_χ_χ
+    # end
 
-    ## Flap trim state's Jacobians
-    if !isempty(DOF_δ)
-        @unpack f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = element.aero
-        # --- F_u --- #
-        jacobian[eqs_Fu1,DOF_δ] = -f1χ_δ/forceScaling
-        jacobian[eqs_Fu2,DOF_δ] = -f2χ_δ/forceScaling
-        # --- F_p --- #
-        jacobian[eqs_Fp1,DOF_δ] = -m1χ_δ/forceScaling
-        jacobian[eqs_Fp2,DOF_δ] = -m2χ_δ/forceScaling
-    end
+    # ## Flap trim state's Jacobians
+    # if !isempty(DOF_δ)
+    #     @unpack f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = element.aero
+    #     # --- F_u --- #
+    #     jacobian[eqs_Fu1,DOF_δ] = -f1χ_δ/forceScaling
+    #     jacobian[eqs_Fu2,DOF_δ] = -f2χ_δ/forceScaling
+    #     # --- F_p --- #
+    #     jacobian[eqs_Fp1,DOF_δ] = -m1χ_δ/forceScaling
+    #     jacobian[eqs_Fp2,DOF_δ] = -m2χ_δ/forceScaling
+    # end
 
     # ## Propeller states' Jacobians
     # if analysis == "trim" && !isempty(DOF_P)
@@ -1459,10 +1459,98 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     #     jacobian[eqs_Fu2,DOF_P] = -f2χ_P/forceScaling
     # end
 
+    @unpack row_indices,col_indices,values = problem
+
+    # Collect the triplets for each assignment
+    # Node 1
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu1, DOF_p, F_u1_p, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu1, DOF_F, F_u1_F)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu1, DOF_V, F_u1_V, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu1, DOF_Ω, F_u1_Ω, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp1, DOF_p, notHingedNode1Mat * F_p1_p, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp1, DOF_F, notHingedNode1Mat * F_p1_F)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp1, DOF_M, notHingedNode1Mat * F_p1_M)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp1, DOF_V, F_p1_V, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp1, DOF_Ω, F_p1_Ω, 1/forceScaling)
+    if eqsNode1Set && isSpecialNode1
+        eqs_FF1 = eqs_FF1_sep
+        eqs_FM1 = eqs_FM1_sep
+    end
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF1, DOF_u, F_F1_u)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF1, DOF_p, F_F1_p)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF1, DOF_F, F_F1_F, forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF1, DOF_M, F_F1_M, forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FM1, DOF_p, notHingedNode1Mat * F_M1_p .+ hingedNode1Mat * F_p1_p/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FM1, DOF_F, notHingedNode1Mat * F_M1_F * forceScaling .+ hingedNode1Mat * F_p1_F)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FM1, DOF_M, notHingedNode1Mat * F_M1_M * forceScaling .+ hingedNode1Mat * F_p1_M)
+
+    # Node 2
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu2, DOF_p, F_u2_p, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu2, DOF_F, F_u2_F)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu2, DOF_V, F_u2_V, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fu2, DOF_Ω, F_u2_Ω, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp2, DOF_p, F_p2_p, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp2, DOF_F, F_p2_F)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp2, DOF_M, F_p2_M)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp2, DOF_V, F_p2_V, 1/forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_Fp2, DOF_Ω, F_p2_Ω, 1/forceScaling)
+    if eqsNode2Set && isSpecialNode2
+        eqs_FF2 = eqs_FF2_sep
+        eqs_FM2 = eqs_FM2_sep
+    end
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF2, DOF_u, F_F2_u)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF2, DOF_p, F_F2_p)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF2, DOF_F, F_F2_F, forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FF2, DOF_M, F_F2_M, forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FM2, DOF_p, notHingedNode2Mat * F_M2_p)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FM2, DOF_F, notHingedNode2Mat * F_M2_F * forceScaling)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FM2, DOF_M, notHingedNode2Mat * F_M2_M * forceScaling)
+
+    # Generalized velocities' Jacobian contributions
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FV, DOF_u, F_V_u)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FV, DOF_p, F_V_p)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FV, DOF_V, F_V_V)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FΩ, DOF_p, F_Ω_p)
+    accumulate_triplets!(row_indices, col_indices, values, eqs_FΩ, DOF_Ω, F_Ω_Ω)
+
+    # Aerodynamic states' Jacobians
+    if !isempty(DOF_χ)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fu1, DOF_χ, -f1χ_χ/forceScaling)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fu2, DOF_χ, -f2χ_χ/forceScaling)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fp1, DOF_χ, -m1χ_χ/forceScaling)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fp2, DOF_χ, -m2χ_χ/forceScaling)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fχ, DOF_V, F_χ_V)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fχ, DOF_Ω, F_χ_Ω)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fχ, DOF_χ, F_χ_χ)
+    end
+
+    # Flap trim state's Jacobians
+    if !isempty(DOF_δ)
+        @unpack f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = element.aero
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fu1, DOF_δ, -f1χ_δ/forceScaling)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fu2, DOF_δ, -f2χ_δ/forceScaling)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fp1, DOF_δ, -m1χ_δ/forceScaling)
+        accumulate_triplets!(row_indices, col_indices, values, eqs_Fp2, DOF_δ, -m2χ_δ/forceScaling)
+    end
+
+    @pack! problem = row_indices,col_indices,values
+
     @pack! problem = jacobian
 
 end
 
+# Function to accumulate the triplets
+function accumulate_triplets!(row_indices, col_indices, values, eqs, DOF, matrix, scaling=1.0)
+    for i in eachindex(eqs)
+        for j in eachindex(DOF)
+            if abs(matrix[i, j]) > 0
+                push!(row_indices, eqs[i])
+                push!(col_indices, DOF[j])
+                push!(values, matrix[i, j] * scaling)
+            end
+        end
+    end
+end
 
 """
 element_inertia!(problem::Problem,model::Model,element::Element)
