@@ -10,12 +10,9 @@ Computes the elemental contributions to the system's arrays (residual, Jacobian,
 """
 function element_arrays!(problem::Problem,model::Model,element::Element)
 
-    ## Generalized velocities and accelerations of basis b at element's midpoint, resolved in basis A
+    ## Generalized velocities of basis b at element's midpoint, resolved in basis A
     # --------------------------------------------------------------------------
-    # Velocities
     element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
-    # Accelerations
-    element_accelerations_basis_b!(model,element,problem.σ,problem.timeNow)
 
     ## States and states' rates
     # --------------------------------------------------------------------------
@@ -118,7 +115,7 @@ end
 
 
 """
-element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Float64=0.0)
+element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
 
 Computes the generalized velocities of basis b at the element's midpoint, resolved in basis A
 
@@ -126,9 +123,9 @@ Computes the generalized velocities of basis b at the element's midpoint, resolv
 - model::Model
 - element::Element
 - σ::Float64 = load factor
-- timeNow::Float64 = current time
+- timeNow::Number = current time
 """
-function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Float64=0.0)
+function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
 
     @unpack R_AT,v_A,ω_A = model
     @unpack r = element
@@ -147,7 +144,7 @@ end
 
 
 """
-element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Float64=0.0)
+element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
 
 Computes the generalized accelerations of basis b at the element's midpoint, resolved in basis A
 
@@ -155,9 +152,9 @@ Computes the generalized accelerations of basis b at the element's midpoint, res
 - model::Model
 - element::Element
 - σ::Float64 = load factor
-- timeNow::Float64 = current time
+- timeNow::Number = current time
 """
-function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Float64=0.0)
+function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
 
     @unpack R_AT,v_A,ω_A,vdot_A,ωdot_A = model
     @unpack r = element
@@ -2106,6 +2103,13 @@ function update_states!(problem::Problem)
     @unpack elements = model
 
     for element in elements
+
+        ## Generalized velocities of basis b at element's midpoint, resolved in basis A
+        # ----------------------------------------------------------------------
+        # Velocities
+        element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
+        # Accelerations
+        element_accelerations_basis_b!(model,element,problem.σ,problem.timeNow)
 
         ## States and states' rates
         # ----------------------------------------------------------------------
