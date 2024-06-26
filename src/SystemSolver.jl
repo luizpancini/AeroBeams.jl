@@ -185,6 +185,11 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
         element_arrays!(problem,model,element)
     end
 
+    # Update states of the special nodes, first (for better convergence with doubly-attached springs)
+    for specialNode in specialNodes
+        special_node_states!(problem,model,specialNode)
+    end
+
     # Get contributions from the special nodes
     for specialNode in specialNodes
         special_node_arrays!(problem,model,specialNode)

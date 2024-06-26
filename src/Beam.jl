@@ -720,23 +720,67 @@ export add_initial_displacements_and_velocities_to_beam!
 
 
 """
-add_springs_to_beam!(beam::Beam; springs::Vector{Spring})
+add_springs_to_beam!(; beam::Beam,springs::Vector{Spring})
 
-Adds springs to the beam
+Adds simply-attached springs to a beam
 
 # Arguments
 - beam::Beam
 - springs::Vector{Spring}
 """
-function add_springs_to_beam!(beam::Beam; springs::Vector{Spring})
+function add_springs_to_beam!(; beam::Beam,springs::Vector{Spring})
 
     # Loop springs
     for spring in springs
-        # Check that the beam has the element to which the spring was assigned
-        @assert spring.elementID <= beam.nElements
+        # Check that the spring is not doubly attached
+        @assert !spring.hasDoubleAttachment
+        # Check that the beam has the element to which the spring was assigned 
+        @assert spring.elementsIDs[1] <= beam.nElements
         # Add spring to beam
         push!(beam.springs,spring)
+        # Add spring to element, if applicable
+        for element in beam.elements
+            for (elementID,nodeSide) in zip(spring.elementsIDs,spring.nodesSides)
+                if element.localID == elementID && nodeSide == 0
+                    push!(element.springs,spring)
+                end
+            end
+        end
     end
 
 end
 export add_springs_to_beam!
+
+
+"""
+add_spring_to_beams!(; beams::Vector{Beam},spring::Spring)
+
+Adds a doubly-attached spring to the beams
+
+# Arguments
+- beams::Vector{Beam}
+- spring::Spring
+"""
+function add_spring_to_beams!(; beams::Vector{Beam},spring::Spring)
+
+    # Check that the spring has double attachment
+    @assert spring.hasDoubleAttachment
+
+    # Loop beams
+    for (i,beam) in enumerate(beams)
+        # Check that the beam has the element to which the spring was assigned
+        @assert spring.elementsIDs[i] <= beam.nElements
+        # Add spring to beam
+        push!(beam.springs,spring)
+        # Add spring to element, if applicable
+        for element in beam.elements
+            for (elementID,nodeSide) in zip(spring.elementsIDs,spring.nodesSides)
+                if element.localID == elementID && nodeSide == 0
+                    push!(element.springs,spring)
+                end
+            end
+        end
+    end
+
+end
+export add_spring_to_beams!

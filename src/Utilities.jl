@@ -112,6 +112,7 @@ function mul3(A1,A2,A3,b)
 end
 export mul3
 
+
 """
 isotropic_stiffness_matrix(;EA::Number,GAy::Number,GAz::Number,GJ::Number,EIy::Number,EIz::Number)
 

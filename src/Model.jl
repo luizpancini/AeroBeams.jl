@@ -50,8 +50,10 @@ Model composite type
     elementNodes::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
     r_n::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
     BCedNodes::Vector{Int64} = Vector{Int64}()
+    springedNodes::Vector{Int64} = Vector{Int64}()
     specialNodes::Vector{SpecialNode} = Vector{SpecialNode}()
     specialNodesGlobalIDs::Vector{Int64} = Vector{Int64}()
+    springsOnNodes::Vector{Vector{Spring}} = Vector{Vector{Spring}}()
     systemOrder::Int64 = 0
     forceScaling::Float64 = 1.0
     R_A::Matrix{Float64} = I3
@@ -111,7 +113,7 @@ function update_model!(model::Model)
     update_loads_trim_links_global_ids!(model)
 
     # Update the global IDs of the springs' nodes
-    update_spring_nodes_global_ids!(model::Model)
+    update_spring_nodes_ids!(model::Model)
 
     # Update linked flap deflections
     update_linked_flap_deflections!(model)
@@ -629,32 +631,54 @@ end
 
 
 """
-update_spring_nodes_global_ids!(model::Model)
+update_spring_nodes_ids!(model::Model)
 
-Updates the nodes' global IDs of the attached springs
+Updates the global IDs of the springs' nodes, the list of springed nodes and the list of springs on nodes
 
 # Arguments
 - model::Model
 """
-function update_spring_nodes_global_ids!(model::Model)
+function update_spring_nodes_ids!(model::Model)
 
-    @unpack beams = model
+    @unpack beams,nNodesTotal = model
+
+    # Initialize list of springed nodes
+    springedNodes = Vector{Int64}()
+
+    # Initialize list of springs on nodes
+    springsOnNodes = [Vector{Spring}() for _ in 1:nNodesTotal]
+
+    # Reset nodesGlobalIDs of all springs
+    [setfield!(spring, :nodesGlobalIDs, Vector{Int64}()) for beam in beams for spring in beam.springs]
 
     # Loop beams 
     for beam in beams
         @unpack springs,elements = beam
         # Loop springs
         for spring in springs
-            @unpack elementID,localNode = spring
-            # Global ID of the spring node
-            nodeGlobalID = elements[elementID].nodesGlobalID[localNode]
-            # Rotation tensor from basis A to basis b
-            R0 = localNode == 1 ? elements[elementID].R0_n1 : elements[elementID].R0_n2
+            @unpack basis,hasDoubleAttachment,elementsIDs,nodesSides,Ku,Kp,nodesGlobalIDs = spring
+            # Current node of the spring
+            currentSpringNode = isempty(nodesGlobalIDs) ? 1 : 2
+            # Add global IDs to the spring's node
+            currentGlobalID = elements[elementsIDs[currentSpringNode]].nodesGlobalID[nodesSides[currentSpringNode]]
+            push!(nodesGlobalIDs,currentGlobalID)
+            # For springs defined in basis b
+            if basis == "b"
+                # Rotation tensor from basis A to basis b
+                R0 = nodesSides[1] == 1 ? elements[elementsIDs[1]].R0_n1 : elements[elementsIDs[1]].R0_n2
+                # Update spring stiffness matrices, resolved in basis A
+                Ku = R0 * Ku * R0'
+                Kp = R0 * Kp * R0'
+            end
+            # Update list of springed nodes and list of springs on nodes
+            push!(springedNodes,currentGlobalID)
+            push!(springsOnNodes[currentGlobalID],spring)
             # Pack
-            @pack! spring = nodeGlobalID,R0
+            @pack! spring = nodesGlobalIDs,Ku,Kp
         end
     end
 
+    @pack! model = springedNodes,springsOnNodes
 end
 
 
@@ -864,6 +888,7 @@ function set_BCs!(model::Model,BCs::Vector{BC})
     # Remove duplicated nodes from list
     unique!(model.BCedNodes)
 end
+export set_BCs!
 
 
 """
@@ -876,7 +901,7 @@ Gets the special nodes in the system of equations: connection, boundary, and BC'
 """
 function get_special_nodes!(model::Model)
 
-    @unpack elements,nNodesTotal,elementNodes,BCs,BCedNodes,beams = model
+    @unpack elements,nNodesTotal,elementNodes,BCs,BCedNodes,springedNodes,springsOnNodes = model
 
     # Initialize array of special nodes
     specialNodes = Vector{SpecialNode}()
@@ -887,17 +912,14 @@ function get_special_nodes!(model::Model)
     # Initialize TF for nodes being special
     special = falses(nNodesTotal)
 
+    # Initialize special nodes counter
+    s = 0
+
     # BC'ed nodes (any essential or non-zero natural BC) are special 
     special[BCedNodes] .= true
-    
-    # Nodes with attached springs and their properties
-    springNodes = [spring.nodeGlobalID for beam in beams for spring in beam.springs]
-    springNodesku = [spring.ku for beam in beams for spring in beam.springs]
-    springNodeskp = [spring.kp for beam in beams for spring in beam.springs]
-    springNodesR0 = [spring.R0 for beam in beams for spring in beam.springs]
 
     # Nodes with attached springs are special
-    special[springNodes] .= true
+    special[springedNodes] .= true
 
     # Loop over nodes
     for node in nodesList  
@@ -926,30 +948,37 @@ function get_special_nodes!(model::Model)
             special[node] = true                
         end
 
-        # Add stiffness constants resolved in basis A for current beam, if applicable
-        R0_ku = zeros(3)
-        R0_kp = zeros(3)
-        ids = findall(x -> x==node, springNodes)
-        for id in ids
-            R0_ku += springNodesR0[id] * springNodesku[id]
-            R0_kp += springNodesR0[id] * springNodeskp[id]
+        # Skip non-special nodes
+        if !special[node]
+            continue
         end
 
-        # Add special node to array
-        if special[node]
-            # Find if that node is BC'ed and get the BCs
-            if node in BCedNodes
-                nodesBCs = Vector{BC}()
-                for BC in BCs
-                    if node == BC.globalNodeID
-                        push!(nodesBCs,BC)
-                    end
+        # Increment special nodes count
+        s += 1
+
+        # Find if that node is BC'ed and get the BCs
+        if node in BCedNodes
+            nodesBCs = Vector{BC}()
+            for BC in BCs
+                if node == BC.globalNodeID
+                    push!(nodesBCs,BC)
                 end
-                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,R0_ku,R0_kp,nodesBCs))
-            else
-                push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,R0_ku,R0_kp))
             end
+            # Add special node to array
+            push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,springsOnNodes[node],nodesBCs))
+        else
+            # Add special node to array
+            push!(specialNodes,SpecialNode(localID,globalID,connectedElementsGlobalIDs,connectedElements,ζonElements,springsOnNodes[node]))
         end
+
+        # Loop springs on node
+        for spring in springsOnNodes[node]
+            @unpack nodesSpecialIDs = spring
+            # Update IDs of attachment nodes on list of special nodes
+            push!(nodesSpecialIDs,s)
+            @pack! spring = nodesSpecialIDs
+        end
+
     end
 
     # Global IDs of the special nodes

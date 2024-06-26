@@ -29,11 +29,12 @@ trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))
 
 # Add attachment springs
-μ = 0e-8
+μ = 1e-1
 ku = μ*[1; 1; 1]
 kp = ku
-spring = create_Spring(elementID=1,localNode=1,ku=ku,kp=kp)
-add_springs_to_beam!(rightWing,springs=[spring])
+spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
+spring2 = create_Spring(elementsIDs=[nElemTailBoom],nodesSides=[2],ku=ku,kp=kp)
+add_springs_to_beam!(beam=tailboom,springs=[spring1,spring2])
 update_model!(conventionalHALE)
 
 # Sweep airspeed

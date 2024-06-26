@@ -140,6 +140,91 @@ export create_Pazy
 
 
 """
+create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14)
+
+Creates a version of the Pazy wing with flared folding wingtip (FFWT)
+
+# Arguments
+- p0::Vector{<:Number}
+- airfoil::Airfoil=NACA0018
+- aeroSolver::AeroSolver=Indicial()
+- derivationMethod::DerivationMethod=AD()
+- withTipCorrection::Bool=true
+- GAy::Number=1e16
+- GAz::Number=GAy
+- hingeNode::Int64=14
+"""
+function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=0,airspeed::Number)
+
+    @assert 2 <= hingeNode <= 15 "hingeNode must be between 2 and 15"
+    @assert -π/2 <= hingeAngle <= π/2 "set hingeAngle between -π/2 and π/2 "
+    @assert 0 <= flareAngle <= 20 "set flareAngle between 0 and 20 (degrees)"
+    @assert kSpring >= 0
+    @assert g >= 0
+    @assert airspeed >= 0
+
+    # Total length 
+    L = 0.549843728
+
+    # Number of elements in each part of the wing
+    nElem = 15
+    nElem1 = hingeNode-1
+    nElem2 = nElem-nElem1
+
+    # Normalized nodal positions in each part of the wing
+    nodalPositions = Pazy_nodal_positions()
+    nodalPositions1 = nodalPositions[1:hingeNode]/nodalPositions[hingeNode]
+    nodalPositions2 = (nodalPositions[hingeNode:end].-nodalPositions[hingeNode])./(nodalPositions[end]-nodalPositions[hingeNode])
+
+    # Length in each part of the wing
+    L1 = L*nodalPositions[hingeNode]
+    L2 = L*(nodalPositions[end]-nodalPositions[hingeNode])
+
+    # Stiffness matrices
+    C = Pazy_stiffness_matrices(GAy,GAz)
+    C1 = C[1:nElem1]
+    C2 = C[nElem1+1:end]
+
+    # Inertia matrices
+    I = Pazy_inertia_matrices()
+    I1 = I[1:nElem1]
+    I2 = I[nElem1+1:end]
+
+    # Chord
+    chord = 0.0989
+
+    # Normalized spar position in each part of the wing
+    normSparPos = 0.44096
+    normSparPos1 = normSparPos
+    normSparPos2 = x1 -> normSparPos + x1*tand(flareAngle)/chord
+    @assert 0 < normSparPos2(L2) < 1 "flareAngle is too large for the specified hingeNode"
+
+    # Aerodynamic surfaces
+    surf1 = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos1,hasTipCorrection=withTipCorrection)
+
+    surf2 = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,Λ=-flareAngle*π/180,normSparPos=normSparPos2,hasTipCorrection=withTipCorrection)
+
+    # Beams 
+    mainWing = create_Beam(name="mainWing",length=L1,nElements=nElem1,normalizedNodalPositions=nodalPositions1,C=C1,I=I1,rotationParametrization="E321",p0=p0,aeroSurface=surf1,hingedNodes=[nElem1+1],hingedNodesDoF=[[false,true,false]])
+
+    wingTip = create_Beam(name="wingTip",length=L2,nElements=nElem2,normalizedNodalPositions=nodalPositions2,C=C2,I=I2,rotationParametrization="E321",p0=p0+[-flareAngle*π/180;hingeAngle;0],aeroSurface=surf2,hingedNodes=[1],hingedNodesDoF=[[false,true,false]])
+
+    # Spring on hinge
+    spring = create_Spring(basis="A",elementsIDs=[nElem1,1],nodesSides=[1,2],kIPBending=kSpring)
+    add_spring_to_beams!(beams=[mainWing,wingTip],spring=spring)
+
+    # BCs
+    clamp = create_BC(name="clamp",beam=mainWing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+
+    # Wing model
+    pazyFFWT = create_Model(name="pazyFFWT",beams=[mainWing,wingTip],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0])
+
+    return pazyFFWT,hingeNode
+end
+export create_PazyFFWT
+
+
+"""
 Pazy_tip_loss_factor(αᵣ::Number,U::Number)
 
 Computes the tip loss factor for the Pazy wing's tip correction function

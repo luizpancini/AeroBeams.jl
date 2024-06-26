@@ -1,24 +1,39 @@
 using AeroBeams, LinearAlgebra, Plots
 
+# Option to solve linear problem
+linear = false
+
 # Beam 
 L = 2
+EA = 1e6
 EIy = 1e6
-nElem = 20
+nElem = 100
 midElem = div(nElem,2)
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[midElem+1],hingedNodesDoF=[[false,true,false]])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(EA=EA,EIy=EIy)],hingedNodes=[midElem+1],hingedNodesDoF=[[false,true,false]])
+
+# Spring
+kIPBending = 1e12
+spring = create_Spring(basis="A",elementsIDs=[midElem,midElem+1],nodesSides=[1,2],kIPBending=kIPBending)
+add_spring_to_beams!(beams=[beam,beam],spring=spring)
 
 # BCs
-q₀ = 1e0
+q₀ = 1e4
 q = (x1,t) -> ifelse.(x1.>=L/2,-q₀,0)
 add_loads_to_beam!(beam,loadTypes=["f_A_of_x1t"],loadFuns=[(x1,t)->[0; 0; q(x1,t)]])
 pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
 clamp = create_BC(name="clamp",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-hingedBeam = create_Model(name="hingedBeam",beams=[beam],BCs=[pin,clamp])
+hingedSpringedBeam = create_Model(name="hingedSpringedBeam",beams=[beam],BCs=[pin,clamp])
+
+# System solver
+maxIter = 1_000
+relTol = 1e-8
+absTol = 1e-8
+NR = create_NewtonRaphson(maximumIterations=maxIter,absoluteTolerance=absTol,relativeTolerance=relTol,displayStatus=true)
 
 # Create and solve the problem
-problem = create_SteadyProblem(model=hingedBeam,getLinearSolution=true)
+problem = create_SteadyProblem(model=hingedSpringedBeam,systemSolver=NR,getLinearSolution=linear)
 solve!(problem)
 
 # Get nodal arclength positions, displacements and forces over the beams
@@ -41,4 +56,4 @@ display(plt3)
 plt4 = plot(x1/L, M2/1e3, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2\$ [kN.m]")
 display(plt4)
 
-println("Finished hingedBeam.jl")
+println("Finished hingedSpringedBeam.jl")

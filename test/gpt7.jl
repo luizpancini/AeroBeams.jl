@@ -1,9 +1,16 @@
-using LinearAlgebra
+# Step 1: Initialize the outer vector with a specified size
+n = 5  # specify the size
+outer_vector = Vector{Vector{Int}}(undef, n)
 
-# Example matrices
-A = [1 2 3; 4 5 6; 7 8 9]  # 3x3 square matrix
-B = [1 2 3; 4 5 6]          # 2x3 non-square matrix
+# # Step 2: Assign empty vectors to each element
+# for i in 1:n
+#     outer_vector[i] = Vector{Int}()
+# end
 
-# Check if the matrices are square
-println(issquare(A))  # Output: true
-println(issquare(B))  # Output: false
+# Now you can use push!() to add elements to the inner vectors
+push!(outer_vector[1], 10)
+push!(outer_vector[2], 20)
+push!(outer_vector[2], 30)
+
+# Display the result
+println(outer_vector)

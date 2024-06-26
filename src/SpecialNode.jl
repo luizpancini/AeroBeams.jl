@@ -18,8 +18,7 @@
     uIsPrescribed::BitVector
     pIsPrescribed::BitVector
     trimIsPrescribed::BitVector
-    R0_ku::Vector{Float64}
-    R0_kp::Vector{Float64}
+    springs::Vector{Spring}
     hasSprings::Bool
     eqs_Fu::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
     eqs_Fp::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
@@ -40,7 +39,7 @@
 end
 
 # Constructor 
-function SpecialNode(localID::Int64,globalID::Int64,connectedElementsGlobalIDs::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64},R0_ku::Vector{Float64},R0_kp::Vector{Float64},BCs::Vector{BC}=Vector{BC}())
+function SpecialNode(localID::Int64,globalID::Int64,connectedElementsGlobalIDs::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64},springs::Vector{Spring}=Vector{Spring}(),BCs::Vector{BC}=Vector{BC}())
 
     # Set TFs for generalized displacements and trim loads being prescribed 
     isLoad = trues(6)
@@ -54,8 +53,8 @@ function SpecialNode(localID::Int64,globalID::Int64,connectedElementsGlobalIDs::
     trimIsPrescribed = isTrim
 
     # Set TF for springs
-    hasSprings = any(x -> x>0, vcat([R0_ku,R0_kp]...))
+    hasSprings = !isempty(springs)
 
-    return SpecialNode(localID=localID,globalID=globalID,connectedElementsGlobalIDs=connectedElementsGlobalIDs,connectedElements=connectedElements,ζonElements=ζonElements,BCs=BCs,uIsPrescribed=uIsPrescribed,pIsPrescribed=pIsPrescribed,trimIsPrescribed=trimIsPrescribed,R0_ku=R0_ku,R0_kp=R0_kp,hasSprings=hasSprings)
+    return SpecialNode(localID=localID,globalID=globalID,connectedElementsGlobalIDs=connectedElementsGlobalIDs,connectedElements=connectedElements,ζonElements=ζonElements,BCs=BCs,uIsPrescribed=uIsPrescribed,pIsPrescribed=pIsPrescribed,trimIsPrescribed=trimIsPrescribed,springs=springs,hasSprings=hasSprings)
 
 end

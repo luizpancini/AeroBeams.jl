@@ -1,8 +1,5 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 
-# Stiffness factor
-λ = 1
-
 # Wing airfoil
 # wingAirfoil = NACA23012A
 wingAirfoil = HeliosWingAirfoil
@@ -10,11 +7,14 @@ wingAirfoil = HeliosWingAirfoil
 # Option for reduced chord
 reducedChord = false
 
-# TF to include beam pods 
-beamPods = true
+# Option to include beam pods
+beamPods = false
 
 # Option to set payload on wing
 payloadOnWing = false
+
+# Stiffness factor
+λ = 1
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -28,9 +28,9 @@ modeTracking = true
 # Number of modes
 nModes = 10
 
-# Set NR system solver for trim problem
+# System solver for trim problem
 relaxFactor = 0.5
-NR = create_NewtonRaphson(ρ=relaxFactor)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=100,displayStatus=false)
 
 # Set payload range, and initialize outputs
 PRange = collect(0:20:500)
@@ -40,27 +40,43 @@ untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(PRange))
 freqs = Array{Vector{Float64}}(undef,length(PRange))
 damps = Array{Vector{Float64}}(undef,length(PRange))
 
+# Attachment springs
+μ = 1e-2
+ku = μ*[1; 1; 1]
+kp = ku
+spring = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
+
 # Sweep payload
 for (i,P) in enumerate(PRange)
     # Display progress
     println("Solving for payload = $P lb")
     # Model for trim problem
-    heliosTrim,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
+    heliosTrim,midSpanElem,_,_,rightWingStraight,_ = create_Helios(aeroSolver=aeroSolver,wingAirfoil=wingAirfoil,beamPods=beamPods,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true,reducedChord=reducedChord,payloadOnWing=payloadOnWing)
+    # Add springs at wing root
+    add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
+    # Update model
+    heliosTrim.skipValidationMotionBasisA = true
+    update_model!(heliosTrim)
     # Set initial guess solution as previous known solution
     x0Trim = (i==1) ? zeros(0) : trimProblem.x
     # Create and solve trim problem
     global trimProblem = create_TrimProblem(model=heliosTrim,systemSolver=NR,x0=x0Trim)
     solve!(trimProblem)
     # Extract trim variables
+    trimAoA = trimProblem.flowVariablesOverσ[end][midSpanElem].αₑ*180/π
     trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
     trimδ = trimProblem.x[end]
+    println("AoA = $(trimAoA), T = $(trimThrust), δ = $(trimδ*180/π)")
     # Model for eigen problem
-    heliosEigen,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=trimδ,thrust=trimThrust)
-    # Set initial solution as trim solution
-    x0Eigen = trimProblem.x[1:end-2]
+    heliosEigen,_,_,_,rightWingStraight,_ = create_Helios(aeroSolver=aeroSolver,wingAirfoil=wingAirfoil,beamPods=beamPods,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=trimδ,thrust=trimThrust,reducedChord=reducedChord,payloadOnWing=payloadOnWing)
+    # Add springs at wing root
+    add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
+    # Update model
+    heliosEigen.skipValidationMotionBasisA = true
+    update_model!(heliosEigen)
     # Create and solve eigen problem
-    eigenProblem = create_EigenProblem(model=heliosEigen,x0=x0Eigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64])
-    solve!(eigenProblem)
+    eigenProblem = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-2],inertia=trimProblem.inertia)
+    solve_eigen!(eigenProblem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
     untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
@@ -94,19 +110,34 @@ plt11 = plot(ylabel="Frequency [rad/s]")
 for mode in 1:nModes
     scatter!(PRange, modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
 end
-plt12 = plot(xlabel="Payload [lb]", ylabel="Damping Ratio", ylims=[-1.0,0.25], legend=:bottomleft)
+plt12 = plot(xlabel="Payload [lb]", ylabel="Damping [1/s]", ylims=[-5.0,1.0], legend=:bottomleft)
 for mode in 1:nModes
-    scatter!(PRange, modeDampingRatios[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
+    scatter!(PRange, modeDampings[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
 end
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/heliosFlutterPRange_1.pdf"))
-# Root locus
-plt2 = plot(xlabel="Damping ratio", ylabel="Frequency [rad/s]", xlims=[-1.0,0.25])
+savefig(string(pwd(),"/test/outputs/figures/heliosSpringedFlutterPRange_1.pdf"))
+# Root locus 
+plt2 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]")
 for mode in 1:nModes
-    scatter!(modeDampingRatios[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
+    scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/heliosFlutterPRange_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/heliosSpringedFlutterPRange_2.pdf"))
+# Root locus (zoom)
+plt3 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-5,1], ylims=[0,10])
+for mode in 1:nModes
+    scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
+end
+display(plt3)
+savefig(string(pwd(),"/test/outputs/figures/heliosSpringedFlutterPRange_3.pdf"))
+# Root locus (phugoid zoom)
+plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-0.1,0.2], ylims=[0,0.6])
+for mode in 1:nModes
+    scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
+end
+display(plt4)
+savefig(string(pwd(),"/test/outputs/figures/heliosSpringedFlutterPRange_4.pdf"))
 
-println("Finished heliosFlutterPRange.jl")
+
+println("Finished heliosSpringedFlutterPRange.jl")

@@ -10,8 +10,8 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_m
 # Spring
 μ = 1
 ku = [μ*EA/L; 0; 0]
-spring = create_Spring(elementID=nElem,localNode=2,ku=ku)
-add_springs_to_beam!(beam,springs=[spring])
+spring = create_Spring(elementsIDs=[nElem],nodesSides=[2],ku=ku)
+add_springs_to_beam!(beam=beam,springs=[spring])
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

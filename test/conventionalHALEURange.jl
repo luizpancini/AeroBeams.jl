@@ -39,11 +39,11 @@ freqs = Array{Vector{Float64}}(undef,length(URange))
 damps = Array{Vector{Float64}}(undef,length(URange))
 
 # Attachment springs
-μ = 1e-2
+μ = 1e-1
 ku = μ*[1; 1; 1]
 kp = ku
-spring1 = create_Spring(elementID=1,localNode=1,ku=ku,kp=kp)
-spring2 = create_Spring(elementID=nElemTailBoom,localNode=2,ku=ku,kp=kp)
+spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
+spring2 = create_Spring(elementsIDs=[nElemTailBoom],nodesSides=[2],ku=ku,kp=kp)
 
 # Sweep airspeed
 for (i,U) in enumerate(URange)
@@ -51,7 +51,7 @@ for (i,U) in enumerate(URange)
     # Model for trim problem
     conventionalHALEtrim,_,_,tailBoom,_ = create_conventional_HALE(aeroSolver=aeroSolver,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stiffnessFactor=λ,∞=1e12,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true)
     # Add springs
-    add_springs_to_beam!(tailBoom,springs=[spring1,spring2])
+    add_springs_to_beam!(beam=tailBoom,springs=[spring1,spring2])
     # Update model
     conventionalHALEtrim.skipValidationMotionBasisA = true
     update_model!(conventionalHALEtrim)
@@ -68,7 +68,7 @@ for (i,U) in enumerate(URange)
     # Model for eigen problem
     conventionalHALEeigen,_,_,tailBoom,_ = create_conventional_HALE(aeroSolver=aeroSolver,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stiffnessFactor=λ,∞=1e12,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElev=trimδ[i],thrust=trimThrust[i])
     # Add springs
-    add_springs_to_beam!(tailBoom,springs=[spring1,spring2])
+    add_springs_to_beam!(beam=tailBoom,springs=[spring1,spring2])
     # Update model
     conventionalHALEeigen.skipValidationMotionBasisA = true
     update_model!(conventionalHALEeigen)

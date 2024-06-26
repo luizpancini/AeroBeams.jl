@@ -44,7 +44,7 @@ modeDampingRatios = Array{Vector{Float64}}(undef,length(λRange),nModes)
 μ = 1e-2
 ku = μ*[1; 1; 1]
 kp = ku
-spring = create_Spring(elementID=1,localNode=1,ku=ku,kp=kp)
+spring = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
 
 # Sweep stiffness factor
 for (i,λ) in enumerate(λRange)
@@ -55,7 +55,7 @@ for (i,λ) in enumerate(λRange)
         # Model for trim problem
         heliosTrim,midSpanElem,_,_,rightWingStraight,_ = create_Helios(aeroSolver=aeroSolver,wingAirfoil=wingAirfoil,beamPods=beamPods,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true,reducedChord=reducedChord,payloadOnWing=payloadOnWing)
         # Add springs at wing root
-        add_springs_to_beam!(rightWingStraight,springs=[spring])
+        add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
         # Update model
         heliosTrim.skipValidationMotionBasisA = true
         update_model!(heliosTrim)
@@ -72,7 +72,7 @@ for (i,λ) in enumerate(λRange)
         # Model for eigen problem
         heliosEigen,_,_,_,rightWingStraight,_ = create_Helios(aeroSolver=aeroSolver,wingAirfoil=wingAirfoil,beamPods=beamPods,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=trimδ,thrust=trimThrust,reducedChord=reducedChord,payloadOnWing=payloadOnWing)
         # Add springs at wing root
-        add_springs_to_beam!(rightWingStraight,springs=[spring])
+        add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
         # Update model
         heliosEigen.skipValidationMotionBasisA = true
         update_model!(heliosEigen)

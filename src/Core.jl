@@ -82,10 +82,6 @@ Computes the nodal contributions to the system's arrays (residual, Jacobian, ine
 """
 function special_node_arrays!(problem::Problem,model::Model,specialNode::SpecialNode)
 
-    ## States
-    # --------------------------------------------------------------------------
-    special_node_states!(problem,model,specialNode)
-
     # If the intent is getting the external forces vector, we need to calculate
     # the loads with actual states (because follower loads depend on it), and
     # then reset nodal displacements to zero (because since R(x) = J*x - F_ext(x), then F_ext = -R only if x = 0)
@@ -93,8 +89,10 @@ function special_node_arrays!(problem::Problem,model::Model,specialNode::Special
         specialNode.u,specialNode.p = zeros(3),zeros(3)
     end
 
-    # Add spring loads
-    spring_loads!(specialNode)
+    # Add spring loads, if applicable
+    if specialNode.hasSprings
+        spring_loads!(model,specialNode)
+    end
 
     ## Residual
     # --------------------------------------------------------------------------
@@ -1443,13 +1441,6 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         jacobian[eqs_Fp2,DOF_δ] = -m2χ_δ/forceScaling
     end
 
-    # ## Propeller states' Jacobians
-    # if analysis == "trim" && !isempty(DOF_P)
-    #     # --- F_u --- #
-    #     jacobian[eqs_Fu1,DOF_P] = -f1χ_P/forceScaling
-    #     jacobian[eqs_Fu2,DOF_P] = -f2χ_P/forceScaling
-    # end
-
     @pack! problem = jacobian
 
 end
@@ -1743,20 +1734,39 @@ end
 
 
 """
-spring_loads!(specialNode::SpecialNode)
+spring_loads!(model::Model,specialNode::SpecialNode)
 
 Adds the contributions of attached springs to the special node's loads
 
 # Arguments
+- model::Model
 - specialNode::SpecialNode
 """
-function spring_loads!(specialNode::SpecialNode)
+function spring_loads!(model::Model,specialNode::SpecialNode)
 
-    @unpack u,p,F,M,R0_ku,R0_kp = specialNode
+    @unpack u,p,F,M,springs,globalID = specialNode
 
-    # Add spring loads, resolved in basis A
-    F -= R0_ku .* u
-    M -= R0_kp .* p
+    # Loop springs
+    for spring in springs
+        @unpack hasDoubleAttachment,Ku,Kp = spring
+        # Double attachment
+        if hasDoubleAttachment
+            @unpack nodesSpecialIDs,nodesGlobalIDs = spring
+            # Node of other attachment
+            otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
+            # Displacement and rotation of that node
+            uOtherNode = otherNode.u
+            pOtherNode = otherNode.p
+            # Add spring loads, resolved in basis A
+            F -= Ku * (u - uOtherNode)
+            M -= Kp * (p - pOtherNode)
+        # Single attachment    
+        else
+            # Add spring loads, resolved in basis A
+            F -= Ku * u
+            M -= Kp * p
+        end
+    end
 
     @pack! specialNode = F,M
 end
@@ -1882,7 +1892,7 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
 
     @unpack jacobian = problem
     @unpack forceScaling = model
-    @unpack ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,R0_ku,R0_kp,hasSprings = specialNode
+    @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,hasSprings,springs = specialNode
 
     # Check if the node is BC'ed
     if !isempty(BCs)
@@ -1897,7 +1907,7 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
 
     # Add spring loads' contributions, if applicable
     if hasSprings
-        jacobian = spring_loads_jacobians!(jacobian,forceScaling,ζonElements,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
+        jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,springs)
     end
 
     @pack! problem = jacobian
@@ -1985,30 +1995,51 @@ end
 
 
 """
-spring_loads_jacobians!(jacobian,forceScaling,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
+spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,springs)
 
 Adds the contributions of the spring loads to the Jacobian matrix
 
 # Arguments
+- model
 - jacobian
 - forceScaling
+- globalID
 - eqs_Fu
 - eqs_Fp
 - DOF_uF
 - DOF_pM
-- R0_ku
-- R0_kp
+- springs
 """
-function spring_loads_jacobians!(jacobian,forceScaling,ζonElements,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,R0_ku,R0_kp)
+function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,springs)
 
-    # Loop connected elements of the node
-    for e in eachindex(ζonElements)
-        # Loop DOFs
+    # Loop springs
+    for spring in springs
+        @unpack hasDoubleAttachment,Ku,Kp = spring
+        # Loop equations
         for i in 1:3
-            # d(-F_spring)/d(u) = R0_ku/forceScaling
-            jacobian[eqs_Fu[e][i],DOF_uF[i]] += R0_ku[i]/forceScaling
-            # d(-M_spring)/d(p) = R0_kp/forceScaling
-            jacobian[eqs_Fp[e][i],DOF_pM[i]] += R0_kp[i]/forceScaling
+            # Loop DOFs
+            for j in 1:3
+                # d(-F_spring[i])/d(u[j]) = Ku[i,j]/forceScaling
+                jacobian[eqs_Fu[1][i],DOF_uF[j]] += Ku[i,j]/forceScaling
+                # d(-M_spring[i])/d(p[j]) = Kp[i,j]/forceScaling
+                jacobian[eqs_Fp[1][i],DOF_pM[j]] += Kp[i,j]/forceScaling
+            end
+        end
+        # If doubly-attached, add contributions from other node's DOFs
+        if hasDoubleAttachment
+            @unpack nodesSpecialIDs,nodesGlobalIDs = spring
+            # Node of other attachment
+            otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
+            # Loop equations
+            for i in 1:3
+                # Loop DOFs
+                for j in 1:3
+                    # d(-F_spring[i])/d(u[j]) = -Ku[i,j]/forceScaling
+                    jacobian[eqs_Fu[1][i],otherNode.DOF_uF[j]] -= Ku[i,j]/forceScaling
+                    # d(-M_spring[i])/d(p[j]) = -Kp[i,j]/forceScaling
+                    jacobian[eqs_Fp[1][i],otherNode.DOF_pM[j]] -= Kp[i,j]/forceScaling
+                end
+            end
         end
     end
 
