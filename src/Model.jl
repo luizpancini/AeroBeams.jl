@@ -41,6 +41,7 @@ Model composite type
     gust::Union{Nothing,Gust}
     trimLoadsLinks::Vector{TrimLoadsLink}
     flapLinks::Vector{FlapLink}
+    rotationConstraints::Vector{RotationConstraint}
 
     # Secondary (outputs from model creation)
     # ---------------------------------------
@@ -60,6 +61,10 @@ Model composite type
     R_AT::Matrix{Float64} = I3
     skipValidationMotionBasisA::Bool = false
     nTrimVariables::Int64 = 0
+    nRotationConstraints::Int64 = 0
+    masterRotationConstraintsDOF::Vector{Int64} = Vector{Int64}()
+    slaveRotationConstraintsDOF::Vector{Int64} = Vector{Int64}()
+    rotationConstraintsValues::Vector{Float64} = Vector{Float64}()
     mass::Number = 0
     centerOfMass::Vector{<:Number} = zeros(3)
     I::Vector{<:Number} = zeros(3)
@@ -69,10 +74,10 @@ export Model
 
 
 # Constructor
-function create_Model(;name::String="",units::UnitsSystem=UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}()) 
+function create_Model(;name::String="",units::UnitsSystem=UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}()) 
     
     # Initialize 
-    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks)
+    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,rotationConstraints=rotationConstraints)
 
     # Update  
     update_model!(self)
@@ -113,7 +118,10 @@ function update_model!(model::Model)
     update_loads_trim_links_global_ids!(model)
 
     # Update the global IDs of the springs' nodes
-    update_spring_nodes_ids!(model::Model)
+    update_spring_nodes_ids!(model)
+
+    # Update the global IDs of the elements with relative rotation constraints
+    update_relative_rotation_constraint_elements_ids!(model)
 
     # Update linked flap deflections
     update_linked_flap_deflections!(model)
@@ -132,6 +140,9 @@ function update_model!(model::Model)
 
     # Get system indices
     get_system_indices!(model)
+
+    # Update relative rotation constraint data
+    update_relative_rotation_constraint_data!(model)
 
     return model
 
@@ -683,6 +694,39 @@ end
 
 
 """
+update_relative_rotation_constraint_elements_ids!(model::Model)
+
+Updates the global IDs of the elements with relative rotation constraints
+
+# Arguments
+- model::Model
+"""
+function update_relative_rotation_constraint_elements_ids!(model::Model)
+
+    @unpack rotationConstraints,elements = model
+
+    # Loop rotation constraints
+    for constraint in rotationConstraints
+        @unpack masterBeam,slaveBeam,masterElementLocalID,slaveElementLocalID,value,DOF = constraint
+        # Initialize
+        masterElementGlobalID,slaveElementGlobalID = 0,0
+        # Loop elements
+        for element in elements
+            # Set global IDs and set constraint on slave element
+            if element.parent == masterBeam && element.localID == masterElementLocalID
+                masterElementGlobalID = element.globalID
+            elseif element.parent == slaveBeam && element.localID == slaveElementLocalID
+                slaveElementGlobalID = element.globalID
+                element.rotationConstraint = constraint
+            end
+        end
+        @pack! constraint = masterElementGlobalID,slaveElementGlobalID
+    end
+
+end
+
+
+"""
 update_linked_flap_deflections!(model::Model)
 
 Updates the linked flap deflections for the slave beams
@@ -998,7 +1042,7 @@ Gets the indices (for equations and DOFs) of the system of equations
 """
 function get_system_indices!(model::Model)
 
-    @unpack beams,elements,nNodesTotal,specialNodes,specialNodesGlobalIDs,BCedNodes,nTrimVariables,trimLoadsLinks,flapLinks = model
+    @unpack beams,elements,nNodesTotal,specialNodes,specialNodesGlobalIDs,BCedNodes,trimLoadsLinks,flapLinks,rotationConstraints = model
     
     ## Initialize flags
     #---------------------------------------------------------------------------
@@ -1336,8 +1380,39 @@ function get_system_indices!(model::Model)
 
     # Update number of trim variables
     nTrimVariables = nTrimLoads+nTrimδ
+
+    # Update number of relative rotation constraints
+    nRotationConstraints = length(rotationConstraints)
     
-    @pack! model = systemOrder,elements,specialNodes,nTrimVariables
+    @pack! model = systemOrder,elements,specialNodes,nTrimVariables,nRotationConstraints
+
+end
+
+
+"""
+update_relative_rotation_constraint_data!(model::Model)
+
+Updates the aggregate data of relative rotation constraints
+
+# Arguments
+- model::Model
+"""
+function update_relative_rotation_constraint_data!(model::Model)
+
+    @unpack rotationConstraints,elements = model
+
+    # Initialize
+    masterRotationConstraintsDOF,slaveRotationConstraintsDOF,rotationConstraintsValues = Vector{Int64}(),Vector{Int64}(),Vector{Float64}()
+
+    # Loop rotation constraints
+    for constraint in rotationConstraints
+        @unpack masterElementGlobalID,slaveElementGlobalID,value,DOF = constraint
+        push!(masterRotationConstraintsDOF,elements[masterElementGlobalID].DOF_p[DOF])  
+        push!(slaveRotationConstraintsDOF,elements[slaveElementGlobalID].DOF_p[DOF])
+        push!(rotationConstraintsValues,value)
+    end
+
+    @pack! model = masterRotationConstraintsDOF,slaveRotationConstraintsDOF,rotationConstraintsValues
 
 end
 

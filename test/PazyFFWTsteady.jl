@@ -2,31 +2,36 @@ using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
 
 # Hinge node, hinge angle [rad] and flare angle [deg]
 hingeNode = 14
-hingeAngle = -0.0*π/2
-flareAngle = 0
+hingeAngle = -1*π/2
+flareAngle = 10
 
 # Spring stiffness
-kSpring = 1e-2
+kSpring = 0e-1
 
 # Root pitch angle
-θ = 0*pi/180
+θ = 7*pi/180
+
+# Airspeed
+U = 50
 
 # Gravity
 g = 9.80665
 
 # Pazy wing with flared folding tip
-pazyFFWT,_ = create_PazyFFWT(hingeNode=hingeNode,hingeAngle=hingeAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=0,p0=[0;0;θ],g=g)
+pazyFFWT,_ = create_PazyFFWT(hingeNode=hingeNode,hingeAngle=hingeAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,p0=[0;0;θ],g=g)
 # plt = plot_undeformed_assembly(pazyFFWT)
 # display(plt)
 
 # System solver
-NR = create_NewtonRaphson(displayStatus=true)
+σ0 = 1.0
+maxIter = 50
+NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter)
 
 # Create and solve problem
 problem = create_SteadyProblem(model=pazyFFWT,systemSolver=NR)
 solve!(problem)
 
-# Get rotation over span
+# Get outputs
 elemNodes = vcat([vcat(problem.model.elements[e].nodesGlobalID) for e in 1:15]...)
 r_n1 = [problem.model.r_n[n][1] for n in elemNodes]
 r_n2 = [problem.model.r_n[n][2] for n in elemNodes]
@@ -37,13 +42,17 @@ x1 = vcat(x1_mainWing,x1_wingTip)
 u1_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[1],problem.nodalStatesOverσ[end][e].u_n2[1]) for e in 1:15]...)
 u3_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[3],problem.nodalStatesOverσ[end][e].u_n2[3]) for e in 1:15]...)
 p2_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].p_n1[2],problem.nodalStatesOverσ[end][e].p_n2[2]) for e in 1:15]...)
+M2_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOverσ[end][e].M_n2[2]) for e in 1:15]...)
 
 # Plots
 # u3
-plt1 = plot((r_n1.+u1_of_x1)/x1[end], (r_n3.+u3_of_x1)/x1[end], lw=2, label=false, xlabel="Normalized spanwise position", ylabel="Normalized out-of-plane position")
+plt1 = plot((r_n1.+u1_of_x1)/x1[end], (r_n3.+u3_of_x1)/x1[end], aspect_ratio=:equal, lw=2, label=false, xlims=[0,1], xlabel="Normalized spanwise position", ylabel="Normalized out-of-plane position")
 display(plt1)
 # p2
 plt2 = plot(x1/x1[end], p2_of_x1, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$p_2\$")
 display(plt2)
+# p3
+plt3 = plot(x1/x1[end], M2_of_x1, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2\$ [N.m]")
+display(plt3)
 
-println("Finished PazyFFWTfoldAngle.jl")
+println("Finished PazyFFWTsteady.jl")

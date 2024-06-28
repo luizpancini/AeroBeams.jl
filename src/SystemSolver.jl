@@ -102,6 +102,8 @@ function solve_NewtonRaphson!(problem::Problem)
             # Update converge rate
             convRate = ϵ_abs_previous/ϵ_abs
             @pack! problem.systemSolver = convRate
+            # Update previous value of ϵ_abs
+            ϵ_abs_previous = deepcopy(ϵ_abs)
             # Check convergence norms
             if ϵ_abs < absoluteTolerance || ϵ_rel < relativeTolerance
                 convergedPartialSolution = true
@@ -180,12 +182,17 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
     problem.jacobian .= 0
     problem.inertia .= 0
 
+    # Update states of the elements first (for better convergence with relative rotation constraints)
+    for element in elements
+        element_states!(problem,model,element)
+    end
+
     # Get contributions from the elements
     for element in elements
         element_arrays!(problem,model,element)
     end
 
-    # Update states of the special nodes, first (for better convergence with doubly-attached springs)
+    # Update states of the special nodes first (for better convergence with doubly-attached springs)
     for specialNode in specialNodes
         special_node_states!(problem,model,specialNode)
     end
@@ -211,12 +218,28 @@ Solves the linear system of equations at current time step and load factor
 function solve_linear_system!(problem::Problem)
 
     @unpack x,Δx,residual,jacobian = problem
-    @unpack systemOrder,nTrimVariables = problem.model
+    @unpack systemOrder,nTrimVariables,nRotationConstraints = problem.model
     @unpack ρ = problem.systemSolver
 
     # Solve the linear system according to problem type
+    #---------------------------------------------------------------------------
+    # Trim problem
     if nTrimVariables > 0
         Δx = -pinv(jacobian)*residual
+    # Problem with relative rotation constraints    
+    elseif nRotationConstraints > 0
+        @unpack masterRotationConstraintsDOF,slaveRotationConstraintsDOF,rotationConstraintsValues = problem.model
+        # Remove slave DOFs from Jacobian
+        jacobianReduced = jacobian[1:end, setdiff(1:end, slaveRotationConstraintsDOF)]
+        # Reset residuals from slave DOFs
+        residual[slaveRotationConstraintsDOF] .= 0
+        # Compute states increment array
+        ΔxReduced = -pinv(jacobianReduced)*residual
+        Δx = deepcopy(ΔxReduced)
+        for i in eachindex(slaveRotationConstraintsDOF)
+            insert!(Δx,slaveRotationConstraintsDOF[i],0)
+        end
+    # Regular problem    
     else
         try
             Δx = -sparse(jacobian)\residual
@@ -233,7 +256,14 @@ function solve_linear_system!(problem::Problem)
     x[1:systemOrder] += Δx[1:systemOrder]
     x[systemOrder+1:systemOrder+nTrimVariables] += ρ*Δx[systemOrder+1:systemOrder+nTrimVariables]
 
-    @pack! problem = x,Δx
+    # Set values of slave states in relative constraints  
+    if nRotationConstraints > 0
+        for (slaveDOF,masterDOF,value) in zip(slaveRotationConstraintsDOF,masterRotationConstraintsDOF,rotationConstraintsValues)
+            x[slaveDOF] = x[masterDOF] + value
+        end
+    end
+
+    @pack! problem = x,Δx,residual
 
     return true
 

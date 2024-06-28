@@ -105,7 +105,7 @@ Creates the Pazy wing
 - GAy::Number=1e16
 - GAz::Number=GAy
 """
-function create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy)
+function create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy)
 
     # Length
     L = 0.549843728
@@ -154,10 +154,10 @@ Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 - GAz::Number=GAy
 - hingeNode::Int64=14
 """
-function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=0,airspeed::Number)
+function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=0,airspeed::Number)
 
     @assert 2 <= hingeNode <= 15 "hingeNode must be between 2 and 15"
-    @assert -π/2 <= hingeAngle <= π/2 "set hingeAngle between -π/2 and π/2 "
+    @assert -3π/4 <= hingeAngle <= 3π/4 "set hingeAngle between -3π/4 and 3π/4 "
     @assert 0 <= flareAngle <= 20 "set flareAngle between 0 and 20 (degrees)"
     @assert kSpring >= 0
     @assert g >= 0
@@ -207,9 +207,12 @@ function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA00
     # Beams 
     mainWing = create_Beam(name="mainWing",length=L1,nElements=nElem1,normalizedNodalPositions=nodalPositions1,C=C1,I=I1,rotationParametrization="E321",p0=p0,aeroSurface=surf1,hingedNodes=[nElem1+1],hingedNodesDoF=[[false,true,false]])
 
-    wingTip = create_Beam(name="wingTip",length=L2,nElements=nElem2,normalizedNodalPositions=nodalPositions2,C=C2,I=I2,rotationParametrization="E321",p0=p0+[-flareAngle*π/180;hingeAngle;0],aeroSurface=surf2,hingedNodes=[1],hingedNodesDoF=[[false,true,false]])
+    wingTip = create_Beam(name="wingTip",length=L2,nElements=nElem2,normalizedNodalPositions=nodalPositions2,C=C2,I=I2,rotationParametrization="E321",p0=p0+[-flareAngle*π/180;0;0],aeroSurface=surf2)
 
-    # Spring on hinge
+    # Relative rotation constraint
+    rotationConstraint = create_RotationConstraint(masterBeam=mainWing,slaveBeam=wingTip,masterElementLocalID=nElem1,slaveElementLocalID=1,DOF=2,value=4*tan(hingeAngle/4))
+
+    # Spring around hinge
     spring = create_Spring(basis="A",elementsIDs=[nElem1,1],nodesSides=[1,2],kIPBending=kSpring)
     add_spring_to_beams!(beams=[mainWing,wingTip],spring=spring)
 
@@ -217,7 +220,7 @@ function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA00
     clamp = create_BC(name="clamp",beam=mainWing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
     # Wing model
-    pazyFFWT = create_Model(name="pazyFFWT",beams=[mainWing,wingTip],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0])
+    pazyFFWT = create_Model(name="pazyFFWT",beams=[mainWing,wingTip],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=[rotationConstraint])
 
     return pazyFFWT,hingeNode
 end
@@ -280,7 +283,7 @@ Creates a model based on the flying-wing aircraft described by Patil and Hodges 
 - `reducedChord::Bool`
 - `payloadOnWing::Bool`
 """
-function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),g::Number=-9.80665,wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false)
+function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),g::Number=-9.80665,wingAirfoil::Airfoil=deepcopy(HeliosWingAirfoil),podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false)
 
     # Validate
     @assert ∞ > 1e8

@@ -7,7 +7,7 @@ wing,L,_ = create_Pazy()
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-PazyWingModal = create_Model(name="PazyWingModal",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.807])
+PazyWingModal = create_Model(name="PazyWingModal",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665])
 
 # Number of modes
 nModes = 5

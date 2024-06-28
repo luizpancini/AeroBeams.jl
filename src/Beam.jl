@@ -738,14 +738,6 @@ function add_springs_to_beam!(; beam::Beam,springs::Vector{Spring})
         @assert spring.elementsIDs[1] <= beam.nElements
         # Add spring to beam
         push!(beam.springs,spring)
-        # Add spring to element, if applicable
-        for element in beam.elements
-            for (elementID,nodeSide) in zip(spring.elementsIDs,spring.nodesSides)
-                if element.localID == elementID && nodeSide == 0
-                    push!(element.springs,spring)
-                end
-            end
-        end
     end
 
 end
@@ -763,8 +755,9 @@ Adds a doubly-attached spring to the beams
 """
 function add_spring_to_beams!(; beams::Vector{Beam},spring::Spring)
 
-    # Check that the spring has double attachment
+    # Check that the spring has double attachment and that two beams were input
     @assert spring.hasDoubleAttachment
+    @assert length(beams) == 2
 
     # Loop beams
     for (i,beam) in enumerate(beams)
@@ -772,14 +765,6 @@ function add_spring_to_beams!(; beams::Vector{Beam},spring::Spring)
         @assert spring.elementsIDs[i] <= beam.nElements
         # Add spring to beam
         push!(beam.springs,spring)
-        # Add spring to element, if applicable
-        for element in beam.elements
-            for (elementID,nodeSide) in zip(spring.elementsIDs,spring.nodesSides)
-                if element.localID == elementID && nodeSide == 0
-                    push!(element.springs,spring)
-                end
-            end
-        end
     end
 
 end

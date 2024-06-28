@@ -14,10 +14,8 @@ function element_arrays!(problem::Problem,model::Model,element::Element)
     # --------------------------------------------------------------------------
     element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
 
-    ## States and states' rates
+    ## States' rates
     # --------------------------------------------------------------------------
-    # States
-    element_states!(problem,model,element)
     # States' rates
     element_states_rates!(problem,element)
     
@@ -185,9 +183,14 @@ function element_states!(problem::Problem,model::Model,element::Element)
     @unpack x = problem
     @unpack forceScaling = model
     @unpack states,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ = element
+    @unpack rotationConstraint = element
 
     u = x[DOF_u]
     p = x[DOF_p]
+    if !isnothing(rotationConstraint)
+        @unpack DOF,masterElementGlobalID,value = rotationConstraint
+        p[DOF] = model.elements[masterElementGlobalID].states.p[DOF] + value
+    end
     F = x[DOF_F]*forceScaling
     M = x[DOF_M]*forceScaling
     V = x[DOF_V]
