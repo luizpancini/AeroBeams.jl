@@ -2055,31 +2055,19 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
     # Loop springs
     for spring in springs
         @unpack hasDoubleAttachment,Ku,Kp = spring
-        # Loop equations
-        for i in 1:3
-            # Loop DOFs
-            for j in 1:3
-                # d(-F_spring[i])/d(u[j]) = Ku[i,j]/forceScaling
-                jacobian[eqs_Fu[1][i],DOF_uF[j]] += Ku[i,j]/forceScaling
-                # d(-M_spring[i])/d(p[j]) = Kp[i,j]/forceScaling
-                jacobian[eqs_Fp[1][i],DOF_pM[j]] += Kp[i,j]/forceScaling
-            end
-        end
+        # Add translational spring Jacobian: d(-F_spring)/d(u) = Ku/forceScaling
+        jacobian[eqs_Fu[1],DOF_uF] += Ku/forceScaling
+        # Add rotational spring Jacobian: d(-M_spring)/d(p) = Kp/forceScaling
+        jacobian[eqs_Fp[1],DOF_pM] += Kp/forceScaling
         # If doubly-attached, add contributions from other node's DOFs
         if hasDoubleAttachment
             @unpack nodesSpecialIDs,nodesGlobalIDs = spring
             # Node of other attachment
             otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
-            # Loop equations
-            for i in 1:3
-                # Loop DOFs
-                for j in 1:3
-                    # d(-F_spring[i])/d(u[j]) = -Ku[i,j]/forceScaling
-                    jacobian[eqs_Fu[1][i],otherNode.DOF_uF[j]] -= Ku[i,j]/forceScaling
-                    # d(-M_spring[i])/d(p[j]) = -Kp[i,j]/forceScaling
-                    jacobian[eqs_Fp[1][i],otherNode.DOF_pM[j]] -= Kp[i,j]/forceScaling
-                end
-            end
+            # Add translational spring Jacobian: d(-F_spring)/d(uOtherNode) = -Ku/forceScaling
+            jacobian[eqs_Fu[1],otherNode.DOF_uF] -= Ku/forceScaling
+            # Add rotational spring Jacobian: d(-M_spring)/d(pOtherNode) = -Kp/forceScaling
+            jacobian[eqs_Fp[1],otherNode.DOF_pM] -= Kp/forceScaling
         end
     end
 
