@@ -51,7 +51,7 @@ export round_off!
 
 
 """
-divide_inplace(divisor::Number, vars...)
+divide_inplace!(divisor::Number, vars...)
 
 Divides the input variables in-place
 
@@ -59,13 +59,13 @@ Divides the input variables in-place
 - divisor::Number = divisor
 - vars... = variables to be divided
 """
-function divide_inplace(divisor::Number, vars...)
+function divide_inplace!(divisor::Number, vars...)
     return (var ./ divisor for var in vars)
 end
 
 
 """
-multiply_inplace(divisor::Number, vars...)
+multiply_inplace!(divisor::Number, vars...)
 
 Multiplies the input variables in-place
 
@@ -73,7 +73,7 @@ Multiplies the input variables in-place
 - multiplier::Number = multiplier
 - vars... = variables to be multiplied
 """
-function multiply_inplace(multiplier::Number, vars...)
+function multiply_inplace!(multiplier::Number, vars...)
     return (var .* multiplier for var in vars)
 end
 

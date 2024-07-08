@@ -316,7 +316,7 @@ function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),der
     Γ = 10*π/180
     GJ,EIy,EIz = 1.6530e5,1.0331e6,1.2398e7
     wρA,wρIy,wρIz = 8.929,0.691,3.456
-    GJ,EIy,EIz = multiply_inplace(stiffnessFactor, GJ,EIy,EIz)
+    GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, GJ,EIy,EIz)
     wingC = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
     wingI = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 
@@ -473,7 +473,7 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     # Wing properties
     Lw = 16
     wGJ,wEIy,wEIz = 1e4,2e4,4e6
-    wGJ,wEIy,wEIz = multiply_inplace(stiffnessFactor, wGJ,wEIy,wEIz)
+    wGJ,wEIy,wEIz = multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
     wρA,wρIs = 0.75,0.1
     wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
     Cwing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
@@ -636,7 +636,7 @@ function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),deriv
     # Wing properties
     nElemWing = 8
     wEA,wGJ,wEIy,wEIz = 155_000_000,11_000,11_700,130_000
-    wGJ,wEIy,wEIz = multiply_inplace(stiffnessFactor, wGJ,wEIy,wEIz)
+    wGJ,wEIy,wEIz = multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
     wρA,wρIy,wρIz = 6.2,0.0005,0.00462
     Cwing = isotropic_stiffness_matrix(∞=∞,EA=wEA,GJ=wGJ,EIy=wEIy,EIz=wEIz)
     Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)

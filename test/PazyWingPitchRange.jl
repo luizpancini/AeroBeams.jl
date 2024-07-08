@@ -1,13 +1,26 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
 
+# Aerodynamic solver
+aeroSolver = Indicial()
+
+# Airfoil
+airfoil = deepcopy(flatPlate)
+
+# Derivation method
+derivationMethod = AD()
+
 # Pazy wing
-wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(p0=[0;-π/2;0])
+wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,derivationMethod=derivationMethod,p0=[0;-π/2;0])
 
 # BCs
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-PazyWingPitchRange = create_Model(name="PazyWingPitchRange",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.807])
+PazyWingPitchRange = create_Model(name="PazyWingPitchRange",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665])
+
+# Set NR system solver 
+displayStatus = false
+NR = create_NewtonRaphson(displayStatus=displayStatus)
 
 # Set root angle and airspeed ranges, and initialize outputs
 θRange = [3;5;7]
@@ -31,8 +44,9 @@ for (i,θ) in enumerate(θRange)
         # Update velocity of basis A (and update model)
         set_motion_basis_A!(model=PazyWingPitchRange,v_A=[0;U;0])
         # Create and solve problem
-        problem = create_SteadyProblem(model=PazyWingPitchRange)
+        problem = create_SteadyProblem(model=PazyWingPitchRange,systemSolver=NR)
         solve!(problem)
+        # @profview solve!(problem)
         # Get tip twist, AoA and OOP displacement at midchord
         tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
         R,_ = rotation_tensor_WM(tip_p)

@@ -49,7 +49,7 @@ function element_arrays!(problem::Problem,model::Model,element::Element)
     ## Residual array
     # --------------------------------------------------------------------------
     element_residual!(problem,model,element)
-    if problem.getExternalForcesArray || problem.getResidual
+    if problem.getExternalForcesArray || problem.skipJacobianUpdate
         return
     end
     
@@ -95,7 +95,7 @@ function special_node_arrays!(problem::Problem,model::Model,specialNode::Special
     ## Residual
     # --------------------------------------------------------------------------
     special_node_residual!(problem,model,specialNode)
-    if problem.getExternalForcesArray || problem.getResidual
+    if problem.getExternalForcesArray || problem.skipJacobianUpdate
         return
     end
 
@@ -588,7 +588,7 @@ function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ
     nondimensional_flow_parameters!(model,element)
 
     # Update airfoil parameters
-    update_airfoil_parameters!(element)
+    update_airfoil_parameters!(problem,element)
 
     # Local gust velocity
     # local_gust_velocity!(model,element,timeNow)
@@ -602,7 +602,7 @@ function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ
     effective_angle_of_attack!(element,χ,δNow)
 
     # Aerodynamic coefficients 
-    aero_coefficients!(element,δNow)
+    aero_coefficients!(problem,element,χ,δNow)
 
     # Aerodynamic state matrices 
     A,B = aero_state_matrices!(element,δNow)
@@ -1042,8 +1042,8 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     @unpack aero = element
 
-    # Skip if there are no aero loads, or angle of attack is undefined, or the convergence rate in a dynamic problem is good enough
-    if isnothing(aero) || isnan(aero.flowAnglesAndRates.α) || (problem isa DynamicProblem && problem.systemSolver.convRate > problem.systemSolver.minConvRate)
+    # Skip if there are no aero loads, or angle of attack is undefined, or the convergence rate in a dynamic problem is higher than the required minimum
+    if isnothing(aero) || isnan(aero.flowAnglesAndRates.α) || (problem isa DynamicProblem && problem.systemSolver.convRate > problem.systemSolver.minConvRateAeroJacUpdate)
         return
     end
 
@@ -1055,12 +1055,28 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     # Set input states for aero loads wrapper functions
     states = isempty(DOF_δ) ? vcat([V,Ω,χ]...) : vcat([V,Ω,χ,problem.x[DOF_δ]*δMultiplier]...)
 
+    # Save complementary variables of dynamic stall model
+    if typeof(element.aero.solver) in [BLi]
+        BLcompVars = deepcopy(element.aero.BLcompVars)
+    end
+
     # Get derivatives of aerodynamic loads and state matrices w.r.t. states
     if typeof(derivationMethod) == AD
         derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
     elseif typeof(derivationMethod) == FD
         derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
         derivatives = derivatives[1]
+    end
+
+    # Deal with possible NaN values
+    NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
+    while !isempty(NaNind)
+        if NaNind[1] == 1
+            derivatives[1] = 0.0
+            popat!(NaNind,1)
+        end
+        derivatives[NaNind] .= derivatives[NaNind .- 1]
+        NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
     end
 
     # Extract derivatives
@@ -1099,6 +1115,11 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
         end
     end
 
+    # Reset complementary variables of dynamic stall model
+    if typeof(element.aero.solver) in [BLi]
+        element.aero.BLcompVars = BLcompVars
+    end
+
     @pack! element.aero = f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ
 
     # Skip if not an EigenProblem
@@ -1118,6 +1139,17 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     elseif typeof(derivationMethod) == FD
         derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates)
         derivatives = derivatives[1]
+    end
+
+    # Deal with possible NaN values
+    NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
+    while !isempty(NaNind)
+        if NaNind[1] == 1
+            derivatives[1] = 0.0
+            popat!(NaNind,1)
+        end
+        derivatives[NaNind] .= derivatives[NaNind .- 1]
+        NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
     end
 
     # Extract derivatives
@@ -1142,6 +1174,11 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
             F_χ_Vdot[:,i] = -(A_Vdot[:,:,i]*χ+B_Vdot[:,i])
             F_χ_Ωdot[:,i] = -(A_Ωdot[:,:,i]*χ+B_Ωdot[:,i])
         end
+    end
+
+    # Reset complementary variables of dynamic stall model
+    if typeof(element.aero.solver) in [BLi]
+        element.aero.BLcompVars = BLcompVars
     end
 
     @pack! element.aero = f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot

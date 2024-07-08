@@ -1,28 +1,39 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
 
+# Aerodynamic solver
+aeroSolver = BLi()
+
+# Airfoil
+airfoil = deepcopy(NACA0018)
+
+# Derivation method
+derivationMethod = AD()
+
+# Root pitch angle [rad]
+θ = 5*π/180
+
 # Option for mode tracking
 modeTracking = true
 
 # Pazy wing
-θ = 0
-wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(p0=[0;-π/2;θ*π/180])
+wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,derivationMethod=derivationMethod,p0=[0;-π/2;θ])
 
 # BCs
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-PazyWingFlutter = create_Model(name="PazyWingFlutter",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.807])
+PazyWingFlutter = create_Model(name="PazyWingFlutter",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665])
 
 # Set system solver options (limit initial load factor)
 σ0 = 0.5
 σstep = 0.5
-NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep,alwaysUpdateJacobian=false)
 
 # Number of modes
 nModes = 5
 
 # Set airspeed range, and initialize outputs
-URange = collect(0:0.5:95)
+URange = collect(0:0.5:100)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
@@ -30,6 +41,7 @@ freqs = Array{Vector{Float64}}(undef,length(URange))
 damps = Array{Vector{Float64}}(undef,length(URange))
 tip_OOP = Array{Float64}(undef,length(URange))
 
+@time begin
 # Sweep airspeed
 for (i,U) in enumerate(URange)
     # Display progress
@@ -40,11 +52,11 @@ for (i,U) in enumerate(URange)
     # Update velocity of basis A (and update model)
     set_motion_basis_A!(model=PazyWingFlutter,v_A=[0;U;0])
     # Create and solve problem
-    problem = create_EigenProblem(model=PazyWingFlutter,nModes=nModes,systemSolver=NR)
+    problem = create_EigenProblem(model=PazyWingFlutter,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1,Inf64])
     solve!(problem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem.dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(problem.dampingsOscillatory,1e-9)
     untrackedEigenvectors[i] = problem.eigenvectorsOscillatoryCplx
     # Get OOP displacement at midchord
     tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
@@ -52,6 +64,7 @@ for (i,U) in enumerate(URange)
     Δ = R*[0; 1; 0]
     tip_twist = asind(Δ[3])
     tip_OOP[i] = -(problem.nodalStatesOverσ[end][nElem].u_n2[1] - chord*(1/2-normSparPos)*sind(tip_twist))
+end
 end
 
 # Apply mode tracking, if applicable

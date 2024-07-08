@@ -144,6 +144,38 @@ export Indicial
 
 
 """
+struct BLi <: AeroSolver
+
+    Incompressible modified Beddoes-Leishman AeroSolver composite type
+
+# Fields
+- nStates::Int64
+- availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
+- AW::Vector{Float64}
+- bW::Vector{Float64}
+"""
+struct BLi <: AeroSolver
+
+    nStates::Int64
+    availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
+    AW::Vector{Float64}
+    bW::Vector{Float64}
+    bWDiag::Matrix{Float64}
+
+    function BLi()
+        nStates = 8
+        availableDerivativesMethod = [AD,FD]
+        AW = [0.165; 0.335]
+        bW = [0.0455; 0.3]
+        bWDiag = diagm(bW)
+        return new(nStates,availableDerivativesMethod,AW,bW,bWDiag)
+    end
+
+end
+export BLi
+
+
+"""
 struct Inflow <: AeroSolver
 
     Inflow AeroSolver composite type

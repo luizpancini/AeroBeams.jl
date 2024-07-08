@@ -136,8 +136,10 @@ Defines the problem of steady type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
-    getResidual::Bool = false
+    # TF for initial states being input
+    initialStatesInput::Bool = false
+    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    skipJacobianUpdate::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
     xOverσ::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
@@ -162,6 +164,7 @@ function create_SteadyProblem(;model::Model,systemSolver::SystemSolver=create_Ne
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder
+        problem.initialStatesInput = true
         problem.x = x0*problem.σ
     else
         set_initial_states!(problem)
@@ -214,8 +217,10 @@ Defines the problem of trim type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
-    getResidual::Bool = false
+    # TF for initial states being input
+    initialStatesInput::Bool = false
+    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    skipJacobianUpdate::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
     xOverσ::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
@@ -240,6 +245,7 @@ function create_TrimProblem(;model::Model,systemSolver::SystemSolver=create_Newt
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder+model.nTrimVariables
+        problem.initialStatesInput = true
         problem.x = x0*problem.σ
     else
         set_initial_states!(problem)
@@ -295,8 +301,10 @@ Defines the problem of eigen type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
-    getResidual::Bool = false
+    # TF for initial states being input
+    initialStatesInput::Bool = false
+    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    skipJacobianUpdate::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
     xOverσ::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
@@ -338,6 +346,7 @@ function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_New
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder
+        problem.initialStatesInput = true
         problem.x = x0*problem.σ
     else
         set_initial_states!(problem)
@@ -382,9 +391,14 @@ Defines the problem of dynamic type
     getLinearSolution::Bool
     # Time variables
     initialTime::Number
-    Δt::Union{Nothing,Number} 
-    finalTime::Union{Nothing,Number}
+    Δt::Number
+    finalTime::Number
     timeVector::Union{Nothing,Vector{Float64}}
+    adaptableΔt::Bool
+    minΔt::Number
+    maxΔt::Number
+    # Boundary-crossing tolerance
+    δb::Float64
     # Initial states update options
     skipInitialStatesUpdate::Bool
     initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions
@@ -414,8 +428,10 @@ Defines the problem of dynamic type
     σ::Float64 = 1.0
     # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF to compute only residual array at the current nonlinear step (used only in line search's Newton step)
-    getResidual::Bool = false
+    # TF for initial states being input
+    initialStatesInput::Bool = false
+    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    skipJacobianUpdate::Bool = false
     # Arrays of saved time steps, respective solutions and states
     savedTimeVector::Vector{Float64} = Vector{Float64}()
     xOverTime::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
@@ -431,10 +447,18 @@ export DynamicProblem
 
 
 # Constructor
-function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
+function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Number,finalTime::Number,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Number=Δt/2^6,maxΔt::Number=Δt,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
-    problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency)
+    problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,adaptableΔt=adaptableΔt,minΔt=minΔt,maxΔt=maxΔt,δb=δb,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency)
+
+    # Check time step data
+    @assert Δt > 0
+    @assert minΔt <= Δt/2
+    @assert maxΔt >= Δt
+
+    # Check boundary-crossing tolerance
+    @assert δb < 0
 
     # Update initial load factor
     problem.σ = systemSolver.initialLoadFactor
@@ -442,6 +466,7 @@ function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_N
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder
+        problem.initialStatesInput = true
         problem.x = x0*problem.σ
         problem.Δt = Inf64
         update_states!(problem)
@@ -477,27 +502,28 @@ Sets the initial elemental and nodal states into the states array
 """
 function set_initial_states!(problem::Problem)
 
-    @unpack x,model,σ = problem
+    @unpack x,model,σ,initialStatesInput = problem
     @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling = model
 
     # Skip if states were input
-    if !isempty(x)
+    if initialStatesInput
         return
     end
 
     # Initialize states array
     x = zeros(systemOrder+nTrimVariables)
 
-    # Loop over elements and assign initial states (aerodynamic states χ are assigned later, upon update of initial states' rates)
+    # Loop over elements and assign initial states
     for element in elements
         @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ = element
-        @unpack u,p,F,M,V,Ω = element.states
+        @unpack u,p,F,M,V,Ω,χ = element.states
         x[DOF_u] = u
         x[DOF_p] = p
         x[DOF_F] = F/forceScaling
         x[DOF_M] = M/forceScaling
         x[DOF_V] = V
         x[DOF_Ω] = Ω
+        x[DOF_χ] = χ
         x[DOF_δ] = isempty(DOF_δ) ? Vector{Float64}() : element.aero.δNow
     end
 
@@ -889,17 +915,17 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
                 @unpack u,p,F,M,V,Ω = modeShape.elementalStates[e]
                 @unpack γ,κ,P,H = modeShape.complementaryElementalStates[e]
                 @unpack u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2 = modeShape.nodalStates[e] 
-                u,u_n1,u_n2,u_n1_b,u_n2_b = divide_inplace(uNorm, u,u_n1,u_n2,u_n1_b,u_n2_b) 
-                p,p_n1,p_n2,p_n1_b,p_n2_b = divide_inplace(pNorm, p,p_n1,p_n2,p_n1_b,p_n2_b) 
-                F,F_n1,F_n2 = divide_inplace(FNorm, F,F_n1,F_n2)
-                M,M_n1,M_n2 = divide_inplace(MNorm, M,M_n1,M_n2)
+                u,u_n1,u_n2,u_n1_b,u_n2_b = divide_inplace!(uNorm, u,u_n1,u_n2,u_n1_b,u_n2_b) 
+                p,p_n1,p_n2,p_n1_b,p_n2_b = divide_inplace!(pNorm, p,p_n1,p_n2,p_n1_b,p_n2_b) 
+                F,F_n1,F_n2 = divide_inplace!(FNorm, F,F_n1,F_n2)
+                M,M_n1,M_n2 = divide_inplace!(MNorm, M,M_n1,M_n2)
                 V ./= VNorm
                 Ω ./= ΩNorm
                 γ ./= γNorm
                 κ ./= κNorm
                 P ./= PNorm
                 H ./= HNorm
-                θ_n1,θ_n2 = divide_inplace(θNorm, θ_n1,θ_n2)
+                θ_n1,θ_n2 = divide_inplace!(θNorm, θ_n1,θ_n2)
                 @pack! modeShape.elementalStates[e] = u,p,F,M,V,Ω
                 @pack! modeShape.complementaryElementalStates[e] = γ,κ,P,H
                 @pack! modeShape.nodalStates[e] = u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
@@ -930,7 +956,11 @@ function solve_dynamic!(problem::Problem)
     # Save initial states
     save_time_step_data!(problem,problem.timeNow)
     # Time march
-    time_march!(problem)
+    if problem.adaptableΔt
+        adaptable_time_march!(problem)
+    else
+        time_march!(problem)
+    end
 
 end
 
@@ -994,21 +1024,21 @@ Gets consistent initial conditions and solves the first time step
 function solve_initial_dynamic!(problem::Problem)
 
     problemCopy = deepcopy(problem)
-    @unpack model = problemCopy
-    @unpack BCs,BCedNodes = model
+    modelCopy = problemCopy.model
+    @unpack BCs,BCedNodes = modelCopy
     
     # Initialize generalized displacements BCs 
     initialDisplacementsBCs = BCs
 
     # Initialize flag for node having being assigned BCs
-    assigned = falses(model.nNodesTotal)
+    assigned = falses(modelCopy.nNodesTotal)
     assigned[BCedNodes] .= true
 
     # List of initial generalized displacements types (defined in basis b)
     displacementTypes = ["u1b","u2b","u3b","p1b","p2b","p3b"]
 
     # Loop elements
-    for (e, element) in enumerate(model.elements)
+    for (e, element) in enumerate(modelCopy.elements)
         @unpack u_n1,u_n2,p_n1,p_n2 = element.nodalStates
         # Loop element's nodes
         for (n, localNode) in enumerate(element.nodesLocalID[1]:element.nodesLocalID[2])
@@ -1032,12 +1062,13 @@ function solve_initial_dynamic!(problem::Problem)
     end
 
     # Update model as if all nodes were BC'ed to the specified initial displacements
-    set_BCs!(model,initialDisplacementsBCs)
-    model.skipValidationMotionBasisA = true
-    update_model!(model)
-    @pack! problemCopy = model
+    set_BCs!(modelCopy,initialDisplacementsBCs)
+    modelCopy.skipValidationMotionBasisA = true
+    update_model!(modelCopy)
+    problemCopy.model = modelCopy
  
     # Set initial states
+    problemCopy.initialStatesInput = false
     set_initial_states!(problemCopy)
 
     # Initialize system arrays with correct size
@@ -1153,7 +1184,7 @@ function update_initial_velocities!(problem::Problem)
         update_BC_data!(BC,timeNow)
     end   
     # Set default system solver (with reduced relative tolerance and large number of maximum iterations)
-    problem.systemSolver = create_NewtonRaphson(maximumIterations=100,relativeTolerance=1e-14)
+    problem.systemSolver = create_NewtonRaphson(maximumIterations=200,relativeTolerance=1e-10)
     # Initial displacements, sectional velocities and displacement's rates
     disp0 = [[e.states.u; e.states.p] for e in elements]
     vel0 = [[e.states.V; e.states.Ω] for e in elements]
@@ -1269,10 +1300,13 @@ function time_march!(problem::Problem)
         end   
         # Get equivalent states' rates at the begin of the time step
         get_equivalent_states_rates!(problem)
+        # Update DS model complementary variables of previous time step, if applicable
+        update_BL_complementary_variables!(problem)
         # Solve the system at the current time step
         solve_time_step!(problem)
         # Stop if unconverged
         if !problem.systemSolver.convergedFinalSolution
+            println("Unconverged solution, stopping...")
             break
         end
         # Save time step data, if applicable    
@@ -1285,6 +1319,138 @@ function time_march!(problem::Problem)
             println("Simulation progress: $progress %")
         end
     end
+end
+
+
+"""
+adaptable_time_march!(problem::Problem)
+
+Marches the dynamic problem in time
+
+# Arguments
+- problem::Problem
+"""
+function adaptable_time_march!(problem::Problem)
+
+    @unpack model,trackingTimeSteps,trackingFrequency,displayProgress,displayFrequency,timeVector,timeNow,Δt,minΔt,maxΔt,δb = problem
+
+    # Time at begin of step
+    timeInitStep = deepcopy(timeNow)
+
+    # Initialize time step index, and flag for reduced time step
+    timeIndex = 1
+    reducedΔtstep = false
+
+    # Advance time
+    while timeInitStep < timeVector[end]
+        # Store problem state at begin of time step
+        stepInitState = copy_state(problem)
+        # Limite time step
+        Δt = max(minΔt, min(Δt, timeVector[end] - timeInitStep))
+        # Update time variables 
+        timeNow += Δt
+        @pack! problem = timeNow,Δt
+        # Update basis A orientation
+        update_basis_A_orientation!(problem)
+        # Update boundary conditions
+        for BC in model.BCs
+            update_BC_data!(BC,timeNow)
+        end   
+        # Get equivalent states' rates at the begin of the time step
+        get_equivalent_states_rates!(problem)
+        # Update DS model complementary variables of previous time step, if applicable
+        if !reducedΔtstep
+            update_BL_complementary_variables!(problem)
+        end
+        # Solve the system at the current time step
+        solve_time_step!(problem)
+        # Get maximum stall boundary for DS models
+        boundaryMax = BL_stall_boundary(problem)
+        # Save time step data, if applicable    
+        if trackingTimeSteps && rem(timeIndex,trackingFrequency) == 0
+            save_time_step_data!(problem,timeNow)           
+        end
+        # If unconverged or in boundary crossing, reduce time step (if possible), restore problem state at begin of time step and update flag
+        if !problem.systemSolver.convergedFinalSolution || boundaryMax < δb 
+            println(boundaryMax)
+            Δt *= 1/2
+            if Δt < minΔt
+                println("Minimum time step reached, stopping...")
+                return
+            end
+            restore_state!(problem,stepInitState)
+            reducedΔtstep = true
+            continue
+        else
+            reducedΔtstep = false
+        end
+        # Increase time step, if possible
+        Δt = min(2*Δt, maxΔt)
+        # Display progress, if applicable
+        if displayProgress && rem(timeIndex,displayFrequency) == 0
+            progress = round(timeNow/timeVector[end]*100,digits=1)
+            println("Simulation progress: $progress %")
+        end
+        # Update time at begin of time step and time index
+        timeInitStep = deepcopy(timeNow)
+        timeIndex += 1
+        # Update time vector, if applicable
+        if reducedΔtstep
+            insert!(timeVector,timeIndex,timeNow)
+        end
+    end
+
+    @pack! problem = timeVector
+end
+
+
+"""
+copy_state(problem::Problem)
+
+Copies the current state of the problem
+
+# Arguments
+- problem::Problem
+"""
+function copy_state(problem::Problem)
+
+    elementStates = [deepcopy(element.states) for element in problem.model.elements]
+    elementStatesRates = [deepcopy(element.statesRates) for element in problem.model.elements]
+    σ = deepcopy(problem.σ)
+    x = deepcopy(problem.x)
+    elementBLcompVars = Vector{BLComplementaryVariables}(undef,problem.model.nElementsTotal)
+    for (e,element) in enumerate(problem.model.elements)
+        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+            continue
+        end
+        elementBLcompVars[e] = deepcopy(element.aero.BLcompVars)
+    end
+    
+    return (elementStates,elementStatesRates,σ,x,elementBLcompVars)
+end
+
+
+"""
+restore_state!(problem::Problem)
+
+Restores the state of the problem
+
+# Arguments
+- problem::Problem
+"""
+function restore_state!(problem::Problem,stepInitState)
+
+    for (e,element) in enumerate(problem.model.elements)
+        element.states = stepInitState[1][e]
+        element.statesRates = stepInitState[2][e]
+        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+            continue
+        end
+        element.aero.BLcompVars = stepInitState[5][e]
+    end
+    problem.σ = stepInitState[3]
+    problem.x = stepInitState[4]
+    
 end
 
 
@@ -1366,6 +1532,70 @@ function get_equivalent_states_rates!(problem::Problem)
         # Pack element data
         @pack! element = udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv
     end
+end
+
+
+"""
+update_BL_complementary_variables!(problem::Problem)
+
+Updates the complementary variables of previous time step for the dynamic stall models
+
+# Arguments
+- problem::Problem
+"""
+function update_BL_complementary_variables!(problem::Problem)
+
+    # Loop elements
+    for element in problem.model.elements
+        # Skip elements without an aerodynamic surface with dynamic stall solver
+        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+            continue
+        end
+        # Unpack variables
+        @unpack αlag = element.aero.BLstates
+        @unpack qR = element.aero.BLkin
+        @unpack upstroke,P,stallOnsetRatio = element.aero.BLflow
+        # Update and pack variables
+        stallOnsetRatioPrev,αlagPrev,qRPrev,PPrev,upstrokePrev = stallOnsetRatio,αlag,qR,P,upstroke
+        @pack! element.aero.BLcompVars = stallOnsetRatioPrev,αlagPrev,qRPrev,PPrev,upstrokePrev
+    end
+
+end
+
+
+"""
+check_BL_stall_boundary!(problem::Problem)
+
+Computes the maximum stall boundary value over all beam elements in the Beddoes-Leishman model
+
+# Arguments
+- problem::Problem
+"""
+function BL_stall_boundary(problem::Problem)
+
+    # Initialize
+    boundary = Vector{Float64}(undef,problem.model.nElementsTotal)
+    hasDSelements = false
+
+    # Loop elements
+    for (e,element) in enumerate(problem.model.elements)
+        # Skip elements without an aerodynamic surface with dynamic stall solver
+        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+            continue
+        end
+        # Set flag
+        hasDSelements = true
+        # Unpack variables
+        @unpack stallOnsetRatioPrev = element.aero.BLcompVars
+        @unpack stallOnsetRatio = element.aero.BLflow
+        # Compute boundary
+        boundary[e] = (abs(stallOnsetRatioPrev)-1) * (abs(stallOnsetRatio)-1)
+    end
+
+    # Get maximum
+    boundaryMax = hasDSelements ? maximum(boundary) : 0.0
+
+    return boundaryMax
 end
 
 

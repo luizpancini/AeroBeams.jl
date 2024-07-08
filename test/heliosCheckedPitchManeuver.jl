@@ -20,7 +20,7 @@ nElemStraightSemispan = 10
 nElemPod = 2
 
 # Aerodynamic solver
-aeroSolver = Indicial()
+aeroSolver = BLi()
 
 # Payload [lb]
 P = 200
@@ -45,7 +45,7 @@ println("T = $(trimThrust), δ = $(trimδ*180/π)")
 
 # Set checked elevator deflection profile
 Δδ = 5*π/180
-tδinit = 1
+tδinit = 0.5
 tδpeak = 1+tδinit
 tδfinal = 1+tδpeak
 δ = t -> ifelse(
@@ -70,12 +70,13 @@ heliosDynamic,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamP
 tf = 10
 
 # Set NR system solver for dynamic problem
-maxit = 100
-NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=false)
+maxit = 50
+NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
 
 # Create and solve dynamic problem
 dynamicProblem = create_DynamicProblem(model=heliosDynamic,x0=trimProblem.x[1:end-2],finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true,systemSolver=NR)
-solve!(dynamicProblem)
+# solve!(dynamicProblem)
+@time solve!(dynamicProblem)
 # @profview solve!(dynamicProblem)
 
 # Unpack numerical solution

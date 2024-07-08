@@ -1,16 +1,22 @@
-# Step 1: Initialize the outer vector with a specified size
-n = 5  # specify the size
-outer_vector = Vector{Vector{Int}}(undef, n)
+using BenchmarkTools, StaticArrays
 
-# # Step 2: Assign empty vectors to each element
-# for i in 1:n
-#     outer_vector[i] = Vector{Int}()
-# end
+function compute_all_at_once(f,time)
+    return f.(time)
+end
 
-# Now you can use push!() to add elements to the inner vectors
-push!(outer_vector[1], 10)
-push!(outer_vector[2], 20)
-push!(outer_vector[2], 30)
+function compute_one_at_a_time(f,time)
+    fun = SVector{length(time),Float64}
+    for i in eachindex(time)
+        fun[i] = f(time[i])
+    end
+    return fun
+end
 
-# Display the result
-println(outer_vector)
+f = t -> exp.(t).*t.^2
+
+time = collect(0:0.001:10)
+
+@btime compute_all_at_once(f,time)
+@btime compute_one_at_a_time(f,time)
+
+

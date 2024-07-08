@@ -465,6 +465,9 @@ mutable struct Element <: BeamElement
         # Update aerodynamic states and rates vectors to correct size
         if !isnothing(aero)
             states.χ = zeros(aero.nTotalAeroStates)
+            if typeof(aero.solver) == BLi
+                states.χ[aero.nonlinearStatesRange[2:4]] .= 1.0
+            end
             statesRates.χdot = zeros(aero.nTotalAeroStates)
             χdotEquiv = zeros(aero.nTotalAeroStates)
         end

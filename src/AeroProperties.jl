@@ -118,6 +118,12 @@ mutable struct AeroCoefficients
 - cmC = circulatory component of cm
 - cmI = inertial component of cm
 - cmRot = rotation-induced component of cm
+- cnF = separated-flow circulatory component of cn
+- cmF = separated-flow circulatory component of cm
+- ctF = separated-flow circulatory component of ct
+- cnV = DSV-induced component of cn
+- cmV = DSV-induced component of cm
+- ctV = DSV-induced component of ct
 """
 mutable struct AeroCoefficients
     
@@ -129,7 +135,13 @@ mutable struct AeroCoefficients
     cnI 
     cmC 
     cmI 
-    cmRot 
+    cmRot
+    cnF 
+    cmF
+    ctF
+    cnV
+    cmV
+    ctV
 
     # Constructor
     function AeroCoefficients() 
@@ -142,8 +154,14 @@ mutable struct AeroCoefficients
         cmC = 0.0
         cmI = 0.0
         cmRot = 0.0
+        cnF = 0.0
+        cmF = 0.0
+        ctF = 0.0
+        cnV = 0.0
+        cmV = 0.0
+        ctV = 0.0
 
-        return new(cn,cm,ct,cnC,cnI,cmC,cmI,cmRot)
+        return new(cn,cm,ct,cnC,cnI,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV)
     end
 end
 
@@ -191,15 +209,248 @@ mutable struct FlowVariables
     cmC 
     cmI 
     cmRot
+    cnF
+    cmF
+    ctF
+    cnV
+    cmV
+    ctV
 
     # Constructor
     function FlowVariables(flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients)
         
         @unpack α,β,αdot,αₑ = flowAnglesAndRates
         @unpack U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC,Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC,UₜGust,UₙGust = flowVelocitiesAndRates
-        @unpack cn,cm,ct,cnC,cnI,cmC,cmI,cmRot = aeroCoefficients
+        @unpack cn,cm,ct,cnC,cnI,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV = aeroCoefficients
 
-        return new(α,β,αdot,αₑ,U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC,Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC,UₜGust,UₙGust,cn,cm,ct,cnC,cnI,cmC,cmI,cmRot)
+        return new(α,β,αdot,αₑ,U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC,Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC,UₜGust,UₙGust,cn,cm,ct,cnC,cnI,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV)
+    end
+end
+
+
+"""
+mutable struct BLStates
+
+    BLStates composite type
+
+# Fields
+- 
+"""
+mutable struct BLStates
+    
+    # Fields
+    αlag 
+    f2primeN
+    f2primeM
+    f2primeT
+    RD
+    RD_stallOnsetRatio
+
+    # Constructor
+    function BLStates() 
+
+        αlag = 0.0
+        f2primeN = 1.0
+        f2primeM = 1.0
+        f2primeT = 1.0
+        RD = 0.0
+        RD_stallOnsetRatio = 0.0        
+
+        return new(αlag,f2primeN,f2primeM,f2primeT,RD,RD_stallOnsetRatio)
+    end
+end
+
+
+"""
+mutable struct BLKinematics
+
+    BLKinematics composite type
+
+# Fields
+- 
+"""
+mutable struct BLKinematics
+    
+    # Fields
+    r
+    q
+    qR
+    R
+
+    # Constructor
+    function BLKinematics() 
+
+        r = 0.0
+        q = 0.0
+        qR = 0.0
+        R = 0.0      
+
+        return new(r,q,qR,R)
+    end
+end
+
+
+"""
+mutable struct BLFlow
+
+    BLFlow composite type
+
+# Fields
+- 
+"""
+mutable struct BLFlow
+    
+    # Fields
+    stallOnsetRatio
+    upstroke
+    S
+    P
+    T
+    α1N
+    α1M
+    α1T
+    fN
+    fM
+    fT
+    fPrimeN
+    fPrimeM
+    fPrimeT
+    Ta_SO
+    TfN
+    TfM
+    TfT
+
+    # Constructor
+    function BLFlow() 
+
+        stallOnsetRatio = 0.0
+        upstroke = false
+        S = false
+        P = 0.0
+        T = 0.0
+        α1N = 0.0
+        α1M = 0.0
+        α1T = 0.0  
+        fN = 1.0
+        fM = 1.0
+        fT = 1.0 
+        fPrimeN = 1.0 
+        fPrimeM = 1.0 
+        fPrimeT = 1.0 
+        Ta_SO = 0.0
+        TfN = 0.0
+        TfM = 0.0
+        TfT = 0.0
+
+        return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT)
+    end
+end
+
+
+"""
+mutable struct BLComplementaryVariables
+
+    BLComplementaryVariables composite type
+
+# Fields
+- stallOnsetRatioPrev
+- αlagPrev
+- qRPrev
+- PPrev
+- upstrokePrev
+- maxStallOnsetRatio
+- minStallOnsetRatio 
+- qRmax
+- Ts
+- tv0P
+- fDiff_tv0P
+- qR_tv0P
+- R_tv0P
+- RD_tv0P
+- upstroke_tv0P
+- fDiff_tv0P2
+- RD_tv0P2
+- upstroke_tv0P2
+- tv0N
+- fDiff_tv0N
+- qR_tv0N
+- R_tv0N
+- RD_tv0N
+- upstroke_tv0N
+- fDiff_tv0N2
+- RD_tv0N2
+- upstroke_tv0N2
+- lastRD_tv0
+"""
+mutable struct BLComplementaryVariables
+    
+    # Fields
+    stallOnsetRatioPrev
+    αlagPrev 
+    qRPrev
+    PPrev
+    upstrokePrev 
+    maxStallOnsetRatio
+    minStallOnsetRatio 
+    qRmax
+    Ts
+    tv0P
+    fDiff_tv0P
+    qR_tv0P
+    R_tv0P
+    RD_tv0P
+    upstroke_tv0P
+    τvP
+    fDiff_tv0P2
+    RD_tv0P2 
+    upstroke_tv0P2
+    tv0N
+    fDiff_tv0N
+    qR_tv0N
+    R_tv0N
+    RD_tv0N 
+    upstroke_tv0N
+    τvN
+    fDiff_tv0N2
+    RD_tv0N2  
+    upstroke_tv0N2
+    lastRD_tv0
+
+    # Constructor
+    function BLComplementaryVariables() 
+
+        stallOnsetRatioPrev = 0.0
+        αlagPrev = 0.0
+        qRPrev = 1.0
+        PPrev = 0.0
+        upstrokePrev = true  
+        maxStallOnsetRatio = 1.0
+        minStallOnsetRatio = 0.0 
+        qRmax = 1.0
+        Ts = 0.0
+        tv0P = -Inf64
+        fDiff_tv0P = 0.0
+        qR_tv0P = 1.0
+        R_tv0P = 1.0
+        RD_tv0P = 1.0
+        upstroke_tv0P = false
+        τvP = Inf64
+        fDiff_tv0P2 = -1.0
+        RD_tv0P2 = 1.0
+        upstroke_tv0P2 = false
+        tv0N = -Inf64
+        fDiff_tv0N = 0.0
+        qR_tv0N = 1.0
+        R_tv0N = 1.0
+        RD_tv0N = 1.0
+        upstroke_tv0N = false
+        τvN = Inf64
+        fDiff_tv0N2 = -1.0
+        RD_tv0N2 = 1.0
+        upstroke_tv0N2 = false
+        lastRD_tv0 = 1.0
+
+        return new(stallOnsetRatioPrev,αlagPrev,qRPrev,PPrev,upstrokePrev,maxStallOnsetRatio,minStallOnsetRatio,qRmax,Ts,tv0P,fDiff_tv0P,qR_tv0P,R_tv0P,RD_tv0P,upstroke_tv0P,τvP,fDiff_tv0P2,RD_tv0P2,upstroke_tv0P2,tv0N,fDiff_tv0N,qR_tv0N,R_tv0N,RD_tv0N,upstroke_tv0N,τvN,fDiff_tv0N2,RD_tv0N2,upstroke_tv0N2,lastRD_tv0)
     end
 end
 
@@ -225,6 +476,7 @@ end
     pitchPlungeStatesRange::UnitRange{Int64}
     flapStatesRange::Union{Nothing,UnitRange{Int64}}
     gustStatesRange::Union{Nothing,UnitRange{Int64}}
+    nonlinearStatesRange::Union{Nothing,UnitRange{Int64}}
     # Aerodynamic derivatives calculation method
     derivationMethod::DerivationMethod
     # Geometry
@@ -272,6 +524,14 @@ end
     flowVelocitiesAndRates = FlowVelocitiesAndRates()
     # Aerodynamic coefficients
     aeroCoefficients = AeroCoefficients()
+    # States of BL models
+    BLstates = BLStates()
+    # Flow kinematics of BL models
+    BLkin = BLKinematics()
+    # Flow variables of BL models
+    BLflow = BLFlow()
+    # Complementary variables of BL models
+    BLcompVars = BLComplementaryVariables()
     # Nodal aerodynamic loads resultants array
     F = zeros(12)
     # Aerodynamic derivatives w.r.t. elemental states
@@ -354,9 +614,18 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
     nTotalAeroStates = solver.nStates + nFlapStates + nGustStates
 
     # Set aerodynamic states' ranges
-    pitchPlungeStatesRange = 1:solver.nStates
+    if typeof(solver) in [QuasiSteady,Indicial,Inflow]
+        pitchPlungeStatesRange = 1:solver.nStates
+    elseif typeof(solver) == BLi
+        pitchPlungeStatesRange = 7:8
+    end
     flapStatesRange = hasFlapStates ? (solver.nStates+1:solver.nStates+flapLoadsSolver.nStates) : nothing
     gustStatesRange = nothing
+    if typeof(solver) == BLi
+        nonlinearStatesRange = 1:6
+    else 
+        nonlinearStatesRange = nothing
+    end
 
     # Set aerodynamic derivatives calculation method
     derivationMethod = aeroSurface.derivationMethod
@@ -391,7 +660,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
         end
     end
 
-    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection)
+    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,nonlinearStatesRange=nonlinearStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection)
 end
 
 
@@ -409,7 +678,7 @@ function initial_F_χ_χ(solver::AeroSolver,nStates::Int64)
     # Calculate according to solver
     if typeof(solver) == QuasiSteady
         ϵ = 0.0 
-    elseif typeof(solver) == Indicial  
+    elseif typeof(solver) in [Indicial,BLi]  
         ϵ = 1e-4
     elseif typeof(solver) == Inflow
         ϵ = 1.0
@@ -435,7 +704,7 @@ function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRa
     F_χ_Vdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) == Indicial  
+    if typeof(solver) in [Indicial,BLi]
         F_χ_Vdot[pitchPlungeStatesRange,3] = cnα*solver.AW
     elseif typeof(solver) == Inflow
         F_χ_Vdot[pitchPlungeStatesRange,3] = solver.AₚInvcₚ
@@ -462,7 +731,7 @@ function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesR
     F_χ_Ωdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) == Indicial  
+    if typeof(solver) in [Indicial,BLi]
         F_χ_Ωdot[pitchPlungeStatesRange,1] = c*(normSparPos-3/4)*cnα*solver.AW
     elseif typeof(solver) == Inflow
         F_χ_Ωdot[pitchPlungeStatesRange,1] = c*(normSparPos-3/4)*solver.AₚInvcₚ

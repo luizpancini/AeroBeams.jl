@@ -22,7 +22,9 @@
     ρ::Float64
     trackingLoadSteps::Bool
     displayStatus::Bool
-    minConvRate::Number
+    minConvRateAeroJacUpdate::Number
+    minConvRateJacUpdate::Number
+    alwaysUpdateJacobian::Bool
 
     # Algorithm variables
     loadFactorStep::Float64 = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
@@ -33,12 +35,13 @@
 end
 
 # Constructor
-function create_NewtonRaphson(;absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRate::Number=2.0)
+function create_NewtonRaphson(;absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Number=2.0,minConvRateJacUpdate::Number=2.0,alwaysUpdateJacobian::Bool=false)
 
     @assert 0.5 <= ρ <= 1 "relaxation factor (ρ) must be between 0.5 and 1.0"
-    @assert minConvRate > 1 "minConvRate to skip calculation of aerodynamic derivatives must be greater than 1"
+    @assert minConvRateAeroJacUpdate > 1 "minConvRateAeroJacUpdate to skip calculation of aerodynamic derivatives must be greater than 1"
+    @assert minConvRateJacUpdate > 1 "minConvRateJacUpdate to skip update of Jacobian matrix must be greater than 1"
 
-    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRate=minConvRate)
+    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRateAeroJacUpdate=minConvRateAeroJacUpdate,minConvRateJacUpdate=minConvRateJacUpdate,alwaysUpdateJacobian=alwaysUpdateJacobian)
 
 end
 export create_NewtonRaphson
@@ -55,7 +58,7 @@ Solves the nonlinear system of equations at current time step
 function solve_NewtonRaphson!(problem::Problem)
 
     # Unpack system solver
-    @unpack absoluteTolerance,relativeTolerance,maximumIterations,desiredIterations,maximumAbsoluteError,maximumRelativeError,minimumLoadFactor,loadFactorStep,maximumLoadFactorStep,minimumLoadFactorStep,trackingLoadSteps,displayStatus,convergedFinalSolution,convergedPartialSolution = problem.systemSolver
+    @unpack absoluteTolerance,relativeTolerance,maximumIterations,desiredIterations,maximumAbsoluteError,maximumRelativeError,minimumLoadFactor,loadFactorStep,maximumLoadFactorStep,minimumLoadFactorStep,trackingLoadSteps,displayStatus,convergedFinalSolution,convergedPartialSolution,alwaysUpdateJacobian,minConvRateJacUpdate = problem.systemSolver
 
     # Reset converged solution flag and load factor step
     convergedFinalSolution = false
@@ -76,6 +79,8 @@ function solve_NewtonRaphson!(problem::Problem)
         ϵ_abs_previous = 1
         # Reset partial convergence flag
         convergedPartialSolution = false
+        # Reset TF to skip Jacobian update
+        problem.skipJacobianUpdate = false
         # Update load factor 
         σ = loadstep == 1 ? σ : min(1.0,σ+loadFactorStep)
         @pack! problem = σ
@@ -104,6 +109,8 @@ function solve_NewtonRaphson!(problem::Problem)
             @pack! problem.systemSolver = convRate
             # Update previous value of ϵ_abs
             ϵ_abs_previous = deepcopy(ϵ_abs)
+            # Update TF to skip Jacobian update, if applicable
+            problem.skipJacobianUpdate = (!alwaysUpdateJacobian && convRate > minConvRateJacUpdate) ? true : false
             # Check convergence norms
             if ϵ_abs < absoluteTolerance || ϵ_rel < relativeTolerance
                 convergedPartialSolution = true
@@ -121,12 +128,13 @@ function solve_NewtonRaphson!(problem::Problem)
         ## Update load factor step
         #-----------------------------------------------------------------------
         # In case of convergence trouble
-        if !convergedPartialSolution                            
+        if !convergedPartialSolution                      
             # Reduce load factor step (limit to minimum)
             loadFactorStep = max(min(1.0-loadFactorKnown,loadFactorStep/2),minimumLoadFactorStep)
             # Check if algorithm is stuck
             if loadFactorStep == minimumLoadFactorStep 
                 println("NR algorithm stuck, stopping...")
+                update_states!(problem)
                 return
             end
             # Reset to previously known solution
@@ -149,8 +157,20 @@ function solve_NewtonRaphson!(problem::Problem)
             end
         end
         # Check for full load and convergence reached
-        if abs(σ-1) < 1e-6 && convergedPartialSolution 
+        if abs(σ-1) < 1e-6 && convergedPartialSolution
+            # Update flag
             convergedFinalSolution = true
+            # Update Jacobian matrix, if applicable
+            if !alwaysUpdateJacobian 
+                problem.skipJacobianUpdate = false
+                aeroData = copy_aero_data(problem)
+                for element in problem.model.elements
+                    distributed_loads_derivatives_rotation_parameters!(element)
+                    aero_derivatives!(problem,problem.model,element)
+                    element_jacobian!(problem,problem.model,element)
+                end
+                restore_aero_data!(problem,aeroData)
+            end
             # Get inertia matrix in eigen and trim problems, if applicable
             if problem isa EigenProblem || (problem isa TrimProblem && problem.getInertiaMatrix)
                 for element in problem.model.elements
@@ -178,9 +198,8 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
     @unpack elements,specialNodes = model
     @pack! problem = x
 
-    # Reset Jacobian and inertia matrices (only for debugging purposes)
-    problem.jacobian .= 0
-    problem.inertia .= 0
+    # Reset Jacobian matrix (only for debugging purposes)
+    # problem.jacobian .= 0
 
     # Update states of the elements first (for better convergence with relative rotation constraints)
     for element in elements
@@ -315,9 +334,9 @@ Updates the step size (α) of the line search
 """
 function line_search_step_size(x,p,residual,jacobian,c1=1e-4,ρ=0.5)
 
-    # Copy problem and update TF to get residual array only
+    # Copy problem and update TF to skip Jacobian update
     problemCopy = deepcopy(problem)
-    problemCopy.getResidual = true
+    problemCopy.skipJacobianUpdate = true
 
     # Inline function to get the residual
     res = x -> assemble_system_arrays!(problemCopy,x) 
@@ -391,5 +410,91 @@ function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
     push!(flowVariablesOverσ,currentFlowVariables)
 
     @pack! problem = savedσ,xOverσ,elementalStatesOverσ,nodalStatesOverσ,compElementalStatesOverσ,flowVariablesOverσ
+
+end
+
+
+"""
+copy_aero_data(problem::Problem)
+
+Copies the aerodynamic data that can be transformed by the calculation of derivatives
+
+# Arguments
+- problem::Problem
+"""
+function copy_aero_data(problem::Problem)
+
+    # Initialize
+    @unpack nElementsTotal = problem.model
+    A = Array{Matrix{Float64}}(undef,nElementsTotal)
+    B = Array{Vector{Float64}}(undef,nElementsTotal)
+    Re = Array{Number}(undef,nElementsTotal)
+    Ma = Array{Number}(undef,nElementsTotal)
+    βₚ = Array{Number}(undef,nElementsTotal)
+    βₚ² = Array{Number}(undef,nElementsTotal)
+    flowAnglesAndRates = Array{FlowAnglesAndRates}(undef,nElementsTotal)
+    flowVelocitiesAndRates = Array{FlowVelocitiesAndRates}(undef,nElementsTotal)
+    aeroCoefficients = Array{AeroCoefficients}(undef,nElementsTotal)
+    F = Array{Vector{Float64}}(undef,nElementsTotal)
+    airfoil = Array{Airfoil}(undef,nElementsTotal)
+    BLkin = Array{BLKinematics}(undef,nElementsTotal)
+    BLflow = Array{BLFlow}(undef,nElementsTotal)
+
+    # Loop elements
+    for (e,element) in enumerate(problem.model.elements)
+        # Skip elements without aerodynamic surface
+        if isnothing(element.aero)
+            continue
+        end
+        A[e] = deepcopy(element.aero.A)
+        B[e] = deepcopy(element.aero.B)
+        Re[e] = deepcopy(element.aero.Re)
+        Ma[e] = deepcopy(element.aero.Ma)
+        βₚ[e] = deepcopy(element.aero.βₚ)
+        βₚ²[e] = deepcopy(element.aero.βₚ²)
+        flowAnglesAndRates[e] = deepcopy(element.aero.flowAnglesAndRates)
+        flowVelocitiesAndRates[e] = deepcopy(element.aero.flowVelocitiesAndRates)
+        aeroCoefficients[e] = deepcopy(element.aero.aeroCoefficients)
+        F[e] = deepcopy(element.aero.F)
+        airfoil[e] = deepcopy(element.aero.airfoil)
+        BLkin[e] = deepcopy(element.aero.BLkin)
+        BLflow[e] = deepcopy(element.aero.BLflow)
+    end
+
+    return (A,B,Re,Ma,βₚ,βₚ²,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,F,airfoil,BLkin,BLflow)
+end
+
+
+"""
+restore_aero_data!(problem::Problem,aeroData)
+
+Restores the aerodynamic data that can be transformed by the calculation of derivatives
+
+# Arguments
+- problem::Problem
+- aeroData
+"""
+function restore_aero_data!(problem::Problem,aeroData)
+
+    # Loop elements
+    for (e,element) in enumerate(problem.model.elements)
+        # Skip elements without aerodynamic surface
+        if isnothing(element.aero)
+            continue
+        end
+        element.aero.A = aeroData[1][e]
+        element.aero.B = aeroData[2][e]
+        element.aero.Re = aeroData[3][e]
+        element.aero.Ma = aeroData[4][e]
+        element.aero.βₚ = aeroData[5][e]
+        element.aero.βₚ² = aeroData[6][e]
+        element.aero.flowAnglesAndRates = aeroData[7][e]
+        element.aero.flowVelocitiesAndRates = aeroData[8][e]
+        element.aero.aeroCoefficients = aeroData[9][e]
+        element.aero.F = aeroData[10][e]
+        element.aero.airfoil = aeroData[11][e]
+        element.aero.BLkin = aeroData[12][e]
+        element.aero.BLflow = aeroData[13][e]
+    end
 
 end
