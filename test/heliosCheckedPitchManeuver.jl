@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra, Plots, ColorSchemes, BenchmarkTools
 
 # Stiffness factor
 λ = 1
@@ -20,7 +20,7 @@ nElemStraightSemispan = 10
 nElemPod = 2
 
 # Aerodynamic solver
-aeroSolver = BLi()
+aeroSolver = Indicial()
 
 # Payload [lb]
 P = 200
@@ -36,7 +36,7 @@ heliosTrim,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,nElemStraig
 
 # Create and solve trim problem
 trimProblem = create_TrimProblem(model=heliosTrim,systemSolver=NR)
-solve!(trimProblem)
+@time solve!(trimProblem)
 
 # Extract trim variables
 trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
@@ -67,7 +67,7 @@ heliosDynamic,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamP
 
 # Time variables
 Δt = 1e-2
-tf = 10
+tf = 1
 
 # Set NR system solver for dynamic problem
 maxit = 50

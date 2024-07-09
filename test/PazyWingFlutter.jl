@@ -52,7 +52,7 @@ for (i,U) in enumerate(URange)
     # Update velocity of basis A (and update model)
     set_motion_basis_A!(model=PazyWingFlutter,v_A=[0;U;0])
     # Create and solve problem
-    problem = create_EigenProblem(model=PazyWingFlutter,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1,Inf64])
+    problem = create_EigenProblem(model=PazyWingFlutter,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1.5,Inf64])
     solve!(problem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem.frequenciesOscillatory

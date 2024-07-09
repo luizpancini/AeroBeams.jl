@@ -433,9 +433,9 @@ function rotation_tensor_derivatives_scaled_parameters(ps,ps0,ps1,ps2,ps3,ps1s,p
                 ps1+p2p3o4   ps2-p1p3o4       ps3*c1]
 
     # Rotation tensor derivatives w.r.t. scaled rotation parameters         
-    R_ps1 = υ²_ps1*Θ .+ υ²*Θ_ps1
-    R_ps2 = υ²_ps2*Θ .+ υ²*Θ_ps2
-    R_ps3 = υ²_ps3*Θ .+ υ²*Θ_ps3
+    R_ps1 = υ²_ps1*Θ + υ²*Θ_ps1
+    R_ps2 = υ²_ps2*Θ + υ²*Θ_ps2
+    R_ps3 = υ²_ps3*Θ + υ²*Θ_ps3
 
     return R_ps1,R_ps2,R_ps3,υ²_ps1,υ²_ps2,υ²_ps3,Θ_ps1,Θ_ps2,Θ_ps3
     
@@ -490,9 +490,9 @@ function rotation_tensor_derivatives_extended_parameters(p,pNorm,λ,ps,ps0,ps1,p
     ps3_p3 = ps_p[3,3]
 
     # Rotation tensor derivatives w.r.t. extended rotation parameters
-    R_p1 = R_ps1*ps1_p1 .+ R_ps2*ps2_p1 .+ R_ps3*ps3_p1
-    R_p2 = R_ps1*ps1_p2 .+ R_ps2*ps2_p2 .+ R_ps3*ps3_p2
-    R_p3 = R_ps1*ps1_p3 .+ R_ps2*ps2_p3 .+ R_ps3*ps3_p3
+    R_p1 = R_ps1*ps1_p1 + R_ps2*ps2_p1 + R_ps3*ps3_p1
+    R_p2 = R_ps1*ps1_p2 + R_ps2*ps2_p2 + R_ps3*ps3_p2
+    R_p3 = R_ps1*ps1_p3 + R_ps2*ps2_p3 + R_ps3*ps3_p3
 
     return R_p1,R_p2,R_p3,R_ps1,R_ps2,R_ps3,υ²_ps1,υ²_ps2,υ²_ps3,Θ_ps1,Θ_ps2,Θ_ps3,ps_p,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3
 end
@@ -517,7 +517,7 @@ function rotation_tensor_derivatives_extended_parameters(p::Vector{Float64})
     λ_p = scaling_derivatives_extended_parameters(λ,p,pNorm)
 
     # Scaled rotation parameters derivatives w.r.t. extended rotation parameters 
-    ps_p = λ_p*p' .+ λ*I3
+    ps_p = λ_p*p' + λ*I3
     ps1_p1 = ps_p[1,1]
     ps2_p1 = ps_p[2,1]
     ps3_p1 = ps_p[3,1]
@@ -529,9 +529,9 @@ function rotation_tensor_derivatives_extended_parameters(p::Vector{Float64})
     ps3_p3 = ps_p[3,3]
 
     # Rotation tensor derivatives w.r.t. extended rotation parameters
-    R_p1 = R_ps1*ps1_p1 .+ R_ps2*ps2_p1 .+ R_ps3*ps3_p1
-    R_p2 = R_ps1*ps1_p2 .+ R_ps2*ps2_p2 .+ R_ps3*ps3_p2
-    R_p3 = R_ps1*ps1_p3 .+ R_ps2*ps2_p3 .+ R_ps3*ps3_p3
+    R_p1 = R_ps1*ps1_p1 + R_ps2*ps2_p1 + R_ps3*ps3_p1
+    R_p2 = R_ps1*ps1_p2 + R_ps2*ps2_p2 + R_ps3*ps3_p2
+    R_p3 = R_ps1*ps1_p3 + R_ps2*ps2_p3 + R_ps3*ps3_p3
 
     return R_p1,R_p2,R_p3
 end
@@ -554,7 +554,7 @@ function rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot)
     ps3dot = psdot[3]
 
     # Rotation tensor time derivative 
-    Rdot = R_ps1*ps1dot .+ R_ps2*ps2dot .+ R_ps3*ps3dot
+    Rdot = R_ps1*ps1dot + R_ps2*ps2dot + R_ps3*ps3dot
 
     return Rdot,ps1dot,ps2dot,ps3dot
 
@@ -632,25 +632,25 @@ function rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3
                       ps3o4           1  ps2ps3o16]
 
     # Rotation tensor second derivatives w.r.t scaled rotation parameters           
-    R_ps1ps1 = υ²_psps[1,1]*Θ .+ 2*υ²_ps1*Θ_ps1 .+ υ²*Θ_ps1ps1
-    R_ps2ps2 = υ²_psps[2,2]*Θ .+ 2*υ²_ps2*Θ_ps2 .+ υ²*Θ_ps2ps2
-    R_ps3ps3 = υ²_psps[3,3]*Θ .+ 2*υ²_ps3*Θ_ps3 .+ υ²*Θ_ps3ps3
-    R_ps2ps1 = υ²_psps[1,2]*Θ .+ υ²_ps2*Θ_ps1 .+ υ²_ps1*Θ_ps2 .+ υ²*Θ_ps1ps2
-    R_ps3ps1 = υ²_psps[1,3]*Θ .+ υ²_ps3*Θ_ps1 .+ υ²_ps1*Θ_ps3 .+ υ²*Θ_ps1ps3
-    R_ps3ps2 = υ²_psps[2,3]*Θ .+ υ²_ps3*Θ_ps2 .+ υ²_ps2*Θ_ps3 .+ υ²*Θ_ps2ps3
+    R_ps1ps1 = υ²_psps[1,1]*Θ + 2*υ²_ps1*Θ_ps1 + υ²*Θ_ps1ps1
+    R_ps2ps2 = υ²_psps[2,2]*Θ + 2*υ²_ps2*Θ_ps2 + υ²*Θ_ps2ps2
+    R_ps3ps3 = υ²_psps[3,3]*Θ + 2*υ²_ps3*Θ_ps3 + υ²*Θ_ps3ps3
+    R_ps2ps1 = υ²_psps[1,2]*Θ + υ²_ps2*Θ_ps1 + υ²_ps1*Θ_ps2 + υ²*Θ_ps1ps2
+    R_ps3ps1 = υ²_psps[1,3]*Θ + υ²_ps3*Θ_ps1 + υ²_ps1*Θ_ps3 + υ²*Θ_ps1ps3
+    R_ps3ps2 = υ²_psps[2,3]*Θ + υ²_ps3*Θ_ps2 + υ²_ps2*Θ_ps3 + υ²*Θ_ps2ps3
     R_ps1ps2 = R_ps2ps1
     R_ps1ps3 = R_ps3ps1
     R_ps2ps3 = R_ps3ps2
 
     # Rotation tensor time derivatives' derivative w.r.t. scaled rotation parameters
-    Rdot_ps1 = R_ps1ps1*ps1dot .+ R_ps2ps1*ps2dot .+ R_ps3ps1*ps3dot
-    Rdot_ps2 = R_ps1ps2*ps1dot .+ R_ps2ps2*ps2dot .+ R_ps3ps2*ps3dot
-    Rdot_ps3 = R_ps1ps3*ps1dot .+ R_ps2ps3*ps2dot .+ R_ps3ps3*ps3dot
+    Rdot_ps1 = R_ps1ps1*ps1dot + R_ps2ps1*ps2dot + R_ps3ps1*ps3dot
+    Rdot_ps2 = R_ps1ps2*ps1dot + R_ps2ps2*ps2dot + R_ps3ps2*ps3dot
+    Rdot_ps3 = R_ps1ps3*ps1dot + R_ps2ps3*ps2dot + R_ps3ps3*ps3dot
 
     # Rotation tensor time derivatives' derivative w.r.t. extended rotation parameters
-    Rdot_p1 = Rdot_ps1*ps1_p1 .+ Rdot_ps2*ps2_p1 .+ Rdot_ps3*ps3_p1
-    Rdot_p2 = Rdot_ps1*ps1_p2 .+ Rdot_ps2*ps2_p2 .+ Rdot_ps3*ps3_p2
-    Rdot_p3 = Rdot_ps1*ps1_p3 .+ Rdot_ps2*ps2_p3 .+ Rdot_ps3*ps3_p3
+    Rdot_p1 = Rdot_ps1*ps1_p1 + Rdot_ps2*ps2_p1 + Rdot_ps3*ps3_p1
+    Rdot_p2 = Rdot_ps1*ps1_p2 + Rdot_ps2*ps2_p2 + Rdot_ps3*ps3_p2
+    Rdot_p3 = Rdot_ps1*ps1_p3 + Rdot_ps2*ps2_p3 + Rdot_ps3*ps3_p3
 
     return Rdot_p1,Rdot_p2,Rdot_p3
 
@@ -675,7 +675,7 @@ function tangent_operator_transpose_WM(p::Vector{Float64})
     υ² = (4-ps0)^-2
 
     # Tangent operator transpose
-    return 2*υ²*(ps0*I3 .+ 1/4*ps*(ps') .- tilde(ps))
+    return 2*υ²*(ps0*I3 + 1/4*ps*(ps') - tilde(ps))
 
 end
 export tangent_operator_transpose_WM
@@ -693,7 +693,7 @@ Computes the transpose of tangent operator tensor according to Wiener-Milenkovic
 """
 function tangent_operator_transpose_WM(ps::Vector{Float64},ps0::Float64,υ²::Float64)
 
-    return 2*υ²*(ps0*I3 .+ 1/4*ps*(ps') .- tilde(ps))
+    return 2*υ²*(ps0*I3 + 1/4*ps*(ps') - tilde(ps))
 
 end
 
@@ -715,7 +715,7 @@ function tangent_operator_transpose_inverse_WM(p::Vector{<:Number})
     ps0 = 2 - psNorm^2/8
 
     # Tangent operator inverse transpose
-    return 1/2*(ps0*I3 .+ 1/4*ps*(ps') .+ tilde(ps))
+    return 1/2*(ps0*I3 + 1/4*ps*(ps') + tilde(ps))
 
 end
 
@@ -731,7 +731,7 @@ Computes the inverse of the transpose of the tangent operator tensor according t
 """
 function tangent_operator_transpose_inverse_WM(ps::Vector{Float64},ps0::Float64)
 
-    return 1/2*(ps0*I3 .+ 1/4*ps*(ps') .+ tilde(ps))
+    return 1/2*(ps0*I3 + 1/4*ps*(ps') + tilde(ps))
 
 end
 
@@ -747,9 +747,9 @@ Computes the derivatives of the tangent tensor's transpose and its inverse with 
 function tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps_p)
 
     # Tangent operator transpose derivatives w.r.t. scaled rotation parameters
-    HT_ps1 = υ²_ps1*HT/υ² .+ υ²*1/2*[ps1 ps2 ps3; ps2 -ps1 4; ps3 -4 -ps1]
-    HT_ps2 = υ²_ps2*HT/υ² .+ υ²*1/2*[-ps2 ps1 -4; ps1 ps2 ps3; 4 ps3 -ps2]
-    HT_ps3 = υ²_ps3*HT/υ² .+ υ²*1/2*[-ps3 4 ps1; -4 -ps3 ps2; ps1 ps2 ps3]
+    HT_ps1 = υ²_ps1*HT/υ² + υ²*1/2*[ps1 ps2 ps3; ps2 -ps1 4; ps3 -4 -ps1]
+    HT_ps2 = υ²_ps2*HT/υ² + υ²*1/2*[-ps2 ps1 -4; ps1 ps2 ps3; 4 ps3 -ps2]
+    HT_ps3 = υ²_ps3*HT/υ² + υ²*1/2*[-ps3 4 ps1; -4 -ps3 ps2; ps1 ps2 ps3]
 
     # Tangent operator transpose inverse derivatives w.r.t. scaled rotation parameters
     HTinv_ps1 = 1/8*[ps1 ps2 ps3; ps2 -ps1 -4; ps3 4 -ps1]
@@ -757,14 +757,14 @@ function tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3
     HTinv_ps3 = 1/8*[-ps3 -4 ps1; 4 -ps3 ps2; ps1 ps2 ps3]
 
     # Tangent operator transpose derivatives w.r.t. extended rotation parameters
-    HT_p1 = HT_ps1*ps_p[1,1] .+ HT_ps2*ps_p[2,1] .+ HT_ps3*ps_p[3,1]
-    HT_p2 = HT_ps1*ps_p[1,2] .+ HT_ps2*ps_p[2,2] .+ HT_ps3*ps_p[3,2]
-    HT_p3 = HT_ps1*ps_p[1,3] .+ HT_ps2*ps_p[2,3] .+ HT_ps3*ps_p[3,3]
+    HT_p1 = HT_ps1*ps_p[1,1] + HT_ps2*ps_p[2,1] + HT_ps3*ps_p[3,1]
+    HT_p2 = HT_ps1*ps_p[1,2] + HT_ps2*ps_p[2,2] + HT_ps3*ps_p[3,2]
+    HT_p3 = HT_ps1*ps_p[1,3] + HT_ps2*ps_p[2,3] + HT_ps3*ps_p[3,3]
 
     # Tangent operator transpose inverse derivatives w.r.t. extended rotation parameters
-    HTinv_p1 = HTinv_ps1*ps_p[1,1] .+ HTinv_ps2*ps_p[2,1] .+ HTinv_ps3*ps_p[3,1]
-    HTinv_p2 = HTinv_ps1*ps_p[1,2] .+ HTinv_ps2*ps_p[2,2] .+ HTinv_ps3*ps_p[3,2]
-    HTinv_p3 = HTinv_ps1*ps_p[1,3] .+ HTinv_ps2*ps_p[2,3] .+ HTinv_ps3*ps_p[3,3]
+    HTinv_p1 = HTinv_ps1*ps_p[1,1] + HTinv_ps2*ps_p[2,1] + HTinv_ps3*ps_p[3,1]
+    HTinv_p2 = HTinv_ps1*ps_p[1,2] + HTinv_ps2*ps_p[2,2] + HTinv_ps3*ps_p[3,2]
+    HTinv_p3 = HTinv_ps1*ps_p[1,3] + HTinv_ps2*ps_p[2,3] + HTinv_ps3*ps_p[3,3]
 
     return HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3
 
@@ -806,14 +806,14 @@ function tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Floa
     HT = tangent_operator_transpose_WM(ps,ps0,υ²)
     
     # Tangent operator transpose derivatives w.r.t. scaled rotation parameters
-    HT_ps1 = υ²_ps1*HT/υ² .+ υ²*1/2*[ps1 ps2 ps3; ps2 -ps1 4; ps3 -4 -ps1]
-    HT_ps2 = υ²_ps2*HT/υ² .+ υ²*1/2*[-ps2 ps1 -4; ps1 ps2 ps3; 4 ps3 -ps2]
-    HT_ps3 = υ²_ps3*HT/υ² .+ υ²*1/2*[-ps3 4 ps1; -4 -ps3 ps2; ps1 ps2 ps3]
+    HT_ps1 = υ²_ps1*HT/υ² + υ²*1/2*[ps1 ps2 ps3; ps2 -ps1 4; ps3 -4 -ps1]
+    HT_ps2 = υ²_ps2*HT/υ² + υ²*1/2*[-ps2 ps1 -4; ps1 ps2 ps3; 4 ps3 -ps2]
+    HT_ps3 = υ²_ps3*HT/υ² + υ²*1/2*[-ps3 4 ps1; -4 -ps3 ps2; ps1 ps2 ps3]
 
     # Tangent operator transpose derivatives w.r.t. extended rotation parameters
-    HT_p1 = HT_ps1*ps_p[1,1] .+ HT_ps2*ps_p[2,1] .+ HT_ps3*ps_p[3,1]
-    HT_p2 = HT_ps1*ps_p[1,2] .+ HT_ps2*ps_p[2,2] .+ HT_ps3*ps_p[3,2]
-    HT_p3 = HT_ps1*ps_p[1,3] .+ HT_ps2*ps_p[2,3] .+ HT_ps3*ps_p[3,3]
+    HT_p1 = HT_ps1*ps_p[1,1] + HT_ps2*ps_p[2,1] + HT_ps3*ps_p[3,1]
+    HT_p2 = HT_ps1*ps_p[1,2] + HT_ps2*ps_p[2,2] + HT_ps3*ps_p[3,2]
+    HT_p3 = HT_ps1*ps_p[1,3] + HT_ps2*ps_p[2,3] + HT_ps3*ps_p[3,3]
 
     return HT_p1,HT_p2,HT_p3
 

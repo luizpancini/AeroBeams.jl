@@ -1,22 +1,14 @@
-using BenchmarkTools, StaticArrays
+using SparseArrays, LinearAlgebra
 
-function compute_all_at_once(f,time)
-    return f.(time)
-end
+# Define sparse matrices A and B
+A::SparseMatrixCSC{Float64,Int64} = sparse([1, 2, 3], [1, 2, 3], [4.0, 5.0, 6.0])
+B::SparseMatrixCSC{Float64,Int64} = sparse([1, 2, 3], [1, 2, 3], [7.0, 8.0, 9.0])
+A::SparseMatrixCSC{Float64,Int64} = sprandn(3,3,0.99)
+B::SparseMatrixCSC{Float64,Int64} = sprandn(3,3,0.5)
 
-function compute_one_at_a_time(f,time)
-    fun = SVector{length(time),Float64}
-    for i in eachindex(time)
-        fun[i] = f(time[i])
-    end
-    return fun
-end
+# Compute A \ B
+X = A \ Array(B)
 
-f = t -> exp.(t).*t.^2
-
-time = collect(0:0.001:10)
-
-@btime compute_all_at_once(f,time)
-@btime compute_one_at_a_time(f,time)
-
-
+# Display the result
+println("The solution X is:")
+println(X)

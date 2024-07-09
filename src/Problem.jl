@@ -127,9 +127,8 @@ Defines the problem of steady type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
-    inertia::Matrix{Float64} = zeros(0,0)
-    jacobianDeterminant::Float64 = 0.0
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
@@ -208,9 +207,8 @@ Defines the problem of trim type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
-    inertia::Matrix{Float64} = zeros(0,0)
-    jacobianDeterminant::Float64 = 0.0
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
@@ -292,9 +290,8 @@ Defines the problem of eigen type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
-    inertia::Matrix{Float64} = zeros(0,0)
-    jacobianDeterminant::Float64 = 0.0
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
@@ -335,7 +332,7 @@ export EigenProblem
 
 
 # Constructor
-function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=false,x0::Vector{Float64}=zeros(0),jacobian::Matrix{Float64}=zeros(0,0),inertia::Matrix{Float64}=zeros(0,0))
+function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=false,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0))
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes)
@@ -358,7 +355,6 @@ function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_New
         @assert size(jacobian) == (model.systemOrder,model.systemOrder) "size of the input jacobian does not correspond to the number of states of the model"
         problem.jacobian = jacobian
         problem.inertia = inertia
-        problem.jacobianDeterminant = det(jacobian)
     else
         initialize_system_arrays!(problem)
     end
@@ -414,9 +410,8 @@ Defines the problem of dynamic type
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::Matrix{Float64} = zeros(0,0)
-    inertia::Matrix{Float64} = zeros(0,0)
-    jacobianDeterminant::Float64 = 0.0
+    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     # Time variables
     timeNow::Number = 0
     timeBeginTimeStep::Number = 0
@@ -569,8 +564,8 @@ function initialize_system_arrays!(problem::Problem)
 
     Δx = zeros(systemOrder+nTrimVariables)
     residual = zeros(systemOrder)
-    jacobian = zeros(systemOrder,systemOrder+nTrimVariables)
-    inertia = zeros(systemOrder,systemOrder)
+    jacobian = spzeros(systemOrder,systemOrder+nTrimVariables)
+    inertia = spzeros(systemOrder,systemOrder)
 
     @pack! problem = Δx,residual,jacobian,inertia
 
@@ -732,6 +727,11 @@ function solve_steady!(problem::Problem)
         assemble_system_arrays!(problem)
         solve_linear_system!(problem)
         update_states!(problem)
+        if problem isa EigenProblem || (problem isa TrimProblem && problem.getInertiaMatrix)
+            for element in problem.model.elements
+                element_inertia!(problem,problem.model,element)
+            end
+        end
         save_load_factor_data!(problem,problem.σ,problem.x)
     else
         if typeof(systemSolver) == NewtonRaphson
@@ -758,9 +758,9 @@ function solve_eigen!(problem::Problem)
     #---------------------------------------------------------------------------
     # Solve eigenproblem to get eigenvectors and inverse of eigenvalues
     if problem.model.nTrimVariables > 0 || isapprox(det(jacobian),0)
-        inverseEigenvalues, eigenvectors = eigen(-pinv(jacobian)*inertia)
+        inverseEigenvalues, eigenvectors = eigen(-pinv(Matrix(jacobian))*inertia)
     else
-        inverseEigenvalues, eigenvectors = eigen(-jacobian\inertia)
+        inverseEigenvalues, eigenvectors = eigen(-jacobian\Matrix(inertia))
     end
     # Get eigenvalues
     eigenvalues = 1.0 ./ inverseEigenvalues 
@@ -787,7 +787,7 @@ function solve_eigen!(problem::Problem)
     ## Non-oscillatory (aerodynamic, divergence) modes
     #---------------------------------------------------------------------------
     # Get indices of non-oscillatory (zero frequency) modes
-    nonOscillatoryIndices = findall( x -> x == 0, imag(eigenvalues))
+    nonOscillatoryIndices = findall( x -> x == 0, frequencies)
     # Non-oscillatory dampings 
     dampingsNonOscillatory = real.(eigenvalues[nonOscillatoryIndices])
     # Non-oscillatory eigenvectors

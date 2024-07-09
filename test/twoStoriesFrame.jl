@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra, Plots, ColorSchemes, BenchmarkTools
 
 ## User inputs (problem definition)
 #-------------------------------------------------------------------------------
@@ -76,7 +76,7 @@ twoStoriesFrame = create_Model(name="twoStoriesFrame",beams=beams,BCs=clamps)
 
 # Create and solve eigenproblem
 problem = create_EigenProblem(model=twoStoriesFrame,nModes=4,getLinearSolution=true)
-solve!(problem)
+@time solve!(problem)
 
 # Get frequencies
 freqs = problem.frequenciesOscillatory

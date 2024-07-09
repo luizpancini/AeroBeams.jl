@@ -244,7 +244,7 @@ function solve_linear_system!(problem::Problem)
     #---------------------------------------------------------------------------
     # Trim problem
     if nTrimVariables > 0
-        Δx = -pinv(jacobian)*residual
+        Δx .= -pinv(Matrix(jacobian))*residual
     # Problem with relative rotation constraints    
     elseif nRotationConstraints > 0
         @unpack masterRotationConstraintsDOF,slaveRotationConstraintsDOF,rotationConstraintsValues = problem.model
@@ -253,18 +253,18 @@ function solve_linear_system!(problem::Problem)
         # Reset residuals from slave DOFs
         residual[slaveRotationConstraintsDOF] .= 0
         # Compute states increment array
-        ΔxReduced = -pinv(jacobianReduced)*residual
-        Δx = deepcopy(ΔxReduced)
+        ΔxReduced = -pinv(Matrix(jacobianReduced))*residual
+        Δx .= deepcopy(ΔxReduced)
         for i in eachindex(slaveRotationConstraintsDOF)
             insert!(Δx,slaveRotationConstraintsDOF[i],0)
         end
     # Regular problem    
     else
         try
-            Δx = -sparse(jacobian)\residual
+            Δx .= -jacobian\residual
         catch
             try
-                Δx = line_search(x,residual,jacobian)
+                Δx .= line_search(x,residual,jacobian)
             catch
                 return false
             end
@@ -272,8 +272,8 @@ function solve_linear_system!(problem::Problem)
     end
 
     # Update states array (apply relaxation factor on trim variables)
-    x[1:systemOrder] += Δx[1:systemOrder]
-    x[systemOrder+1:systemOrder+nTrimVariables] += ρ*Δx[systemOrder+1:systemOrder+nTrimVariables]
+    x[1:systemOrder] .+= Δx[1:systemOrder]
+    x[systemOrder+1:systemOrder+nTrimVariables] .+= ρ*Δx[systemOrder+1:systemOrder+nTrimVariables]
 
     # Set values of slave states in relative constraints  
     if nRotationConstraints > 0
