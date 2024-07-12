@@ -109,9 +109,12 @@ function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::Flap
         flapSiteID = round(Int,100*normFlapPos)
     end
 
-    # Update airfoil parameters with known flap position in the case of flap loads by table lookup
-    if typeof(flapLoadsSolver) == TableLookup && !isnothing(flapSiteID)
+    # Update airfoil and Theodorsen parameters with known flap position
+    if !isnothing(flapSiteID)
         airfoil = create_flapped_Airfoil(name=airfoil.name,flapSiteID=flapSiteID)
+        if typeof(flapLoadsSolver) == ThinAirfoilTheory
+            flapLoadsSolver.Th = TheodorsenFlapConstants(normSparPos,normFlapPos)
+        end
     end
 
     # Set TF for δ being user input

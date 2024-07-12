@@ -73,7 +73,7 @@ rRootElem = lRootElem+1
 
 # Unpack numerical solution
 t = dynamicProblem.timeVector
-rootAoA = [(dynamicProblem.flowVariablesOverTime[i][lRootElem].αₑ+dynamicProblem.flowVariablesOverTime[i][rRootElem].αₑ)/2 for i in 1:length(t)]
+rootAoA = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowAnglesAndRates.αₑ+dynamicProblem.aeroVariablesOverTime[i][rRootElem].flowAnglesAndRates.αₑ)/2 for i in 1:length(t)]
 Δu3 = [dynamicProblem.nodalStatesOverTime[i][lRootElem].u_n2[3] for i in 1:length(t)] .- dynamicProblem.nodalStatesOverTime[1][lRootElem].u_n2[3]
 
 # Plots

@@ -292,6 +292,7 @@ end
 - S2T::Number
 - Ta::Number
 - Tf::Number
+- Tg::Number
 - Tv::Number
 - Tv₂::Number
 - Vn₁::Number
@@ -302,7 +303,7 @@ end
 - ztd::Number
 - ztu::Number
 - zm::Number
-- λbWDiag::Matrix{Float64}
+- λbWMat::Matrix{Float64}
 """
 @with_kw mutable struct SeparatedFlowParameters
 
@@ -381,6 +382,7 @@ end
     S2T::Number
     Ta::Number
     Tf::Number
+    Tg::Number
     Tv::Number
     Tv₂::Number
     Vn₁::Number
@@ -391,7 +393,7 @@ end
     ztd::Number
     ztu::Number
     zm::Number
-    λbWDiag::Matrix{Float64}
+    λbWMat::Matrix{Float64}
     
     function SeparatedFlowParameters(name::String; Re::Number=0,Ma::Number=0,flapSiteID::Int64=100,U::Number=0,b::Number=0)
 
@@ -474,6 +476,7 @@ end
             S2TRng =  π/180*[0.97;  1.08;  1.47;  2.16;  1.00; 1.18; 1.50; 1.95]
             TaRng =         [3.66;  5.00;  5.97;  4.67;  3.05; 2.00; 2.66; 1.06]
             TfRng =         [3.02;  3.23;  3.00;  3.76;  3.00; 2.73; 2.80; 3.57]
+            TgRng =         5*TaRng
             TvRng =         [3.34;  4.10;  3.72;  4.37;  4.46; 4.35; 4.30; 4.70]
             Tv₂Rng =        [4.06;  4.50;  5.19;  4.64;  4.50; 4.50; 4.55; 6.25]
             VmRng =         [0.33;  0.35;  0.39;  0.37;  0.37; 0.37; 0.37; 0.37]
@@ -496,7 +499,7 @@ end
                 error("Unavailable flap site ID")
             end
             # Fixed parameters
-            λbWDiag = Diagonal([2.5; 0.8])
+            λbWMat = Diagonal([2.5; 0.8])
         elseif name in ["NACA0012-GU","NACA0015","NACA0015-s"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.078,min(0.155,Ma))
@@ -574,7 +577,8 @@ end
             S2MRng =         π/180*[0.61;    0.78;    0.60]
             S2TRng =         π/180*[0.60;    0.67;    0.68]
             TaRng =                  [5.69;    4.82;    5.42]    
-            TfRng =                  [3.14;    4.01;    3.64]    
+            TfRng =                  [3.14;    4.01;    3.64]
+            TgRng =             5*TaRng    
             TvRng =                  [4.28;    4.72;    4.18] 
             Tv₂Rng =                 [4.91;    4.19;    3.66]
             VmRng =                  [0.35;    0.36;    0.38]
@@ -597,7 +601,7 @@ end
                 error("Unavailable flap site ID")
             end
             # Fixed parameters
-            λbWDiag = Diagonal([2.5; 0.8])
+            λbWMat = Diagonal([2.5; 0.8])
         elseif name in ["NACA0018"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.062,min(0.15,Ma))
@@ -675,7 +679,8 @@ end
             S2MRng =         π/180*[6.47;   6.45;    6.49;    6.49]
             S2TRng =         π/180*[4.23;   5.41;    5.42;    5.56]
             TaRng =                  [4.12;   4.75;    3.68;    4.00]    
-            TfRng =                  [3.76;   3.50;    3.80;    3.91]    
+            TfRng =                  [3.76;   3.50;    3.80;    3.91]
+            TgRng =         5*TaRng    
             TvRng =                  [4.00;   3.93;    5.26;    4.94] 
             Tv₂Rng =                 [3.88;   4.50;    3.82;    3.66]
             VmRng =                  [0.40;   0.60;    0.51;    0.50]
@@ -698,7 +703,7 @@ end
                 error("Unavailable flap site ID")
             end
             # Fixed parameters
-            λbWDiag = Diagonal([1.0; 1.0])
+            λbWMat = Diagonal([1.0; 1.0])
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -776,7 +781,8 @@ end
             S2MRng =         π/180*[4.70;     4.70]
             S2TRng =         π/180*[4.74;     4.74]
             TaRng =                  [3.74;     3.74]    
-            TfRng =                  [3.75;     3.75]    
+            TfRng =                  [3.75;     3.75]
+            TgRng =         5*TaRng    
             TvRng =                  [4.99;     4.99] 
             Tv₂Rng =                 [4.67;     4.67]
             VmRng =                  [0.43;     0.43]
@@ -799,7 +805,7 @@ end
                 error("Unavailable flap site ID")
             end
             # Fixed parameters
-            λbWDiag = Diagonal([1.0; 1.0])
+            λbWMat = Diagonal([1.0; 1.0])
         elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -877,7 +883,8 @@ end
             S2MRng =         π/180*[2.0;     2.0]
             S2TRng =         π/180*[2.0;     2.0]
             TaRng =                  [4.0;     4.0]    
-            TfRng =                  [3.0;     3.0]    
+            TfRng =                  [3.0;     3.0]
+            TgRng =         5*TaRng    
             TvRng =                  [4.0;     4.0] 
             Tv₂Rng =                 [4.0;     4.0]
             VmRng =                  [0.4;     0.4]
@@ -900,7 +907,7 @@ end
                 error("Unavailable flap site ID")
             end
             # Fixed parameters
-            λbWDiag = Diagonal([1.0; 1.0])
+            λbWMat = Diagonal([1.0; 1.0])
         else
             error("Airfoil not listed")
         end
@@ -981,6 +988,7 @@ end
         S2T = interpolate(MaRng,S2TRng,Ma)
         Ta = interpolate(MaRng,TaRng,Ma)
         Tf = interpolate(MaRng,TfRng,Ma)
+        Tg = interpolate(MaRng,TgRng,Ma)
         Tv = interpolate(MaRng,TvRng,Ma)
         Tv₂ = interpolate(MaRng,Tv₂Rng,Ma)
         Vn₁ = interpolate(MaRng,Vn₁Rng,Ma)
@@ -993,14 +1001,15 @@ end
         zm = interpolate(MaRng,zmRng,Ma)
 
         # Dimensionalize time delay constants
-        if U > 0
+        if U > 0 && b > 0
             Ta *= b/U
             Tf *= b/U
+            Tg *= b/U
             Tv *= b/U
             Tv₂ *= b/U
         end
 
-        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cdδ,cm₀,cmδ,cnα,cnδ,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,λbWDiag)
+        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cdδ,cm₀,cmδ,cnα,cnδ,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tg,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,λbWMat)
     end
 
 end
@@ -1026,7 +1035,7 @@ export Airfoil
 
 
 """
-create_Airfoil(;name::String,Re::Number=0,Ma::Number=0)
+create_Airfoil(;name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
 Initializes the airfoil with the predefined name 
 
@@ -1034,11 +1043,13 @@ Initializes the airfoil with the predefined name
 - name::String
 - Re::Number
 - Ma::Number
+- U::Number
+- b::Number
 """
-function create_Airfoil(;name::String,Re::Number=0,Ma::Number=0)
+function create_Airfoil(;name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
-    separatedFlowParameters = SeparatedFlowParameters(name,Re=Re,Ma=Ma)
+    separatedFlowParameters = SeparatedFlowParameters(name,Re=Re,Ma=Ma,U=U,b=b)
 
     return Airfoil(name,attachedFlowParameters,separatedFlowParameters)
 end
@@ -1055,11 +1066,13 @@ Initializes the airfoil with the predefined name and flap site ID
 - flapSiteID::Int64
 - Re::Number
 - Ma::Number
+- U::Number
+- b::Number
 """
-function create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0)
+function create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)
-    separatedFlowParameters = SeparatedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)
+    separatedFlowParameters = SeparatedFlowParameters(name,Re=Re,Ma=Ma,U=U,b=b,flapSiteID=flapSiteID)
     
     return Airfoil(name,attachedFlowParameters,separatedFlowParameters)
 end

@@ -111,6 +111,9 @@ function update_model!(model::Model)
     # Set atmosphere, if applicable
     set_atmosphere!(model)
 
+    # Update linked flap deflections
+    update_linked_flap_deflections!(model)
+
     # Update number of gust states 
     update_number_gust_states!(model) 
 
@@ -122,9 +125,6 @@ function update_model!(model::Model)
 
     # Update the global IDs of the elements with relative rotation constraints
     update_relative_rotation_constraint_elements_ids!(model)
-
-    # Update linked flap deflections
-    update_linked_flap_deflections!(model)
 
     # Set BCs on model 
     set_BCs!(model,BCs)
@@ -559,6 +559,79 @@ end
 
 
 """
+update_linked_flap_deflections!(model::Model)
+
+Updates the linked flap deflections for the slave beams
+
+# Arguments
+- model::Model
+"""
+function update_linked_flap_deflections!(model::Model)
+
+    @unpack flapLinks = model
+
+    # Loop flap links
+    for flapLink in flapLinks
+        @unpack masterBeam,slaveBeams,δMultipliers = flapLink
+        # Loop slave beams
+        for (i,slaveBeam) in enumerate(slaveBeams)
+            # Flapped elements of the beam
+            flappedElements = slaveBeam.elements[[element.aero.flapped for element in slaveBeam.elements]]
+            # Update TFs for flap deflection being null and for trim flap deflection 
+            [setfield!(element.aero, :δIsZero, false) for element in flappedElements]
+            [setfield!(element.aero, :δIsTrimVariable, masterBeam.elements[1].aero.δIsTrimVariable) for element in flappedElements]
+            # Loop flapped elements with flap states
+            for element in flappedElements
+                if isnothing(element.aero.flapStatesRange) && typeof(element.aero.flapLoadsSolver) in [ThinAirfoilTheory]
+                    @unpack solver,flapLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,airfoil,c,normSparPos = element.aero
+                    # Update aerodynamic states data
+                    nFlapStates = flapLoadsSolver.nStates
+                    flapStatesRange = nTotalAeroStates+1:nTotalAeroStates+nFlapStates
+                    nTotalAeroStates += nFlapStates
+                    append!(element.states.χ,zeros(nFlapStates))
+                    append!(element.statesRates.χdot,zeros(nFlapStates))
+                    append!(element.χdotEquiv,zeros(nFlapStates))
+                    # Resize arrays
+                    A = zeros(nTotalAeroStates,nTotalAeroStates)
+                    B = zeros(nTotalAeroStates)
+                    f1χ_χ = zeros(3,nTotalAeroStates)
+                    f2χ_χ = zeros(3,nTotalAeroStates)
+                    m1χ_χ = zeros(3,nTotalAeroStates)
+                    m2χ_χ = zeros(3,nTotalAeroStates)
+                    F_χ_V = zeros(nTotalAeroStates,3)
+                    F_χ_Ω = zeros(nTotalAeroStates,3)
+                    F_χ_χ = initial_F_χ_χ(solver,nTotalAeroStates)
+                    F_χ_Vdot = initial_F_χ_Vdot(solver,nTotalAeroStates,pitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
+                    F_χ_Ωdot = initial_F_χ_Ωdot(solver,nTotalAeroStates,pitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
+                    F_χ_χdot = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
+                    # Pack data
+                    @pack! element.aero = nTotalAeroStates,nFlapStates,flapStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot
+                end
+            end
+            # Get flap deflection and rates of elements equal to the values of the master beam times the slave's deflection multiplier
+            δSlave = t -> masterBeam.elements[1].aero.δ(t)*δMultipliers[i]
+            δdotSlave = t -> masterBeam.elements[1].aero.δdot(t)*δMultipliers[i]
+            δddotSlave = t -> masterBeam.elements[1].aero.δddot(t)*δMultipliers[i]
+            # Set flap deflection, its rates and deflection multipliers of the slave elements 
+            [setfield!(element.aero, :δ, δSlave) for element in flappedElements]
+            [setfield!(element.aero, :δdot, δdotSlave) for element in flappedElements]
+            [setfield!(element.aero, :δddot, δddotSlave) for element in flappedElements]
+            [setfield!(element.aero, :δNow, element.aero.δ(0)) for element in flappedElements]
+            [setfield!(element.aero, :δdotNow, element.aero.δdot(0)) for element in flappedElements]
+            [setfield!(element.aero, :δddotNow, element.aero.δddot(0)) for element in flappedElements]
+            [setfield!(element.aero, :δMultiplier, δMultipliers[i]) for element in flappedElements]
+        end
+        # Loop beams
+        for beam in vcat(masterBeam,slaveBeams...)
+            # Update flag
+            beam.aeroSurface.hasIndependentFlap = false
+        end
+    end
+
+end
+
+
+"""
 update_number_gust_states!(model::Model)
 
 Updates the number of gust states in every element with aerodynamic surface
@@ -578,14 +651,16 @@ function update_number_gust_states!(model::Model)
     # Loop over elements
     for element in elements
         @unpack aero = element
-        # Skip if element does not have aerodynamic surface
-        if isnothing(aero)
+        # Skip if element does not have aerodynamic surface, or if gust states have already been set
+        if isnothing(aero) || !isnothing(aero.gustStatesRange)
             continue
         end
         @unpack solver,gustLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,airfoil,c,normSparPos = aero
         # Update gust states range
-        nGustStates = gustLoadsSolver.nStates
+        nGustStates = typeof(solver) in [BLi] ? gustLoadsSolver.nStates+1 : gustLoadsSolver.nStates
         gustStatesRange = nTotalAeroStates+1:nTotalAeroStates+nGustStates
+        linearGustStatesRange = typeof(solver) in [BLi] ? gustStatesRange[1:end-1] : gustStatesRange
+        nonlinearGustStatesRange = typeof(solver) in [BLi] ? (gustStatesRange[end]:gustStatesRange[end]) : nothing
         # Update number of total aerodynamic states
         nTotalAeroStates += nGustStates
         # Resize arrays
@@ -598,12 +673,20 @@ function update_number_gust_states!(model::Model)
         F_χ_V = zeros(nTotalAeroStates,3)
         F_χ_Ω = zeros(nTotalAeroStates,3)
         F_χ_χ = initial_F_χ_χ(solver,nTotalAeroStates)
-        F_χ_δ = zeros(nTotalAeroStates)
         F_χ_Vdot = initial_F_χ_Vdot(solver,nTotalAeroStates,pitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
         F_χ_Ωdot = initial_F_χ_Ωdot(solver,nTotalAeroStates,pitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
         F_χ_χdot = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
+        χ = zeros(nTotalAeroStates)
+        if typeof(solver) in [BLi]
+            χ[pitchPlungeStatesRange[4:6]] .= 1.0
+        end
+        χdot = zeros(nTotalAeroStates)
+        χdotEquiv = zeros(nTotalAeroStates)
         # Pack data
-        @pack! nTotalAeroStates,nGustStates,gustStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_δ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.aero
+        @pack! element.aero = nTotalAeroStates,nGustStates,gustStatesRange,linearGustStatesRange,nonlinearGustStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot
+        @pack! element.states = χ
+        @pack! element.statesRates = χdot
+        @pack! element = χdotEquiv
     end
 
 end
@@ -721,50 +804,6 @@ function update_relative_rotation_constraint_elements_ids!(model::Model)
             end
         end
         @pack! constraint = masterElementGlobalID,slaveElementGlobalID
-    end
-
-end
-
-
-"""
-update_linked_flap_deflections!(model::Model)
-
-Updates the linked flap deflections for the slave beams
-
-# Arguments
-- model::Model
-"""
-function update_linked_flap_deflections!(model::Model)
-
-    @unpack flapLinks = model
-
-    # Loop flap links
-    for flapLink in flapLinks
-        @unpack masterBeam,slaveBeams,δMultipliers = flapLink
-        # Loop slave beams
-        for (i,slaveBeam) in enumerate(slaveBeams)
-            # Flapped elements of the beam
-            flappedElements = slaveBeam.elements[[element.aero.flapped for element in slaveBeam.elements]]
-            # Update TF for trim flap deflection
-            [setfield!(element.aero, :δIsTrimVariable, masterBeam.elements[1].aero.δIsTrimVariable) for element in flappedElements]
-            # Get flap deflection and rates of elements equal to the values of the master beam times the slave's deflection multiplier
-            δSlave = t -> masterBeam.elements[1].aero.δ(t)*δMultipliers[i]
-            δdotSlave = t -> masterBeam.elements[1].aero.δdot(t)*δMultipliers[i]
-            δddotSlave = t -> masterBeam.elements[1].aero.δddot(t)*δMultipliers[i]
-            # Set flap deflection, its rates and deflection multipliers of the slave elements 
-            [setfield!(element.aero, :δ, δSlave) for element in flappedElements]
-            [setfield!(element.aero, :δdot, δdotSlave) for element in flappedElements]
-            [setfield!(element.aero, :δddot, δddotSlave) for element in flappedElements]
-            [setfield!(element.aero, :δNow, element.aero.δ(0)) for element in flappedElements]
-            [setfield!(element.aero, :δdotNow, element.aero.δdot(0)) for element in flappedElements]
-            [setfield!(element.aero, :δddotNow, element.aero.δddot(0)) for element in flappedElements]
-            [setfield!(element.aero, :δMultiplier, δMultipliers[i]) for element in flappedElements]
-        end
-        # Loop beams
-        for beam in vcat(masterBeam,slaveBeams...)
-            # Update flag
-            beam.aeroSurface.hasIndependentFlap = false
-        end
     end
 
 end

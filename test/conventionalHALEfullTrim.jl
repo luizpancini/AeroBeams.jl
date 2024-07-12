@@ -14,8 +14,13 @@ includeVS = true
 wingCd0 = 1e-2
 stabsCd0 = 1e-2
 
+# Discretization
+nElemWing = 20
+nElemTailBoom = 10
+nElemHorzStabilizer = 10
+
 # Model and its beams
-conventionalHALE,leftWing,rightWing,tailboom,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true)
+conventionalHALE,leftWing,rightWing,tailboom,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true)
 
 # Set NR system solver 
 relaxFactor = 0.5

@@ -9,7 +9,7 @@ Ma = 0.5
 U = Ma*atmosphere.a
 
 # Wing surface data
-airfoil = flatPlate
+airfoil = deepcopy(flatPlate)
 chord = 0.1
 normSparPos = 0.25
 normFlapPos = 0.75
@@ -56,10 +56,10 @@ solve!(problem)
 # Unpack numerical solution
 t = problem.timeVector
 tNorm = t/T
-cnMaster = [problem.flowVariablesOverTime[i][1].cn for i in 1:length(t)]
-cmMaster = [problem.flowVariablesOverTime[i][1].cm for i in 1:length(t)]
-cnSlave = [problem.flowVariablesOverTime[i][2].cn for i in 1:length(t)]
-cmSlave = [problem.flowVariablesOverTime[i][2].cm for i in 1:length(t)]
+cnMaster = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
+cmMaster = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cm for i in 1:length(t)]
+cnSlave = [problem.aeroVariablesOverTime[i][2].aeroCoefficients.cn for i in 1:length(t)]
+cmSlave = [problem.aeroVariablesOverTime[i][2].aeroCoefficients.cm for i in 1:length(t)]
 
 # Plots
 # ------------------------------------------------------------------------------
@@ -69,7 +69,6 @@ labels = ["Master" "Slave"]
 # cn and cm vs time
 plt11 = plot(ylabel="\$c_n\$", xlims=[0,cycles])
 plot!(tNorm, [cnMaster, cnSlave], lw=lw, label=labels)
-display(plt1)
 plt12 = plot(xlabel="\$t/T\$", ylabel="\$c_m\$", xlims=[0,cycles])
 plot!(tNorm, [cmMaster, cmSlave], lw=lw, label=false)
 plt1 = plot(plt11,plt12, layout=(2,1))

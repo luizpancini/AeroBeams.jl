@@ -41,7 +41,7 @@ DSModelTest = create_Model(name="DSModelTest",beams=[wing],BCs=[driver,journal],
 # Set system solver options
 σ0 = 1.0
 maxIter = 20
-NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displayStatus=false,alwaysUpdateJacobian=false)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displayStatus=false,alwaysUpdateJacobian=true)
 
 # Time variables
 nCycles = 4
@@ -53,14 +53,16 @@ initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e
 
 # Create and solve dynamic problem
 problem = create_DynamicProblem(model=DSModelTest,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false,minΔt=Δt/2^2)
+# solve!(problem)
 @time solve!(problem)
+# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-α = [problem.flowVariablesOverTime[i][1].α for i in 1:length(t)]
-cn = [problem.flowVariablesOverTime[i][1].cn for i in 1:length(t)]
-cm = [problem.flowVariablesOverTime[i][1].cm for i in 1:length(t)]
-ct = [problem.flowVariablesOverTime[i][1].ct for i in 1:length(t)]
+α = [problem.aeroVariablesOverTime[i][1].flowAnglesAndRates.α for i in 1:length(t)]
+cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
+cm = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cm for i in 1:length(t)]
+ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
 cl = @. cn*cos(α) + ct*sin(α)
 cd = @. cn*sin(α) - ct*cos(α)
 Vdot₃ = [problem.elementalStatesRatesOverTime[i][1].Vdot[3] for i in 1:length(t)]
@@ -119,24 +121,25 @@ scatter!(cdRef[1,:], cdRef[2,:], color=:black, ms=ms, label="Exp. McAlister et a
 display(plt9)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_cda.pdf"))
 # Aero states at 3/4-span
-colors = get(colorschemes[:rainbow], LinRange(0, 1, 8))
-tqsχ_ = Array{Vector{Float64}}(undef,8)
-for i in 1:8
+nTotalAeroStates = problem.model.elements[1].aero.nTotalAeroStates
+colors = get(colorschemes[:rainbow], LinRange(0, 1, nTotalAeroStates))
+tqsχ_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
+for i in 1:nTotalAeroStates
     tqsχ_[i] = [tqsχ[tt][i] for tt in 1:length(t)]
 end
 plt6 = plot(xlabel="Time [s]", ylabel="")
-for i in 1:8
+for i in 1:nTotalAeroStates
     plot!(t, tqsχ_[i], c=colors[i], lw=lw, label="\$\\chi $(i)\$")
 end
 display(plt6)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_6.pdf"))
 # Aero states' rates at 3/4-span
-tqsχdot_ = Array{Vector{Float64}}(undef,8)
-for i in 1:8
+tqsχdot_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
+for i in 1:nTotalAeroStates
     tqsχdot_[i] = [tqsχdot[tt][i] for tt in 1:length(t)]
 end
 plt7 = plot(xlabel="Time [s]", ylabel="")
-for i in 1:8
+for i in 1:nTotalAeroStates
     plot!(t, tqsχdot_[i], c=colors[i], lw=lw, label="\$\\dot{\\chi} $(i)\$")
 end
 display(plt7)

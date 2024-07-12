@@ -39,8 +39,8 @@ damps = Array{Vector{Float64}}(undef,length(URange))
 μ = 1e-2
 ku = μ*[1; 1; 1]
 kp = ku
-spring1 = create_Spring(elementID=1,localNode=1,ku=ku,kp=kp)
-spring2 = create_Spring(elementID=3,localNode=2,ku=ku,kp=kp)
+spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
+spring2 = create_Spring(elementsIDs=[3],nodesSides=[2],ku=ku,kp=kp)
 
 # Sweep airspeed
 for (i,U) in enumerate(URange)
@@ -48,8 +48,8 @@ for (i,U) in enumerate(URange)
     # Model for trim problem
     BWBtrim = create_BWB(aeroSolver=aeroSolver,stiffnessFactor=λ,hasTipCorrection=hasTipCorrection,updateAirfoilParameters=updateAirfoilParameters,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
     # Add springs
-    add_springs_to_beam!(BWBtrim.beams[2],springs=[spring1])
-    add_springs_to_beam!(BWBtrim.beams[3],springs=[spring2])
+    add_springs_to_beam!(beam=BWBtrim.beams[2],springs=[spring1])
+    add_springs_to_beam!(beam=BWBtrim.beams[3],springs=[spring2])
     # Update model
     BWBtrim.skipValidationMotionBasisA = true
     update_model!(BWBtrim)
@@ -66,8 +66,8 @@ for (i,U) in enumerate(URange)
     # Model for eigen problem
     BWBeigen = create_BWB(aeroSolver=aeroSolver,stiffnessFactor=λ,hasTipCorrection=hasTipCorrection,updateAirfoilParameters=updateAirfoilParameters,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
     # Add springs
-    add_springs_to_beam!(BWBeigen.beams[2],springs=[spring1])
-    add_springs_to_beam!(BWBeigen.beams[3],springs=[spring2])
+    add_springs_to_beam!(beam=BWBeigen.beams[2],springs=[spring1])
+    add_springs_to_beam!(beam=BWBeigen.beams[3],springs=[spring2])
     # Update model
     BWBeigen.skipValidationMotionBasisA = true
     update_model!(BWBeigen)

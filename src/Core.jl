@@ -349,7 +349,7 @@ function gravitational_loads!(model::Model,element::Element,σ::Float64)
         f_g .= σ * Δℓ/2 * μ * R_AT * gravityVector
         m_g .= σ * RR0 * ηtilde * RR0T * f_g
     else
-        f_g,m_g .= zeros(3),zeros(3)
+        f_g,m_g = zeros(3),zeros(3)
     end
 
     @pack! element = f_g,m_g
@@ -594,7 +594,9 @@ function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ
     update_airfoil_parameters!(problem,element)
 
     # Local gust velocity
-    # local_gust_velocity!(model,element,timeNow)
+    if !isnothing(model.gust)
+        local_gust_velocity!(problem,model,element)
+    end
 
     # Flap deflection rates
     if !element.aero.δIsZero
@@ -1064,11 +1066,6 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     # Set input states for aero loads wrapper functions
     states = isempty(DOF_δ) ? vcat([V,Ω,χ]...) : vcat([V,Ω,χ,problem.x[DOF_δ]*δMultiplier]...)
 
-    # Save complementary variables of dynamic stall model
-    if typeof(element.aero.solver) in [BLi]
-        BLcompVars = deepcopy(element.aero.BLcompVars)
-    end
-
     # Get derivatives of aerodynamic loads and state matrices w.r.t. states
     if typeof(derivationMethod) == AD
         derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
@@ -1122,8 +1119,8 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     end
 
     # Reset complementary variables of dynamic stall model
-    if typeof(element.aero.solver) in [BLi]
-        element.aero.BLcompVars = BLcompVars
+    if typeof(derivationMethod) == AD
+        element.aero.BLcompVars = reset_dual_numbers(element.aero.BLcompVars)
     end
 
     @pack! element.aero = f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ
@@ -1182,8 +1179,8 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     end
 
     # Reset complementary variables of dynamic stall model
-    if typeof(element.aero.solver) in [BLi]
-        element.aero.BLcompVars = BLcompVars
+    if typeof(derivationMethod) == AD
+        element.aero.BLcompVars = reset_dual_numbers(element.aero.BLcompVars)
     end
 
     @pack! element.aero = f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot
@@ -2204,4 +2201,47 @@ function update_states!(problem::Problem)
         element_nodal_states!(element)
     end
 
+end
+
+
+"""
+reset_dual_numbers(obj)
+
+Resets dual numbers from the ForwardDiff package back into their values
+
+# Arguments
+- obj
+"""
+function reset_dual_numbers(obj)
+
+    # Loop fields of data structure
+    for field in fieldnames(typeof(obj))
+        value = getfield(obj, field)
+        if typeof(value) in [Airfoil,AttachedFlowParameters,SeparatedFlowParameters,FlowParameters,FlowAnglesAndRates,FlowVelocitiesAndRates,AeroCoefficients,BLStates,BLKinematics,BLFlow,BLComplementaryVariables]
+            setfield!(obj, field, reset_dual_numbers(value))
+        elseif (value isa ForwardDiff.Dual) || (value isa AbstractArray && length(value) > 0 && value[1] isa ForwardDiff.Dual)
+            setfield!(obj, field, convert_to_values(value))
+        end
+    end
+
+    return obj
+end
+
+
+"""
+convert_to_values(arr)
+
+Functional unit of reset_dual_numbers()
+
+# Arguments
+- arr
+"""
+function convert_to_values(arr)
+    if isa(arr, AbstractArray)
+        return map(convert_to_values, arr)
+    elseif isa(arr, ForwardDiff.Dual)
+        return ForwardDiff.value(arr)
+    else
+        return arr
+    end
 end

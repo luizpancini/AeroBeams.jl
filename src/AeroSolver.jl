@@ -67,7 +67,7 @@ function TheodorsenFlapConstants(normSparPos::Float64,normFlapPos::Float64)
     d = 2*normFlapPos-1
 
     # Theodorsen's constants
-    Th = zeros(13)
+    Th = zeros(18)
     Th[1] = -1/3*sqrt(1-d^2)*(2+d^2)+d*acos(d)
     Th[2] = d*(1-d^2)-sqrt(1-d^2)*(1+d^2)*acos(d)+d*acos(d)^2;
     Th[3] = -(1/8+d^2)*acos(d)^2+1/4*d*sqrt(1-d^2)*acos(d)*(7+2*d^2)-1/8*(1-d^2)*(5*d^2+4)
@@ -81,6 +81,13 @@ function TheodorsenFlapConstants(normSparPos::Float64,normFlapPos::Float64)
     Th[11] = acos(d)*(1-2*d)+sqrt(1-d^2)*(2-d)
     Th[12] = sqrt(1-d^2)*(2+d)-acos(d)*(2*d+1)
     Th[13] = 1/2*(-Th[7]-(d-a)*Th[1])
+
+    # Useful functions of the above
+    Th[14] = Th[4]+Th[10]
+    Th[15] = Th[1]-Th[8]-(normFlapPos-normSparPos)*Th[4]+Th[11]/2
+    Th[16] = Th[7]+Th[1]*(normFlapPos-normSparPos)
+    Th[17] = Th[11]/(2π)
+    Th[18] = Th[10]/π
 
     return Th
 
@@ -128,15 +135,15 @@ struct Indicial <: AeroSolver
     availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
     AW::Vector{Float64}
     bW::Vector{Float64}
-    bWDiag::Matrix{Float64}
+    bWMat::Matrix{Float64}
 
     function Indicial()
         nStates = 2
         availableDerivativesMethod = [AD,FD]
         AW = [0.165; 0.335]
         bW = [0.0455; 0.3]
-        bWDiag = diagm(bW)
-        return new(nStates,availableDerivativesMethod,AW,bW,bWDiag)
+        bWMat = diagm(bW)
+        return new(nStates,availableDerivativesMethod,AW,bW,bWMat)
     end
 
 end
@@ -160,15 +167,15 @@ struct BLi <: AeroSolver
     availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
     AW::Vector{Float64}
     bW::Vector{Float64}
-    bWDiag::Matrix{Float64}
+    bWMat::Matrix{Float64}
 
     function BLi()
         nStates = 8
         availableDerivativesMethod = [AD,FD]
         AW = [0.165; 0.335]
         bW = [0.0455; 0.3]
-        bWDiag = diagm(bW)
-        return new(nStates,availableDerivativesMethod,AW,bW,bWDiag)
+        bWMat = diagm(bW)
+        return new(nStates,availableDerivativesMethod,AW,bW,bWMat)
     end
 
 end
@@ -288,16 +295,16 @@ mutable struct ThinAirfoilTheory <: FlapAeroSolver
     nStates::Int64
     AWf::Vector{Float64}
     bWf::Vector{Float64}
-    bWfDiag::Matrix{Float64}
+    bWfMat::Matrix{Float64}
     Th::Vector{Float64} 
 
     function ThinAirfoilTheory()
         nStates = 2
         AWf = [0.165; 0.335]
         bWf = [0.0455; 0.3]
-        bWfDiag = diagm(bWf)
+        bWfMat = diagm(bWf)
         Th = TheodorsenFlapConstants(0.25,1.0)
-        return new(nStates,AWf,bWf,bWfDiag,Th)
+        return new(nStates,AWf,bWf,bWfMat,Th)
     end
 
 end
@@ -319,7 +326,7 @@ struct IndicialGust <: GustAeroSolver
     AG::Vector{Float64}
     bG::Vector{Float64}
     AGbG::Vector{Float64}
-    bGDiag::Matrix{Float64}
+    bGMat::Matrix{Float64}
 
     function IndicialGust(indicialFunctionName::String)
 
@@ -335,9 +342,9 @@ struct IndicialGust <: GustAeroSolver
             error("Indicial function unavailable")
         end
         AGbG = AG .* bG
-        bGDiag = diagm(bG)
+        bGMat = diagm(bG)
 
-        return new(indicialFunctionName,nStates,AG,bG,AGbG,bGDiag)
+        return new(indicialFunctionName,nStates,AG,bG,AGbG,bGMat)
     end
 
 end

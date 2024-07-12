@@ -49,8 +49,8 @@ solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-cn = [problem.flowVariablesOverTime[i][1].cn for i in 1:length(t)]
-cm = [problem.flowVariablesOverTime[i][1].cm for i in 1:length(t)]
+cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
+cm = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cm for i in 1:length(t)]
 
 # Load reference data by TIJDEMAN & SCHIPPERS (1973) and LEISHMAN (2006)
 cnExp = readdlm(string(pwd(),"/test/referenceData/flapOscillation/cnVsDeltaExp.txt"))

@@ -145,7 +145,7 @@ Defines the problem of steady type
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
-    flowVariablesOverσ::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
+    aeroVariablesOverσ::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
 
 end
 export SteadyProblem
@@ -225,7 +225,7 @@ Defines the problem of trim type
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
-    flowVariablesOverσ::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
+    aeroVariablesOverσ::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
 
 end
 export TrimProblem
@@ -308,7 +308,7 @@ Defines the problem of eigen type
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
-    flowVariablesOverσ::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
+    aeroVariablesOverσ::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
     # Frequencies, dampings and eigenvectors
     frequencies::Vector{Float64} = Vector{Float64}()
     dampings::Vector{Float64} = Vector{Float64}()
@@ -435,7 +435,7 @@ Defines the problem of dynamic type
     compElementalStatesOverTime::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
     elementalStatesRatesOverTime::Vector{Vector{ElementalStatesRates}} = Vector{Vector{ElementalStatesRates}}()
     compElementalStatesRatesOverTime::Vector{Vector{ComplementaryElementalStatesRates}} = Vector{Vector{ComplementaryElementalStatesRates}}()
-    flowVariablesOverTime::Vector{Vector{FlowVariables}} = Vector{Vector{FlowVariables}}()
+    aeroVariablesOverTime::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
 
 end
 export DynamicProblem
@@ -1631,7 +1631,7 @@ Saves the solution at the current time step
 """
 function save_time_step_data!(problem::Problem,timeNow::Number)
 
-    @unpack x,savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,flowVariablesOverTime,model = problem
+    @unpack x,savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,aeroVariablesOverTime,model = problem
     @unpack elements = model
 
     # Add current time
@@ -1675,17 +1675,17 @@ function save_time_step_data!(problem::Problem,timeNow::Number)
     end
     push!(compElementalStatesRatesOverTime,currentComplementaryElementalStatesRates)
 
-    # Add current flow variables
-    currentFlowVariables = Vector{FlowVariables}()
+    # Add current aerodynamic variables
+    currentAeroVariables = Vector{AeroVariables}()
     for element in elements
         # Skip elements without aero
         if isnothing(element.aero)
             continue
         end
-        push!(currentFlowVariables,FlowVariables(deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients)))
+        push!(currentAeroVariables,AeroVariables(deepcopy(element.aero.flowParameters),deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients),deepcopy(element.aero.BLkin),deepcopy(element.aero.BLflow)))
     end
-    push!(flowVariablesOverTime,currentFlowVariables)
+    push!(aeroVariablesOverTime,currentAeroVariables)
 
-    @pack! problem = savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,flowVariablesOverTime
+    @pack! problem = savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,aeroVariablesOverTime
 
 end

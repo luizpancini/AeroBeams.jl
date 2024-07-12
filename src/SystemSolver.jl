@@ -163,13 +163,12 @@ function solve_NewtonRaphson!(problem::Problem)
             # Update Jacobian matrix, if applicable
             if !alwaysUpdateJacobian 
                 problem.skipJacobianUpdate = false
-                aeroData = copy_aero_data(problem)
                 for element in problem.model.elements
                     distributed_loads_derivatives_rotation_parameters!(element)
                     aero_derivatives!(problem,problem.model,element)
                     element_jacobian!(problem,problem.model,element)
+                    element.aero = reset_dual_numbers(element.aero)
                 end
-                restore_aero_data!(problem,aeroData)
             end
             # Get inertia matrix in eigen and trim problems, if applicable
             if problem isa EigenProblem || (problem isa TrimProblem && problem.getInertiaMatrix)
@@ -368,7 +367,7 @@ Saves the solution at the current load factor
 function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
 
 
-    @unpack savedσ,xOverσ,elementalStatesOverσ,nodalStatesOverσ,compElementalStatesOverσ,flowVariablesOverσ = problem 
+    @unpack savedσ,xOverσ,elementalStatesOverσ,nodalStatesOverσ,compElementalStatesOverσ,aeroVariablesOverσ = problem 
     @unpack elements = problem.model   
 
     # Add current load factor
@@ -398,103 +397,17 @@ function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
     end
     push!(compElementalStatesOverσ,currentComplementaryElementalStates)
 
-    # Add current flow variables
-    currentFlowVariables = Vector{FlowVariables}()
+    # Add current aerodynamic variables
+    currentAeroVariables = Vector{AeroVariables}()
     for element in elements
         # Skip elements without aero
         if isnothing(element.aero)
             continue
         end
-        push!(currentFlowVariables,FlowVariables(deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients)))
+        push!(currentAeroVariables,AeroVariables(deepcopy(element.aero.flowParameters),deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients),deepcopy(element.aero.BLkin),deepcopy(element.aero.BLflow)))
     end
-    push!(flowVariablesOverσ,currentFlowVariables)
+    push!(aeroVariablesOverσ,currentAeroVariables)
 
-    @pack! problem = savedσ,xOverσ,elementalStatesOverσ,nodalStatesOverσ,compElementalStatesOverσ,flowVariablesOverσ
-
-end
-
-
-"""
-copy_aero_data(problem::Problem)
-
-Copies the aerodynamic data that can be transformed by the calculation of derivatives
-
-# Arguments
-- problem::Problem
-"""
-function copy_aero_data(problem::Problem)
-
-    # Initialize
-    @unpack nElementsTotal = problem.model
-    A = Array{Matrix{Float64}}(undef,nElementsTotal)
-    B = Array{Vector{Float64}}(undef,nElementsTotal)
-    Re = Array{Number}(undef,nElementsTotal)
-    Ma = Array{Number}(undef,nElementsTotal)
-    βₚ = Array{Number}(undef,nElementsTotal)
-    βₚ² = Array{Number}(undef,nElementsTotal)
-    flowAnglesAndRates = Array{FlowAnglesAndRates}(undef,nElementsTotal)
-    flowVelocitiesAndRates = Array{FlowVelocitiesAndRates}(undef,nElementsTotal)
-    aeroCoefficients = Array{AeroCoefficients}(undef,nElementsTotal)
-    F = Array{Vector{Float64}}(undef,nElementsTotal)
-    airfoil = Array{Airfoil}(undef,nElementsTotal)
-    BLkin = Array{BLKinematics}(undef,nElementsTotal)
-    BLflow = Array{BLFlow}(undef,nElementsTotal)
-
-    # Loop elements
-    for (e,element) in enumerate(problem.model.elements)
-        # Skip elements without aerodynamic surface
-        if isnothing(element.aero)
-            continue
-        end
-        A[e] = deepcopy(element.aero.A)
-        B[e] = deepcopy(element.aero.B)
-        Re[e] = deepcopy(element.aero.Re)
-        Ma[e] = deepcopy(element.aero.Ma)
-        βₚ[e] = deepcopy(element.aero.βₚ)
-        βₚ²[e] = deepcopy(element.aero.βₚ²)
-        flowAnglesAndRates[e] = deepcopy(element.aero.flowAnglesAndRates)
-        flowVelocitiesAndRates[e] = deepcopy(element.aero.flowVelocitiesAndRates)
-        aeroCoefficients[e] = deepcopy(element.aero.aeroCoefficients)
-        F[e] = deepcopy(element.aero.F)
-        airfoil[e] = deepcopy(element.aero.airfoil)
-        BLkin[e] = deepcopy(element.aero.BLkin)
-        BLflow[e] = deepcopy(element.aero.BLflow)
-    end
-
-    return (A,B,Re,Ma,βₚ,βₚ²,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,F,airfoil,BLkin,BLflow)
-end
-
-
-"""
-restore_aero_data!(problem::Problem,aeroData)
-
-Restores the aerodynamic data that can be transformed by the calculation of derivatives
-
-# Arguments
-- problem::Problem
-- aeroData
-"""
-function restore_aero_data!(problem::Problem,aeroData)
-
-    # Loop elements
-    for (e,element) in enumerate(problem.model.elements)
-        # Skip elements without aerodynamic surface
-        if isnothing(element.aero)
-            continue
-        end
-        element.aero.A = aeroData[1][e]
-        element.aero.B = aeroData[2][e]
-        element.aero.Re = aeroData[3][e]
-        element.aero.Ma = aeroData[4][e]
-        element.aero.βₚ = aeroData[5][e]
-        element.aero.βₚ² = aeroData[6][e]
-        element.aero.flowAnglesAndRates = aeroData[7][e]
-        element.aero.flowVelocitiesAndRates = aeroData[8][e]
-        element.aero.aeroCoefficients = aeroData[9][e]
-        element.aero.F = aeroData[10][e]
-        element.aero.airfoil = aeroData[11][e]
-        element.aero.BLkin = aeroData[12][e]
-        element.aero.BLflow = aeroData[13][e]
-    end
+    @pack! problem = savedσ,xOverσ,elementalStatesOverσ,nodalStatesOverσ,compElementalStatesOverσ,aeroVariablesOverσ
 
 end

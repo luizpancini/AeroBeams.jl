@@ -22,7 +22,7 @@ nElemHorzStabilizer = 10
 # System solver for trim problem
 relaxFactor = 0.5
 maxIter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=false)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=true)
 
 # Set number of vibration modes
 nModes = 15
@@ -39,7 +39,7 @@ freqs = Array{Vector{Float64}}(undef,length(URange))
 damps = Array{Vector{Float64}}(undef,length(URange))
 
 # Attachment springs
-μ = 1e-1
+μ = 1e1
 ku = μ*[1; 1; 1]
 kp = ku
 spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
@@ -61,7 +61,7 @@ for (i,U) in enumerate(URange)
     global trimProblem = create_TrimProblem(model=conventionalHALEtrim,systemSolver=NR,x0=x0Trim)
     solve!(trimProblem)
     # Extract trim variables
-    trimAoA[i] = trimProblem.flowVariablesOverσ[end][div(nElemWing,2)].αₑ
+    trimAoA[i] = trimProblem.aeroVariablesOverσ[end][div(nElemWing,2)].flowAnglesAndRates.αₑ
     trimThrust[i] = stabilizersAero ? trimProblem.x[end-1]*trimProblem.model.forceScaling : trimProblem.x[end]*trimProblem.model.forceScaling
     trimδ[i] = stabilizersAero ? trimProblem.x[end] : 0
     println("Trim AoA = $(trimAoA[i]*180/π), trim thrust = $(trimThrust[i]), trim δ = $(trimδ[i]*180/π)")

@@ -1,4 +1,35 @@
 """
+mutable struct FlowParameters
+
+    FlowParameters composite type
+
+# Fields
+- Re = Reynolds number
+- Ma = Mach number
+- βₚ = Prandtl-Glauert compressibility factor
+- βₚ² = Prandtl-Glauert compressibility factor squared
+"""
+mutable struct FlowParameters
+    
+    # Fields
+    Re
+    Ma
+    βₚ
+    βₚ²
+
+    # Constructor
+    function FlowParameters() 
+
+        Re = 0.0
+        Ma = 0.0
+        βₚ = 1.0 
+        βₚ² = 1.0
+
+        return new(Re,Ma,βₚ,βₚ²)
+    end
+end
+
+"""
 mutable struct FlowAnglesAndRates
 
     FlowAnglesAndRates composite type
@@ -165,69 +196,6 @@ mutable struct AeroCoefficients
     end
 end
 
-
-"""
-mutable struct FlowVariables
-
-    FlowVariables composite type
-
-# Fields
-- flowAnglesAndRates
-- flowVelocitiesAndRates
-- aeroCoefficients
-"""
-mutable struct FlowVariables
-    
-    # Fields
-    α
-    β
-    αdot
-    αₑ
-    U
-    U∞
-    Uₛ
-    Uₜ
-    Uₙ
-    Uᵢ
-    Ωₐ
-    UₙMid
-    UₙTQC
-    Udot
-    Uₜdot
-    Uₙdot
-    Uᵢdot
-    Ωₐdot
-    UₙdotMid
-    UₙdotTQC
-    UₜGust
-    UₙGust
-    cn 
-    cm 
-    ct 
-    cnC 
-    cnI 
-    cmC 
-    cmI 
-    cmRot
-    cnF
-    cmF
-    ctF
-    cnV
-    cmV
-    ctV
-
-    # Constructor
-    function FlowVariables(flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients)
-        
-        @unpack α,β,αdot,αₑ = flowAnglesAndRates
-        @unpack U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC,Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC,UₜGust,UₙGust = flowVelocitiesAndRates
-        @unpack cn,cm,ct,cnC,cnI,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV = aeroCoefficients
-
-        return new(α,β,αdot,αₑ,U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC,Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC,UₜGust,UₙGust,cn,cm,ct,cnC,cnI,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV)
-    end
-end
-
-
 """
 mutable struct BLStates
 
@@ -273,7 +241,6 @@ mutable struct BLKinematics
     
     # Fields
     r
-    q
     qR
     R
 
@@ -281,11 +248,10 @@ mutable struct BLKinematics
     function BLKinematics() 
 
         r = 0.0
-        q = 0.0
         qR = 0.0
         R = 0.0      
 
-        return new(r,q,qR,R)
+        return new(r,qR,R)
     end
 end
 
@@ -456,6 +422,36 @@ end
 
 
 """
+mutable struct AeroVariables
+
+    AeroVariables composite type
+
+# Fields
+- flowParameters::FlowParameters
+- flowAnglesAndRates::FlowAnglesAndRates
+- flowVelocitiesAndRates::FlowVelocitiesAndRates
+- aeroCoefficients::AeroCoefficients
+- BLkin::BLKinematics
+- BLflow::BLFlow
+"""
+mutable struct AeroVariables
+    
+    # Fields
+    flowParameters::FlowParameters
+    flowAnglesAndRates::FlowAnglesAndRates
+    flowVelocitiesAndRates::FlowVelocitiesAndRates
+    aeroCoefficients::AeroCoefficients
+    BLkin::BLKinematics
+    BLflow::BLFlow
+
+    # Constructor
+    function AeroVariables(flowParameters,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,BLkin,BLflow)
+        return new(flowParameters,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,BLkin,BLflow)
+    end
+end
+
+
+"""
 @with_kw mutable struct AeroProperties
 
     AeroProperties composite type
@@ -473,10 +469,13 @@ end
     nTotalAeroStates::Int64
     nFlapStates::Int64
     nGustStates::Int64
-    pitchPlungeStatesRange::UnitRange{Int64}
+    pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
+    linearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
+    nonlinearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
     flapStatesRange::Union{Nothing,UnitRange{Int64}}
     gustStatesRange::Union{Nothing,UnitRange{Int64}}
-    nonlinearStatesRange::Union{Nothing,UnitRange{Int64}}
+    linearGustStatesRange::Union{Nothing,UnitRange{Int64}}
+    nonlinearGustStatesRange::Union{Nothing,UnitRange{Int64}}
     # Aerodynamic derivatives calculation method
     derivationMethod::DerivationMethod
     # Geometry
@@ -514,10 +513,7 @@ end
     A = zeros(nTotalAeroStates,nTotalAeroStates)
     B = zeros(nTotalAeroStates)
     # Nondimensional flow parameters
-    Re = 0.0
-    Ma = 0.0
-    βₚ = 1.0 
-    βₚ² = 1.0
+    flowParameters = FlowParameters()
     # Flow angles and rates
     flowAnglesAndRates = FlowAnglesAndRates()
     # Flow velocities and rates
@@ -609,23 +605,17 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
     end
 
     # Total number of aerodynamic states (assume no gust states are active, update later upon model creation)
-    nGustStates = 0
+    nPitchPungeStates = solver.nStates
     nFlapStates = hasFlapStates ? flapLoadsSolver.nStates : 0
-    nTotalAeroStates = solver.nStates + nFlapStates + nGustStates
+    nGustStates = 0
+    nTotalAeroStates = nPitchPungeStates + nFlapStates + nGustStates
 
-    # Set aerodynamic states' ranges
-    if typeof(solver) in [QuasiSteady,Indicial,Inflow]
-        pitchPlungeStatesRange = 1:solver.nStates
-    elseif typeof(solver) == BLi
-        pitchPlungeStatesRange = 7:8
-    end
-    flapStatesRange = hasFlapStates ? (solver.nStates+1:solver.nStates+flapLoadsSolver.nStates) : nothing
-    gustStatesRange = nothing
-    if typeof(solver) == BLi
-        nonlinearStatesRange = 1:6
-    else 
-        nonlinearStatesRange = nothing
-    end
+    # Set aerodynamic states' ranges (assume no gust states are active, update later upon model creation)
+    pitchPlungeStatesRange = typeof(solver) in [QuasiSteady] ? nothing : 1:solver.nStates
+    linearPitchPlungeStatesRange = typeof(solver) in [BLi] ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange
+    nonlinearPitchPlungeStatesRange = typeof(solver) in [BLi] ? pitchPlungeStatesRange[3:8] : nothing
+    flapStatesRange = hasFlapStates ? (nPitchPungeStates+1:nPitchPungeStates+nFlapStates) : nothing
+    nonlinearGustStatesRange = linearGustStatesRange = gustStatesRange = nothing
 
     # Set aerodynamic derivatives calculation method
     derivationMethod = aeroSurface.derivationMethod
@@ -660,7 +650,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
         end
     end
 
-    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,nonlinearStatesRange=nonlinearStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection)
+    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,linearPitchPlungeStatesRange=linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange=nonlinearPitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,linearGustStatesRange=linearGustStatesRange,nonlinearGustStatesRange=nonlinearGustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection)
 end
 
 
@@ -689,23 +679,23 @@ end
 
 
 """
-initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::UnitRange{Int64},cnα::Number)
+initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},cnα::Number)
 
 Computes the initial value of F_χ_Vdot (for zero relative airspeed)
 
 # Arguments
 - solver::AeroSolver
 - nStates::Int64
-- pitchPlungeStatesRange::UnitRange{Int64}
+- pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
 - cnα::Number
 """
-function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::UnitRange{Int64},cnα::Number)
+function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},cnα::Number)
 
     F_χ_Vdot = zeros(nStates,3)
 
     # Calculate according to solver
     if typeof(solver) in [Indicial,BLi]
-        F_χ_Vdot[pitchPlungeStatesRange,3] = cnα*solver.AW
+        F_χ_Vdot[pitchPlungeStatesRange[1:2],3] = cnα*solver.AW
     elseif typeof(solver) == Inflow
         F_χ_Vdot[pitchPlungeStatesRange,3] = solver.AₚInvcₚ
     end
@@ -715,7 +705,7 @@ end
 
 
 """
-initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::UnitRange{Int64},c::Number,normSparPos::Float64,cnα::Number)
+initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},c::Number,normSparPos::Float64,cnα::Number)
 
 Computes the initial value of F_χ_Ωdot (for zero relative airspeed)
 
@@ -726,13 +716,13 @@ Computes the initial value of F_χ_Ωdot (for zero relative airspeed)
 - normSparPos::Float64
 - cnα::Number
 """
-function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::UnitRange{Int64},c::Number,normSparPos::Float64,cnα::Number)
+function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},c::Number,normSparPos::Float64,cnα::Number)
 
     F_χ_Ωdot = zeros(nStates,3)
 
     # Calculate according to solver
     if typeof(solver) in [Indicial,BLi]
-        F_χ_Ωdot[pitchPlungeStatesRange,1] = c*(normSparPos-3/4)*cnα*solver.AW
+        F_χ_Ωdot[pitchPlungeStatesRange[1:2],1] = c*(normSparPos-3/4)*cnα*solver.AW
     elseif typeof(solver) == Inflow
         F_χ_Ωdot[pitchPlungeStatesRange,1] = c*(normSparPos-3/4)*solver.AₚInvcₚ
     end

@@ -24,10 +24,10 @@ NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter,displayStatus
 μ = 1e-2
 ku = μ*[1; 1; 1]
 kp = ku
-spring1 = create_Spring(elementID=1,localNode=1,ku=ku,kp=kp)
-spring2 = create_Spring(elementID=3,localNode=2,ku=ku,kp=kp)
-add_springs_to_beam!(BWB.beams[2],springs=[spring1])
-add_springs_to_beam!(BWB.beams[3],springs=[spring2])
+spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
+spring2 = create_Spring(elementsIDs=[3],nodesSides=[2],ku=ku,kp=kp)
+add_springs_to_beam!(beam=BWB.beams[2],springs=[spring1])
+add_springs_to_beam!(beam=BWB.beams[3],springs=[spring2])
 
 # Set airspeed range and initialize outputs
 URange = collect(40:5:120)
