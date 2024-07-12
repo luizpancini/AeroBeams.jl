@@ -39,7 +39,7 @@ freqs = Array{Vector{Float64}}(undef,length(URange))
 damps = Array{Vector{Float64}}(undef,length(URange))
 
 # Attachment springs
-μ = 1e1
+μ = 1e-1
 ku = μ*[1; 1; 1]
 kp = ku
 spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
