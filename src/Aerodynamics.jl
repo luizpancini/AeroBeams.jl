@@ -504,13 +504,11 @@ function pitch_plunge_effective_normalwash(element::Element,χ)
     # Effective pitch-plunge-induced normalwash
     if typeof(solver) == QuasiSteady
         wₑp = UₙTQC
-    elseif typeof(solver) == Indicial
+    elseif typeof(solver) in [Indicial,BLi]
         wₑp = UₙTQC-sum(χ[linearPitchPlungeStatesRange])/cnα
     elseif typeof(solver) == Inflow
         @unpack bₚ = solver
-        wₑp = UₙTQC-1/2*dot(bₚ,χ[linearPitchPlungeStatesRange])
-    elseif typeof(solver) == BLi
-        wₑp = UₙTQC-sum(χ[linearPitchPlungeStatesRange])/cnα    
+        wₑp = UₙTQC-1/2*dot(bₚ,χ[linearPitchPlungeStatesRange])   
     end
 
     return wₑp

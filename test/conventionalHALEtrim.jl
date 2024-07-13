@@ -1,5 +1,20 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
 
+# Aerodynamic solver
+aeroSolver = Indicial()
+
+# Option for stabilizers
+stabilizersAero = false
+includeVS = false
+
+# Parasite drag coefficients
+wingCd0 = stabsCd0 = 0
+
+# Discretization
+nElemWing = 20
+nElemTailBoom = 10
+nElemHorzStabilizer = 10
+
 # Wing precurvature
 k2 = 0.0
 
@@ -18,7 +33,7 @@ trim_u3 = Array{Vector{Float64}}(undef,length(λRange),length(URange))
 # Sweep stiffness factor
 for (i,λ) in enumerate(λRange)
     # Model
-    conventionalHALE,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=Inflow(),nElemWing=20,stiffnessFactor=λ,stabilizersAero=false,includeVS=false,k2=k2)
+    conventionalHALE,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,k2=k2)
     # plt = plot_undeformed_assembly(conventionalHALE,(0,0))
     # display(plt)
     # Get element ranges and nodal arclength positions of right wing
@@ -37,7 +52,7 @@ for (i,λ) in enumerate(λRange)
         global problem = create_TrimProblem(model=conventionalHALE,systemSolver=NR,x0=x0)
         solve!(problem)
         # Trim results
-        trimAoA[i,j] = problem.flowVariablesOverσ[end][rWGlobalElemRange[1]].αₑ*180/π
+        trimAoA[i,j] = problem.aeroVariablesOverσ[end][rWGlobalElemRange[1]].flowAnglesAndRates.αₑ*180/π
         trim_u1[i,j] = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[1],problem.nodalStatesOverσ[end][e].u_n2[1]) for e in rWGlobalElemRange]...)
         trim_u3[i,j] = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[3],problem.nodalStatesOverσ[end][e].u_n2[3]) for e in rWGlobalElemRange]...)
         println("AoA = $(trimAoA[i,j]) deg")

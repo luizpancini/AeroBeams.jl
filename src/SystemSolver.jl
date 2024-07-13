@@ -197,8 +197,8 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
     @unpack elements,specialNodes = model
     @pack! problem = x
 
-    # Reset Jacobian matrix (only for debugging purposes)
-    # problem.jacobian .= 0
+    # Reset Jacobian matrix
+    problem.jacobian .= 0
 
     # Update states of the elements first (for better convergence with relative rotation constraints)
     for element in elements
@@ -242,7 +242,7 @@ function solve_linear_system!(problem::Problem)
     # Solve the linear system according to problem type
     #---------------------------------------------------------------------------
     # Trim problem
-    if nTrimVariables > 0
+    if problem isa TrimProblem
         Δx .= -pinv(Matrix(jacobian))*residual
     # Problem with relative rotation constraints    
     elseif nRotationConstraints > 0

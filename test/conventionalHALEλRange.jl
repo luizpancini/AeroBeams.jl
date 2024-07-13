@@ -61,7 +61,7 @@ for (i,λ) in enumerate(λRange)
     global trimProblem = create_TrimProblem(model=conventionalHALEtrim,systemSolver=NR,x0=x0Trim)
     solve!(trimProblem)
     # Extract trim variables
-    trimAoA[i] = trimProblem.flowVariablesOverσ[end][div(nElemWing,2)].αₑ
+    trimAoA[i] = trimProblem.aeroVariablesOverσ[end][div(nElemWing,2)].flowAnglesAndRates.αₑ
     trimThrust[i] = stabilizersAero ? trimProblem.x[end-1]*trimProblem.model.forceScaling : trimProblem.x[end]*trimProblem.model.forceScaling
     trimδ[i] = stabilizersAero ? trimProblem.x[end] : 0
     println("Trim AoA = $(trimAoA[i]*180/π), trim thrust = $(trimThrust[i]), trim δ = $(trimδ[i]*180/π)")

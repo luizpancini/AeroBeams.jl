@@ -22,7 +22,7 @@ nElemHorzStabilizer = 10
 # System solver for trim problem
 relaxFactor = 0.5
 maxIter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=true)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=false)
 
 # Set number of vibration modes
 nModes = 15

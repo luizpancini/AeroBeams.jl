@@ -63,7 +63,7 @@ for (i,P) in enumerate(PRange)
     global trimProblem = create_TrimProblem(model=heliosTrim,systemSolver=NR,x0=x0Trim)
     solve!(trimProblem)
     # Extract trim variables
-    trimAoA = trimProblem.flowVariablesOverσ[end][midSpanElem].αₑ*180/π
+    trimAoA = trimProblem.aeroVariablesOverσ[end][midSpanElem].flowAnglesAndRates.αₑ*180/π
     trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
     trimδ = trimProblem.x[end]
     println("AoA = $(trimAoA), T = $(trimThrust), δ = $(trimδ*180/π)")

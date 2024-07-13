@@ -24,8 +24,9 @@ conventionalHALE,leftWing,rightWing,tailboom,_ = create_conventional_HALE(aeroSo
 
 # Set NR system solver 
 relaxFactor = 0.5
-displayStatus = false
-NR = create_NewtonRaphson(ρ=relaxFactor,displayStatus=displayStatus)
+displayStatus = true
+maxIter = 50
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=displayStatus)
 
 # Set airspeed range and initialize outputs
 URange = collect(20:1:35)
@@ -54,7 +55,7 @@ for (i,U) in enumerate(URange)
     global problem = create_TrimProblem(model=conventionalHALE,systemSolver=NR,x0=x0)
     solve!(problem)
     # Trim results
-    trimAoA[i] = problem.flowVariablesOverσ[end][rightWing.elementRange[1]].αₑ*180/π
+    trimAoA[i] = problem.aeroVariablesOverσ[end][rightWing.elementRange[1]].flowAnglesAndRates.αₑ*180/π
     trimThrust[i] = stabilizersAero ? problem.x[end-1]*problem.model.forceScaling : problem.x[end]*problem.model.forceScaling
     trimδ[i] = stabilizersAero ? problem.x[end]*180/π : 0
     println("AoA = $(trimAoA[i]), T = $(trimThrust[i]), δ = $(trimδ[i])")
