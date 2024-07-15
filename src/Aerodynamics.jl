@@ -141,8 +141,11 @@ function local_gust_velocity!(problem::Problem,model::Model,element::Element)
     # Gust defined over space    
     elseif !gust.isDefinedOverTime
         @unpack UGustInertial = gust
+        @unpack u_A = model
+        @unpack r = element
+        @unpack u = element.states
         # Get current position of element's midpoint, resolved in the inertial basis
-        r⁰ = model.u_A(timeNow) + R_A * (element.r + element.states.u)
+        r⁰ = u_A(timeNow) + R_A * (r + u)
         # Transform gust velocity vector from inertial basis to local deformed aerodynamic basis W
         UGust = (R*RwR0)'*R_AT * UGustInertial(r⁰,timeNow)
     end
