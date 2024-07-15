@@ -43,7 +43,7 @@ function create_SharpEdgedGust(; initialTime::Number=0,duration::Number=Inf,conv
     # Set vector of gust velocity (in the inertial frame) function over time
     UGustInertial = t -> RT*[0; convectiveVelocity; ifelse(initialTime<t<finalTime, verticalVelocity, 0)]
 
-    return OneMinusCosine(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
+    return SharpEdged(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
 
 end
 export create_SharpEdgedGust
