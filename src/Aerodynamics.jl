@@ -126,23 +126,29 @@ Computes the gust velocity in the local, deformed aerodynamic basis (basis W)
 function local_gust_velocity!(problem::Problem,model::Model,element::Element)
 
     @unpack timeNow = problem
-    @unpack R_AT,gust = model
+    @unpack R_A,R_AT,gust = model
     @unpack R = element
     @unpack RwR0 = element.aero
-    @unpack UₜGust,UₙGust = element.aero.flowVelocitiesAndRates
 
-    # Reset gust velocity components
-    UₜGust,UₙGust = 0,0
+    # Reset gust velocity vector
+    UGust = zeros(3)
 
     # Gust defined over time
     if gust.isDefinedOverTime && (gust.initialTime <= timeNow <= gust.finalTime)
         @unpack UGustInertial = gust
         # Transform gust velocity vector from inertial basis to local deformed aerodynamic basis W
         UGust = (R*RwR0)'*R_AT * UGustInertial(timeNow)
-        UₜGust,UₙGust = UGust[2],UGust[3]
-    # Gust defined on space    
+    # Gust defined over space    
     elseif !gust.isDefinedOverTime
+        @unpack UGustInertial = gust
+        # Get current position of element's midpoint, resolved in the inertial basis
+        r⁰ = model.u_A(timeNow) + R_A * (element.r + element.states.u)
+        # Transform gust velocity vector from inertial basis to local deformed aerodynamic basis W
+        UGust = (R*RwR0)'*R_AT * UGustInertial(r⁰,timeNow)
     end
+
+    # Set tangential and normal gust velocity components
+    UₜGust,UₙGust = UGust[2],UGust[3]
 
     @pack! element.aero.flowVelocitiesAndRates = UₜGust,UₙGust
 
@@ -800,17 +806,18 @@ function BL_nonlinear_states!(element::Element,χ)
 
     @unpack nonlinearPitchPlungeStatesRange,nonlinearGustStatesRange = element.aero
     @unpack Uₜ,UₜGust = element.aero.flowVelocitiesAndRates
+    @unpack f₀N,f₀M,f₀T = element.aero.airfoil.separatedFlowParameters
 
     if !isnothing(nonlinearGustStatesRange)
         αlag = abs(Uₜ+UₜGust) > 0 ? atan(-(χ[nonlinearPitchPlungeStatesRange[1]]+χ[nonlinearGustStatesRange[1]])/(Uₜ+UₜGust)) : 0.0
     else
         αlag = abs(Uₜ) > 0 ? atan(-χ[nonlinearPitchPlungeStatesRange[1]]/Uₜ) : 0.0
     end
-    f2primeN = χ[nonlinearPitchPlungeStatesRange[2]]
-    f2primeM = χ[nonlinearPitchPlungeStatesRange[3]]
-    f2primeT = χ[nonlinearPitchPlungeStatesRange[4]]
-    RD = χ[nonlinearPitchPlungeStatesRange[5]]
-    RD_stallOnsetRatio = χ[nonlinearPitchPlungeStatesRange[6]]
+    f2primeN = max(f₀N, χ[nonlinearPitchPlungeStatesRange[2]])
+    f2primeM = max(f₀M, χ[nonlinearPitchPlungeStatesRange[3]])
+    f2primeT = max(f₀T, χ[nonlinearPitchPlungeStatesRange[4]])
+    RD = max(0, χ[nonlinearPitchPlungeStatesRange[5]])
+    RD_stallOnsetRatio = max(0, χ[nonlinearPitchPlungeStatesRange[6]])
 
     @pack! element.aero.BLstates = αlag,f2primeN,f2primeM,f2primeT,RD,RD_stallOnsetRatio
 

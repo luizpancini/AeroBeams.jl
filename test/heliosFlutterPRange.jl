@@ -1,8 +1,8 @@
 using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 
 # Wing airfoil
-# wingAirfoil = NACA23012A
-wingAirfoil = HeliosWingAirfoil
+wingAirfoil = NACA23012A
+# wingAirfoil = HeliosWingAirfoil
 
 # Option for reduced chord
 reducedChord = false
@@ -17,7 +17,7 @@ payloadOnWing = false
 λ = 1
 
 # Aerodynamic solver
-aeroSolver = Indicial()
+aeroSolver = BLi()
 
 # Airspeed
 U = 40*0.3048
