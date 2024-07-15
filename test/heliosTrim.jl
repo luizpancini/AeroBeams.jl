@@ -47,7 +47,7 @@ for (i,λ) in enumerate(λRange)
         global problem = create_TrimProblem(model=helios,systemSolver=NR,x0=x0)
         solve!(problem)
         # Trim results
-        trimAoA[i,j] = problem.flowVariablesOverσ[end][midSpanElem].αₑ*180/π
+        trimAoA[i,j] = problem.aeroVariablesOverσ[end][midSpanElem].flowAnglesAndRates.αₑ*180/π
         trimThrust[i,j] = problem.x[end-1]*problem.model.forceScaling
         trimδ[i,j] = problem.x[end]*180/π
         println("AoA = $(trimAoA[i,j]), T = $(trimThrust[i,j]), δ = $(trimδ[i,j])")

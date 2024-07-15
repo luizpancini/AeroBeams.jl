@@ -25,7 +25,7 @@ NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter,displayStatus
 nModes = 8
 
 # Set airspeed range and initialize outputs
-URange = vcat(30:2:106, [107, 109], 110:2:160)
+URange = vcat(30:2:160)
 trimAoA = Array{Float64}(undef,length(URange))
 trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))
@@ -59,7 +59,7 @@ for (i,U) in enumerate(URange)
     global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR,x0=x0Trim)
     solve!(trimProblem)
     # Extract trim variables
-    trimAoA[i] = trimProblem.flowVariablesOverσ[end][BWBtrim.beams[3].elementRange[1]].αₑ
+    trimAoA[i] = trimProblem.aeroVariablesOverσ[end][BWBtrim.beams[3].elementRange[1]].flowAnglesAndRates.αₑ
     trimThrust[i] = trimProblem.x[end-1]*BWBtrim.forceScaling 
     trimδ[i] = trimProblem.x[end]
     println("Trim AoA = $(trimAoA[i]*180/π), trim thrust = $(trimThrust[i]), trim δ = $(trimδ[i]*180/π)")

@@ -16,7 +16,7 @@ BWB = create_BWB(aeroSolver=aeroSolver,stiffnessFactor=λ,δElevIsTrimVariable=t
 
 # Set NR system solver 
 relaxFactor = 0.5
-displayStatus = true
+displayStatus = false
 maxiter = 50
 NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter,displayStatus=displayStatus)
 
@@ -30,7 +30,7 @@ add_springs_to_beam!(beam=BWB.beams[2],springs=[spring1])
 add_springs_to_beam!(beam=BWB.beams[3],springs=[spring2])
 
 # Set airspeed range and initialize outputs
-URange = collect(40:5:120)
+URange = collect(30:5:160)
 trimAoA = Array{Float64}(undef,length(URange))
 trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))
@@ -47,7 +47,7 @@ for (i,U) in enumerate(URange)
     global problem = create_TrimProblem(model=BWB,systemSolver=NR,x0=x0)
     solve!(problem)
     # Trim results
-    trimAoA[i] = problem.flowVariablesOverσ[end][BWB.beams[3].elementRange[1]].αₑ*180/π
+    trimAoA[i] = problem.aeroVariablesOverσ[end][BWB.beams[3].elementRange[1]].flowAnglesAndRates.αₑ*180/π
     trimThrust[i] = problem.x[end-1]*problem.model.forceScaling 
     trimδ[i] = problem.x[end]*180/π 
     println("AoA = $(trimAoA[i]), T = $(trimThrust[i]), δ = $(trimδ[i])")
@@ -58,17 +58,17 @@ end
 lw = 2
 ms = 3
 # Trim root angle of attack vs airspeed
-plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=[40,120])
+plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=[URange[1],URange[end]])
 plot!(URange, trimAoA, c=:black, lw=lw, label=false)
 display(plt1)
 savefig(string(pwd(),"/test/outputs/figures/BWBtrim_AoA.pdf"))
 # Trim propeller force vs airspeed
-plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[40,120])
+plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[URange[1],URange[end]])
 plot!(URange, trimThrust, c=:black, lw=lw, label=false)
 display(plt2)
 savefig(string(pwd(),"/test/outputs/figures/BWBtrim_thrust.pdf"))
 # Trim elevator deflection vs airspeed
-plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Trim elevator deflection [deg]", xlims=[40,120])
+plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Trim elevator deflection [deg]", xlims=[URange[1],URange[end]])
 plot!(URange, trimδ, c=:black, lw=lw, label=false)
 display(plt3)
 savefig(string(pwd(),"/test/outputs/figures/BWBtrim_delta.pdf"))
