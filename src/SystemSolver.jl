@@ -197,8 +197,10 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
     @unpack elements,specialNodes = model
     @pack! problem = x
 
-    # Reset Jacobian matrix
-    problem.jacobian .= 0
+    # Reset Jacobian matrix, if applicable
+    if problem isa TrimProblem
+        problem.jacobian .= 0
+    end
 
     # Update states of the elements first (for better convergence with relative rotation constraints)
     for element in elements
@@ -253,7 +255,7 @@ function solve_linear_system!(problem::Problem)
         residual[slaveRotationConstraintsDOF] .= 0
         # Compute states increment array
         ΔxReduced = -pinv(Matrix(jacobianReduced))*residual
-        Δx .= deepcopy(ΔxReduced)
+        Δx = deepcopy(ΔxReduced)
         for i in eachindex(slaveRotationConstraintsDOF)
             insert!(Δx,slaveRotationConstraintsDOF[i],0)
         end

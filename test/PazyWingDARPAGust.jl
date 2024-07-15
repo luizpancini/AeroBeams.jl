@@ -24,7 +24,7 @@ wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,
 # Gust (defined such that it begins at time t0 and last for τ seconds)
 t0 = 0.5
 τ = 0.5
-Ug = -U*0/10
+Ug = -U*1/10
 gustLength = U*τ
 gustWidth = 2*L
 pg = [0;-π/2;0]

@@ -190,7 +190,7 @@ function element_states!(problem::Problem,model::Model,element::Element)
     p .= x[DOF_p]
     if !isnothing(rotationConstraint)
         @unpack DOF,masterElementGlobalID,value = rotationConstraint
-        p[DOF] .= model.elements[masterElementGlobalID].states.p[DOF] + value
+        p[DOF] = model.elements[masterElementGlobalID].states.p[DOF] + value
     end
     F .= x[DOF_F]*forceScaling
     M .= x[DOF_M]*forceScaling
