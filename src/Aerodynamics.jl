@@ -474,11 +474,10 @@ function attached_flow_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack cnC = element.aero.aeroCoefficients
-    @unpack cd₀,cdδ,cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack η,cd₀,cdδ,cnα = element.aero.airfoil.attachedFlowParameters
 
     # Circulatory component
-    ct = -cd₀/cos(αₑ) + cnα * sin(αₑ)^2
+    ct = -cd₀/cos(αₑ) + η * cnα * sin(αₑ)^2
     if flapped && typeof(flapLoadsSolver) == TableLookup
         ct -= cdδ*abs(δNow)/cos(αₑ)
     end

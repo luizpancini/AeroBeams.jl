@@ -83,9 +83,9 @@ for (i,λᵤ) in enumerate(λᵤRange)
     # Unpack numerical solution
     t[i] = problem.timeVector
     tNorm[i] = t[i]/T
-    αₑ[i] = [problem.flowVariablesOverTime[j][1].αₑ for j in 1:length(t[i])]
-    cn[i] = [problem.flowVariablesOverTime[j][1].cn for j in 1:length(t[i])]
-    cm[i] = [problem.flowVariablesOverTime[j][1].cm for j in 1:length(t[i])]
+    αₑ[i] = [problem.aeroVariablesOverTime[j][1].flowAnglesAndRates.αₑ for j in 1:length(t[i])]
+    cn[i] = [problem.aeroVariablesOverTime[j][1].aeroCoefficients.cn for j in 1:length(t[i])]
+    cm[i] = [problem.aeroVariablesOverTime[j][1].aeroCoefficients.cm for j in 1:length(t[i])]
     V2[i] = [problem.elementalStatesOverTime[j][1].V[2] for j in 1:length(t[i])]
     V3[i] = [problem.elementalStatesOverTime[j][1].V[3] for j in 1:length(t[i])]
     Ω1[i] = [problem.elementalStatesOverTime[j][1].Ω[1] for j in 1:length(t[i])]

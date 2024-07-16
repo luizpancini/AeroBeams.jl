@@ -7,6 +7,7 @@
 - α₀N::Number
 - ϵₙ::Number
 - ϵₘ::Number
+- η::Number
 - cd₀::Number
 - cdδ::Number
 - cm₀::Number
@@ -20,6 +21,7 @@
     α₀N::Number
     ϵₙ::Number
     ϵₘ::Number
+    η::Number
     cd₀::Number
     cdδ::Number
     cm₀::Number
@@ -40,6 +42,7 @@
             α₀NRng = π/180*[  0.0;   0.0]
             ϵₙRng =        [  0.7;   0.7]
             ϵₘRng =        [ 0.96;  0.96]
+            ηRng =         [ 0.95;  0.95]
             cd₀Rng =  1e-2*[  0.0;   0.0]
             cm₀Rng =  1e-3*[  0.0;   0.0]
             cmαRng =       [  0.0;   0.0]
@@ -64,6 +67,7 @@
             α₀NRng = π/180*[  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
             ϵₙRng =        [  0.7;   0.7;   0.7;   0.7;   0.7;  0.7;  0.7;  0.7]
             ϵₘRng =        [ 0.96;  0.96;  0.96;  0.96;  0.96; 0.96; 0.96; 0.96]
+            ηRng =         [ 0.95;  0.95;  0.95;  0.95;  0.95; 0.95; 0.95; 0.95]
             cd₀Rng =  1e-2*[  1.2;   1.2;   0.8;   0.5;   0.5;  0.5;  0.5;  0.5]
             cm₀Rng =  1e-3*[    0;   -14;    -5;    -5;    -5;   -5;   -5;   -5]
             cmαRng =       [  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
@@ -84,6 +88,7 @@
             α₀NRng = π/180*[  0.0;   0.0;   0.0;   0.0]
             ϵₙRng =        [  0.7;   0.7;   0.7;   0.7]
             ϵₘRng =        [ 0.96;  0.96;  0.96;  0.96]
+            ηRng =         [ 0.95;  0.95;  0.95;  0.95]
             cd₀Rng =  1e-2*[  1.0;   0.8;   0.5;   0.6] 
             cm₀Rng =  1e-3*[ -1.0;   2.0;   2.0;   1.0]
             cmαRng =       [  0.0;   0.0;   0.0;   0.0]
@@ -108,6 +113,7 @@
             α₀NRng = π/180*[    1.2;     1.2]
             ϵₙRng =        [    0.7;     0.7]
             ϵₘRng =        [   0.96;    0.96]
+            ηRng =         [   0.95;    0.95]
             cd₀Rng =  1e-2*[    0.3;     0.3] 
             cm₀Rng =  1e-2*[    5.0;     5.0]
             cmαRng =       [-0.0573; -0.0573]
@@ -131,6 +137,7 @@
             α₀NRng = π/180*[  0.0; 0.0]
             ϵₙRng =        [  1.0; 1.0]
             ϵₘRng =        [  1.0; 1.0]
+            ηRng =         [ 1.0; 1.0]
             cd₀Rng =  1e-2*[  1.0; 1.0]  
             cm₀Rng =  1e-2*[  2.5; 2.5]
             cmαRng =       [  0.0; 0.0]
@@ -154,6 +161,7 @@
             α₀NRng = π/180*[  0.0; 0.0]
             ϵₙRng =        [  1.0; 1.0]
             ϵₘRng =        [  1.0; 1.0]
+            ηRng =         [ 1.0; 1.0]
             cd₀Rng =  1e-2*[  2.0; 2.0]  
             cm₀Rng =  1e-3*[  0.0; 0.0]
             cmαRng =       [  0.0; 0.0]
@@ -174,6 +182,7 @@
             α₀NRng = π/180*[ 0.0; 0.0]
             ϵₙRng =        [ 1.0; 1.0]
             ϵₘRng =        [ 1.0; 1.0]
+            ηRng =         [ 1.0; 1.0]
             cd₀Rng =  1e-2*[ 1.0; 1.0]
             cm₀Rng =  1e-1*[ 1.0; 1.0]
             cmαRng =       [ 0.0; 0.0]
@@ -197,6 +206,7 @@
         α₀N = interpolate(MaRng,α₀NRng,Ma)
         ϵₙ  = interpolate(MaRng,ϵₙRng,Ma)
         ϵₘ  = interpolate(MaRng,ϵₘRng,Ma)
+        η   = interpolate(MaRng,ηRng,Ma)
         cd₀ = interpolate(MaRng,cd₀Rng,Ma)
         cdδ = interpolate(MaRng,cdδRng,Ma)
         cm₀ = interpolate(MaRng,cm₀Rng,Ma)
@@ -205,7 +215,7 @@
         cnα = interpolate(MaRng,cnαRng,Ma)
         cnδ = interpolate(MaRng,cnδRng,Ma)
 
-        return new(α₀N,ϵₙ,ϵₘ,cd₀,cdδ,cm₀,cmα,cmδ,cnα,cnδ)
+        return new(α₀N,ϵₙ,ϵₘ,η,cd₀,cdδ,cm₀,cmα,cmδ,cnα,cnδ)
     end
 
 end

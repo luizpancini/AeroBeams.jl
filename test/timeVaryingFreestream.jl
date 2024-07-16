@@ -64,8 +64,8 @@ for (i,λᵤ) in enumerate(λᵤRange)
     # Unpack numerical solution
     t[i] = problem.timeVector
     tNorm[i] = t[i]/T
-    cn[i] = [problem.flowVariablesOverTime[j][1].cn for j in 1:length(t[i])]
-    cm[i] = [problem.flowVariablesOverTime[j][1].cm for j in 1:length(t[i])]
+    cn[i] = [problem.aeroVariablesOverTime[j][1].aeroCoefficients.cn for j in 1:length(t[i])]
+    cm[i] = [problem.aeroVariablesOverTime[j][1].aeroCoefficients.cm for j in 1:length(t[i])]
     Vdot2[i] = [problem.elementalStatesRatesOverTime[j][1].Vdot[2] for j in 1:length(t[i])]
     Vdot3[i] = [problem.elementalStatesRatesOverTime[j][1].Vdot[3] for j in 1:length(t[i])]
     rangeLastCycle[i] = ceil(Int,(tf-T)/Δt):length(t[i])

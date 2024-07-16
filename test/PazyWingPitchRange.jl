@@ -26,6 +26,7 @@ NR = create_NewtonRaphson(displayStatus=displayStatus)
 θRange = [3;5;7]
 URange = collect(0:1:60)
 tip_OOP = Array{Float64}(undef,length(θRange),length(URange))
+tip_IP = Array{Float64}(undef,length(θRange),length(URange))
 tip_twist = Array{Float64}(undef,length(θRange),length(URange))
 tip_AoA = Array{Float64}(undef,length(θRange),length(URange))
 
@@ -53,6 +54,7 @@ for (i,θ) in enumerate(θRange)
         Δ = R*[0; 1; 0]
         tip_twist[i,j] = asind(Δ[3])
         tip_OOP[i,j] = -(problem.nodalStatesOverσ[end][nElem].u_n2[1] - chord*(1/2-normSparPos)*sind(tip_twist[i,j]))
+        tip_IP[i,j] = -problem.nodalStatesOverσ[end][nElem].u_n2[2]
         tip_AoA[i,j] = problem.model.elements[end].aero.flowAnglesAndRates.αₑ*180/π
     end
 end
@@ -79,20 +81,27 @@ for (i,θ) in enumerate(θRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipOOP.pdf"))
 # Tip twist vs. airspeed for root several pitch angles 
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[0,60])
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_twist[i,:], c=colors[i], lw=lw, label="θ = $θ deg")
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipTwist.pdf"))
 # Tip AoA vs. airspeed for root several pitch angles 
 plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip AoA [deg]", xlims=[0,60])
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_AoA[i,:], c=colors[i], lw=lw, label="θ = $θ deg")
 end
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_3.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipAoA.pdf"))
+# Tip in-plane displacement vs. airspeed for root several pitch angles 
+plt4 = plot(xlabel="Airspeed [m/s]", ylabel="Tip IP displacement [% semispan]", xlims=[0,60])
+for (i,θ) in enumerate(θRange)
+    plot!(URange, tip_IP[i,:]/L*100, c=colors[i], lw=lw, label="θ = $θ deg")
+end
+display(plt4)
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipIP.pdf"))
 
 println("Finished PazyWingPitchRange.jl")
