@@ -93,7 +93,7 @@ clamp1 = create_BC(name="clamp1",beam=wing,node=1,types=["u1A","u2A","u3A","p1A"
 clamp2 = create_BC(name="clamp2",beam=wing,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-gustTests = create_Model(name="gustTests",beams=[wing],BCs=[clamp1,clamp2],v_A=[0;U;0],gust=gust)
+OMCgustTests = create_Model(name="OMCgustTests",beams=[wing],BCs=[clamp1,clamp2],v_A=[0;U;0],gust=gust)
 
 # Set system solver options
 σ0 = 1.0
@@ -107,7 +107,7 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displa
 initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=true, relaxFactor=0.5, Δt=Δt/10)
 
 # Create and solve dynamic problem
-problem = create_DynamicProblem(model=gustTests,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false)
+problem = create_DynamicProblem(model=OMCgustTests,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false)
 solve!(problem)
 # @profview solve!(problem)
 # @time solve!(problem)
@@ -116,11 +116,12 @@ solve!(problem)
 t = problem.timeVector
 α = [problem.aeroVariablesOverTime[i][1].flowAnglesAndRates.αₑ for i in 1:length(t)]
 cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
+ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
 fN = [problem.aeroVariablesOverTime[i][1].BLflow.fN for i in 1:length(t)]
 fPrimeN = [problem.aeroVariablesOverTime[i][1].BLflow.fPrimeN for i in 1:length(t)]
 f2PrimeN = [problem.elementalStatesOverTime[i][1].χ[4] for i in 1:length(t)]
 r = [problem.aeroVariablesOverTime[i][1].BLkin.r for i in 1:length(t)]
-cl = cn .* cos(θ)
+cl = @. cn*cos(θ) + ct*sin(θ)
 
 # Load reference data
 if testCase == 1
@@ -153,6 +154,6 @@ plt2 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$")
 plot!((t[i:end].-t[i])*U/b, cl[i:end].-cl[i], color=:black, lw=lw, label="AeroBeams")
 scatter!(clRef[1,:], clRef[2,:], color=:black, ms=ms, label="Mallik & Raveh (2019)")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/gustTests_dcl.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/OMCgustTests_dcl.pdf"))
 
-println("Finished gustTests.jl")
+println("Finished OMCgustTests.jl")
