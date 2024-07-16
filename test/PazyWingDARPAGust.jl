@@ -29,7 +29,7 @@ gustLength = U*τ
 gustWidth = 2*L
 pg = [0;-π/2;0]
 c0 = [0; U*t0; 0]
-gust = create_DARPAGust(length=gustLength,width=gustWidth,verticalVelocity=Ug,c0=c0,p=pg)
+gust = create_SpaceGust(type="DARPA",length=gustLength,width=gustWidth,verticalVelocity=Ug,c0=c0,p=pg)
 
 # BCs
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

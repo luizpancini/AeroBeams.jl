@@ -111,11 +111,12 @@ export create_OneMinusCosineGust
 
 
 """
-@with_kw mutable struct DARPA <: Gust
+@with_kw mutable struct SpaceGust <: Gust
 
-    DARPA composite type
+    SpaceGust composite type
 
 # Fields
+- `type::String` = type of gust
 - `length::Number` = length of the gust (in longitudinal direction)
 - `width::Number` = width of the gust (in spanwise direction)
 - `convectiveVelocity::Number` = convective velocity of the gust (in longitudinal direction)
@@ -125,9 +126,10 @@ export create_OneMinusCosineGust
 - `isDefinedOverTime::Bool` = TF for being a gust defined over time (false)
 - `UGustInertial::Function` = inertial gust velocity vector, as a function of position
 """
-@with_kw mutable struct DARPA <: Gust
+@with_kw mutable struct SpaceGust <: Gust
 
     # Primary (necessary for gust creation)
+    type::String
     length::Number
     width::Number
     convectiveVelocity::Number
@@ -142,9 +144,10 @@ export create_OneMinusCosineGust
 end
 
 # Constructor
-function create_DARPAGust(; length::Number,width::Number,convectiveVelocity::Number=0,verticalVelocity::Number,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3))
+function create_SpaceGust(; type::String,length::Number,width::Number,convectiveVelocity::Number=0,verticalVelocity::Number,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3))
 
     # Validate
+    @assert type in ["SharpEdged","OneMinusCosine","DARPA"]
     @assert length > 0
     @assert width > 0
     @assert size(c0) == (3,)
@@ -169,10 +172,19 @@ function create_DARPAGust(; length::Number,width::Number,convectiveVelocity::Num
     # Vector transformation from inertial to gust basis
     I2g = x -> RT * x
     
-    # Set vector of gust velocity (in the inertial frame) as a function of position
-    UGustInertial(x,t) = ifelse(isInside(I2g(x),t), RT*[0; convectiveVelocity; -1/2*verticalVelocity*cos(2π*w(I2g(x)))*(1-cos(2π*l(I2g(x))))], zeros(3))
+    # Set "vertical" velocity function according to gust type
+    if type == "SharpEdged"
+        V = x -> verticalVelocity
+    elseif type == "OneMinusCosine"
+        V = x -> 1/2*verticalVelocity*(1-cos(2π*l(I2g(x))))
+    elseif type == "DARPA"
+        V = x -> -1/2*verticalVelocity*cos(2π*w(I2g(x)))*(1-cos(2π*l(I2g(x))))
+    end
 
-    return DARPA(length=length,width=width,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,c0=c0,p=p,UGustInertial=UGustInertial)
+    # Set vector of gust velocity (in the inertial frame) as a function of position and time
+    UGustInertial(x,t) = ifelse(isInside(I2g(x),t), RT*[0; convectiveVelocity; V(x)], zeros(3))
+
+    return SpaceGust(type=type,length=length,width=width,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,c0=c0,p=p,UGustInertial=UGustInertial)
 
 end
-export create_DARPAGust
+export create_SpaceGust
