@@ -1,4 +1,4 @@
-using Revise, Parameters, BenchmarkTools, SparseArrays, LinearAlgebra, Statistics, Plots, QuadGK, LinearInterpolations, ForwardDiff, ReverseDiff, FiniteDifferences, DelimitedFiles
+using Revise, Parameters, BenchmarkTools, SparseArrays, LinearAlgebra, Statistics, Plots, QuadGK, LinearInterpolations, ForwardDiff, FiniteDifferences, DelimitedFiles, Random, FFTW
 
 """
 const a1 = [1.0; 0.0; 0.0]
@@ -48,6 +48,20 @@ function round_off!(x,tol=eps())
     return x
 end
 export round_off!
+
+
+"""
+rms(x)
+
+Computes the root mean square
+
+# Arguments
+- x
+"""
+function rms(x)
+    return sqrt(mean(x .^ 2))
+end
+export rms
 
 
 """
@@ -1097,3 +1111,52 @@ function highest_in_rowcol(O::Matrix{<:Number})
 
     return v
 end
+
+
+"""
+get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number},diffTol::Float64=1e3*eps())
+
+Computes the FFT and PSD of signal y(t)
+
+# Arguments
+- `t::Vector{<:Number}` = time signal
+- `y::Vector{<:Number}` = quantity signal
+- `diffTol::Float64` = tolerance for time signal being equally spaced
+"""
+function get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number},diffTol::Float64=1e3*eps())
+    
+    @assert length(t) > 1
+    @assert maximum(abs.(diff(diff(t)))) < diffTol "t must be an evenly spaced vector"
+    @assert length(y) == length(t) "t and y must have the same length"
+
+    # Frequency vector
+    # --------------------------------------------------------------------------
+    # Duration of time vector
+    τ = t[end] - t[1]
+    # Time step
+    Δt = t[2] - t[1]
+    # Minimum detectable frequency [Hz]
+    fmin = 1/(τ+Δt)
+    # Maximum detectable frequency (Nyquist frequency) [Hz]
+    fmax = 1/(2*Δt)
+    # Frequency vector [Hz]
+    f = collect(0:fmin:fmax)
+
+    # FFT and PSD
+    # --------------------------------------------------------------------------
+    # Length of time vector
+    N = length(t)  
+    # FFT
+    yFFT = fft(y)
+    # Two-sided spectrum
+    ySP2 = abs.(yFFT/N)
+    # Single-sided spectrum
+    ySP1 = 2*ySP2[1:floor(Int,N/2)+1]
+    # PSD
+    yPSD = ySP1.^2 * τ/2
+    # Adjust single-sided spectrum after calculating the PSD (constant component does not get multiplied by 2)
+    ySP1[1] /= 2
+
+    return f,yFFT,yPSD
+end
+export get_FFT_and_PSD
