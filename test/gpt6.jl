@@ -1,22 +1,14 @@
-using SparseArrays, LinearAlgebra, BenchmarkTools, Arpack
+using LinearInterpolations
 
-N = 1000
-A::SparseMatrixCSC{Float64,Int64} = sprandn(N,N,0.5)
-B::SparseMatrixCSC{Float64,Int64} = sprandn(N,N,0.5)
-B2 = Matrix(B)
+# Define the grid points and values
+x = [1.0, 2.0, 3.0]
+y = [4.0, 5.0, 6.0]
+z = [1.0 2.0 3.0; 4.0 5.0 6.0; 7.0 8.0 9.0]
 
-function fun1(A,B)
-    return eigen(A\Matrix(B))
-end
+# Create the interpolation object
+interp_func = Interpolate((x,y), z)
 
-function fun2(A,B)
-    return eigen(A\B)
-end
-
-function fun3(A,B)
-    return eigen(A\Array(B))
-end
-
-@btime fun1(A,B)
-@btime fun2(A,B2)
-@btime fun3(A,B)
+# Use the interpolation function
+xi, yi = 2.5, 5.5
+zi = interp_func([xi, yi])
+println("Interpolated value at ($xi, $yi): $zi")

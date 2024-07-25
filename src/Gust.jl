@@ -1,9 +1,9 @@
 abstract type Gust end
 
 """
-@with_kw mutable struct SharpEdged <: Gust
+@with_kw mutable struct SharpEdgedGust <: Gust
 
-    SharpEdged composite type
+    SharpEdgedGust composite type
 
 # Fields
 - `initialTime::Number` = time when the gust begins
@@ -15,7 +15,7 @@ abstract type Gust end
 - `UGustInertial::Function` = inertial gust velocity vector, as a function of time
 - `finalTime::Number` = time when the gust ends
 """
-@with_kw mutable struct SharpEdged <: Gust
+@with_kw mutable struct SharpEdgedGust <: Gust
 
     # Primary (necessary for gust creation)
     initialTime::Number
@@ -47,18 +47,18 @@ function create_SharpEdgedGust(; initialTime::Number=0,duration::Number=Inf,conv
     finalTime = initialTime + duration
     
     # Set vector of gust velocity (in the inertial frame) function over time
-    UGustInertial = t -> ifelse(initialTime<t<finalTime, RT*[0; convectiveVelocity; verticalVelocity], zeros(3))
+    UGustInertial = t -> initialTime<t<finalTime ? RT*[0; convectiveVelocity; verticalVelocity] : zeros(3)
 
-    return SharpEdged(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
+    return SharpEdgedGust(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
 
 end
 export create_SharpEdgedGust
 
 
 """
-@with_kw mutable struct OneMinusCosine <: Gust
+@with_kw mutable struct OneMinusCosineGust <: Gust
 
-    OneMinusCosine composite type
+    OneMinusCosineGust composite type
 
 # Fields
 - `initialTime::Number` = time when the gust begins
@@ -70,7 +70,7 @@ export create_SharpEdgedGust
 - `UGustInertial::Function` = inertial gust velocity vector, as a function of time
 - `finalTime::Number` = time when the gust ends
 """
-@with_kw mutable struct OneMinusCosine <: Gust
+@with_kw mutable struct OneMinusCosineGust <: Gust
 
     # Primary (necessary for gust creation)
     initialTime::Number
@@ -102,18 +102,18 @@ function create_OneMinusCosineGust(; initialTime::Number=0,duration::Number,conv
     finalTime = initialTime + duration
     
     # Set vector of gust velocity (in the inertial frame) function over time
-    UGustInertial = t -> ifelse(initialTime<t<finalTime, RT*[0; convectiveVelocity; 1/2*verticalVelocity*(1-cos(2π*(t-initialTime)/duration))], zeros(3))
+    UGustInertial = t -> initialTime<t<finalTime ? RT*[0; convectiveVelocity; 1/2*verticalVelocity*(1-cos(2π*(t-initialTime)/duration))] : zeros(3)
 
-    return OneMinusCosine(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
+    return OneMinusCosineGust(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
 
 end
 export create_OneMinusCosineGust
 
 
 """
-@with_kw mutable struct OneDStochastic <: Gust
+@with_kw mutable struct Continuous1DGust <: Gust
 
-    OneDStochastic composite type
+    Continuous1DGust composite type
 
 # Fields
 - `spectrum::String` = spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
@@ -133,8 +133,9 @@ export create_OneMinusCosineGust
 - `isDefinedOverTime::Bool` = TF for being a gust defined over time (true)
 - `UGustInertial::Function` = inertial gust velocity vector, as a function of time
 - `finalTime::Number` = time when the gust ends
+- `V::Function` = "vertical" gust velocity as a function of time
 """
-@with_kw mutable struct OneDStochastic <: Gust
+@with_kw mutable struct Continuous1DGust <: Gust
 
     # Primary (necessary for gust creation)
     spectrum::String
@@ -161,7 +162,7 @@ export create_OneMinusCosineGust
 end
 
 # Constructor
-function create_OneDStochasticGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Number=0,duration::Number,generationDuration::Number=duration,L::Number=762,ωmin::Number=0,ωmax::Number=200π,Uref::Number,convectiveVelocity::Number=0,σ::Number,p::Vector{<:Number}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
+function create_Continuous1DGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Number=0,duration::Number,generationDuration::Number=duration,L::Number=762,ωmin::Number=0,ωmax::Number=200π,Uref::Number,convectiveVelocity::Number=0,σ::Number,p::Vector{<:Number}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
 
     # Validate
     @assert spectrum in ["vK","Dryden"]
@@ -241,18 +242,18 @@ function create_OneDStochasticGust(; spectrum::String="vK",generationMethod::Str
     finalTime = initialTime + duration
 
     # Set vector of gust velocity (in the inertial frame) function over time
-    UGustInertial = t -> ifelse(initialTime<t<finalTime, RT*[0; convectiveVelocity; V(t)], zeros(3))
+    UGustInertial = t -> initialTime<t<finalTime ? RT*[0; convectiveVelocity; V(t)] : zeros(3)
 
-    return OneDStochastic(spectrum=spectrum,generationMethod=generationMethod,initialTime=initialTime,duration=duration,generationDuration=generationDuration,L=L,ωmin=ωmin,ωmax=ωmax,Uref=Uref,convectiveVelocity=convectiveVelocity,σ=σ,p=p,seed=seed,plotPSD=plotPSD,finalTime=finalTime,UGustInertial=UGustInertial,V=V)
+    return Continuous1DGust(spectrum=spectrum,generationMethod=generationMethod,initialTime=initialTime,duration=duration,generationDuration=generationDuration,L=L,ωmin=ωmin,ωmax=ωmax,Uref=Uref,convectiveVelocity=convectiveVelocity,σ=σ,p=p,seed=seed,plotPSD=plotPSD,finalTime=finalTime,UGustInertial=UGustInertial,V=V)
 
 end
-export create_OneDStochasticGust
+export create_Continuous1DGust
 
 
 """
-@with_kw mutable struct SpaceGust <: Gust
+@with_kw mutable struct DiscreteSpaceGust <: Gust
 
-    SpaceGust composite type
+    DiscreteSpaceGust composite type
 
 # Fields
 - `type::String` = type of gust
@@ -265,7 +266,7 @@ export create_OneDStochasticGust
 - `isDefinedOverTime::Bool` = TF for being a gust defined over time (false)
 - `UGustInertial::Function` = inertial gust velocity vector, as a function of position
 """
-@with_kw mutable struct SpaceGust <: Gust
+@with_kw mutable struct DiscreteSpaceGust <: Gust
 
     # Primary (necessary for gust creation)
     type::String
@@ -283,7 +284,7 @@ export create_OneDStochasticGust
 end
 
 # Constructor
-function create_SpaceGust(; type::String,length::Number,width::Number,convectiveVelocity::Number=0,verticalVelocity::Number,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3))
+function create_DiscreteSpaceGust(; type::String,length::Number,width::Number,convectiveVelocity::Number=0,verticalVelocity::Number,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3))
 
     # Validate
     @assert type in ["SharpEdged","OneMinusCosine","DARPA"]
@@ -321,12 +322,12 @@ function create_SpaceGust(; type::String,length::Number,width::Number,convective
     end
 
     # Set vector of gust velocity (in the inertial frame) as a function of position and time
-    UGustInertial(x,t) = ifelse(isInside(I2g(x),t), RT*[0; convectiveVelocity; V(x)], zeros(3))
+    UGustInertial(x,t) = isInside(I2g(x),t) ? RT*[0; convectiveVelocity; V(x)] : zeros(3)
 
-    return SpaceGust(type=type,length=length,width=width,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,c0=c0,p=p,UGustInertial=UGustInertial)
+    return DiscreteSpaceGust(type=type,length=length,width=width,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,c0=c0,p=p,UGustInertial=UGustInertial)
 
 end
-export create_SpaceGust
+export create_DiscreteSpaceGust
 
 
 """
@@ -378,10 +379,287 @@ function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:
     # FFT of the gust velocity ("color" white noise with the power spectrum)
     VFFT = @. wnFFT * sqrt(Φ)
 
-    # Gust velocity in time domain (renormalized to have the exact input RMS)
+    # Gust velocity in time domain (re-scale to have the exact input RMS)
     # --------------------------------------------------------------------------
     V = real(ifft(VFFT))
     V = V*σ/rms(V)
 
     return V,f,Φ
 end
+
+
+"""
+@with_kw mutable struct Continuous1DSpaceGust <: Gust
+
+    Continuous1DSpaceGust composite type
+
+# Fields
+- `spectrum::String` = spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
+- `length::Number` = length of the gust (in longitudinal direction)
+- `N::Int64` = number of nodes for length discretization
+- `L::Number` = turbulence length scale
+- `σ::Number` = turbulence intensity (RMS) of "vertical" gust velocity component
+- `c0::Vector{<:Number}` = position vector of the front of the gust, resolved in the inertial basis
+- `p::Vector{<:Number}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `seed::Int64` = seed for random numbers generation (reproducibility)
+- `isDefinedOverTime::Bool` = TF for being a gust defined over time (false)
+- `UGustInertial::Function` = inertial gust velocity vector, as a function of position
+- `U::Function` = "longitudinal" gust velocity as a function of time
+- `V::Function` = "lateral" gust velocity as a function of time
+- `W::Function` = "vertical" gust velocity as a function of time
+"""
+@with_kw mutable struct Continuous1DSpaceGust <: Gust
+
+    # Primary (necessary for gust creation)
+    spectrum::String
+    length::Number
+    N::Int64
+    L::Number
+    σ::Number
+    c0::Vector{<:Number}
+    p::Vector{<:Number}
+    seed::Int64
+    
+    # Secondary (fixed or outputs of gust creation)
+    isDefinedOverTime::Bool = false
+    UGustInertial::Function
+    U::Function
+    V::Function
+    W::Function
+
+end
+
+# Constructor
+function create_Continuous1DSpaceGust(; spectrum::String,length::Number,N::Int64=1001,L::Number=762,σ::Number=1,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3),seed::Int64=123456)
+
+    # Validate
+    @assert spectrum in ["vK","Dryden"]
+    @assert length > 0
+    @assert N > 0
+    @assert L > 0
+    @assert size(c0) == (3,)
+    @assert size(p) == (3,)
+
+    # Rotation tensor from the inertial basis to the gust basis
+    R = rotation_tensor_E321(p)
+    RT = R'
+
+    # TF function for a position vector being inside the gust
+    isInside(x) = 0 <= x[2]-c0[2] <= length
+
+    # Vector transformation from inertial to gust basis
+    I2g = x -> RT * x
+
+    # Second (longitudinal) component of the above
+    I2g2 = x -> I2g(x)[2]
+
+    # Non-dimensional spatial frequency vector
+    LΩ = 2π*L/length * LinRange(0,div(N-1,2),N)
+
+    # 1D gust PSDs
+    if spectrum == "vK"
+        Φu = @. σ^2*2*L/π * 1 / ( 1+(1.339*LΩ)^2 )^(5/6)
+        Φv = @. σ^2*L/π * ( (1+8/3*(1.339*LΩ)^2) / (1+(1.339*LΩ)^2)^(11/6) )
+        Φw = Φv
+    elseif spectrum == "Dryden"
+        Φu = @. σ^2*2*L/π * 1 / (1+(LΩ)^2)^2
+        Φv = @. σ^2*L/π * ( (1+3*(LΩ)^2) / (1+(LΩ)^2)^2 )
+        Φw = Φv
+    end
+
+    # Set random seed
+    Random.seed!(seed)
+
+    # White noise signals
+    un = randn(N)
+    vn = randn(N)
+    wn = randn(N)
+
+    # Gust velocity components in the spatial frequency domain
+    Un = fft(un) .* sqrt.(Φu)
+    Vn = fft(vn) .* sqrt.(Φv)
+    Wn = fft(wn) .* sqrt.(Φw)
+
+    # Gust velocity components in the time domain
+    ug = real(ifft(Un))
+    vg = real(ifft(Vn))
+    wg = real(ifft(Wn))
+
+    # Re-scale
+    ug = ug*σ/rms(ug)
+    vg = vg*σ/rms(vg)
+    wg = wg*σ/rms(wg)
+
+    # Spatial coordinate 
+    X = c0[2] .+ LinRange(0,length,N)
+
+    # Mapping functions
+    itpU = Interpolate(X, ug)
+    itpV = Interpolate(X, vg)
+    itpW = Interpolate(X, wg)
+
+    # Gust velocity components as functions of spatial coordinate
+    U = x -> itpU(I2g2(x))
+    V = x -> itpV(I2g2(x))
+    W = x -> itpW(I2g2(x))
+
+    # Set vector of gust velocity (in the inertial frame) as a function of position
+    UGustInertial(x,t) = isInside(I2g(x)) ? RT*[U(x); V(x); W(x)] : zeros(3)
+
+    return Continuous1DSpaceGust(spectrum=spectrum,length=length,N=N,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
+
+end
+export create_Continuous1DSpaceGust
+
+
+"""
+@with_kw mutable struct Continuous2DSpaceGust <: Gust
+
+    ContinuousSpaceGust composite type
+
+# Fields
+- `spectrum::String` = spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
+- `length::Number` = length of the gust (in longitudinal direction)
+- `width::Number` = width of the gust (in lateral direction)
+- `Nx::Int64` = number of nodes for length discretization
+- `Ny::Int64` = number of nodes for width discretization
+- `L::Number` = turbulence length scale
+- `σ::Number` = turbulence intensity (RMS) of "vertical" gust velocity component
+- `c0::Vector{<:Number}` = position vector of the front of the gust, resolved in the inertial basis
+- `p::Vector{<:Number}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `seed::Int64` = seed for random numbers generation (reproducibility)
+- `isDefinedOverTime::Bool` = TF for being a gust defined over time (false)
+- `UGustInertial::Function` = inertial gust velocity vector, as a function of position
+- `U::Function` = "longitudinal" gust velocity as a function of time
+- `V::Function` = "lateral" gust velocity as a function of time
+- `W::Function` = "vertical" gust velocity as a function of time
+"""
+@with_kw mutable struct Continuous2DSpaceGust <: Gust
+
+    # Primary (necessary for gust creation)
+    spectrum::String
+    length::Number
+    width::Number
+    Nx::Int64
+    Ny::Int64
+    L::Number
+    σ::Number
+    c0::Vector{<:Number}
+    p::Vector{<:Number}
+    seed::Int64
+    
+    # Secondary (fixed or outputs of gust creation)
+    isDefinedOverTime::Bool = false
+    UGustInertial::Function
+    U::Function
+    V::Function
+    W::Function
+
+end
+
+# Constructor
+function create_Continuous2DSpaceGust(; spectrum::String,length::Number,width::Number,Nx::Int64=101,Ny::Int64=101,L::Number=762,σ::Number=1,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3),seed::Int64=123456)
+
+    # Validate
+    @assert spectrum in ["vK","Dryden"]
+    @assert length > 0
+    @assert width > 0
+    @assert Nx > 0
+    @assert Ny > 0
+    @assert L > 0
+    @assert size(c0) == (3,)
+    @assert size(p) == (3,)
+
+    # Rotation tensor from the inertial basis to the gust basis
+    R = rotation_tensor_E321(p)
+    RT = R'
+
+    # TF function for a position vector being inside the gust
+    isInside(x) = -width/2 <= x[1]-c0[1] <= width/2 && 0 <= x[2]-c0[2] <= length
+
+    # Vector transformation from inertial to gust basis
+    I2g = x -> RT * x
+
+    # Longitudinal and lateral components of the above
+    I2g12 = x -> I2g(x)[1:2]
+
+    # Constant
+    if spectrum == "vK"
+        a = 1.339
+    elseif spectrum == "Dryden"
+        a = 1
+    end
+
+    # Non-dimensional spatial frequency vectors
+    aLΩx = 2π*a*L/width * LinRange(0,div(Nx-1,2),Nx)
+    aLΩy = 2π*a*L/length * LinRange(0,div(Ny-1,2),Ny)
+
+    # 2D gust PSD matrices
+    if spectrum == "vK"
+        # Uncorrelated PSDs (Etkin - Dynamics of Atmospheric Flight)
+        Φuu = [(σ*a*L)^2/(6π)/(1+aLΩx[i]^2+aLΩy[j]^2)^(7/3) * (1+aLΩx[i]^2+11/3*aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
+        Φvv = [(σ*a*L)^2/(6π)/(1+aLΩx[i]^2+aLΩy[j]^2)^(7/3) * (1+11/3*aLΩx[i]^2+aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
+        Φww = [(σ*a*L)^2/(9π)/(1+aLΩx[i]^2+aLΩy[j]^2)^(7/3) * 4*(aLΩx[i]^2+aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
+    elseif spectrum == "Dryden"
+        # Correlated PSDs (Van Steveren [PhD thesis] - Analysis of Aircraft Responses to Atmospheric Turbulence)
+        Φuu = [π*σ^2/(1+aLΩx[i]^2+aLΩy[j]^2)^(5/2) * (1+aLΩx[i]^2+4*aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
+        Φuv = [π*σ^2/(1+aLΩx[i]^2+aLΩy[j]^2)^(5/2) * (-3*aLΩx[i]*aLΩy[j]/L) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
+        Φvv = [π*σ^2/(1+aLΩx[i]^2+aLΩy[j]^2)^(5/2) * (1+4*aLΩx[i]^2+aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
+        Φww = [π*σ^2/(1+aLΩx[i]^2+aLΩy[j]^2)^(5/2) * (3*(aLΩx[i]^2+aLΩy[j]^2)) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
+        # Transfer functions                                               
+        H11 = @. sqrt(Φuu)
+        H21 = @. Φuv/H11
+        H22 = @. sqrt(Φvv-Φuv^2/Φuu)
+        H33 = @. sqrt(Φww)
+    end
+
+    # Set random seed
+    Random.seed!(seed)
+
+    # White noise signals
+    un = randn(Nx,Ny)
+    vn = randn(Nx,Ny)
+    wn = randn(Nx,Ny)
+
+    # Gust velocity components in the spatial frequency domain
+    if spectrum == "vK"
+        Un = sqrt.(Φuu) .* fft(un)
+        Vn = sqrt.(Φvv) .* fft(vn)
+        Wn = sqrt.(Φww) .* fft(wn)
+    elseif spectrum == "Dryden"        
+        Un = H11 * fft(un)
+        Vn = H21 * fft(un) + H22 * fft(vn)
+        Wn = H33 * fft(wn)
+    end
+
+    # Gust velocity components in the time domain
+    ug = real(ifft(Un))
+    vg = real(ifft(Vn))
+    wg = real(ifft(Wn))
+
+    # Re-scale
+    ug = ug*σ/rms(ug)
+    vg = vg*σ/rms(vg)
+    wg = wg*σ/rms(wg)
+
+    # Spatial coordinates
+    X = c0[1] .+ LinRange(0,width,Nx)
+    Y = c0[2] .+ LinRange(0,length,Ny)
+
+    # Mapping functions
+    itpU = Interpolate((X,Y), ug)
+    itpV = Interpolate((X,Y), vg)
+    itpW = Interpolate((X,Y), wg)
+
+    # Gust velocity components as functions of spatial coordinate
+    U = x -> itpU(I2g12(x))
+    V = x -> itpV(I2g12(x))
+    W = x -> itpW(I2g12(x))
+
+    # Set vector of gust velocity (in the inertial frame) as a function of position
+    UGustInertial(x,t) = isInside(I2g(x)) ? RT*[U(x); V(x); W(x)] : zeros(3)
+
+    return Continuous2DSpaceGust(spectrum=spectrum,length=length,width=width,Nx=Nx,Ny=Ny,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
+
+end
+export create_Continuous2DSpaceGust

@@ -23,14 +23,12 @@ wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,
 
 # Gust (defined such that it begins at time t0 and lasts for τ seconds)
 spectrum = "vK"
-generationMethod = "whiteNoise"
 t0 = 0.5
 τ = 1.0
 σ = U/10
-generationDuration = 200
+c0 = [0;t0*U;0]
 pg = [0;-π/2;0]
-plotPSD = true
-gust = create_OneDStochasticGust(spectrum=spectrum,generationMethod=generationMethod,initialTime=t0,duration=τ,generationDuration=generationDuration,Uref=U,σ=σ,p=pg,plotPSD=plotPSD)
+gust = create_Continuous1DSpaceGust(spectrum=spectrum,length=τ*U,N=1001,σ=σ,c0=c0,p=pg)
 
 # BCs
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
@@ -40,7 +38,7 @@ surf.tipLossDecayFactor = Pazy_tip_loss_factor(θ*180/π,U)
 update_beam!(wing)
 
 # Model
-PazyWingStochasticGust = create_Model(name="PazyWingStochasticGust",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665],v_A=[0;U;0],gust=gust)
+PazyWingContinuous1DSpaceGust = create_Model(name="PazyWingContinuous1DSpaceGust",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665],v_A=[0;U;0],gust=gust)
 
 # Set system solver options
 σ0 = 1.0
@@ -55,7 +53,7 @@ tf = 5*t0 + τ
 initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=true, relaxFactor=0.5, Δt=Δt/10)
 
 # Create and solve dynamic problem
-problem = create_DynamicProblem(model=PazyWingStochasticGust,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false)
+problem = create_DynamicProblem(model=PazyWingContinuous1DSpaceGust,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false)
 solve!(problem)
 # @profview solve!(problem)
 # @time solve!(problem)
@@ -77,27 +75,27 @@ ms = 3
 plt1 = plot(xlabel="Time [s]", ylabel="Tip OOP disp. [% semispan]")
 plot!(t, tipOOP/L*100, color=:black, lw=lw, label=false)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingStochasticGust_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingContinuousSpaceGust_1.pdf"))
 # Tip AoA
 plt2 = plot(xlabel="Time [s]", ylabel="Tip angle of attack [deg]")
 plot!(t, tipAoA*180/π, color=:black, lw=lw, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingStochasticGust_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingContinuousSpaceGust_2.pdf"))
 # 3/4-span cn
 plt3 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_n\$")
 plot!(t, tqSpan_cn, color=:black, lw=lw, label=false)
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingStochasticGust_3.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingContinuousSpaceGust_3.pdf"))
 # 3/4-span cm
 plt4 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_m\$")
 plot!(t, tqSpan_cm, color=:black, lw=lw, label=false)
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingStochasticGust_4.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingContinuousSpaceGust_4.pdf"))
 # 3/4-span ct
 plt5 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_t\$")
 plot!(t, tqSpan_ct, color=:black, lw=lw, label=false)
 display(plt5)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingStochasticGust_5.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingContinuousSpaceGust_5.pdf"))
 # Aero states at 3/4-span
 nAeroStates = problem.model.elements[1].aero.nTotalAeroStates
 colors = get(colorschemes[:rainbow], LinRange(0, 1, nAeroStates))
@@ -110,12 +108,12 @@ for i in 1:nAeroStates
     plot!(t, tqsχ_[i], c=colors[i], lw=lw, label="\$\\chi $(i)\$")
 end
 display(plt6)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingStochasticGust_6.pdf"))
-# Gust velocity
-V = t-> ifelse(t0<t<t0+τ,gust.V.(t),0)
+savefig(string(pwd(),"/test/outputs/figures/PazyWingContinuousSpaceGust_6.pdf"))
+# "Vertical" gust velocity
+W = t -> t0<t<t0+τ ? gust.W([0; t*U; 0]) : 0
 plt7 = plot(xlabel="Time [s]", ylabel="Gust velocity [m/s]")
-plot!(t, V.(t), color=:black, lw=lw, label=false)
+plot!(t, W.(t), color=:black, lw=lw, label=false)
 display(plt7)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingStochasticGust_7.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingContinuousSpaceGust_7.pdf"))
 
-println("Finished PazyWingStochasticGust.jl")
+println("Finished PazyWingContinuous1DSpaceGust.jl")
