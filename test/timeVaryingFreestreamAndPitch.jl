@@ -19,9 +19,10 @@ surf = create_AeroSurface(solver=aeroSolver,airfoil=airfoil,c=chord,normSparPos=
 # Wing pitch and rates as functions of time
 kₚ = 0.2
 ωₚ = kₚ*U₀/(chord/2)
+τₚ = 2π/ωₚ
 θ₀ = 1*π/180
 Δθ = 1*π/180
-θ = t -> θ₀ + Δθ*sin.(ωₚ*t)
+θ = t -> @. θ₀ + Δθ*sin(ωₚ*t)*((t/τₚ)^10/(1+(t/τₚ)^10))
 p = t -> 4*tan(θ(t)/4)
 Δp = t -> p(t) - p(0)
 θdot = iszero(Δθ) ? t -> 0 : t -> ForwardDiff.derivative(θ,t)
@@ -72,7 +73,7 @@ for (i,λᵤ) in enumerate(λᵤRange)
     set_motion_basis_A!(model=timeVaryingFreestreamAndPitch,v_A=t->[0;U(t);0])
     # Time variables
     T = 2π/ωᵤ
-    cycles = 10
+    cycles = 20
     tf = cycles*T
     Δt = T/200
     # Initial velocities update options
