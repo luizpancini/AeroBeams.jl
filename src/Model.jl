@@ -657,10 +657,22 @@ function update_number_gust_states!(model::Model)
         end
         @unpack solver,gustLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,airfoil,c,normSparPos = aero
         # Update gust states range
-        nGustStates = typeof(solver) in [BLi] ? gustLoadsSolver.nStates+1 : gustLoadsSolver.nStates
+        if typeof(solver) in [BLi]
+            nGustStates = gustLoadsSolver.nStates+1
+        else
+            nGustStates = gustLoadsSolver.nStates
+        end
         gustStatesRange = nTotalAeroStates+1:nTotalAeroStates+nGustStates
-        linearGustStatesRange = typeof(solver) in [BLi] ? gustStatesRange[1:end-1] : gustStatesRange
-        nonlinearGustStatesRange = typeof(solver) in [BLi] ? (gustStatesRange[end]:gustStatesRange[end]) : nothing
+        if typeof(solver) in [BLi]
+            linearGustStatesRange = gustStatesRange[1:end-1]
+        else
+            linearGustStatesRange = gustStatesRange
+        end
+        if typeof(solver) in [BLi]
+            nonlinearGustStatesRange = (gustStatesRange[end]:gustStatesRange[end])
+        else
+            nonlinearGustStatesRange = nothing
+        end
         # Update number of total aerodynamic states
         nTotalAeroStates += nGustStates
         # Resize arrays

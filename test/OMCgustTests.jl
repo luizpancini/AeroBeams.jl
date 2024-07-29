@@ -117,10 +117,10 @@ t = problem.timeVector
 α = [problem.aeroVariablesOverTime[i][1].flowAnglesAndRates.αₑ for i in 1:length(t)]
 cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
 ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
-fN = [problem.aeroVariablesOverTime[i][1].BLflow.fN for i in 1:length(t)]
-fPrimeN = [problem.aeroVariablesOverTime[i][1].BLflow.fPrimeN for i in 1:length(t)]
+fN = [problem.aeroVariablesOverTime[i][1].BLiFlow.fN for i in 1:length(t)]
+fPrimeN = [problem.aeroVariablesOverTime[i][1].BLiFlow.fPrimeN for i in 1:length(t)]
 f2PrimeN = [problem.elementalStatesOverTime[i][1].χ[4] for i in 1:length(t)]
-r = [problem.aeroVariablesOverTime[i][1].BLkin.r for i in 1:length(t)]
+r = [problem.aeroVariablesOverTime[i][1].BLiKin.r for i in 1:length(t)]
 cl = @. cn*cos(θ) + ct*sin(θ)
 
 # Load reference data

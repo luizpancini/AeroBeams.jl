@@ -183,6 +183,51 @@ export BLi
 
 
 """
+struct BLo <: AeroSolver
+
+    Original Beddoes-Leishman AeroSolver composite type
+
+# Fields
+- nStates::Int64
+- availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
+- A::Vector{Float64}
+- b::Vector{Float64}
+- b12Mat::Matrix{Float64}
+- AW::Vector{Float64}
+- bW::Vector{Float64}
+- bWMat::Matrix{Float64}
+- A1b1A2b2::Vector{Float64}
+"""
+struct BLo <: AeroSolver
+
+    nStates::Int64
+    availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
+    a::Vector{Float64}
+    b::Vector{Float64}
+    b12Mat::Matrix{Float64}
+    AW::Vector{Float64}
+    bW::Vector{Float64}
+    bWMat::Matrix{Float64}
+    a1b1a2b2::Vector{Float64}
+
+    function BLo()
+        nStates = 13
+        availableDerivativesMethod = [AD,FD]
+        a = [0.3; 0.7; 1.5; -0.5]
+        b = [0.14; 0.53; 0.25; 0.1; 0.5]
+        bMat = diagm(b)
+        AW = [0.165; 0.335]
+        bW = [0.0455; 0.3]
+        bWMat = diagm(bW)
+        a1b1a2b2 = [a[1]*b[1]; a[2]*b[2]]
+        return new(nStates,availableDerivativesMethod,a,b,bMat,AW,bW,bWMat,a1b1a2b2)
+    end
+
+end
+export BLo
+
+
+"""
 struct Inflow <: AeroSolver
 
     Inflow AeroSolver composite type

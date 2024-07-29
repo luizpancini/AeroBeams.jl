@@ -8,6 +8,7 @@ mutable struct FlowParameters
 - Ma = Mach number
 - βₚ = Prandtl-Glauert compressibility factor
 - βₚ² = Prandtl-Glauert compressibility factor squared
+- Θ = Uᵢ/b*βₚ²
 """
 mutable struct FlowParameters
     
@@ -16,6 +17,7 @@ mutable struct FlowParameters
     Ma
     βₚ
     βₚ²
+    Θ
 
     # Constructor
     function FlowParameters() 
@@ -24,8 +26,9 @@ mutable struct FlowParameters
         Ma = 0.0
         βₚ = 1.0 
         βₚ² = 1.0
+        Θ = 0.0
 
-        return new(Re,Ma,βₚ,βₚ²)
+        return new(Re,Ma,βₚ,βₚ²,Θ)
     end
 end
 
@@ -85,6 +88,7 @@ mutable struct FlowVelocitiesAndRates
 - UₙdotTQC = = relative normal wind acceleration component at the airfoil's 3/4-chord
 - UₜGust = gust tangential velocity component
 - UₙGust = gust normal velocity component
+- wₑp = effective pitch-plunge-induced normal velocity component at the airfoil's 3/4-chord
 """
 mutable struct FlowVelocitiesAndRates
     
@@ -107,6 +111,7 @@ mutable struct FlowVelocitiesAndRates
     UₙdotTQC
     UₜGust
     UₙGust
+    wₑp
 
     # Constructor
     function FlowVelocitiesAndRates()
@@ -129,8 +134,9 @@ mutable struct FlowVelocitiesAndRates
         UₙdotTQC = 0.0
         UₜGust = 0.0
         UₙGust = 0.0 
+        wₑp = 0.0
 
-        return new(U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC,Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC,UₜGust,UₙGust)
+        return new(U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC,Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC,UₜGust,UₙGust,wₑp)
     end
 end
 
@@ -146,6 +152,7 @@ mutable struct AeroCoefficients
 - ct = tangential force coefficient
 - cnC = circulatory component of cn
 - cnI = inertial component of cn
+- cnP = potential flow component of cn
 - cmC = circulatory component of cm
 - cmI = inertial component of cm
 - cmRot = rotation-induced component of cm
@@ -163,7 +170,8 @@ mutable struct AeroCoefficients
     cm 
     ct 
     cnC 
-    cnI 
+    cnI
+    cnP 
     cmC 
     cmI 
     cmRot
@@ -182,6 +190,7 @@ mutable struct AeroCoefficients
         ct = 0.0
         cnC = 0.0
         cnI = 0.0
+        cnP = 0.0
         cmC = 0.0
         cmI = 0.0
         cmRot = 0.0
@@ -192,19 +201,20 @@ mutable struct AeroCoefficients
         cmV = 0.0
         ctV = 0.0
 
-        return new(cn,cm,ct,cnC,cnI,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV)
+        return new(cn,cm,ct,cnC,cnI,cnP,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV)
     end
 end
 
-"""
-mutable struct BLStates
 
-    BLStates composite type
+"""
+mutable struct BLiNamedStates
+
+    BLiNamedStates composite type
 
 # Fields
 - 
 """
-mutable struct BLStates
+mutable struct BLiNamedStates
     
     # Fields
     αlag 
@@ -215,7 +225,7 @@ mutable struct BLStates
     RD_stallOnsetRatio
 
     # Constructor
-    function BLStates() 
+    function BLiNamedStates() 
 
         αlag = 0.0
         f2primeN = 1.0
@@ -228,16 +238,48 @@ mutable struct BLStates
     end
 end
 
-
 """
-mutable struct BLKinematics
+mutable struct BLoNamedStates
 
-    BLKinematics composite type
+    BLoNamedStates composite type
 
 # Fields
 - 
 """
-mutable struct BLKinematics
+mutable struct BLoNamedStates
+    
+    # Fields
+    cnPprime
+    f2Prime
+    fPrimeM
+    cnVP
+    cnVN
+    cnV
+
+    # Constructor
+    function BLoNamedStates() 
+
+        cnPprime = 0.0
+        f2Prime = 1.0
+        fPrimeM = 1.0
+        cnVP = 0.0
+        cnVN = 0.0
+        cnV = 0.0     
+
+        return new(cnPprime,f2Prime,fPrimeM,cnVP,cnVN,cnV)
+    end
+end
+
+
+"""
+mutable struct BLiKinematics
+
+    BLiKinematics composite type
+
+# Fields
+- 
+"""
+mutable struct BLiKinematics
     
     # Fields
     r
@@ -245,7 +287,7 @@ mutable struct BLKinematics
     R
 
     # Constructor
-    function BLKinematics() 
+    function BLiKinematics() 
 
         r = 0.0
         qR = 0.0
@@ -257,14 +299,14 @@ end
 
 
 """
-mutable struct BLFlow
+mutable struct BLiFlowVariables
 
-    BLFlow composite type
+    BLiFlowVariables composite type
 
 # Fields
 - 
 """
-mutable struct BLFlow
+mutable struct BLiFlowVariables
     
     # Fields
     stallOnsetRatio
@@ -287,7 +329,7 @@ mutable struct BLFlow
     TfT
 
     # Constructor
-    function BLFlow() 
+    function BLiFlowVariables() 
 
         stallOnsetRatio = 0.0
         upstroke = false
@@ -314,9 +356,64 @@ end
 
 
 """
-mutable struct BLComplementaryVariables
+mutable struct BLoFlowVariables
 
-    BLComplementaryVariables composite type
+    BLoFlowVariables composite type
+
+# Fields
+- 
+"""
+mutable struct BLoFlowVariables
+    
+    # Fields
+    αlag
+    q
+    stallOnsetRatio
+    upstroke
+    α1
+    f
+    fPrime
+    Tf
+    Tv
+    Ka
+    Kq
+    KaM
+    KqM
+    Tᵢ
+    Kf
+    cvdotP
+    cvdotN
+
+    # Constructor
+    function BLoFlowVariables() 
+
+        αlag = 0.0
+        q = 0.0
+        stallOnsetRatio = 0.0
+        upstroke = false
+        α1 = 0.0
+        f = 1.0
+        fPrime = 1.0
+        Tf = 1.0
+        Tv = 1.0
+        Ka = 1.0
+        Kq = 1.0
+        KaM = 1.0
+        KqM = 1.0
+        Tᵢ = 1.0
+        Kf = 1.0
+        cvdotP = 0.0
+        cvdotN = 0.0
+
+        return new(αlag,q,stallOnsetRatio,upstroke,α1,f,fPrime,Tf,Tv,Ka,Kq,KaM,KqM,Tᵢ,Kf,cvdotP,cvdotN)
+    end
+end
+
+
+"""
+mutable struct BLiComplementaryVariables
+
+    BLiComplementaryVariables composite type
 
 # Fields
 - stallOnsetRatioPrev
@@ -348,7 +445,7 @@ mutable struct BLComplementaryVariables
 - upstroke_tv0N2
 - lastRD_tv0
 """
-mutable struct BLComplementaryVariables
+mutable struct BLiComplementaryVariables
     
     # Fields
     stallOnsetRatioPrev
@@ -383,7 +480,7 @@ mutable struct BLComplementaryVariables
     lastRD_tv0
 
     # Constructor
-    function BLComplementaryVariables() 
+    function BLiComplementaryVariables() 
 
         stallOnsetRatioPrev = 0.0
         αlagPrev = 0.0
@@ -422,6 +519,41 @@ end
 
 
 """
+mutable struct BLoComplementaryVariables
+
+    BLoComplementaryVariables composite type
+
+# Fields
+- stallOnsetRatioPrev
+- tv0P
+- tv0N
+- τvP
+- τvN
+"""
+mutable struct BLoComplementaryVariables
+    
+    # Fields
+    stallOnsetRatioPrev
+    tv0P
+    tv0N
+    τvP
+    τvN
+
+    # Constructor
+    function BLoComplementaryVariables() 
+
+        stallOnsetRatioPrev = 0.0
+        tv0P = -Inf64
+        tv0N = -Inf64
+        τvP = Inf64
+        τvN = Inf64
+
+        return new(stallOnsetRatioPrev,tv0P,tv0N,τvP,τvN)
+    end
+end
+
+
+"""
 mutable struct AeroVariables
 
     AeroVariables composite type
@@ -431,8 +563,9 @@ mutable struct AeroVariables
 - flowAnglesAndRates::FlowAnglesAndRates
 - flowVelocitiesAndRates::FlowVelocitiesAndRates
 - aeroCoefficients::AeroCoefficients
-- BLkin::BLKinematics
-- BLflow::BLFlow
+- BLiKin::BLiKinematics
+- BLiFlow::BLiFlowVariables
+- BLoFlow::BLoFlowVariables
 """
 mutable struct AeroVariables
     
@@ -441,12 +574,13 @@ mutable struct AeroVariables
     flowAnglesAndRates::FlowAnglesAndRates
     flowVelocitiesAndRates::FlowVelocitiesAndRates
     aeroCoefficients::AeroCoefficients
-    BLkin::BLKinematics
-    BLflow::BLFlow
+    BLiKin::BLiKinematics
+    BLiFlow::BLiFlowVariables
+    BLoFlow::BLoFlowVariables
 
     # Constructor
-    function AeroVariables(flowParameters,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,BLkin,BLflow)
-        return new(flowParameters,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,BLkin,BLflow)
+    function AeroVariables(flowParameters,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,BLiKin,BLiFlow,BLoFlow)
+        return new(flowParameters,flowAnglesAndRates,flowVelocitiesAndRates,aeroCoefficients,BLiKin,BLiFlow,BLoFlow)
     end
 end
 
@@ -521,13 +655,16 @@ end
     # Aerodynamic coefficients
     aeroCoefficients = AeroCoefficients()
     # States of BL models
-    BLstates = BLStates()
+    BLiStates = BLiNamedStates()
+    BLoStates = BLoNamedStates()
     # Flow kinematics of BL models
-    BLkin = BLKinematics()
+    BLiKin = BLiKinematics()
     # Flow variables of BL models
-    BLflow = BLFlow()
+    BLiFlow = BLiFlowVariables()
+    BLoFlow = BLoFlowVariables()
     # Complementary variables of BL models
-    BLcompVars = BLComplementaryVariables()
+    BLiCompVars = BLiComplementaryVariables()
+    BLoCompVars = BLoComplementaryVariables()
     # Nodal aerodynamic loads resultants array
     F = zeros(12)
     # Aerodynamic derivatives w.r.t. elemental states
@@ -612,8 +749,20 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,
 
     # Set aerodynamic states' ranges (assume no gust states are active, update later upon model creation)
     pitchPlungeStatesRange = typeof(solver) in [QuasiSteady] ? nothing : 1:solver.nStates
-    linearPitchPlungeStatesRange = typeof(solver) in [BLi] ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange
-    nonlinearPitchPlungeStatesRange = typeof(solver) in [BLi] ? pitchPlungeStatesRange[3:8] : nothing
+    if typeof(solver) == BLi
+        linearPitchPlungeStatesRange = pitchPlungeStatesRange[1:2] 
+    elseif typeof(solver) == BLo
+        linearPitchPlungeStatesRange = pitchPlungeStatesRange[1:8] 
+    else
+        linearPitchPlungeStatesRange = pitchPlungeStatesRange
+    end
+    if typeof(solver) == BLi
+        nonlinearPitchPlungeStatesRange = pitchPlungeStatesRange[3:8]
+    elseif typeof(solver) == BLo
+        nonlinearPitchPlungeStatesRange = pitchPlungeStatesRange[9:13]
+    else
+        nonlinearPitchPlungeStatesRange = nothing
+    end
     flapStatesRange = hasFlapStates ? (nPitchPungeStates+1:nPitchPungeStates+nFlapStates) : nothing
     nonlinearGustStatesRange = linearGustStatesRange = gustStatesRange = nothing
 
@@ -668,7 +817,7 @@ function initial_F_χ_χ(solver::AeroSolver,nStates::Int64)
     # Calculate according to solver
     if typeof(solver) == QuasiSteady
         ϵ = 0.0 
-    elseif typeof(solver) in [Indicial,BLi]  
+    elseif typeof(solver) in [Indicial,BLi,BLo]  
         ϵ = 1e-4
     elseif typeof(solver) == Inflow
         ϵ = 1.0
@@ -694,7 +843,7 @@ function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRa
     F_χ_Vdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) in [Indicial,BLi]
+    if typeof(solver) in [Indicial,BLi,BLo]
         F_χ_Vdot[pitchPlungeStatesRange[1:2],3] = cnα*solver.AW
     elseif typeof(solver) == Inflow
         F_χ_Vdot[pitchPlungeStatesRange,3] = solver.AₚInvcₚ
@@ -721,7 +870,7 @@ function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesR
     F_χ_Ωdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) in [Indicial,BLi]
+    if typeof(solver) in [Indicial,BLi,BLo]
         F_χ_Ωdot[pitchPlungeStatesRange[1:2],1] = c*(normSparPos-3/4)*cnα*solver.AW
     elseif typeof(solver) == Inflow
         F_χ_Ωdot[pitchPlungeStatesRange,1] = c*(normSparPos-3/4)*solver.AₚInvcₚ

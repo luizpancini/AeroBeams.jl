@@ -9,6 +9,7 @@ Ma = 0.5
 U = Ma*atmosphere.a
 
 # Wing surface data
+aeroSolver = Indicial()
 airfoil = flatPlate
 chord = 0.18
 normSparPos = 0.25
@@ -22,7 +23,7 @@ A = 2.5*π/180
 δ = t -> A*sin(ω*t)
 
 # Create wing surface
-surf = create_AeroSurface(airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan,δ=δ)
+surf = create_AeroSurface(solver=aeroSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan,δ=δ)
 
 # Wing beam
 L = 1

@@ -22,7 +22,7 @@ p = t -> 4*tan(θ(t)/4)
 pdot = t -> ForwardDiff.derivative(p,t)
 
 # Aerodynamic surface
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=deepcopy(NACA0012),c=2*b,normSparPos=0.25,updateAirfoilParameters=true)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=deepcopy(NACA0012),c=2*b,normSparPos=0.25,updateAirfoilParameters=false)
 
 # Wing
 L = 1.0
@@ -66,8 +66,8 @@ ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(
 cl = @. cn*cos(α) + ct*sin(α)
 cd = @. cn*sin(α) - ct*cos(α)
 Vdot₃ = [problem.elementalStatesRatesOverTime[i][1].Vdot[3] for i in 1:length(t)]
-tqsχ = [problem.elementalStatesOverTime[i][1].χ for i in 1:length(t)]
-tqsχdot = [problem.elementalStatesRatesOverTime[i][1].χdot for i in 1:length(t)]
+χ = [problem.elementalStatesOverTime[i][1].χ for i in 1:length(t)]
+χdot = [problem.elementalStatesRatesOverTime[i][1].χdot for i in 1:length(t)]
 
 # Load reference data from McAlister et al (frame 10022)
 clRef = readdlm(string(pwd(),"/test/referenceData/DSModelTest/cl.txt"))
@@ -79,7 +79,7 @@ cdRef = readdlm(string(pwd(),"/test/referenceData/DSModelTest/cd.txt"))
 lw = 2
 ms = 3
 # Pitch angle
-plt1 = plot(xlabel="Time [s]", ylabel="Pitch angle [deg]", ylims=[2,22])
+plt1 = plot(xlabel="Time [s]", ylabel="Pitch angle [deg]")
 plot!(t, α*180/π, color=:black, lw=lw, label=false)
 display(plt1)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_a.pdf"))
@@ -88,34 +88,34 @@ plt0 = plot(xlabel="Time [s]", ylabel="\$\\dot{V}_3\$ [m/s^2]")
 plot!(t, Vdot₃, color=:black, lw=lw, label=false)
 display(plt0)
 # cn vs time
-plt2 = plot(xlabel="Time [s]", ylabel="\$c_n\$", ylims=[0,2])
+plt2 = plot(xlabel="Time [s]", ylabel="\$c_n\$")
 plot!(t, cn, color=:black, lw=lw, label=false)
 display(plt2)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_cnt.pdf"))
 # cm vs time
-plt3 = plot(xlabel="Time [s]", ylabel="\$c_m\$", ylims=[-0.35,0.1])
+plt3 = plot(xlabel="Time [s]", ylabel="\$c_m\$")
 plot!(t, cm, color=:black, lw=lw, label=false)
 display(plt3)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_cmt.pdf"))
 # ct vs time
-plt4 = plot(xlabel="Time [s]", ylabel="\$c_t\$", ylims=[-0.1,0.35])
+plt4 = plot(xlabel="Time [s]", ylabel="\$c_t\$")
 plot!(t, ct, color=:black, lw=lw, label=false)
 display(plt4)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_ctt.pdf"))
 # cl vs α
-plt7 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_l\$", xlims=[2,22], ylims=[0,2])
+plt7 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_l\$")
 plot!(α*180/π, cl, color=:black, lw=lw, label="AeroBeams")
 scatter!(clRef[1,:], clRef[2,:], color=:black, ms=ms, label="Exp. McAlister et al (1982)")
 display(plt7)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_cla.pdf"))
 # cm vs α
-plt8 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_m\$", xlims=[2,22], ylims=[-0.35,0.1])
+plt8 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_m\$")
 plot!(α*180/π, cm, color=:black, lw=lw, label="AeroBeams")
 scatter!(cmRef[1,:], cmRef[2,:], color=:black, ms=ms, label="Exp. McAlister et al (1982)")
 display(plt8)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_cma.pdf"))
 # cd vs α
-plt9 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_d\$", xlims=[2,22], ylims=[-0.1,0.7])
+plt9 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_d\$")
 plot!(α*180/π, cd, color=:black, lw=lw, label="AeroBeams")
 scatter!(cdRef[1,:], cdRef[2,:], color=:black, ms=ms, label="Exp. McAlister et al (1982)")
 display(plt9)
@@ -123,24 +123,24 @@ savefig(string(pwd(),"/test/outputs/figures/DSModelTest_cda.pdf"))
 # Aero states at 3/4-span
 nTotalAeroStates = problem.model.elements[1].aero.nTotalAeroStates
 colors = get(colorschemes[:rainbow], LinRange(0, 1, nTotalAeroStates))
-tqsχ_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
+χ_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
 for i in 1:nTotalAeroStates
-    tqsχ_[i] = [tqsχ[tt][i] for tt in 1:length(t)]
+    χ_[i] = [χ[tt][i] for tt in 1:length(t)]
 end
 plt6 = plot(xlabel="Time [s]", ylabel="")
 for i in 1:nTotalAeroStates
-    plot!(t, tqsχ_[i], c=colors[i], lw=lw, label="\$\\chi $(i)\$")
+    plot!(t, χ_[i], c=colors[i], lw=lw, label="\$\\chi $(i)\$")
 end
 display(plt6)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_6.pdf"))
 # Aero states' rates at 3/4-span
-tqsχdot_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
+χdot_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
 for i in 1:nTotalAeroStates
-    tqsχdot_[i] = [tqsχdot[tt][i] for tt in 1:length(t)]
+    χdot_[i] = [χdot[tt][i] for tt in 1:length(t)]
 end
 plt7 = plot(xlabel="Time [s]", ylabel="")
 for i in 1:nTotalAeroStates
-    plot!(t, tqsχdot_[i], c=colors[i], lw=lw, label="\$\\dot{\\chi} $(i)\$")
+    plot!(t, χdot_[i], c=colors[i], lw=lw, label="\$\\dot{\\chi} $(i)\$")
 end
 display(plt7)
 savefig(string(pwd(),"/test/outputs/figures/DSModelTest_7.pdf"))

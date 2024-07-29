@@ -1120,7 +1120,8 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     # Reset complementary variables of dynamic stall model
     if typeof(derivationMethod) == AD
-        element.aero.BLcompVars = reset_dual_numbers(element.aero.BLcompVars)
+        element.aero.BLiCompVars = reset_dual_numbers(element.aero.BLiCompVars)
+        element.aero.BLoCompVars = reset_dual_numbers(element.aero.BLoCompVars)
     end
 
     @pack! element.aero = f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ
@@ -1180,7 +1181,8 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     # Reset complementary variables of dynamic stall model
     if typeof(derivationMethod) == AD
-        element.aero.BLcompVars = reset_dual_numbers(element.aero.BLcompVars)
+        element.aero.BLiCompVars = reset_dual_numbers(element.aero.BLiCompVars)
+        element.aero.BLoCompVars = reset_dual_numbers(element.aero.BLoCompVars)
     end
 
     @pack! element.aero = f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot
@@ -2217,7 +2219,7 @@ function reset_dual_numbers(obj)
     # Loop fields of data structure
     for field in fieldnames(typeof(obj))
         value = getfield(obj, field)
-        if typeof(value) in [Airfoil,AttachedFlowParameters,SeparatedFlowParameters,FlowParameters,FlowAnglesAndRates,FlowVelocitiesAndRates,AeroCoefficients,BLStates,BLKinematics,BLFlow,BLComplementaryVariables]
+        if typeof(value) in [Airfoil,AttachedFlowParameters,BLiParameters,BLoParameters,FlowParameters,FlowAnglesAndRates,FlowVelocitiesAndRates,AeroCoefficients,BLiNamedStates,BLoNamedStates,BLiKinematics,BLiFlowVariables,BLoFlowVariables,BLiComplementaryVariables,BLoComplementaryVariables]
             setfield!(obj, field, reset_dual_numbers(value))
         elseif (value isa ForwardDiff.Dual) || (value isa AbstractArray && length(value) > 0 && value[1] isa ForwardDiff.Dual)
             setfield!(obj, field, convert_to_values(value))

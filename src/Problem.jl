@@ -1418,15 +1418,15 @@ function copy_state(problem::Problem)
     elementStatesRates = [deepcopy(element.statesRates) for element in problem.model.elements]
     σ = deepcopy(problem.σ)
     x = deepcopy(problem.x)
-    elementBLcompVars = Vector{BLComplementaryVariables}(undef,problem.model.nElementsTotal)
+    elementBLiCompVars = Vector{BLiComplementaryVariables}(undef,problem.model.nElementsTotal)
     for (e,element) in enumerate(problem.model.elements)
         if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
             continue
         end
-        elementBLcompVars[e] = deepcopy(element.aero.BLcompVars)
+        elementBLiCompVars[e] = deepcopy(element.aero.BLiCompVars)
     end
     
-    return (elementStates,elementStatesRates,σ,x,elementBLcompVars)
+    return (elementStates,elementStatesRates,σ,x,elementBLiCompVars)
 end
 
 
@@ -1446,7 +1446,7 @@ function restore_state!(problem::Problem,stepInitState)
         if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
             continue
         end
-        element.aero.BLcompVars = stepInitState[5][e]
+        element.aero.BLiCompVars = stepInitState[5][e]
     end
     problem.σ = stepInitState[3]
     problem.x = stepInitState[4]
@@ -1548,16 +1548,21 @@ function update_BL_complementary_variables!(problem::Problem)
     # Loop elements
     for element in problem.model.elements
         # Skip elements without an aerodynamic surface with dynamic stall solver
-        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi,BLo])
             continue
         end
-        # Unpack variables
-        @unpack αlag = element.aero.BLstates
-        @unpack qR = element.aero.BLkin
-        @unpack upstroke,P,stallOnsetRatio = element.aero.BLflow
-        # Update and pack variables
+        # Unpack variables for BLi model
+        @unpack αlag = element.aero.BLiStates
+        @unpack qR = element.aero.BLiKin
+        @unpack upstroke,P,stallOnsetRatio = element.aero.BLiFlow
+        # Update and pack variables for BLi model
         stallOnsetRatioPrev,αlagPrev,qRPrev,PPrev,upstrokePrev = stallOnsetRatio,αlag,qR,P,upstroke
-        @pack! element.aero.BLcompVars = stallOnsetRatioPrev,αlagPrev,qRPrev,PPrev,upstrokePrev
+        @pack! element.aero.BLiCompVars = stallOnsetRatioPrev,αlagPrev,qRPrev,PPrev,upstrokePrev
+        # Unpack variables for BLo model
+        @unpack stallOnsetRatio = element.aero.BLoFlow
+        # Update and pack variables for BLo model
+        stallOnsetRatioPrev = stallOnsetRatio
+        @pack! element.aero.BLoCompVars = stallOnsetRatioPrev
     end
 
 end
@@ -1586,8 +1591,8 @@ function BL_stall_boundary(problem::Problem)
         # Set flag
         hasDSelements = true
         # Unpack variables
-        @unpack stallOnsetRatioPrev = element.aero.BLcompVars
-        @unpack stallOnsetRatio = element.aero.BLflow
+        @unpack stallOnsetRatioPrev = element.aero.BLiCompVars
+        @unpack stallOnsetRatio = element.aero.BLiFlow
         # Compute boundary
         boundary[e] = (abs(stallOnsetRatioPrev)-1) * (abs(stallOnsetRatio)-1)
     end
@@ -1682,7 +1687,7 @@ function save_time_step_data!(problem::Problem,timeNow::Number)
         if isnothing(element.aero)
             continue
         end
-        push!(currentAeroVariables,AeroVariables(deepcopy(element.aero.flowParameters),deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients),deepcopy(element.aero.BLkin),deepcopy(element.aero.BLflow)))
+        push!(currentAeroVariables,AeroVariables(deepcopy(element.aero.flowParameters),deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients),deepcopy(element.aero.BLiKin),deepcopy(element.aero.BLiFlow),deepcopy(element.aero.BLoFlow)))
     end
     push!(aeroVariablesOverTime,currentAeroVariables)
 

@@ -222,9 +222,9 @@ end
 
 
 """
-@with_kw mutable struct SeparatedFlowParameters
+@with_kw mutable struct BLiParameters
 
-    SeparatedFlowParameters composite type
+    BLiParameters composite type
 
 # Fields
 - α₀N::Number
@@ -315,7 +315,7 @@ end
 - zm::Number
 - λbWMat::Matrix{Float64}
 """
-@with_kw mutable struct SeparatedFlowParameters
+@with_kw mutable struct BLiParameters
 
     α₀N::Number
     αds₀::Number
@@ -405,7 +405,7 @@ end
     zm::Number
     λbWMat::Matrix{Float64}
     
-    function SeparatedFlowParameters(name::String; Re::Number=0,Ma::Number=0,flapSiteID::Int64=100,U::Number=0,b::Number=0)
+    function BLiParameters(name::String; Re::Number=0,Ma::Number=0,flapSiteID::Int64=100,U::Number=0,b::Number=0)
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["NACA0012"]
@@ -1026,6 +1026,197 @@ end
 
 
 """
+@with_kw mutable struct BLoParameters
+
+    BLoParameters composite type
+
+# Fields
+- α₀N::Number
+- α1₀::Number
+- δα::Number
+- ϵₙ::Number
+- ϵₘ::Number
+- η::Number
+- cd₀::Number
+- cdδ::Number
+- cm₀::Number
+- cmδ::Number
+- cn₁::Number
+- cnα::Number
+- cnδ::Number
+- Df::Number
+- E₀::Number
+- f₀::Number
+- fb::Number
+- K₀::Number
+- K₁::Number
+- K₂::Number
+- S1::Number
+- S2::Number
+- Tf₀::Number
+- Tp::Number
+- Tv₀::Number
+- TvL::Number
+"""
+@with_kw mutable struct BLoParameters
+
+    α₀N::Number
+    α1₀::Number
+    δα::Number
+    ϵₙ::Number
+    ϵₘ::Number
+    η::Number
+    cd₀::Number
+    cdδ::Number
+    cm₀::Number
+    cmδ::Number
+    cn₁::Number
+    cnα::Number
+    cnδ::Number
+    Df::Number
+    E₀::Number
+    f₀::Number
+    fb::Number
+    K₀::Number
+    K₁::Number
+    K₂::Number
+    S1::Number
+    S2::Number
+    Tf₀::Number
+    Tp::Number
+    Tv₀::Number
+    TvL::Number
+    
+    function BLoParameters(name::String; Re::Number=0,Ma::Number=0,flapSiteID::Int64=100,U::Number=0,b::Number=0)
+
+        # Airfoil parameters' tables (as functions of Mach)
+        if name in ["NACA0012"]
+            # Bound Mach and corresponding compressibility factor
+            Ma = max(0.035,min(0.8,Ma))
+            β = sqrt(1-Ma^2)
+            # Mach-dependent parameters
+            MaRng = [0.035; 0.072; 0.110; 0.185; 0.215; 0.25; 0.3; 0.4; 0.5; 0.6; 0.7; 0.75; 0.8]
+            α₀NRng = π/180*[-0.0; -0.0; -0.0; -0.0; -0.0; -0.0; -0.0; -0.0; -0.0; -0.0; -0.0; -0.0; -0.0]
+            α1₀Rng = π/180*[12.4; 13.8; 15.2; 16.3; 16.5; 16.0; 13.7; 12.5; 10.5; 8.5; 5.6; 3.5; 0.7]
+            δαRng = π/180*[2.0; 1.0; 2.5; 2.5; 2.5; 2.5; 0.5; 2.0; 1.45; 1.0; 0.8; 0.2; 0.1]
+            ϵₙRng = [0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70] 
+            ϵₘRng = [0.96; 0.96; 0.96; 0.96; 0.96; 0.96; 0.96; 0.96; 0.96; 0.96; 0.96; 0.96; 0.96]
+            cd₀Rng = [0.010; 0.010; 0.010; 0.010; 0.010; 0.010; 0.010; 0.008; 0.0077; 0.0078; 0.0078; 0.0079; 0.0114]
+            cm₀Rng = [-0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037; -0.0037]
+            ηRng = [0.95; 0.95; 0.95; 0.95; 0.95; 0.95; 0.95; 0.95; 0.95; 0.95; 0.95; 0.95; 0.95]
+            cn₁Rng = [1.25; 1.45; 1.60; 1.80; 1.80; 1.85; 1.60; 1.2; 1.05; 0.92; 0.68; 0.5; 0.18]
+            cnαRng = 180/π*[0.105; 0.108; 0.108; 0.110; 0.113; 0.115; 0.116; 0.113; 0.117; 0.127; 0.154; 0.175; 0.216]
+            DfRng = [8.0; 8.0; 8.0; 8.0; 8.0; 8.0; 8.0; 7.75; 6.2; 6.0; 5.9; 5.5; 4.0]
+            E₀Rng = [0.00; 0.00; 0.00; 0.00; 0.00; 0.00; 0.00; 0.00; 0.00; 0.00; 0.00; 0.00; 0.00]
+            f₀Rng = [0.02; 0.02; 0.02; 0.02; 0.02; 0.02; 0.02; 0.02; 0.02; 0.02; 0.02; 0.02; 0.02]
+            fbRng = [0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70; 0.70]
+            K₀Rng = [0.0025; 0.0025; 0.0025; 0.0025; 0.0025; 0.0025; 0.0025; 0.006; 0.02; 0.038; 0.03; 0.001; -0.01]
+            K₁Rng = [-0.120; -0.120; -0.120; -0.120; -0.120; -0.120; -0.120; -0.135; -0.125; -0.12; -0.09; -0.13; 0.02]
+            K₂Rng = [0.04; 0.04; 0.04; 0.04; 0.04; 0.04; 0.04; 0.05; 0.04; 0.04; 0.15; -0.02; -0.01]
+            S1Rng = π/180*[3.0; 3.0; 3.0; 3.5; 3.5; 3.5; 3.0; 3.25; 3.5; 4.0; 4.5; 3.5; 0.70]
+            S2Rng = π/180*[1.5; 1.5; 1.5; 2.0; 2.0; 2.0; 1.5; 1.6; 1.2; 0.7; 0.5; 0.8; 0.18]
+            Tf₀Rng = [3.0; 3.0; 3.0; 3.0; 3.0; 3.0; 3.0; 2.5; 2.2; 2.0; 2.0; 2.0; 2.0]
+            TpRng = [1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.8; 2.0; 2.5; 3.0; 3.3; 4.3]
+            Tv₀Rng = [6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 4.0]
+            TvLRng = [4.0; 5.0; 5.0; 5.0; 5.0; 5.0; 5.0; 9.0; 9.0; 9.0; 9.0; 9.0; 9.0]
+            if flapSiteID == 100
+                cdδRng = 0.0*ones(length(MaRng))
+                cmδRng = 0.0*ones(length(MaRng))
+                cnδRng = 0.0*ones(length(MaRng))
+            elseif flapSiteID == 75
+                cdδRng =   0.0*ones(length(MaRng))
+                cmδRng = -0.25*ones(length(MaRng))
+                cnδRng =   1.0*ones(length(MaRng))
+            else
+                error("Unavailable flap site ID")
+            end
+        elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","NACA23012A","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
+            # Bound Mach and corresponding compressibility factor
+            Ma = max(0.001,min(0.3,Ma))
+            β = sqrt(1-Ma^2) 
+            # Mach-dependent parameters
+            MaRng  = [0.001; 0.3]
+            α₀NRng = π/180*[0.0; 0.0]
+            α1₀Rng = π/180*[12.4; 16.0]
+            δαRng = π/180*[2.0; 2.5]
+            ϵₙRng = [0.70; 0.70] 
+            ϵₘRng = [0.96; 0.96]
+            cd₀Rng = [0.010; 0.010]
+            cm₀Rng = [0.0; 0.0]
+            ηRng = [0.95; 0.95]
+            cn₁Rng = [1.25; 1.85]
+            cnαRng = 2π/β*[1.0; 1.0]
+            DfRng = [8.0; 8.0]
+            E₀Rng = [0.0; 0.0]
+            f₀Rng = [0.02; 0.02]
+            fbRng = [0.70; 0.70]
+            K₀Rng = [0.0; 0.0]
+            K₁Rng = [-0.120; -0.120]
+            K₂Rng = [0.04; 0.04]
+            S1Rng = π/180*[3.0; 3.0]
+            S2Rng = π/180*[1.5; 1.5]
+            Tf₀Rng = [3.0; 3.0]
+            TpRng = [1.7; 1.7]
+            Tv₀Rng = [6.0; 6.0]
+            TvLRng = [5.0; 5.0]
+            if flapSiteID == 100
+                cdδRng = 0.0*ones(length(MaRng))
+                cmδRng = 0.0*ones(length(MaRng))
+                cnδRng = 0.0*ones(length(MaRng))
+            elseif flapSiteID == 75
+                cdδRng =   0.0*ones(length(MaRng))
+                cmδRng = -0.25*ones(length(MaRng))
+                cnδRng =   1.0*ones(length(MaRng))    
+            else
+                error("Unavailable flap site ID")
+            end
+        else
+            error("Airfoil not listed")
+        end
+
+        # Interpolated values
+        α₀N = interpolate(MaRng,α₀NRng,Ma)
+        α1₀ = interpolate(MaRng,α1₀Rng,Ma)
+        δα = interpolate(MaRng,δαRng,Ma)
+        ϵₙ = interpolate(MaRng,ϵₙRng,Ma)
+        ϵₘ = interpolate(MaRng,ϵₘRng,Ma)
+        η = interpolate(MaRng,ηRng,Ma)
+        cd₀ = interpolate(MaRng,cd₀Rng,Ma)
+        cdδ = interpolate(MaRng,cdδRng,Ma)
+        cm₀ = interpolate(MaRng,cm₀Rng,Ma)
+        cmδ = interpolate(MaRng,cmδRng,Ma)
+        cn₁ = interpolate(MaRng,cn₁Rng,Ma)
+        cnα = interpolate(MaRng,cnαRng,Ma)
+        cnδ = interpolate(MaRng,cnδRng,Ma)
+        Df = interpolate(MaRng,DfRng,Ma)
+        E₀ = interpolate(MaRng,E₀Rng,Ma)
+        f₀ = interpolate(MaRng,f₀Rng,Ma)
+        fb = interpolate(MaRng,fbRng,Ma)
+        K₀ = interpolate(MaRng,K₀Rng,Ma)
+        K₁ = interpolate(MaRng,K₁Rng,Ma)
+        K₂ = interpolate(MaRng,K₂Rng,Ma)
+        S1 = interpolate(MaRng,S1Rng,Ma)
+        S2 = interpolate(MaRng,S2Rng,Ma)
+        Tf₀ = interpolate(MaRng,Tf₀Rng,Ma)
+        Tp = interpolate(MaRng,TpRng,Ma)
+        Tv₀ = interpolate(MaRng,Tv₀Rng,Ma)
+        TvL = interpolate(MaRng,TvLRng,Ma)
+
+        # Dimensionalize time delay constants
+        if U > 0 && b > 0
+            Tf₀ *= b/U
+            Tp *= b/U
+            Tv₀ *= b/U
+            TvL *= b/U
+        end
+
+        return new(α₀N,α1₀,δα,ϵₙ,ϵₘ,η,cd₀,cdδ,cm₀,cmδ,cn₁,cnα,cnδ,Df,E₀,f₀,fb,K₀,K₁,K₂,S1,S2,Tf₀,Tp,Tv₀,TvL)
+    end
+
+end
+
+
+"""
 @with_kw mutable struct Airfoil
 
     Airfoil composite type
@@ -1038,7 +1229,8 @@ end
 
     name::String
     attachedFlowParameters::AttachedFlowParameters
-    separatedFlowParameters::SeparatedFlowParameters
+    parametersBLi::BLiParameters
+    parametersBLo::BLoParameters
 
 end
 export Airfoil
@@ -1059,9 +1251,10 @@ Initializes the airfoil with the predefined name
 function create_Airfoil(;name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
-    separatedFlowParameters = SeparatedFlowParameters(name,Re=Re,Ma=Ma,U=U,b=b)
+    parametersBLi = BLiParameters(name,Re=Re,Ma=Ma,U=U,b=b)
+    parametersBLo = BLoParameters(name,Re=Re,Ma=Ma,U=U,b=b)
 
-    return Airfoil(name,attachedFlowParameters,separatedFlowParameters)
+    return Airfoil(name,attachedFlowParameters,parametersBLi,parametersBLo)
 end
 export create_Airfoil
 
@@ -1082,9 +1275,10 @@ Initializes the airfoil with the predefined name and flap site ID
 function create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)
-    separatedFlowParameters = SeparatedFlowParameters(name,Re=Re,Ma=Ma,U=U,b=b,flapSiteID=flapSiteID)
+    parametersBLi = BLiParameters(name,Re=Re,Ma=Ma,U=U,b=b,flapSiteID=flapSiteID)
+    parametersBLo = BLoParameters(name,Re=Re,Ma=Ma,U=U,b=b,flapSiteID=flapSiteID)
     
-    return Airfoil(name,attachedFlowParameters,separatedFlowParameters)
+    return Airfoil(name,attachedFlowParameters,parametersBLi,parametersBLo)
 end
 
 # Sample airfoils
