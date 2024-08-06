@@ -34,7 +34,12 @@ tip_u1 = [problem.nodalStatesOverσ[i][end].u_n2[1] for i in 1:length(σVector)]
 tip_u3 = [problem.nodalStatesOverσ[i][end].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][end].θ_n2 for i in 1:length(σVector)]
 
+# Plot deformed shape
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/tangentiallyForcedArch/tangentiallyForcedArch_deformation.pdf")
+display(deformationPlot)
+
 # Plot normalized displacements over load steps
+gr()
 x = [-tip_u1/R, tip_u3/R, -tip_angle/(π/2)]
 labels = ["\$-u_1/R\$" "\$u_3/R\$" "\$-\\theta/(\\pi/2)\$"]
 XLabel = "\$-u_1/R, u_3/R, -\\theta/(\\pi/2)\$"
@@ -42,5 +47,6 @@ colors = [:blue,:orange,:green]
 plt1 = plot(xlabel=XLabel, ylabel="\$F\$ [kN]", title="Tip generalized displacements")
 plot!(x, σVector*abs(F)/(1e3), linewidth=2, label=labels)
 display(plt1)
+savefig(string(pwd(),"/test/outputs/figures/tangentiallyForcedArch/tangentiallyForcedArch_disp.pdf"))
 
 println("Finished tangentiallyForcedArch.jl")

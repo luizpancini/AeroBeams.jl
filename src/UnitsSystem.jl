@@ -12,59 +12,62 @@ A composite type with fields for length, force, angle and frequency units (this 
 @with_kw mutable struct UnitsSystem
 
     # Fields
-    length::String = "m"
-    force::String = "N"
-    angle::String = "rad"
-    frequency::String = "rad/s"
+    length::String
+    force::String
+    angle::String
+    frequency::String
 
-    # Constructor
-    function UnitsSystem(length::String,force::String,angle::String,frequency::String)
-
-        self = new(length,force,angle,frequency)
-
-        # Validate
-        validate_unit_system(self)
-
-        return self
-
-    end
 end
 
+# Constructor
+function create_UnitsSystem(;length::String="m",force::String="N",angle::String="rad",frequency::String="rad/s")
+
+    # Initialize
+    self = UnitsSystem(length=length,force=force,angle=angle,frequency=frequency)
+
+    # Validate
+    validate_units_system(self)
+
+    return self
+
+end
+export create_UnitsSystem
+
 
 """
-validate_unit_system(units::UnitsSystem)
+validate_units_system(units::UnitsSystem)
 
-Validates the unit system
+Validates the units system
 
-# Fields:
-- units::UnitsSystem
+# Arguments
+- `units::UnitsSystem`
 """
-function validate_unit_system(units::UnitsSystem)
+function validate_units_system(units::UnitsSystem)
 
     @unpack length,force,angle,frequency = units
 
-    # Length 
-    possible_length_units = ["m","cm","mm","ft","in"]
-    if !(length in possible_length_units)
-        error("'length' must be one of $(possible_lengths)")
+    # Validate length 
+    availableLengthUnits = ["m","cm","mm","ft","in"]
+    if !(length in availableLengthUnits)
+        error("'length' must be one of $(available_lengths)")
     end 
-    
-    # Force 
-    possible_force_units = ["N","lbf"]
-    if !(force in possible_force_units)
-        error("'force' must be one of $(possible_force_units)")
+
+    # Validate force 
+    availableForceUnits = ["N","lbf","kN","kip"]
+    if !(force in availableForceUnits)
+        error("'force' must be one of $(availableForceUnits)")
     end
 
-    # Angle 
-    possible_angle_units = ["rad","deg"]
-    if !(angle in possible_angle_units)
-        error("'angle' must be one of $(possible_angle_units)")
+    # Validate angle 
+    availableAngleUnits = ["rad","deg"]
+    if !(angle in availableAngleUnits)
+        error("'angle' must be one of $(availableAngleUnits)")
     end
 
-    # Frequency 
-    possible_frequency_units = ["rad/s","Hz","rpm"]
-    if !(frequency in possible_frequency_units)
-        error("'frequency' must be one of $(possible_frequency_units)")
+    # Validate frequency 
+    availableFrequencyUnits = ["rad/s","Hz","rpm"]
+    if !(frequency in availableFrequencyUnits)
+        error("'frequency' must be one of $(availableFrequencyUnits)")
     end
 
 end

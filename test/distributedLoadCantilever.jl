@@ -32,12 +32,17 @@ tip_u1 = [problem.nodalStatesOverσ[i][nElem].u_n2[1] for i in 1:length(σVector
 tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][nElem].θ_n2 for i in 1:length(σVector)]
 
+# Plot deformed state
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/distributedLoadCantilever/distributedLoadCantilever_deformation.pdf")
+display(deformationPlot)
+
 # Plot normalized displacements over load steps
 x = [-tip_u1/L, tip_u3/L, -tip_angle/π]
 labels = ["\$-u_1/L\$" "\$u_3/L\$" "\$-\\theta/\\pi\$"]
 colors = [:blue,:orange,:green]
-plt1 = plot()
-plot!(x, σVector*q, palette=colors, lw=2, label=false, ylabel="\$q [kN]\$", xlabel="\$-u_1/L, u_3/L, -\\theta/L\$", title="Tip generalized displacements")
+gr()
+plt1 = plot(xlabel="\$-u_1/L, u_3/L, -\\theta/L\$", ylabel="\$q [kN]\$", title="Tip generalized displacements")
+plot!(x, σVector*q, palette=colors, lw=2, label=false)
 halfNσ = round(Int,length(σVector)/2)
 tqNσ = round(Int,length(σVector)*3/4)
 annotate!(x[1][halfNσ], σVector[halfNσ]*q, text(labels[1], :top, :left, colors[1]))

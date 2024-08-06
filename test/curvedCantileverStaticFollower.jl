@@ -37,22 +37,26 @@ u1_ref = readdlm(string(pwd(),"/test/referenceData/curvedCantileverStaticFollowe
 u2_ref = readdlm(string(pwd(),"/test/referenceData/curvedCantileverStaticFollower/u2.txt"))
 u3_ref = readdlm(string(pwd(),"/test/referenceData/curvedCantileverStaticFollower/u3.txt"))
 
-# Plot configurations
+# Plots
+# ------------------------------------------------------------------------------
 colors = [:blue,:green,:orange]
 labels = ["\$-u_1\$" "\$u_2\$" "\$u_3\$"]
 lw = 2
 ms = 3
 msw = 0
+# Deformed shape
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/curvedCantileverStaticFollower/curvedCantileverStaticFollower_deformation.pdf")
+display(deformationPlot)
+# Plot normalized tip displacements over load steps
 plt1 = plot(xlabel="\$F\$ [lb]", ylabel="\$-u_1, u_2, u_3\$ [in]", title="Tip displacements", xticks=collect(0:500:F), yticks=collect(-60:20:80))
 plot!([NaN], [NaN], lc=:black,  lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], mc=:black, ms=ms, label="Simo & Vu-Quoc (1986)")
 for i=1:3
     plot!([NaN], [NaN], lc=colors[i], m=colors[i],  lw=lw, ms=ms, msw=msw, label=labels[i])
 end
-
-# Plot normalized tip displacements over load steps
 scatter!([u1_ref[1,:],u2_ref[1,:],u3_ref[1,:]], [u1_ref[2,:],u2_ref[2,:],u3_ref[2,:]], palette=colors, ms=ms, msw=msw, label=false)
 plot!(σVector*F, [-tip_u1, tip_u2, tip_u3], palette=colors, lw=lw, label=false)
 display(plt1)
+savefig(string(pwd(),"/test/outputs/figures/curvedCantileverStaticFollower/curvedCantileverStaticFollower_disp.pdf"))
 
 println("Finished curvedCantileverStaticFollower.jl")

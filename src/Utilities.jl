@@ -9,6 +9,22 @@ const a1 = [1.0; 0.0; 0.0]
 
 
 """
+const a2 = [0.0; 1.0; 0.0]
+
+Second vector of basis A, resolved in that basis
+"""
+const a2 = [0.0; 1.0; 0.0]
+
+
+"""
+const a3 = [0.0; 0.0; 1.0]
+
+Third vector of basis A, resolved in that basis
+"""
+const a3 = [0.0; 0.0; 1.0]
+
+
+"""
 I3 = Matrix(1.0*LinearAlgebra.I,3,3)
 
 3x3 identity matrix

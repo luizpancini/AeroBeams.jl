@@ -25,5 +25,6 @@ include("SystemSolver.jl")
 include("Aerodynamics.jl")
 include("Core.jl")
 include("SampleModels.jl")
+include("Visualization.jl")
 
 end

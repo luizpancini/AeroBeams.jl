@@ -37,4 +37,4 @@ tip_u3 = problem.nodalStatesOverσ[end][nElem].u_n2[3]
 # Print 
 println("Tip displacements:\nu1 = $tip_u1, u2 = $tip_u2, u3 = $tip_u3")
 
-println("Finished curvedCantilever.jl")
+println("Finished curvedCantileverDeadLoad.jl")

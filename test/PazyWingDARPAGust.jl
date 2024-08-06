@@ -22,8 +22,8 @@ gustLoadsSolver = IndicialGust("Kussner")
 wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,gustLoadsSolver=gustLoadsSolver,airfoil=airfoil,derivationMethod=derivationMethod,p0=[0;-π/2;θ])
 
 # Gust (defined such that it begins at time t0 and lasts for τ seconds)
-t0 = 0.5
-τ = 0.5
+t0 = 0.1
+τ = 0.1
 Ug = -U*1/10
 gustLength = U*τ
 gustWidth = 2*L

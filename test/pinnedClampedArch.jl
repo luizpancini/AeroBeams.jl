@@ -19,7 +19,7 @@ clamp = create_BC(name="clamp",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","
 force = create_BC(name="force",beam=beam,node=elemForce+1,types=["F3A"],values=[-λ*E*Iy/R^2])
 
 # Model
-pinnedClampedArch = create_Model(name="pinnedClampedArch",beams=[beam],BCs=[hinge,clamp,force])
+pinnedClampedArch = create_Model(name="pinnedClampedArch",beams=[beam],BCs=[hinge,clamp,force],units=create_UnitsSystem(length="in",force="lbf"))
 
 # Set system solver options
 σ0 = 0.0
@@ -35,7 +35,12 @@ solve!(problem)
 u1_atForce = [problem.nodalStatesOverσ[i][elemForce].u_n2[1] for i in 1:length(σVector)]
 u3_atForce = [problem.nodalStatesOverσ[i][elemForce].u_n2[3] for i in 1:length(σVector)]
 
+# Plot deformed shape
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/pinnedClampedArch/pinnedClampedArch_deformation.pdf")
+display(deformationPlot)
+
 # Plot normalized displacements over load steps
+gr()
 x = [-u1_atForce/R, -u3_atForce/R]
 labels = ["\$-u_1/R\$" "\$-u_3/R\$"]
 colors = [:blue,:orange]
@@ -45,5 +50,6 @@ halfNσ = round(Int,length(σVector)/2)
 annotate!(x[1][halfNσ], σVector[halfNσ]*λ, text(labels[1], :bottom, :right, colors[1]))
 annotate!(x[2][halfNσ], σVector[halfNσ]*λ, text(labels[2], :top, :left, colors[2]))
 display(plt1)
+savefig(string(pwd(),"/test/outputs/figures/pinnedClampedArch/pinnedClampedArch_disp.pdf"))
 
 println("Finished pinnedClampedArch.jl")

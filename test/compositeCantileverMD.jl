@@ -97,6 +97,7 @@ y = σVector[1,1]*W/g
 plt11 = plot()
 plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 1, \$\\theta=0^{\\degree}\$")
 display(plt11)
+savefig(string(pwd(),"/test/outputs/figures/compositeCantileverMD/compositeCantileverMD_b1th0.pdf"))
 
 # Beam 1, θ=45⁰
 x = [-u1_500mm[1,2] u2_500mm[1,2] -u3_500mm[1,2]]
@@ -104,6 +105,7 @@ y = σVector[1,2]*W/g
 plt12 = plot()
 plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 1, \$\\theta=45^{\\degree}\$")
 display(plt12)
+savefig(string(pwd(),"/test/outputs/figures/compositeCantileverMD/compositeCantileverMD_b1th45.pdf"))
 
 # Beam 2, θ=0⁰
 x = [-u1_500mm[2,1] u2_500mm[2,1] -u3_500mm[2,1]]
@@ -111,6 +113,7 @@ y = σVector[2,1]*W/g
 plt21 = plot()
 plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 2, \$\\theta=0^{\\degree}\$")
 display(plt21)
+savefig(string(pwd(),"/test/outputs/figures/compositeCantileverMD/compositeCantileverMD_b2th0.pdf"))
 
 # Beam 2, θ=45⁰
 x = [-u1_500mm[2,2] u2_500mm[2,2] -u3_500mm[2,2]]
@@ -118,6 +121,7 @@ y = σVector[2,2]*W/g
 plt22 = plot()
 plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 2, \$\\theta=45^{\\degree}\$")
 display(plt22)
+savefig(string(pwd(),"/test/outputs/figures/compositeCantileverMD/compositeCantileverMD_b2th45.pdf"))
 
 # Beam 3, θ=0⁰
 x = [-u1_500mm[3,1] u2_500mm[3,1] -u3_500mm[3,1]]
@@ -125,6 +129,7 @@ y = σVector[3,1]*W/g
 plt31 = plot()
 plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 3, \$\\theta=0^{\\degree}\$")
 display(plt31)
+savefig(string(pwd(),"/test/outputs/figures/compositeCantileverMD/compositeCantileverMD_b3th0.pdf"))
 
 # Beam 3, θ=45⁰
 x = [-u1_500mm[3,2] u2_500mm[3,2] -u3_500mm[3,2]]
@@ -132,5 +137,6 @@ y = σVector[3,2]*W/g
 plt32 = plot()
 plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 3, \$\\theta=45^{\\degree}\$")
 display(plt32)
+savefig(string(pwd(),"/test/outputs/figures/compositeCantileverMD/compositeCantileverMD_b3th45.pdf"))
 
 println("Finished compositeCantileverMD.jl")

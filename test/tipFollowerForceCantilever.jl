@@ -15,11 +15,11 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 tipFollowerForce = create_BC(name="tipFollowerForce",beam=beam,node=nElem+1,types=["Ff3A"],values=[F])
 
 # Model
-tipFollowerForceCantilever = create_Model(name="tipFollowerForceCantilever",beams=[beam],BCs=[clamp,tipFollowerForce])
+tipFollowerForceCantilever = create_Model(name="tipFollowerForceCantilever",beams=[beam],BCs=[clamp,tipFollowerForce],units=create_UnitsSystem(length="in",force="lbf"))
 
 # Set system solver options
-σ0 = 0.01
-σstep = 0.01
+σ0 = 0.0
+σstep = 0.02
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem
@@ -35,13 +35,18 @@ tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector
 u1_ref = readdlm(string(pwd(),"/test/referenceData/tipFollowerForceCantilever/u1.txt"))
 u3_ref = readdlm(string(pwd(),"/test/referenceData/tipFollowerForceCantilever/u3.txt"))
 
+# Plot deformed state
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/tipFollowerForceCantilever/tipFollowerForceCantilever_deformation.pdf")
+display(deformationPlot)
+
 # Plot configurations
 colors = [:blue,:green]
 labels = ["\$-u_1/L\$" "\$u_3/L\$"]
 lw = 2
 ms = 3
 msw = 0
-plt1 = plot(xlabel="\$F\$ [kN]", ylabel="\$-u_1/L, u_3/L\$", title="Tip generalized displacements", xticks=collect(0:10:F), yticks=collect(-0.6:0.2:1.2))
+gr()
+plt1 = plot(xlabel="\$F\$ [kip]", ylabel="\$-u_1/L, u_3/L\$", title="Tip generalized displacements", xticks=collect(0:10:F), yticks=collect(-0.6:0.2:1.2))
 plot!([NaN], [NaN], lc=:black,  lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], mc=:black, ms=ms, label="Simo & Vu-Quoc (1986)")
 for i=1:2

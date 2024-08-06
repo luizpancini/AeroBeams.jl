@@ -49,7 +49,7 @@ for (i,U) in enumerate(URange)
     # Update velocity of basis A (and update model)
     set_motion_basis_A!(model=SMWSteady,v_A=[0;U;0])
     # Create and solve problem
-    problem = create_SteadyProblem(model=SMWSteady,systemSolver=NR)
+    global problem = create_SteadyProblem(model=SMWSteady,systemSolver=NR)
     solve!(problem)
     # Displacements over span
     u1_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[1],problem.nodalStatesOverσ[end][e].u_n2[1]) for e in 1:nElem]...)
@@ -70,22 +70,26 @@ end
 # ------------------------------------------------------------------------------
 lw = 2
 ms = 3
+# Plot deformed shape
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/SMWSteady/SMWSteady_deformation.pdf")
+display(deformationPlot)
 # Normalized deformed wingspan
+gr()
 plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$x_3/L\$ [% semispan]", xlims=[0,1], ylims=[-20,60])
 for (i,U) in enumerate(URange)
     plot!(x1_def[i]/L, x3_def[i]/L*100, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWSteady_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWSteady/SMWSteady_disp.pdf"))
 # Tip OOP disp vs airspeed
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP disp [% semispan]", xlims=[0,30], ylims=[-20,60])
 plot!(URange, tip_u3/L*100, c=:black, lw=lw, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/SMWSteady_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWSteady/SMWSteady_OOP.pdf"))
 # Tip twist vs airspeed
 plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[0,30], ylims=[-1,3])
 plot!(URange, tip_twist, c=:black, lw=lw, label=false)
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/SMWSteady_3.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWSteady/SMWSteady_twist.pdf"))
 
 println("Finished SMWSteady.jl")

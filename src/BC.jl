@@ -25,9 +25,17 @@ Boundary conditions composite type
     isLoad::BitVector
     isFollower::BitVector
     isTrim::BitVector
+    displacementsOnA::Vector{Float64}
+    deadLoadsOnA::Vector{Float64}
+    followerLoadsOnA::Vector{Float64}
+    displacementsOnb::Vector{Float64}
+    deadLoadsOnb::Vector{Float64}
+    followerLoadsOnb::Vector{Float64}
     initialTrimValue::Vector{Float64}
     R0_n::Matrix{Float64}
     globalNodeID::Int64
+    Fmax::Number
+    Mmax::Number
 
 end
 export BC
@@ -77,7 +85,7 @@ function create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String}
     # globalNodeID is updated upon assembly of the model
 
     # Initialize BC
-    bc = BC(name,beam,node,types,values,toBeTrimmed,Vector{Float64}(),BitVector(),BitVector(),BitVector(),Vector{Float64}(),R0_n,0)
+    bc = BC(name,beam,node,types,values,toBeTrimmed,Vector{Float64}(),BitVector(),BitVector(),BitVector(),Vector{Float64}(),Vector{Float64}(),Vector{Float64}(),Vector{Float64}(),Vector{Float64}(),Vector{Float64}(),Vector{Float64}(),R0_n,0,0,0)
 
     # Get initial BC data
     update_BC_data!(bc)
@@ -88,17 +96,17 @@ export create_BC
 
 
 """
-update_BC_data!(bc::BC,timeNow::Float64=0.0)
+update_BC_data!(bc::BC,timeNow::Number=0)
 
 Updates the boundary conditions at the current time
 
 # Arguments
 - bc::BC
-- timeNow::Float64
+- timeNow::Number
 """
-function update_BC_data!(bc::BC,timeNow::Float64=0.0)
+function update_BC_data!(bc::BC,timeNow::Number=0)
 
-    @unpack name,types,values,R0_n,toBeTrimmed = bc
+    @unpack name,types,values,R0_n,toBeTrimmed,Fmax,Mmax = bc
 
     # Initialize outputs (default corresponds to no BCs applied on basis A)
     currentValue = zeros(6)
@@ -271,8 +279,12 @@ function update_BC_data!(bc::BC,timeNow::Float64=0.0)
     # Update current prescribed values (excludes trim values) on basis A (after transfer from basis b)
     currentValue += vcat(R0_n * (displacementsOnb[1:3]+deadLoadsOnb[1:3]+followerLoadsOnb[1:3]), R0_n * (displacementsOnb[4:6]+deadLoadsOnb[4:6]+followerLoadsOnb[4:6])) .* .!isTrim
 
+    # Update maximum values of forces and moments
+    Fmax = max(Fmax,maximum(abs.(currentValue[1:3])))
+    Mmax = max(Mmax,maximum(abs.(currentValue[4:6])))
+
     # Pack
-    @pack! bc = currentValue,isLoad,isFollower,isTrim
+    @pack! bc = currentValue,isLoad,isFollower,isTrim,displacementsOnA,deadLoadsOnA,followerLoadsOnA,displacementsOnb,deadLoadsOnb,followerLoadsOnb,Fmax,Mmax
 
     # If in initial time
     if timeNow == 0

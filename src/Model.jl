@@ -74,7 +74,7 @@ export Model
 
 
 # Constructor
-function create_Model(;name::String="",units::UnitsSystem=UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}()) 
+function create_Model(;name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}()) 
     
     # Initialize 
     self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,rotationConstraints=rotationConstraints)
@@ -162,8 +162,8 @@ function validate_model!(model::Model)
 
     @unpack units,initialPosition,gravityVector,p_A0,altitude = model
 
-    # Validate unit system
-    validate_unit_system(units)
+    # Validate units system
+    validate_units_system(units)
 
     # Validate initial position of the first beam of the model
     @assert length(initialPosition) == 3
@@ -1491,58 +1491,3 @@ function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Number},<:Functi
     
 end
 export set_motion_basis_A!
-
-
-"""
-plot_undeformed_assembly(model::Model)
-
-Plots the nodal coordinates of the assembly of beams
-
-# Arguments
-- model::Model
-"""
-function plot_undeformed_assembly(model::Model,view=(45,45))
-
-    # Initialize backend
-    gr()
-
-    # Initialize plot
-    plt = plot(;xlabel="\$x_1\$",ylabel="\$x_2\$",zlabel="\$x_3\$",title="Undeformed assembly",camera=view,aspect_ratio=:equal,grid=:true)
-
-    # Initialize plot limits
-    x1min,x1max,x2min,x2max,x3min,x3max=0,0,0,0,0,0
-
-    # Loop over beams
-    for beam in model.beams
-        
-        # Nodal coordinates for the current beam
-        @unpack r_n = beam
-
-        # Extract x1, x2, and x3 coordinates from the nodal coordinates
-        x1 = [point[1] for point in r_n]
-        x2 = [point[2] for point in r_n]
-        x3 = [point[3] for point in r_n]
-
-        # Update plot limits
-        x1ext, x2ext, x3ext = extrema(x1), extrema(x2), extrema(x3)
-        x1min,x1max = min(x1min,x1ext[1]),max(x1max,x1ext[2])
-        x2min,x2max = min(x2min,x2ext[1]),max(x2max,x2ext[2])
-        x3min,x3max = min(x3min,x3ext[1]),max(x3max,x3ext[2])
-        # plot!(xlims=(x1min,x1max), ylims=(x2min,x2max), zlims=(x3min,x3max))
-        
-        # Plot nodes
-        scatter!(x1, x2, x3, c=:black, ms=3, label=false)
-        
-        # Plot lines 
-        for i in 1:length(r_n)-1
-            plot!([r_n[i][1], r_n[i+1][1]], [r_n[i][2], r_n[i+1][2]], [r_n[i][3], r_n[i+1][3]], c=:black, lw=2, label=false)
-        end
-
-    end
-
-    display(plt)
-
-    return plt
-
-end
-export plot_undeformed_assembly

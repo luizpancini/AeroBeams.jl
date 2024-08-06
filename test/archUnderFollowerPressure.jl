@@ -12,9 +12,9 @@ nElem = 80
 beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;1/R;0])
 
 # BCs
-λ = 8.9
+λ = 11
 q = -λ*EIy/R^2
-add_loads_to_beam!(beam,loadTypes=["ff_A_of_x1t"],loadFuns=[(x1,t)->[0; 0; q]])
+add_loads_to_beam!(beam,loadTypes=["ff_b_of_x1t"],loadFuns=[(x1,t)->[0; 0; q]])
 clamp1 = create_BC(name="clamp1",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 clamp2 = create_BC(name="clamp2",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
@@ -34,8 +34,14 @@ solve!(problem)
 σVector = problem.savedσ
 mid_u3 = [problem.nodalStatesOverσ[i][div(nElem,2)].u_n2[3] for i in 1:length(σVector)]
 
+# Plot deformed shape
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/archUnderFollowerPressure/archUnderFollowerPressure_deformation.pdf")
+display(deformationPlot)
+
 # Plot normalized displacements over load steps
+gr()
 plt1 = plot(-mid_u3/R, σVector*λ, color=:black, lw=2, xlabel="Midpoint \$-u_3/R\$", ylabel="\$\\lambda\$", label=false)
 display(plt1)
+savefig(string(pwd(),"/test/outputs/figures/archUnderFollowerPressure/archUnderFollowerPressure_disp.pdf"))
 
 println("Finished archUnderFollowerPressure.jl")

@@ -34,8 +34,14 @@ solve!(problem)
 σVector = problem.savedσ
 mid_u3 = [problem.nodalStatesOverσ[i][div(nElem,2)].u_n2[3] for i in 1:length(σVector)]
 
+# Plot deformed shape
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/archUnderDeadPressure/archUnderDeadPressure_deformation.pdf")
+display(deformationPlot)
+
 # Plot normalized displacements over load steps
+gr()
 plt1 = plot(-mid_u3/R, σVector*λ, color=:black, lw=2, xlabel="Midpoint \$-u_3/R\$", ylabel="\$\\lambda\$", label=false)
 display(plt1)
+savefig(string(pwd(),"/test/outputs/figures/archUnderDeadPressure/archUnderDeadPressure_disp.pdf"))
 
 println("Finished archUnderDeadPressure.jl")

@@ -400,10 +400,11 @@ function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
     push!(compElementalStatesOverσ,currentComplementaryElementalStates)
 
     # Add current aerodynamic variables
-    currentAeroVariables = Vector{AeroVariables}()
+    currentAeroVariables = Vector{Union{Nothing,AeroVariables}}()
     for element in elements
         # Skip elements without aero
         if isnothing(element.aero)
+            push!(currentAeroVariables,nothing)
             continue
         end
         push!(currentAeroVariables,AeroVariables(deepcopy(element.aero.flowParameters),deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients),deepcopy(element.aero.BLiKin),deepcopy(element.aero.BLiFlow),deepcopy(element.aero.BLoFlow)))

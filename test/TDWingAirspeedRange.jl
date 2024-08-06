@@ -48,7 +48,7 @@ for (i,θ) in enumerate(θRange)
         # Update velocity of basis A 
         set_motion_basis_A!(model=TDWingAirspeedRange,v_A=[0;U;0])
         # Create and solve problem
-        problem = create_EigenProblem(model=TDWingAirspeedRange,nModes=4,frequencyFilterLimits=[0.1,Inf64],normalizeModeShapes=true)
+        global problem = create_EigenProblem(model=TDWingAirspeedRange,nModes=4,frequencyFilterLimits=[0.1,Inf64],normalizeModeShapes=true)
         solve!(problem)
         # Get outputs
         freqs[i,j] = problem.frequenciesOscillatory/(2π)
@@ -78,7 +78,11 @@ colors2 = get(colorschemes[:darkrainbow], LinRange(0, 1, 3))
 lw = 2
 ms = 3
 labels = ["\\theta_{r} = 1.0 deg" "\\theta_{r} = 2.2 deg"]
+# Deformed shape
+deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_deformation.pdf")
+display(deformationPlot)
 # Tip flapwise displacement
+gr()
 plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Tip flapwise displacement [m]")
 plot!([NaN], [NaN], lc=:black,  lw=lw, ls=:solid, label="AeroBeams")
 plot!([NaN], [NaN], lc=:black,  lw=lw, ls=:dash, label="Tang & Dowell (2001) - Num.")
@@ -96,7 +100,7 @@ for i=eachindex(θRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_disp.pdf"))
 # Tip twist
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]")
 plot!([NaN], [NaN], lc=:black,  lw=lw, ls=:solid, label="AeroBeams")
@@ -115,7 +119,7 @@ for i=eachindex(θRange)
     end
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_twist.pdf"))
 # Aeroelastic frequencies at root angle of 1 deg
 plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Frequency [Hz]",legend=:outertop)
 plot!([NaN], [NaN], lc=:black,  lw=lw, ls=:solid, label="AeroBeams")
@@ -128,6 +132,6 @@ for (m,mode) in enumerate([1,2,4])
     annotate!(10, freqsMode[1], text(modeLabels[m], :bottom, colors2[m]))
 end
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange_3.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_freqs.pdf"))
 
 println("Finished TDWingAirspeedRange.jl")

@@ -26,7 +26,7 @@ for (i,m) in enumerate(mRange)
     add_point_inertias_to_beam!(wing,inertias=[tipMass])
     update_model!(PazyWingBendingTest)
     # Create and solve problem
-    problem = create_SteadyProblem(model=PazyWingBendingTest)
+    global problem = create_SteadyProblem(model=PazyWingBendingTest)
     solve!(problem)
     # Get OOP displacement at midchord
     tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
@@ -42,12 +42,15 @@ bending_u3VsMass_UMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/bending
 
 # Plots
 # ------------------------------------------------------------------------------
+# Deformed shape
+deformationPlot = plot_steady_deformation(problem,view=(30,30),save=true,savePath="/test/outputs/figures/PazyWingBendingTest/PazyWingBendingTest_deformation.pdf")
+display(deformationPlot)
 # Tip midchord OOP displacement (offset from zero tip mass value) vs. tip mass
 plt1 = plot(xlabel="Tip mass [kg]", ylabel="Tip OOP displacement offset [% semispan]", xlims=[0,3])
 plot!(mRange, (tip_OOP.-tip_OOP[1])/L*100, c=:black, lw=2, label="AeroBeams")
 plot!(bending_u3VsMass_UMNAST[1,:], bending_u3VsMass_UMNAST[2,:], c=:blue, ls=:dash, lw=2, label="UM/NAST")
 scatter!(bending_u3VsMass_Exp[1,:], bending_u3VsMass_Exp[2,:], mc=:red, ms=3,msw=0, label="Exp.")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingBendingTest_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingBendingTest/PazyWingBendingTest_OOP.pdf"))
 
 println("Finished PazyWingBendingTest.jl")

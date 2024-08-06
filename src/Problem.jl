@@ -145,7 +145,7 @@ Defines the problem of steady type
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
-    aeroVariablesOverσ::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
+    aeroVariablesOverσ::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
 
 end
 export SteadyProblem
@@ -225,7 +225,7 @@ Defines the problem of trim type
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
-    aeroVariablesOverσ::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
+    aeroVariablesOverσ::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
 
 end
 export TrimProblem
@@ -308,7 +308,7 @@ Defines the problem of eigen type
     elementalStatesOverσ::Vector{Vector{ElementalStates{Float64}}} = Vector{Vector{ElementalStates{Float64}}}()
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
-    aeroVariablesOverσ::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
+    aeroVariablesOverσ::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
     # Frequencies, dampings and eigenvectors
     frequencies::Vector{Float64} = Vector{Float64}()
     dampings::Vector{Float64} = Vector{Float64}()
@@ -435,7 +435,7 @@ Defines the problem of dynamic type
     compElementalStatesOverTime::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
     elementalStatesRatesOverTime::Vector{Vector{ElementalStatesRates}} = Vector{Vector{ElementalStatesRates}}()
     compElementalStatesRatesOverTime::Vector{Vector{ComplementaryElementalStatesRates}} = Vector{Vector{ComplementaryElementalStatesRates}}()
-    aeroVariablesOverTime::Vector{Vector{AeroVariables}} = Vector{Vector{AeroVariables}}()
+    aeroVariablesOverTime::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
 
 end
 export DynamicProblem
@@ -1681,10 +1681,11 @@ function save_time_step_data!(problem::Problem,timeNow::Number)
     push!(compElementalStatesRatesOverTime,currentComplementaryElementalStatesRates)
 
     # Add current aerodynamic variables
-    currentAeroVariables = Vector{AeroVariables}()
+    currentAeroVariables = Vector{Union{Nothing,AeroVariables}}()
     for element in elements
         # Skip elements without aero
         if isnothing(element.aero)
+            push!(currentAeroVariables,nothing)
             continue
         end
         push!(currentAeroVariables,AeroVariables(deepcopy(element.aero.flowParameters),deepcopy(element.aero.flowAnglesAndRates),deepcopy(element.aero.flowVelocitiesAndRates),deepcopy(element.aero.aeroCoefficients),deepcopy(element.aero.BLiKin),deepcopy(element.aero.BLiFlow),deepcopy(element.aero.BLoFlow)))

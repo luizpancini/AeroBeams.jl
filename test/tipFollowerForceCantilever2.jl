@@ -20,7 +20,7 @@ tipFollowerForceCantilever = create_Model(name="tipFollowerForceCantilever",beam
 
 # Set system solver options
 σ0 = 0.0
-σstep = 0.01
+σstep = 0.02
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Create and solve the problem

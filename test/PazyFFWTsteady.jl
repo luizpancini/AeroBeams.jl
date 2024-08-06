@@ -45,14 +45,21 @@ p2_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].p_n1[2],problem.nodalSta
 M2_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOverσ[end][e].M_n2[2]) for e in 1:15]...)
 
 # Plots
-# u3
+# ------------------------------------------------------------------------------
+# Deformed shape
+deformationPlot = plot_steady_deformation(problem,view=(30,30),save=true,savePath="/test/outputs/figures/PazyFFWTsteady/PazyFFWTsteady_deformation.pdf")
+display(deformationPlot)
+# OOP displacement
 plt1 = plot((r_n1.+u1_of_x1)/x1[end], (r_n3.+u3_of_x1)/x1[end], aspect_ratio=:equal, lw=2, label=false, xlims=[0,1], xlabel="Normalized spanwise position", ylabel="Normalized out-of-plane position")
 display(plt1)
-# p2
+savefig(string(pwd(),"/test/outputs/figures/PazyFFWTsteady/PazyFFWTsteady_u3.pdf"))
+# Bending angle
 plt2 = plot(x1/x1[end], p2_of_x1, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$p_2\$")
 display(plt2)
-# p3
+savefig(string(pwd(),"/test/outputs/figures/PazyFFWTsteady/PazyFFWTsteady_p2.pdf"))
+# Bending moment
 plt3 = plot(x1/x1[end], M2_of_x1, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2\$ [N.m]")
 display(plt3)
+savefig(string(pwd(),"/test/outputs/figures/PazyFFWTsteady/PazyFFWTsteady_M2.pdf"))
 
 println("Finished PazyFFWTsteady.jl")

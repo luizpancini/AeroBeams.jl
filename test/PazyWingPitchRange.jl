@@ -45,7 +45,7 @@ for (i,θ) in enumerate(θRange)
         # Update velocity of basis A (and update model)
         set_motion_basis_A!(model=PazyWingPitchRange,v_A=[0;U;0])
         # Create and solve problem
-        problem = create_SteadyProblem(model=PazyWingPitchRange,systemSolver=NR)
+        global problem = create_SteadyProblem(model=PazyWingPitchRange,systemSolver=NR)
         solve!(problem)
         # @profview solve!(problem)
         # Get tip twist, AoA and OOP displacement at midchord
@@ -68,7 +68,11 @@ tip_u3VsU_rootPitch7 = readdlm(string(pwd(),"/test/referenceData/Pazy/tip_u3VsU_
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(θRange)))
 lw = 2
 ms = 3
+# Deformed state of last problem
+deformationPlot = plot_steady_deformation(problem,view=(45,30),save=true,savePath="/test/outputs/figures/PazyWingPitchRange/PazyWingPitchRange_deformation.pdf")
+display(deformationPlot)
 # Tip midchord OOP displacement vs. airspeed for root several pitch angles 
+gr()
 plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP displacement [% semispan]", xlims=[0,60], ylims=[0,50])
 plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], c=:black, ms=ms, label="Exp.")
@@ -81,27 +85,27 @@ for (i,θ) in enumerate(θRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipOOP.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange/PazyWingPitchRange_tipOOP.pdf"))
 # Tip twist vs. airspeed for root several pitch angles 
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[0,60])
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_twist[i,:], c=colors[i], lw=lw, label="θ = $θ deg")
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipTwist.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange/PazyWingPitchRange_tipTwist.pdf"))
 # Tip AoA vs. airspeed for root several pitch angles 
 plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip AoA [deg]", xlims=[0,60])
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_AoA[i,:], c=colors[i], lw=lw, label="θ = $θ deg")
 end
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipAoA.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange/PazyWingPitchRange_tipAoA.pdf"))
 # Tip in-plane displacement vs. airspeed for root several pitch angles 
 plt4 = plot(xlabel="Airspeed [m/s]", ylabel="Tip IP displacement [% semispan]", xlims=[0,60])
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_IP[i,:]/L*100, c=colors[i], lw=lw, label="θ = $θ deg")
 end
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange_tipIP.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange/PazyWingPitchRange_tipIP.pdf"))
 
 println("Finished PazyWingPitchRange.jl")

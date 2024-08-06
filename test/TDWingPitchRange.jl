@@ -38,7 +38,7 @@ for (i,θ) in enumerate(θRange)
     update_beam!(wing)
     update_model!(TDWingPitchRange)
     # Create and solve problem
-    problem = create_EigenProblem(model=TDWingPitchRange,nModes=4,frequencyFilterLimits=[0.1,Inf64],normalizeModeShapes=true)
+    global problem = create_EigenProblem(model=TDWingPitchRange,nModes=4,frequencyFilterLimits=[0.1,Inf64],normalizeModeShapes=true)
     solve!(problem)
     # Get outputs
     freqs[i] = problem.frequenciesOscillatory/(2π)
@@ -77,21 +77,21 @@ plot!(θRange,-tip_u3, c=:black, lw=2, ls=:solid, label="AeroBeams")
 plot!(u3_num[1,:],u3_num[2,:], c=:black, lw=2, ls=:dash, label="Tang & Dowell (2001) - Num.")
 scatter!(u3_exp[1,:],u3_exp[2,:], mc=:black, ms=ms, label="Tang & Dowell (2001) - Exp.")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange/TDWingPitchRange_u3.pdf"))
 # Tip chordwise displacement
 plt2 = plot(xlabel="Root angle [deg]", ylabel="Tip chordwise displacement [m]", xticks=collect(0:15:90))
 plot!(θRange,-tip_u2, c=:black, lw=2, ls=:solid, label="AeroBeams")
 plot!(u2_num[1,:],u2_num[2,:], c=:black, lw=2, ls=:dash, label="Tang & Dowell (2001) - Num.")
 scatter!(u2_exp[1,:],u2_exp[2,:], mc=:black, ms=ms, label="Tang & Dowell (2001) - Exp.")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange/TDWingPitchRange_u2.pdf"))
 # Tip twist
 plt3 = plot(xlabel="Root angle [deg]", ylabel="Tip twist [deg]", xticks=collect(0:15:90))
 plot!(θRange,-tip_twist, c=:black, lw=2, ls=:solid, label="AeroBeams")
 plot!(th_num[1,:],th_num[2,:], c=:black, lw=2, ls=:dash, label="Tang & Dowell (2001) - Num.")
 scatter!(th_exp[1,:],th_exp[2,:], mc=:black, ms=ms, label="Tang & Dowell (2001) - Exp.")
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange_3.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange/TDWingPitchRange_twist.pdf"))
 # Structural frequencies 
 plt4 = plot(xlabel="Root angle [deg]", ylabel="Frequency [Hz]", legend=:outertop, xticks=collect(0:15:90))
 modeLabels = ["Flapwise bending" "Chordwise bending" "Torsion"]
@@ -106,6 +106,6 @@ for (m,mode) in enumerate([1,2,4])
     annotate!(30, freqsMode[1], text(modeLabels[m], :bottom, colors[m]))
 end
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange_4.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/TDWingPitchRange/TDWingPitchRange_freqs.pdf"))
 
 println("Finished TDWingPitchRange.jl")
