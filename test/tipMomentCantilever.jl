@@ -31,6 +31,9 @@ tip_u1 = [problem.nodalStatesOverσ[i][nElem].u_n2[1] for i in 1:length(σVector
 tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][nElem].θ_n2 for i in 1:length(σVector)]
 
+# Plot internal bending moment
+plot_steady_outputs(problem,outputs=["M2"],save=true,saveFolder="/test/outputs/figures/tipMomentCantilever/")
+
 # Plot deformed state
 deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/tipMomentCantilever/tipMomentCantilever_deformation.pdf")
 display(deformationPlot)

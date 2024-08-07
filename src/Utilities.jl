@@ -1,4 +1,4 @@
-using Revise, Parameters, BenchmarkTools, SparseArrays, LinearAlgebra, Statistics, Plots, QuadGK, LinearInterpolations, ForwardDiff, FiniteDifferences, DelimitedFiles, Random, FFTW
+using Revise, Parameters, BenchmarkTools, SparseArrays, LinearAlgebra, Statistics, Plots, QuadGK, LinearInterpolations, ForwardDiff, FiniteDifferences, DelimitedFiles, Random, FFTW, ColorSchemes
 
 """
 const a1 = [1.0; 0.0; 0.0]

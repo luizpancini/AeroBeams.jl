@@ -129,25 +129,25 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
     # Plot undeformed and deformed beam assemblies actording to view
     if isnothing(view)
         if x1Plane
-            plot!(xlabel=string("\$x_2\$ [",units.length,("]")),ylabel=string("\$x_3\$ [",units.length,("]")))
+            plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
             plot!(x2Undef, x3Undef, color=colorUndef,linewidth=linewidth,label=false)
             plot!(x2Def, x3Def, color=colorDef,aspect_ratio=:equal,linewidth=linewidth,label=false)
         elseif x2Plane
-            plot!(xlabel=string("\$x_1\$ [",units.length,("]")),ylabel=string("\$x_3\$ [",units.length,("]")))
+            plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
             plot!(x1Undef, x3Undef, color=colorUndef,linewidth=linewidth,label=false)
             plot!(x1Def, x3Def, color=colorDef,aspect_ratio=:equal,linewidth=linewidth,label=false)
         elseif x3Plane
-            plot!(xlabel=string("\$x_1\$ [",units.length,("]")),ylabel=string("\$x_2\$ [",units.length,("]")))
+            plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
             plot!(x1Undef, x2Undef, color=colorUndef,linewidth=linewidth,label=false)
             plot!(x1Def, x2Def, color=colorDef,aspect_ratio=:equal,linewidth=linewidth,label=false)
         else
             view = (45,45)
-            plot!(xlabel=string("\$x_1\$ [",units.length,("]")),ylabel=string("\$x_2\$ [",units.length,("]")),zlabel=string("\$x_3\$ [",units.length,("]")))
+            plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
             plot!(x1Undef, x2Undef, x3Undef, camera=view,color=colorUndef,linewidth=linewidth,label=false)
             plot!(x1Def, x2Def, x3Def, camera=view,color=colorDef,linewidth=linewidth,label=false)
         end
     else
-        plot!(xlabel=string("\$x_1\$ [",units.length,("]")),ylabel=string("\$x_2\$ [",units.length,("]")),zlabel=string("\$x_3\$ [",units.length,("]")))
+        plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
         plot!(x1Undef, x2Undef, x3Undef, camera=view,color=colorUndef,linewidth=linewidth,label=false)
         plot!(x1Def, x2Def, x3Def, camera=view,color=colorDef,linewidth=linewidth,label=false)
     end
@@ -194,6 +194,305 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
     return plt
 end
 export plot_steady_deformation
+
+
+"""
+plot_steady_outputs(problem::Problem)
+
+Plots outputs of a steady problem
+
+# Arguments
+- `problem::Problem`
+"""
+function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,save::Bool=false,saveFolder::String="/test/outputs/figures/",saveExtension::String=".pdf")
+
+    # Validate
+    validOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3","V","V1","V2","V3","Ω","Ω1","Ω2","Ω3","α","cn","cm","ct","cl","cd"]
+    @assert all(out -> out in validOutputs, outputs) "set outputs as one of $(join(validOutputs, ','))"
+
+    # Set backend
+    gr()
+
+    # Initialize elemental and nodal variables arrays for each beam
+    Nbeams = length(problem.model.beams)
+    x1Nodes = [Vector{Float64}() for _ in 1:Nbeams]
+    x1Elems = [Vector{Float64}() for _ in 1:Nbeams]
+    uNodes = [Vector{Float64}() for _ in 1:Nbeams]
+    pNodes = [Vector{Float64}() for _ in 1:Nbeams]
+    FNodes = [Vector{Float64}() for _ in 1:Nbeams]
+    MNodes = [Vector{Float64}() for _ in 1:Nbeams]
+    VElems = [Vector{Float64}() for _ in 1:Nbeams]
+    ΩElems = [Vector{Float64}() for _ in 1:Nbeams]
+    αₑElems = [Vector{Float64}() for _ in 1:Nbeams]
+    cnElems = [Vector{Float64}() for _ in 1:Nbeams]
+    cmElems = [Vector{Float64}() for _ in 1:Nbeams]
+    ctElems = [Vector{Float64}() for _ in 1:Nbeams]
+    clElems = [Vector{Float64}() for _ in 1:Nbeams]
+    cdElems = [Vector{Float64}() for _ in 1:Nbeams]
+
+    # Loop over elements
+    for (e,element) in enumerate(problem.model.elements)
+        # Parent beam ID
+        beamID = element.parent.ID
+        # Elemental and nodal arclength positions
+        x1_n = vcat(element.x1_n1,element.x1_n2)
+        x1_e = element.x1
+        # Elemental and nodal states
+        u = vcat(problem.nodalStatesOverσ[end][e].u_n1,problem.nodalStatesOverσ[end][e].u_n2)
+        p = vcat(problem.nodalStatesOverσ[end][e].p_n1,problem.nodalStatesOverσ[end][e].p_n2)
+        F = vcat(problem.nodalStatesOverσ[end][e].F_n1,problem.nodalStatesOverσ[end][e].F_n2)
+        M = vcat(problem.nodalStatesOverσ[end][e].M_n1,problem.nodalStatesOverσ[end][e].M_n2)
+        V = problem.elementalStatesOverσ[end][e].V
+        Ω = problem.elementalStatesOverσ[end][e].Ω
+        # Add to arrays
+        append!(x1Nodes[beamID],x1_n)
+        append!(x1Elems[beamID],x1_e)
+        append!(uNodes[beamID],u)
+        append!(pNodes[beamID],p)
+        append!(FNodes[beamID],F)
+        append!(MNodes[beamID],M)
+        append!(VElems[beamID],V)
+        append!(ΩElems[beamID],Ω)
+        # Skip elements without aero
+        if isnothing(element.aero)
+            continue
+        end
+        # Aerodynamic coefficients
+        αₑ = problem.aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ
+        cn = problem.aeroVariablesOverσ[end][e].aeroCoefficients.cn
+        cm = problem.aeroVariablesOverσ[end][e].aeroCoefficients.cm
+        ct = problem.aeroVariablesOverσ[end][e].aeroCoefficients.ct
+        cl = cn .* cos(αₑ) .+ ct .* sin(αₑ)
+        cd = cn .* sin(αₑ) .- ct .* cos(αₑ)
+        # Add to arrays
+        append!(αₑElems[beamID],αₑ)
+        append!(cnElems[beamID],cn)
+        append!(cmElems[beamID],cm)
+        append!(ctElems[beamID],ct)
+        append!(clElems[beamID],cl)
+        append!(cdElems[beamID],cd)
+    end
+
+    # Plot outputs
+    @unpack units = problem.model
+    if "u" in outputs || "u1" in outputs
+        plt_u1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=1,units=units,YLabel="u_1",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"u1",saveExtension))
+        end
+    end
+    if "u" in outputs || "u2" in outputs
+        plt_u2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=2,units=units,YLabel="u_2",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"u2",saveExtension))
+        end
+    end
+    if "u" in outputs || "u3" in outputs
+        plt_u3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=3,units=units,YLabel="u_3",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"u3",saveExtension))
+        end
+    end
+    if "p" in outputs || "p1" in outputs
+        plt_p1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=1,units=units,YLabel="p_1",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"p1",saveExtension))
+        end
+    end
+    if "p" in outputs || "p2" in outputs
+        plt_p2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=2,units=units,YLabel="p_2",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"p2",saveExtension))
+        end
+    end 
+    if "p" in outputs || "p3" in outputs
+        plt_p3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=3,units=units,YLabel="p_3",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"p3",saveExtension))
+        end
+    end
+    if "F" in outputs || "F1" in outputs
+        plt_F1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=1,units=units,YLabel="F_1^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"F1",saveExtension))
+        end
+    end
+    if "F" in outputs || "F2" in outputs
+        plt_F2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=2,units=units,YLabel="F_2^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"F2",saveExtension))
+        end
+    end
+    if "F" in outputs || "F3" in outputs
+        plt_F3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=3,units=units,YLabel="F_3^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"F3",saveExtension))
+        end
+    end
+    if "M" in outputs || "M1" in outputs
+        plt_M1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=1,units=units,YLabel="M_1^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"M1",saveExtension))
+        end
+    end
+    if "M" in outputs || "M2" in outputs
+        plt_M2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=2,units=units,YLabel="M_2^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"M2",saveExtension))
+        end
+    end
+    if "M" in outputs || "M3" in outputs
+        plt_M3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=3,units=units,YLabel="M_3^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"M3",saveExtension))
+        end
+    end
+    if "V" in outputs || "V1" in outputs
+        plt_V1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=1,units=units,YLabel="V_1^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"V1",saveExtension))
+        end
+    end
+    if "V" in outputs || "V2" in outputs
+        plt_V2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=2,units=units,YLabel="V_2^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"V2",saveExtension))
+        end
+    end
+    if "V" in outputs || "V3" in outputs
+        plt_V3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=3,units=units,YLabel="V_3^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"V3",saveExtension))
+        end
+    end
+    if "Ω" in outputs || "Ω1" in outputs
+        plt_Ω1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=1,units=units,YLabel="Ω_1^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"Ω1",saveExtension))
+        end
+    end
+    if "Ω" in outputs || "Ω2" in outputs
+        plt_Ω2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=2,units=units,YLabel="Ω_2^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"Ω2",saveExtension))
+        end
+    end
+    if "Ω" in outputs || "Ω3" in outputs
+        plt_Ω3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=3,units=units,YLabel="Ω_3^*",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"Ω3",saveExtension))
+        end
+    end
+    if "α" in outputs 
+        plt_α = plot_output_of_x1(beamGroups,x1=x1Elems,output=αₑElems,ind=0,units=units,YLabel="\\alpha",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"α",saveExtension))
+        end
+    end
+    if "cn" in outputs 
+        plt_cn = plot_output_of_x1(beamGroups,x1=x1Elems,output=cnElems,ind=0,units=units,YLabel="c_n",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"cn",saveExtension))
+        end
+    end
+    if "cm" in outputs 
+        plt_cm = plot_output_of_x1(beamGroups,x1=x1Elems,output=cmElems,ind=0,units=units,YLabel="c_m",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"cm",saveExtension))
+        end
+    end
+    if "ct" in outputs 
+        plt_ct = plot_output_of_x1(beamGroups,x1=x1Elems,output=ctElems,ind=0,units=units,YLabel="c_t",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"ct",saveExtension))
+        end
+    end
+    if "cl" in outputs 
+        plt_cl = plot_output_of_x1(beamGroups,x1=x1Elems,output=clElems,ind=0,units=units,YLabel="c_l",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"cl",saveExtension))
+        end
+    end
+    if "cd" in outputs 
+        plt_cd = plot_output_of_x1(beamGroups,x1=x1Elems,output=cdElems,ind=0,units=units,YLabel="c_d",lw=lw)
+        if save
+            savefig(string(pwd(),saveFolder,"cd",saveExtension))
+        end
+    end
+
+    return nothing
+end
+export plot_steady_outputs
+
+
+"""
+plot_output_of_x1(beamGroups,x1,output,ind,colors=get(colorschemes[:rainbow], LinRange(0,1,length(beamGroups))))
+
+Plots output along the arclength coordinate for each beam group
+
+# Arguments
+- `problem::Problem`
+"""
+function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(colorschemes[:rainbow],LinRange(0,1,length(beamGroups)+1)),lw=1)
+
+    # Initialize multiplication factor
+    γ = 1
+
+    # Set ylabel unit
+    if YLabel == "\\alpha"
+        γ = 180/π
+        yLabelUnit = "deg"
+    elseif YLabel in ["c_n","c_m","c_t","c_l","c_d"]
+        yLabelUnit = " "   
+    elseif occursin("u",YLabel)
+        yLabelUnit = units.length
+    elseif occursin("p",YLabel)
+        yLabelUnit = " "
+    elseif occursin("F",YLabel)
+        yLabelUnit = units.force
+    elseif occursin("M",YLabel)
+        yLabelUnit = string(units.force,".",units.length)
+    elseif occursin("V",YLabel)
+        yLabelUnit = string(units.length,"/s")
+    elseif occursin("Ω",YLabel)
+        γ = units.angle == "deg" ? 180/π : 1
+        yLabelUnit = string(units.angle,"/s") 
+    end
+
+    # Initialize plot 
+    plt = plot(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$",YLabel,"\$ [",yLabelUnit,"]"))
+
+    # Loop beam groups
+    for (i,beamGroup) in enumerate(beamGroups)
+        # Initialize x1 end coordinate from previous beam in the group
+        x1Previous = 0
+        # Initialize arrays for plot
+        x1BeamGroup = Vector{Float64}()
+        outputBeamGroup = Vector{Float64}()
+        # Loop over beams
+        for (b,beamID) in enumerate(beamGroup)
+            # Range of current x1 array
+            Nx1 = length(x1[beamID])
+            # Adjust x1 coordinate
+            append!(x1BeamGroup,x1[beamID])
+            if b > 1
+                x1Previous += x1[b-1][end]
+                x1BeamGroup[end-Nx1+1:end] += x1Previous
+            end
+            # Set range of outputs array to be plotted
+            range = ind > 0 ? (ind:3:length(output[beamID])) : (1:length(output[beamID]))
+            # Concatenate outputs for beam group
+            append!(outputBeamGroup,γ*output[beamID][range])
+        end
+        # Plot output
+        plt = plot!(plt, x1BeamGroup,outputBeamGroup,lw=lw,color=colors[i],label="Beam group $(i)")
+    end
+
+    # Display
+    display(plt)
+
+    return plt
+end
 
 
 """

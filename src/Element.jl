@@ -345,7 +345,7 @@ mutable struct Element <: BeamElement
         x1_n1_norm,x1_n2_norm = parent.normalizedNodalPositions[nodesLocalID]
 
         # Nodal arclength positions
-        x1_n1,x1_n2 = parent.length * parent.normalizedNodalPositions[nodesLocalID]
+        x1_n1,x1_n2 = round_off!(parent.length * parent.normalizedNodalPositions[nodesLocalID])
 
         # Length
         Δℓ = x1_n2-x1_n1
