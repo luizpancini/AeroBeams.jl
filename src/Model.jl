@@ -453,7 +453,7 @@ function assemble_model!(model::Model,beams::Vector{Beam})
             end
             # Add coordinates of the beam's first node starting at the second beam
             if ID > 1
-                firstNodeOfBeam = minimum(nodeRange)
+                firstNodeOfBeam = nodeRange[1]
                 coordinatesOfFirstNode = r_n[firstNodeOfBeam]
                 element.r_n1 .+= coordinatesOfFirstNode 
                 element.r_n2 .+= coordinatesOfFirstNode
