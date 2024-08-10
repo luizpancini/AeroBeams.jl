@@ -279,11 +279,11 @@ Defines the problem of eigen type
     # TF to get linear solution
     getLinearSolution::Bool
     # Number of desired oscillatory modes
-    nModes::Int64 = Inf64
+    nModes::Int64
     # Frequency filter limits
-    frequencyFilterLimits::Vector{Float64} = [0,Inf64]
+    frequencyFilterLimits::Vector{Float64}
     # TF to normalize mode shapes
-    normalizeModeShapes::Bool = false
+    normalizeModeShapes::Bool
     # Secondary (outputs from problem creation)
     # -----------------------------------------
     # States, residual, Jacobian and inertia arrays
@@ -332,7 +332,7 @@ export EigenProblem
 
 
 # Constructor
-function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=false,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0))
+function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0))
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes)
@@ -787,7 +787,7 @@ function solve_eigen!(problem::Problem)
     ## Non-oscillatory (aerodynamic, divergence) modes
     #---------------------------------------------------------------------------
     # Get indices of non-oscillatory (zero frequency) modes
-    nonOscillatoryIndices = findall( x -> x == 0, frequencies)
+    nonOscillatoryIndices = findall( x -> isapprox(x,0), frequencies)
     # Non-oscillatory dampings 
     dampingsNonOscillatory = real.(eigenvalues[nonOscillatoryIndices])
     # Non-oscillatory eigenvectors
@@ -815,6 +815,7 @@ function solve_eigen!(problem::Problem)
         dampingsOscillatory = dampingsOscillatory[1:nModes]
         eigenvectorsOscillatoryCplx = eigenvectorsOscillatoryCplx[:,1:nModes]
     else
+        nModes = availableNModes
         display("Only $availableNModes modes could be calculated, due to limited number of elements or frequency filter limits")
     end
     
@@ -842,7 +843,7 @@ function solve_eigen!(problem::Problem)
     modeShapesAbs = get_mode_shapes!(problem,eigenvectorsOscillatoryAbs,frequenciesOscillatory,dampingsOscillatory)
     modeShapesAbsNonOsc = get_mode_shapes!(problem,eigenvectorsNonOscillatoryAbs,zeros(length(dampingsNonOscillatory)),dampingsNonOscillatory)
 
-    @pack! problem = frequencies,dampings,eigenvectors,frequenciesFiltered,dampingsFiltered,eigenvectorsFiltered,dampingsNonOscillatory,frequenciesOscillatory,dampingsOscillatory,eigenvectorsOscillatoryCplx,eigenvectorsOscillatoryAbs,eigenvectorsNonOscillatory,modeShapesCplx,modeShapesAbs,modeShapesAbsNonOsc
+    @pack! problem = nModes,frequencies,dampings,eigenvectors,frequenciesFiltered,dampingsFiltered,eigenvectorsFiltered,dampingsNonOscillatory,frequenciesOscillatory,dampingsOscillatory,eigenvectorsOscillatoryCplx,eigenvectorsOscillatoryAbs,eigenvectorsNonOscillatory,modeShapesCplx,modeShapesAbs,modeShapesAbsNonOsc
 
 end
 export solve_eigen!
@@ -878,6 +879,14 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
         for (e,element) in enumerate(elements)
             # Get modal states for current element
             u,p,F,M,V,Ω,γ,κ,P,H,u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2 = element_modal_states(element,eigenvector,forceScaling)
+            # Manually correct nodal values
+            if e > 1
+                u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1 = fix_nodal_modal_states!(model,element,modeShape)
+            end
+            # Add states to current mode 
+            @pack! modeShape.elementalStates[e] = u,p,F,M,V,Ω
+            @pack! modeShape.complementaryElementalStates[e] = γ,κ,P,H
+            @pack! modeShape.nodalStates[e] = u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
             # Update arrays
             append!(uArray,u_n1,u,u_n2)
             append!(pArray,p_n1,p,p_n2)
@@ -890,10 +899,6 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
             append!(PArray,P)
             append!(HArray,H)
             append!(θArray,θ_n1,θ_n2)
-            # Add states to current mode 
-            @pack! modeShape.elementalStates[e] = u,p,F,M,V,Ω
-            @pack! modeShape.complementaryElementalStates[e] = γ,κ,P,H
-            @pack! modeShape.nodalStates[e] = u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
         end
         # Normalize mode shapes by maxima, if applicable
         if normalizeModeShapes
@@ -936,6 +941,34 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
     end
     
     return modeShapes
+end
+
+
+"""
+fix_nodal_modal_states!(problem::Problem)
+
+Corrects the nodal modal states which may not coincide depending on which element is considered
+
+# Arguments
+- problem::Problem
+"""
+function fix_nodal_modal_states!(model,element,modeShape)
+
+    @unpack elementNodes = model
+
+    # Find global ID of the first element that contains the local first node
+    firstElem = findfirst(row -> element.nodesGlobalID[1] in row, elementNodes)
+
+    # Set value of local first node as that of the second local node of that element
+    u_n1 = modeShape.nodalStates[firstElem].u_n2
+    p_n1 = modeShape.nodalStates[firstElem].p_n2
+    u_n1_b = modeShape.nodalStates[firstElem].u_n2_b
+    p_n1_b = modeShape.nodalStates[firstElem].p_n2_b
+    F_n1 = modeShape.nodalStates[firstElem].F_n2
+    M_n1 = modeShape.nodalStates[firstElem].M_n2
+    θ_n1 = modeShape.nodalStates[firstElem].θ_n2
+
+    return u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1
 end
 
 
