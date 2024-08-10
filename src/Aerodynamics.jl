@@ -400,13 +400,13 @@ Computes the normal force aerodynamic coefficient for attached flow
 """
 function attached_flow_cn!(element::Element,δNow)
 
-    @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid = element.aero
+    @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid,smallAngles = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙdotMid = element.aero.flowVelocitiesAndRates
     @unpack ϵₙ,cnα,cnδ = element.aero.airfoil.attachedFlowParameters
 
-    # Circulatory component 
-    cnC = cnα * sin(αₑ) * cos(αₑ)
+    # Circulatory component
+    cnC = smallAngles ? cnα * αₑ : cnα * sin(αₑ) * cos(αₑ)
     if flapped && typeof(flapLoadsSolver) == TableLookup
         cnC += cnδ*δNow
     end
@@ -483,12 +483,12 @@ Computes the tangential force aerodynamic coefficient for attached flow
 """
 function attached_flow_ct!(element::Element,δNow)
 
-    @unpack flapped,flapLoadsSolver,ϖMid = element.aero
+    @unpack flapped,flapLoadsSolver,ϖMid,smallAngles = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack η,cd₀,cdδ,cnα = element.aero.airfoil.attachedFlowParameters
 
     # Circulatory component
-    ct = -cd₀/cos(αₑ) + η * cnα * sin(αₑ)^2
+    ct = smallAngles ? -cd₀ + cnα * αₑ^2 : -cd₀/cos(αₑ) + η * cnα * sin(αₑ)^2
     if flapped && typeof(flapLoadsSolver) == TableLookup
         ct -= cdδ*abs(δNow)/cos(αₑ)
     end

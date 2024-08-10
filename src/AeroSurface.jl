@@ -62,6 +62,8 @@
     hasTipCorrection::Bool
     tipLossFunction::Union{Nothing,<:Function}
     tipLossDecayFactor::Number
+    # TF for small angle of attack approximations
+    smallAngles::Bool
 
     # Secondary (outputs from aero surface creation)
     # ----------------------------------------------
@@ -76,7 +78,7 @@ export AeroSurface
 
 
 # Constructor
-function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64)
+function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
 
     # Validate
     if c isa Number
@@ -138,7 +140,7 @@ function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::Flap
         δddot = t -> ForwardDiff.derivative(δdot, t)
     end
 
-    return AeroSurface(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=c,Λ=Λ,normSparPos=normSparPos,normFlapSpan=normFlapSpan,normFlapPos=normFlapPos,δIsInput=δIsInput,δIsTrimVariable=δIsTrimVariable,δIsZero=δIsZero,δ=δ,flapSiteID=flapSiteID,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossFunction=tipLossFunction,tipLossDecayFactor=tipLossDecayFactor,δdot=δdot,δddot=δddot,hasIndependentFlap=true)
+    return AeroSurface(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=c,Λ=Λ,normSparPos=normSparPos,normFlapSpan=normFlapSpan,normFlapPos=normFlapPos,δIsInput=δIsInput,δIsTrimVariable=δIsTrimVariable,δIsZero=δIsZero,δ=δ,flapSiteID=flapSiteID,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossFunction=tipLossFunction,tipLossDecayFactor=tipLossDecayFactor,δdot=δdot,δddot=δddot,smallAngles=smallAngles,hasIndependentFlap=true)
 
 end
 export create_AeroSurface

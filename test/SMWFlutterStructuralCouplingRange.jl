@@ -6,7 +6,8 @@ chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
+smallAngles = true
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,smallAngles=smallAngles)
 
 # Set torsion / chordwise bending coupling factor range
 ΨRange = collect(-0.2:0.2:0.2)
