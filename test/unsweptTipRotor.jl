@@ -30,9 +30,9 @@ nModes = 6
 #-------------------------------------------------------------------------------
 # Beams
 complianceMatrix = zeros(6,6)
-complianceMatrix[1:3,1:3] .= [   1/(E11*A) -ν12/(G12*A*Ksy)  -ν13/(G13*A*Ksz);
-                          -ν12/(G12*A*Ksy)    1/(G12*A*Ksy)      -ν23/(G23*A);
-                          -ν13/(G13*A*Ksz)     -ν23/(G23*A)     1/(G13*A*Ksz)]
+complianceMatrix[1:3,1:3] .= [1/(E11*A) 0 0;
+                              0 1/(G12*A*Ksy) 0;
+                              0 0 1/(G13*A*Ksz)]
 complianceMatrix[4:6,4:6] .= diagm([1/(G23*J*Kt); 1/(E11*Iy); 1/(E11*Iz)])
 stiffnessMatrix = inv(complianceMatrix)
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
@@ -42,7 +42,7 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[i
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Create model
-unsweptTipRotor = create_Model(name="unsweptTipRotor",beams=[beam],BCs=[clamp],initialPosition=r0)
+unsweptTipRotor = create_Model(name="unsweptTipRotor",beams=[beam],BCs=[clamp],initialPosition=r0,units=create_UnitsSystem(length="in",force="lbf",frequency="Hz"))
 
 # Initialize outputs
 numFreqs = Vector{Vector{Float64}}(undef,length(ωRange))
@@ -74,18 +74,24 @@ expFreqs = [5.2374e+00   7.4239e+00   1.1018e+01   1.5820e+01;
 colors = get(colorschemes[:darkrainbow], LinRange(0, 1, 4))
 labels = ["1B", "2B", "3B", "4B"]
 
+# Mode shapes
+modesPlot = plot_mode_shapes(problem,scale=5,view=(30,30),frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/unsweptTipRotor/unsweptTipRotor_modeShapes.pdf")
+display(modesPlot)
+
 # Plot frequency over angular velocity for several modes
+gr()
 plt1 = plot(xlabel="Angular velocity [rpm]", ylabel="Frequency [Hz]", title="Bending modes", xticks=ωRPMExp, yticks=collect(0:20:200))
 modes = [1,2,5,6]
 plot!([NaN], [NaN], lc=:black, lw=2, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=5, label="Epps & Chandra (1996)")
+scatter!([NaN], [NaN], mc=:black, ms=5, msw=0, label="Epps & Chandra (1996)")
 for (m,mode) in enumerate(modes)  
     numFreqsMode = [numFreqs[j][mode]/(2*π) for j in 1:length(ωRPM)]
     plot!(ωRPM,numFreqsMode, lc=colors[m], lw=2, label=false)
-    scatter!(ωRPMExp,expFreqs[m,:], mc=colors[m], ms=5, label=false)
-    plot!([NaN], [NaN], lc=colors[m], m=colors[m], lw=2, ms=5, label=labels[m])
+    scatter!(ωRPMExp,expFreqs[m,:], mc=colors[m], ms=5, msw=0, label=false)
+    plot!([NaN], [NaN], lc=colors[m], m=colors[m], lw=2, ms=5, msw=0, label=labels[m])
 end
+plot!(legend=(0.15,0.8))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/unsweptTipRotor.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/unsweptTipRotor/unsweptTipRotor_freqVsOmega.pdf"))
 
 println("Finished unsweptTipRotor.jl")

@@ -6,7 +6,7 @@ Plots the nodal coordinates of the assembly of beams
 # Arguments
 - `model::Model`
 """
-function plot_undeformed_assembly(model::Model,view=(45,45))
+function plot_undeformed_assembly(model::Model,view=(45,45),equalAspectRatio::Bool=true)
 
     # Initialize backend
     pyplot()
@@ -33,7 +33,11 @@ function plot_undeformed_assembly(model::Model,view=(45,45))
         x1min,x1max = min(x1min,x1ext[1]),max(x1max,x1ext[2])
         x2min,x2max = min(x2min,x2ext[1]),max(x2max,x2ext[2])
         x3min,x3max = min(x3min,x3ext[1]),max(x3max,x3ext[2])
-        # plot!(xlims=(x1min,x1max), ylims=(x2min,x2max), zlims=(x3min,x3max))
+        if equalAspectRatio
+            lowerLim = min(x1min,x2min,x3min)
+            upperLim = max(x1max,x2max,x3max)
+            plot!(xlims=(lowerLim,upperLim), ylims=(lowerLim,upperLim), zlims=(lowerLim,upperLim))
+        end
         
         # Plot nodes
         scatter!(x1, x2, x3, c=:black, ms=3, label=false)
@@ -61,7 +65,7 @@ Plots the initial and final deformed states for the model in the given problem
 - `problem::Problem`
 - `view` = view angles
 """
-function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,linewidth::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,linewidth::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -112,8 +116,8 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
         end
         @unpack Rw = aero
         # Rotation tensors
-        R_n1,_ = rotation_tensor_WM(p_n1)
-        R_n2,_ = rotation_tensor_WM(p_n2)
+        R_n1,_ = rotation_tensor_WM(scale*p_n1)
+        R_n2,_ = rotation_tensor_WM(scale*p_n2)
         # Undeformed nodal airfoil coordinates
         undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
         # Deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*Rw*), then throw back to initial position (+r) and add scaled displacements (+scale*u))
@@ -179,12 +183,18 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
         plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,maxAeroForce,maxAeroMoment,1)
     end
 
+    # Initialize plot limits
+    plotMin = plotMax = 0
+
     # Set the same plot extrema across all axis (equal aspect ratio), if applicable
     if !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
-        plotMax = max(maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
-        plotMin = min(minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
+        plotMax = max(plotMax,maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
+        plotMin = min(plotMin,minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
         plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
     end
+
+    # Set legend position
+    plot!(legend=legendPos)
 
     # Save, if applicable
     if save
@@ -204,7 +214,7 @@ Plots outputs of a steady problem
 # Arguments
 - `problem::Problem`
 """
-function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,save::Bool=false,saveFolder::String="/test/outputs/figures/",saveExtension::String=".pdf")
+function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",saveExtension::String=".pdf")
 
     # Validate
     validOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3","V","V1","V2","V3","Ω","Ω1","Ω2","Ω3","α","cn","cm","ct","cl","cd"]
@@ -276,145 +286,145 @@ function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p",
     # Plot outputs
     @unpack units = problem.model
     if "u" in outputs || "u1" in outputs
-        plt_u1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=1,units=units,YLabel="u_1",lw=lw)
+        plt_u1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=1,units=units,YLabel="u_1",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"u1",saveExtension))
         end
     end
     if "u" in outputs || "u2" in outputs
-        plt_u2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=2,units=units,YLabel="u_2",lw=lw)
+        plt_u2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=2,units=units,YLabel="u_2",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"u2",saveExtension))
         end
     end
     if "u" in outputs || "u3" in outputs
-        plt_u3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=3,units=units,YLabel="u_3",lw=lw)
+        plt_u3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=3,units=units,YLabel="u_3",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"u3",saveExtension))
         end
     end
     if "p" in outputs || "p1" in outputs
-        plt_p1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=1,units=units,YLabel="p_1",lw=lw)
+        plt_p1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=1,units=units,YLabel="p_1",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"p1",saveExtension))
         end
     end
     if "p" in outputs || "p2" in outputs
-        plt_p2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=2,units=units,YLabel="p_2",lw=lw)
+        plt_p2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=2,units=units,YLabel="p_2",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"p2",saveExtension))
         end
     end 
     if "p" in outputs || "p3" in outputs
-        plt_p3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=3,units=units,YLabel="p_3",lw=lw)
+        plt_p3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=3,units=units,YLabel="p_3",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"p3",saveExtension))
         end
     end
     if "F" in outputs || "F1" in outputs
-        plt_F1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=1,units=units,YLabel="F_1^*",lw=lw)
+        plt_F1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=1,units=units,YLabel="F_1^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"F1",saveExtension))
         end
     end
     if "F" in outputs || "F2" in outputs
-        plt_F2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=2,units=units,YLabel="F_2^*",lw=lw)
+        plt_F2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=2,units=units,YLabel="F_2^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"F2",saveExtension))
         end
     end
     if "F" in outputs || "F3" in outputs
-        plt_F3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=3,units=units,YLabel="F_3^*",lw=lw)
+        plt_F3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=3,units=units,YLabel="F_3^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"F3",saveExtension))
         end
     end
     if "M" in outputs || "M1" in outputs
-        plt_M1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=1,units=units,YLabel="M_1^*",lw=lw)
+        plt_M1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=1,units=units,YLabel="M_1^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"M1",saveExtension))
         end
     end
     if "M" in outputs || "M2" in outputs
-        plt_M2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=2,units=units,YLabel="M_2^*",lw=lw)
+        plt_M2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=2,units=units,YLabel="M_2^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"M2",saveExtension))
         end
     end
     if "M" in outputs || "M3" in outputs
-        plt_M3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=3,units=units,YLabel="M_3^*",lw=lw)
+        plt_M3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=3,units=units,YLabel="M_3^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"M3",saveExtension))
         end
     end
     if "V" in outputs || "V1" in outputs
-        plt_V1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=1,units=units,YLabel="V_1^*",lw=lw)
+        plt_V1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=1,units=units,YLabel="V_1^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"V1",saveExtension))
         end
     end
     if "V" in outputs || "V2" in outputs
-        plt_V2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=2,units=units,YLabel="V_2^*",lw=lw)
+        plt_V2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=2,units=units,YLabel="V_2^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"V2",saveExtension))
         end
     end
     if "V" in outputs || "V3" in outputs
-        plt_V3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=3,units=units,YLabel="V_3^*",lw=lw)
+        plt_V3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=3,units=units,YLabel="V_3^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"V3",saveExtension))
         end
     end
     if "Ω" in outputs || "Ω1" in outputs
-        plt_Ω1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=1,units=units,YLabel="Ω_1^*",lw=lw)
+        plt_Ω1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=1,units=units,YLabel="Ω_1^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"Ω1",saveExtension))
         end
     end
     if "Ω" in outputs || "Ω2" in outputs
-        plt_Ω2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=2,units=units,YLabel="Ω_2^*",lw=lw)
+        plt_Ω2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=2,units=units,YLabel="Ω_2^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"Ω2",saveExtension))
         end
     end
     if "Ω" in outputs || "Ω3" in outputs
-        plt_Ω3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=3,units=units,YLabel="Ω_3^*",lw=lw)
+        plt_Ω3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=3,units=units,YLabel="Ω_3^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"Ω3",saveExtension))
         end
     end
     if "α" in outputs 
-        plt_α = plot_output_of_x1(beamGroups,x1=x1Elems,output=αₑElems,ind=0,units=units,YLabel="\\alpha",lw=lw)
+        plt_α = plot_output_of_x1(beamGroups,x1=x1Elems,output=αₑElems,ind=0,units=units,YLabel="\\alpha",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"α",saveExtension))
         end
     end
     if "cn" in outputs 
-        plt_cn = plot_output_of_x1(beamGroups,x1=x1Elems,output=cnElems,ind=0,units=units,YLabel="c_n",lw=lw)
+        plt_cn = plot_output_of_x1(beamGroups,x1=x1Elems,output=cnElems,ind=0,units=units,YLabel="c_n",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"cn",saveExtension))
         end
     end
     if "cm" in outputs 
-        plt_cm = plot_output_of_x1(beamGroups,x1=x1Elems,output=cmElems,ind=0,units=units,YLabel="c_m",lw=lw)
+        plt_cm = plot_output_of_x1(beamGroups,x1=x1Elems,output=cmElems,ind=0,units=units,YLabel="c_m",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"cm",saveExtension))
         end
     end
     if "ct" in outputs 
-        plt_ct = plot_output_of_x1(beamGroups,x1=x1Elems,output=ctElems,ind=0,units=units,YLabel="c_t",lw=lw)
+        plt_ct = plot_output_of_x1(beamGroups,x1=x1Elems,output=ctElems,ind=0,units=units,YLabel="c_t",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"ct",saveExtension))
         end
     end
     if "cl" in outputs 
-        plt_cl = plot_output_of_x1(beamGroups,x1=x1Elems,output=clElems,ind=0,units=units,YLabel="c_l",lw=lw)
+        plt_cl = plot_output_of_x1(beamGroups,x1=x1Elems,output=clElems,ind=0,units=units,YLabel="c_l",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"cl",saveExtension))
         end
     end
     if "cd" in outputs 
-        plt_cd = plot_output_of_x1(beamGroups,x1=x1Elems,output=cdElems,ind=0,units=units,YLabel="c_d",lw=lw)
+        plt_cd = plot_output_of_x1(beamGroups,x1=x1Elems,output=cdElems,ind=0,units=units,YLabel="c_d",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"cd",saveExtension))
         end
@@ -426,6 +436,208 @@ export plot_steady_outputs
 
 
 """
+plot_mode_shapes(problem::Problem)
+
+Plots the mode shapes of the model in the given problem
+
+# Arguments
+- `problem::Problem`
+- `view` = view angles
+"""
+function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",linewidth::Number=1,colorSteady=:black,modalColorScheme=:darkrainbow,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+
+    # Validate
+    @assert problem isa EigenProblem
+    @assert linewidth > 0
+    @assert tolPlane > 0
+    @assert 0 < surfα <= 1
+
+    # Set backend
+    pyplot()
+
+    # Unpack
+    @unpack nModes,modeShapesAbs = problem
+    @unpack elements,nElementsTotal,units = problem.model
+    damps = problem.dampingsOscillatory
+    freqs = problem.frequenciesOscillatory
+
+    # Set mode colors
+    modeColors = nModes == 1 ? get(colorschemes[modalColorScheme], LinRange(0,1,nModes+1)) : get(colorschemes[modalColorScheme], LinRange(0,1,nModes))
+
+    # Set frequency multiplier
+    if units.frequency == "rad/s"
+        γ = 1
+    elseif units.frequency == "Hz"
+        γ = 1/(2π)
+    elseif units.frequency == "rpm"
+        γ = 60/2π
+    end
+
+    # Initialize plot
+    plt = plot(grid=grid)
+    plot!([NaN],[NaN], c=colorSteady, linewidth=linewidth, label="Steady")
+    for m in 1:nModes
+        if frequencyLabel == "frequency"
+            label = string("Mode $(m): ω = $(round(γ*freqs[m],sigdigits=3)) ", units.frequency)
+        elseif frequencyLabel == "frequency&damping"
+            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],sigdigits=3)) ", units.frequency)
+        end
+        plot!([NaN],[NaN], c=modeColors[m], linewidth=linewidth, label=label)
+    end
+
+    # Initialize arrays
+    x1Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+    x2Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+    x3Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+    x1Steady = Array{Vector{Float64}}(undef,nElementsTotal)
+    x2Steady = Array{Vector{Float64}}(undef,nElementsTotal)
+    x3Steady = Array{Vector{Float64}}(undef,nElementsTotal)
+    undefAirfoilCoords_n1 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+    undefAirfoilCoords_n2 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+    steadyAirfoilCoords_n1 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+    steadyAirfoilCoords_n2 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+
+    # Loop over elements
+    for (e,element) in enumerate(elements)     
+        @unpack r_n1,r_n2,nodalStates,aero = element
+        @unpack u_n1,u_n2,p_n1,p_n2 = nodalStates
+        # Set undeformed coordinates
+        x1Undef[e] = [r_n1[1]; r_n2[1]]
+        x2Undef[e] = [r_n1[2]; r_n2[2]]
+        x3Undef[e] = [r_n1[3]; r_n2[3]]
+        # Set steady deformed coordinates
+        x1Steady[e] = x1Undef[e] .+ [u_n1[1]; u_n2[1]]
+        x2Steady[e] = x2Undef[e] .+ [u_n1[2]; u_n2[2]]
+        x3Steady[e] = x3Undef[e] .+ [u_n1[3]; u_n2[3]]
+        # Skip elements without aero surfaces, or if those are not to be plotted
+        if !plotAeroSurf || isnothing(aero)
+            undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e],steadyAirfoilCoords_n1[e],steadyAirfoilCoords_n2[e] = nothing,nothing,nothing,nothing
+            continue
+        end
+        @unpack Rw = aero
+        # Rotation tensors
+        R_n1,_ = rotation_tensor_WM(p_n1)
+        R_n2,_ = rotation_tensor_WM(p_n2)
+        # Undeformed nodal airfoil coordinates
+        undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
+        # Steady deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*Rw*), then throw back to initial position (+r) and add displacements (+u))
+        steadyAirfoilCoords_n1[e] = R_n1*Rw*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ u_n1    
+        steadyAirfoilCoords_n2[e] = R_n2*Rw*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ u_n2
+    end
+
+    # Initialize arrays
+    x1Modal = Array{Vector{Float64}}(undef,nModes,nElementsTotal)
+    x2Modal = Array{Vector{Float64}}(undef,nModes,nElementsTotal)
+    x3Modal = Array{Vector{Float64}}(undef,nModes,nElementsTotal)
+    modalAirfoilCoords_n1 = Array{Union{Nothing,Matrix{Float64}}}(undef,nModes,nElementsTotal)
+    modalAirfoilCoords_n2 = Array{Union{Nothing,Matrix{Float64}}}(undef,nModes,nElementsTotal)
+
+    # Initialize plot limits
+    plotMin = plotMax = 0
+
+    # Loop over modes
+    for m in 1:nModes
+        # Loop over elements
+        for (e,element) in enumerate(elements)
+            # Nodal displacements and rotations    
+            u_n1 = modeShapesAbs[m].nodalStates[e].u_n1
+            u_n2 = modeShapesAbs[m].nodalStates[e].u_n2
+            p_n1 = modeShapesAbs[m].nodalStates[e].p_n1
+            p_n2 = modeShapesAbs[m].nodalStates[e].p_n2
+            # Set modal coordinates
+            x1Modal[m,e] = x1Steady[e] .+ scale*[u_n1[1]; u_n2[1]]
+            x2Modal[m,e] = x2Steady[e] .+ scale*[u_n1[2]; u_n2[2]]
+            x3Modal[m,e] = x3Steady[e] .+ scale*[u_n1[3]; u_n2[3]]
+            # Skip elements without aero surfaces, or if those are not to be plotted
+            if !plotAeroSurf || isnothing(element.aero)
+                modalAirfoilCoords_n1[m,e],modalAirfoilCoords_n2[m,e] = nothing,nothing
+                continue
+            end
+            @unpack r_n1,r_n2 = element
+            @unpack Rw = element.aero
+            # Rotation tensors
+            R_n1,_ = rotation_tensor_WM(scale*p_n1)
+            R_n2,_ = rotation_tensor_WM(scale*p_n2)
+            # Modal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*Rw*), then throw back to initial position (+r) and add scaled displacements (+scale*u) )
+            modalAirfoilCoords_n1[m,e] = R_n1*Rw*(steadyAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1    
+            modalAirfoilCoords_n2[m,e] = R_n2*Rw*(steadyAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2
+        end
+
+        # Set TFs for plane views
+        x1Plane = maximum(abs.(vcat(x1Modal[m,:]...))) < tolPlane ? true : false
+        x2Plane = maximum(abs.(vcat(x2Modal[m,:]...))) < tolPlane ? true : false
+        x3Plane = maximum(abs.(vcat(x3Modal[m,:]...))) < tolPlane ? true : false
+
+        # Plot steady and modal beam assemblies actording to view
+        if isnothing(view)
+            if x1Plane
+                plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                plot!(x2Steady, x3Steady, color=colorSteady,linewidth=linewidth,label=false)
+                plot!(x2Modal[m,:], x3Modal[m,:], color=modeColors[m],aspect_ratio=:equal,linewidth=linewidth,label=false)
+            elseif x2Plane
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                plot!(x1Steady, x3Steady, color=colorSteady,linewidth=linewidth,label=false)
+                plot!(x1Modal[m,:], x3Modal[m,:], color=modeColors[m],aspect_ratio=:equal,linewidth=linewidth,label=false)
+            elseif x3Plane
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
+                plot!(x1Steady, x2Steady, color=colorSteady,linewidth=linewidth,label=false)
+                plot!(x1Modal[m,:], x2Modal[m,:], color=modeColors[m],aspect_ratio=:equal,linewidth=linewidth,label=false)
+            else
+                view = (45,45)
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+                plot!(x1Steady, x2Steady, x3Steady, camera=view,color=colorSteady,linewidth=linewidth,label=false)
+                plot!(x1Modal[m,:], x2Modal[m,:], x3Modal[m,:], camera=view,color=modeColors[m],linewidth=linewidth,label=false)
+            end
+        else
+            plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+            plot!(x1Steady, x2Steady, x3Steady, camera=view,color=colorSteady,linewidth=linewidth,label=false)
+            plot!(x1Modal[m,:], x2Modal[m,:], x3Modal[m,:], camera=view,color=modeColors[m],linewidth=linewidth,label=false)
+        end
+
+        # Plot generalized displacements and concentrated loads, if applicable
+        if plotBCs && m==1
+            plt = plot_BCs!(plt,problem,x1Steady,x2Steady,x3Steady,x1Plane,x2Plane,x3Plane,view,0,1)
+        end
+
+        # Plot aerodynamic surfaces, if applicable
+        for e in 1:nElementsTotal
+            if isnothing(modalAirfoilCoords_n1[m,e])
+                continue
+            end
+            # Plot steady deformed aerodynamic surfaces
+            Xu = [steadyAirfoilCoords_n1[e][1,:] steadyAirfoilCoords_n2[e][1,:]]
+            Yu = [steadyAirfoilCoords_n1[e][2,:] steadyAirfoilCoords_n2[e][2,:]]
+            Zu = [steadyAirfoilCoords_n1[e][3,:] steadyAirfoilCoords_n2[e][3,:]]
+            surface!(Xu,Yu,Zu, color=palette([colorSteady,colorSteady],2), colorbar=false, alpha=surfα)
+            # Plot modal aerodynamic surfaces
+            Xd = [modalAirfoilCoords_n1[m,e][1,:] modalAirfoilCoords_n2[m,e][1,:]]
+            Yd = [modalAirfoilCoords_n1[m,e][2,:] modalAirfoilCoords_n2[m,e][2,:]]
+            Zd = [modalAirfoilCoords_n1[m,e][3,:] modalAirfoilCoords_n2[m,e][3,:]]
+            surface!(Xd,Yd,Zd, color=palette([modeColors[m],modeColors[m]],2), colorbar=false, alpha=surfα)
+        end
+
+        # Set the same plot extrema across all axis (equal aspect ratio), if applicable
+        if !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
+            plotMax = max(plotMax,maximum(reduce(vcat, x1Modal[m,:])),maximum(reduce(vcat, x2Modal[m,:])),maximum(reduce(vcat, x3Modal[m,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
+            plotMin = min(plotMin,minimum(reduce(vcat, x1Modal[m,:])),minimum(reduce(vcat, x2Modal[m,:])),minimum(reduce(vcat, x3Modal[m,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
+            plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+        end
+    end
+
+    # Set legend position
+    plot!(legend=legendPos)
+
+    # Save, if applicable
+    if save
+        savefig(string(pwd(),savePath))
+    end
+
+    return plt
+end
+export plot_mode_shapes
+
+
+"""
 plot_output_of_x1(beamGroups,x1,output,ind,colors=get(colorschemes[:rainbow], LinRange(0,1,length(beamGroups))))
 
 Plots output along the arclength coordinate for each beam group
@@ -433,7 +645,7 @@ Plots output along the arclength coordinate for each beam group
 # Arguments
 - `problem::Problem`
 """
-function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(colorschemes[:rainbow],LinRange(0,1,length(beamGroups)+1)),lw=1)
+function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(colorschemes[:rainbow],LinRange(0,1,length(beamGroups)+1)),lw=1,legendPos=:best)
 
     # Initialize multiplication factor
     γ = 1
@@ -485,7 +697,7 @@ function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(col
             append!(outputBeamGroup,γ*output[beamID][range])
         end
         # Plot output
-        plt = plot!(plt, x1BeamGroup,outputBeamGroup,lw=lw,color=colors[i],label="Beam group $(i)")
+        plt = plot!(plt, x1BeamGroup,outputBeamGroup,lw=lw,color=colors[i],label="Beam group $(i)",legend=legendPos)
     end
 
     # Display

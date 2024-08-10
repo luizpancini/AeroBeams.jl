@@ -72,7 +72,7 @@ clamps[3] = create_BC(name="clamp3",beam=beams[11],node=nElem+1,types=["u1A","u2
 clamps[4] = create_BC(name="clamp4",beam=beams[15],node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Create model
-twoStoriesFrame = create_Model(name="twoStoriesFrame",beams=beams,BCs=clamps)
+twoStoriesFrame = create_Model(name="twoStoriesFrame",beams=beams,BCs=clamps,units=create_UnitsSystem(length="m",frequency="Hz"))
 
 # Create and solve eigenproblem
 problem = create_EigenProblem(model=twoStoriesFrame,nModes=4,getLinearSolution=true)
@@ -87,5 +87,9 @@ refFreqs = [11.8; 34.1]
 # Display relative errors
 ϵ_rel = freqs[[1,4]]/(2*π)./refFreqs .- 1.0
 println("Relative errors: $ϵ_rel")
+
+# Plot mode shapes
+modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/twoStoriesFrame/twoStoriesFrame_modeShapes.pdf")
+display(modesPlot)
 
 println("Finished twoStoriesFrame.jl")

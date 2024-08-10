@@ -22,7 +22,7 @@ wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-PazyWingFlutter = create_Model(name="PazyWingFlutter",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665])
+PazyWingFlutter = create_Model(name="PazyWingFlutter",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665],units=create_UnitsSystem(frequency="Hz"))
 
 # Set system solver options (limit initial load factor)
 σ0 = 0.5
@@ -34,14 +34,22 @@ nModes = 5
 
 # Set airspeed range, and initialize outputs
 URange = collect(0:0.5:100)
+problem = Array{EigenProblem}(undef,length(URange))
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
 freqs = Array{Vector{Float64}}(undef,length(URange))
 damps = Array{Vector{Float64}}(undef,length(URange))
 tip_OOP = Array{Float64}(undef,length(URange))
+u1_of_x1 = Array{Vector{Float64}}(undef,length(URange))
+u3_of_x1 = Array{Vector{Float64}}(undef,length(URange))
+x1_def = Array{Vector{Float64}}(undef,length(URange))
+x3_def = Array{Vector{Float64}}(undef,length(URange))
 
-@time begin
+# Undeformed nodal and midpoint positions
+x1_0 = vcat([vcat(PazyWingFlutter.beams[1].elements[e].r_n1[3],PazyWingFlutter.beams[1].elements[e].r_n2[3]) for e in 1:nElem]...)
+x3_0 = -vcat([vcat(PazyWingFlutter.beams[1].elements[e].r_n1[1],PazyWingFlutter.beams[1].elements[e].r_n2[1]) for e in 1:nElem]...)
+
 # Sweep airspeed
 for (i,U) in enumerate(URange)
     # Display progress
@@ -52,19 +60,24 @@ for (i,U) in enumerate(URange)
     # Update velocity of basis A (and update model)
     set_motion_basis_A!(model=PazyWingFlutter,v_A=[0;U;0])
     # Create and solve problem
-    problem = create_EigenProblem(model=PazyWingFlutter,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1.5,Inf64])
-    solve!(problem)
+    problem[i] = create_EigenProblem(model=PazyWingFlutter,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1.5,Inf64])
+    solve!(problem[i])
     # Frequencies, dampings and eigenvectors
-    untrackedFreqs[i] = problem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem.dampingsOscillatory,1e-9)
-    untrackedEigenvectors[i] = problem.eigenvectorsOscillatoryCplx
+    untrackedFreqs[i] = problem[i].frequenciesOscillatory
+    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-8)
+    untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
     # Get OOP displacement at midchord
-    tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
+    tip_p = problem[i].nodalStatesOverσ[end][nElem].p_n2_b
     R,_ = rotation_tensor_WM(tip_p)
     Δ = R*[0; 1; 0]
     tip_twist = asind(Δ[3])
-    tip_OOP[i] = -(problem.nodalStatesOverσ[end][nElem].u_n2[1] - chord*(1/2-normSparPos)*sind(tip_twist))
-end
+    tip_OOP[i] = -(problem[i].nodalStatesOverσ[end][nElem].u_n2[1] - chord*(1/2-normSparPos)*sind(tip_twist))
+    # Displacements over span
+    u1_of_x1[i] = vcat([vcat(problem[i].nodalStatesOverσ[end][e].u_n1_b[1],problem[i].nodalStatesOverσ[end][e].u_n2_b[1]) for e in 1:nElem]...)
+    u3_of_x1[i] = vcat([vcat(problem[i].nodalStatesOverσ[end][e].u_n1_b[3],problem[i].nodalStatesOverσ[end][e].u_n2_b[3]) for e in 1:nElem]...)
+    # Deformed nodal positions
+    x1_def[i] = x1_0 .+ u1_of_x1[i]
+    x3_def[i] = x3_0 .+ u3_of_x1[i]
 end
 
 # Apply mode tracking, if applicable
@@ -72,6 +85,12 @@ if modeTracking
     freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 else
     freqs,damps = untrackedFreqs,untrackedDamps
+end
+
+# Update frequencies and dampings order on problem
+for i in eachindex(URange)
+    problem[i].frequenciesOscillatory = freqs[i]
+    problem[i].dampingsOscillatory = damps[i]
 end
 
 # Separate frequencies and damping ratios by mode
@@ -130,6 +149,17 @@ end
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+# Mode shapes
+modesPlot = plot_mode_shapes(problem[end],scale=0.1,view=(30,30),save=true,savePath="/test/outputs/figures/PazyWingFlutter/PazyWingFlutter_modeShapes.pdf")
+display(modesPlot)
+# Normalized deformed wingspan
+gr()
+plt0 = plot(xlabel="\$x_1/L\$", ylabel="\$x_3/L\$", xlims=[0,1])
+for (i,U) in enumerate(URange)
+    plot!(x1_def[i]/L, x3_def[i]/L, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
+end
+display(plt0)
+savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutter/PazyWingFlutter_disp.pdf"))
 # V-g-f
 plt11 = plot(ylabel="Frequency [Hz]")
 for mode in 1:nModes
@@ -141,7 +171,7 @@ for mode in 1:nModes
 end
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutter_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutter/PazyWingFlutter_Vgf.pdf"))
 # Frequencies and dampings vs tip OOP displacement
 plt21 = plot(ylabel="Frequency [Hz]")
 for mode in 1:nModes
@@ -153,6 +183,6 @@ for mode in 1:nModes
 end
 plt2 = plot(plt21,plt22, layout=(2,1))
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutter_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutter/PazyWingFlutter_OOPgf.pdf"))
 
 println("Finished PazyWingFlutter.jl")

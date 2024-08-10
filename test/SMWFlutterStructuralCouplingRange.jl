@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
 
 # Wing surface
+airfoil = deepcopy(flatPlate)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Set torsion / chordwise bending coupling factor range
 ΨRange = collect(-0.2:0.2:0.2)
@@ -41,8 +42,8 @@ for (i,Ψ) in enumerate(ΨRange)
     SMWFlutterStructuralCouplingRange[i] = create_Model(name="SMWFlutterStructuralCouplingRange",beams=[wings[i]],BCs=[clamps[i]],gravityVector=[0;0;-g],altitude=h)
 end
 
-# Set system solver options (limit initial load factor)
-σ0 = 0.5
+# Set system solver options
+σ0 = 1.0
 σstep = 0.5
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
@@ -51,7 +52,7 @@ nModes = 5
 
 # Set tip load and airspeed ranges, and initialize outputs
 F3Range = collect(0:1:35)
-URange = collect(20:0.25:33)
+URange = collect(20:0.5:35)
 freqs = Array{Vector{Float64}}(undef,length(ΨRange),length(F3Range),length(URange))
 damps = Array{Vector{Float64}}(undef,length(ΨRange),length(F3Range),length(URange))
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
@@ -77,7 +78,7 @@ for (i,Ψ) in enumerate(ΨRange)
             solve!(problem)
             # Frequencies, dampings and eigenvectors
             untrackedFreqs[k] = problem.frequenciesOscillatory
-            untrackedDamps[k] = round_off!(problem.dampingsOscillatory,1e-12)
+            untrackedDamps[k] = round_off!(problem.dampingsOscillatory,1e-8)
             untrackedEigenvectors[k] = problem.eigenvectorsOscillatoryCplx
         end
         # Frequencies and dampings after mode tracking
@@ -120,6 +121,6 @@ for (i,Ψ) in enumerate(ΨRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterStructuralCouplingRange_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutterStructuralCouplingRange/SMWFlutterStructuralCouplingRange.pdf"))
 
 println("Finished SMWFlutterStructuralCouplingRange.jl")

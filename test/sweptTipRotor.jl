@@ -40,7 +40,7 @@ beam2 = create_Beam(name="beam2",length=L2,nElements=nElemBeam2,C=[stiffnessMatr
 clamp = create_BC(name="clamp",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Create model
-sweptTipRotor = create_Model(name="sweptTipRotor",beams=[beam1,beam2],BCs=[clamp],initialPosition=r0)
+sweptTipRotor = create_Model(name="sweptTipRotor",beams=[beam1,beam2],BCs=[clamp],initialPosition=r0,units=create_UnitsSystem(length="in",force="lbf",frequency="Hz"))
 
 # Initialize outputs
 numFreqs = Matrix{Vector{Float64}}(undef,length(ωRange),length(tipAngleRange))
@@ -83,7 +83,12 @@ expFreqs4 = [95.4 87.5 83.7 78.8; 106.6 120.1 122.6 117.7; 132.7 147.3 166.2 162
 colors = get(colorschemes[:darkrainbow], LinRange(0, 1, length(ωRange)))
 lgdtitle = "Lines: Numerical\nMarkers: Exp. - Epps & Chandra (1996)"
 
+# Plot mode shapes
+modesPlot = plot_mode_shapes(problem,scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/sweptTipRotor/sweptTipRotor_modeShapes.pdf")
+display(modesPlot)
+
 # Plot 1st bending mode frequency over tip angle for several angular velocities
+gr()
 plt1 = plot()
 for (i,ω) in enumerate(ωRange) 
     mode = 1
@@ -96,7 +101,7 @@ end
 plot!(title="1st bending")
 # plot!(legendtitle=lgdtitle)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor/sweptTipRotor_1B.pdf"))
 
 # Plot 2nd bending mode frequency over tip angle for several angular velocities
 plt2 = plot()
@@ -115,7 +120,7 @@ end
 plot!(title="2nd bending")
 # plot!(legendtitle=lgdtitle)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor/sweptTipRotor_2B.pdf"))
 
 # Plot 3rd bending mode frequency over tip angle for several angular velocities
 plt3 = plot()
@@ -130,7 +135,7 @@ end
 plot!(title="3rd bending")
 # plot!(legendtitle=lgdtitle)
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor3.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor/sweptTipRotor_3B.pdf"))
 
 # Plot coupled bending-torsion modes frequency over tip angle for ω = 750 rpm
 plt4 = plot()
@@ -159,6 +164,6 @@ end
 plot!(title="Coupled bending-torsion at \$\\omega\$ = 750 rpm")
 # plot!(legendtitle=lgdtitle)
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor4.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/sweptTipRotor/sweptTipRotor_TB.pdf"))
 
 println("Finished sweptTipRotor.jl")

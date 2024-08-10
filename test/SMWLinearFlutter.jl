@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes
 
 # Wing surface
+airfoil = deepcopy(flatPlate)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Wing beam
 L = 16
@@ -21,14 +22,15 @@ wing = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_m
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-g = 9.807
+g = 9.80665
 h = 20e3
 SMWLinearFlutter = create_Model(name="SMWLinearFlutter",beams=[wing],BCs=[clamp],gravityVector=[0;0;-g],altitude=h)
 
 # Set airspeed range and initialize outputs
-URange = collect(20:0.2:40)
-freqs = Array{Vector{Float64}}(undef,length(URange))
-damps = Array{Vector{Float64}}(undef,length(URange))
+URange = collect(0:0.1:40)
+untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
+untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
+untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
 problem = Array{EigenProblem}(undef,length(URange))
 
 # Set number of vibration modes
@@ -40,15 +42,29 @@ for (i,U) in enumerate(URange)
     # Update velocity of basis A 
     set_motion_basis_A!(model=SMWLinearFlutter,v_A=[0;U;0])
     # Create and solve problem
-    problem[i] = create_EigenProblem(model=SMWLinearFlutter,nModes=nModes,frequencyFilterLimits=[1e-3,Inf64],getLinearSolution=true)
+    problem[i] = create_EigenProblem(model=SMWLinearFlutter,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],getLinearSolution=true)
     solve!(problem[i])
-    # Frequencies and dampings
-    freqs[i] = problem[i].frequenciesOscillatory
-    damps[i] = AeroBeams.round_off!(problem[i].dampingsOscillatory,1e-12)
+    # Frequencies, dampings and eigenvectors
+    untrackedFreqs[i] = problem[i].frequenciesOscillatory
+    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-8)
+    untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
+end
+
+# Frequencies and dampings after mode tracking
+freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+
+# Separate frequencies and damping ratios by mode
+modeFrequencies = Array{Vector{Float64}}(undef,nModes)
+modeDampings = Array{Vector{Float64}}(undef,nModes)
+modeDampingRatios = Array{Vector{Float64}}(undef,nModes)
+for mode in 1:nModes
+    modeDampings[mode] = [damps[i][mode] for i in eachindex(URange)]
+    modeFrequencies[mode] = [freqs[i][mode] for i in eachindex(URange)]
+    modeDampingRatios[mode] = modeDampings[mode]./modeFrequencies[mode]
 end
 
 # Find flutter speed and flutter frequency 
-flutterSpeed,flutterFreq = NaN,NaN
+global flutterSpeed,flutterFreq = NaN,NaN
 dampsOfMode = Array{Vector{Float64}}(undef,nModes)
 freqsOfMode = Array{Vector{Float64}}(undef,nModes)
 for mode in 1:nModes
@@ -58,8 +74,8 @@ for mode in 1:nModes
     if isnothing(indexInstability)
         continue
     end
-    flutterSpeed = interpolate(dampsOfMode[mode][indexInstability-1:indexInstability],URange[indexInstability-1:indexInstability],0)
-    flutterFreq = interpolate(dampsOfMode[mode][indexInstability-1:indexInstability],freqsOfMode[mode][indexInstability-1:indexInstability],0)
+    global flutterSpeed = interpolate(dampsOfMode[mode][indexInstability-1:indexInstability],URange[indexInstability-1:indexInstability],0)
+    global flutterFreq = interpolate(dampsOfMode[mode][indexInstability-1:indexInstability],freqsOfMode[mode][indexInstability-1:indexInstability],0)
     break
 end
 
@@ -68,6 +84,7 @@ divergenceSpeed = NaN
 indicesNonOscillatoryInstability = [findfirst(x->x>0,problem[i].dampingsNonOscillatory) for i in eachindex(URange)]
 indexDivergence = findfirst(!isnothing,indicesNonOscillatoryInstability)
 divergenceSpeed = !isnothing(indexDivergence) ? URange[indexDivergence] : NaN
+# Note: the value of the first dampingsNonOscillatory crosses zero at an airspeed between 37.2 and 37.3, but once it becomes positive, it disappears. So the divergence speed does match very closely that of the reference solution below
 
 # Reference solution by Patil & Hodges & Cesnik: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
 flutterSpeedRef = 32.21
@@ -88,18 +105,22 @@ println("Respective relative differences: $ϵUf, $ϵFf, $ϵUd")
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+# Plot mode shapes
+modesPlot = plot_mode_shapes(problem[end],scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/SMWLinearFlutter/SMWLinearFlutter_modeShapes.pdf")
+display(modesPlot)
 # V-g-f
-plt31 = plot(ylabel="Frequency [rad/s]")
+gr()
+plt11 = plot(ylabel="Frequency [rad/s]")
 for mode in 1:nModes
     scatter!(URange, modeFrequencies[mode], mc=modeColors[mode], ms = ms, msw=0, label=false)
 end
-plt32 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", ylims=[-0.2,0.1])
+plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", ylims=[-0.2,0.1])
 for mode in 1:nModes
     scatter!(URange, modeDampingRatios[mode], mc=modeColors[mode], ms = ms, msw=0, label=false)
     scatter!([NaN], [NaN], mc=modeColors[mode], ms = ms, msw=0, label="Mode $mode")
 end
-plt3 = plot(plt31,plt32, layout=(2,1))
-display(plt3)
+plt1 = plot(plt11,plt12, layout=(2,1))
+display(plt1)
 savefig(string(pwd(),"/test/outputs/figures/SMWLinearFlutter_Vgf.pdf"))
 
 println("Finished SMWLinearFlutter.jl")

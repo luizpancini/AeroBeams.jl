@@ -38,6 +38,7 @@ for m in 1:nModes
 end
 
 # Plot
+gr()
 colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$u_1\$")
 for m in 1:nModes

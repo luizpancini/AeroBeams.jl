@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes
 
 # Wing surface
+airfoil = deepcopy(NACA0012)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Set root angle
 θ = π/180*0
@@ -42,7 +43,7 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,displayStatus=false)
 nModes = 5
 
 # Set airspeed range and initialize outputs
-URange = collect(0:0.5:30)
+URange = collect(0:0.5:40)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
@@ -75,7 +76,7 @@ for (i,U) in enumerate(URange)
     solve!(problem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem[i].frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-8)
     untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
     # Displacements over span
     u1_of_x1[i] = vcat([vcat(problem[i].nodalStatesOverσ[end][e].u_n1[1],problem[i].nodalStatesOverσ[end][e].u_n2[1]) for e in 1:nElem]...)
@@ -85,7 +86,7 @@ for (i,U) in enumerate(URange)
     # Tip OOP displacement
     tip_u3[i] = problem[i].nodalStatesOverσ[end][nElem].u_n2[3]
     # Angle of attack over span
-    α_of_x1[i] = [problem[i].flowVariablesOverσ[end][e].αₑ for e in 1:nElem]
+    α_of_x1[i] = [problem[i].aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:nElem]
     # Deformed nodal positions
     x1_def[i] = x1_0 .+ u1_of_x1[i]
     x3_def[i] = x3_0 .+ u3_of_x1[i]
@@ -99,6 +100,12 @@ end
 
 # Frequencies and dampings after mode tracking
 freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+
+# Update frequencies and dampings order on problem
+for i in eachindex(URange)
+    problem[i].frequenciesOscillatory = freqs[i]
+    problem[i].dampingsOscillatory = damps[i]
+end
 
 # Update mode shapes' order
 for i in eachindex(URange)
@@ -114,7 +121,7 @@ modeDampingRatios = Array{Vector{Float64}}(undef,nModes)
 for mode in 1:nModes
     modeDampings[mode] = [damps[i][mode] for i in eachindex(URange)]
     modeFrequencies[mode] = [freqs[i][mode] for i in eachindex(URange)]
-    modeDampingRatios[mode] = modeFrequencies[mode]./modeDampings[mode]
+    modeDampingRatios[mode] = modeDampings[mode]./modeFrequencies[mode]
 end
 
 # Flutter speed and flutter frequency 
@@ -178,27 +185,31 @@ end
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+# Mode shapes
+modesPlot = plot_mode_shapes(problem[end],scale=0.5,view=(30,30),save=true,savePath="/test/outputs/figures/SMWFlutter/SMWFlutter_modeShapes.pdf")
+display(modesPlot)
 # Normalized deformed wingspan
+gr()
 plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$x_3/L\$", xlims=[0,1])
 for (i,U) in enumerate(URange)
     plot!(x1_def[i]/L, x3_def[i]/L, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_disp.pdf"))
 # Angle of attack over wingspan
 plt11 = plot(xlabel="\$x_1/L\$", ylabel="\$\\alpha\$ [deg]", xlims=[0,1])
 for (i,U) in enumerate(URange)
     plot!(x1_e/L, α_of_x1[i]*180/pi, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
 display(plt11)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter_11.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_AoA.pdf"))
 # Root locus
 plt2 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-5,1], ylims=[0,50])
 for mode in 1:nModes
     plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], lw=lw, label="Mode $mode")
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_rootlocus.pdf"))
 # V-g-f
 plt31 = plot(ylabel="Frequency [rad/s]")
 for mode in 1:nModes
@@ -210,7 +221,7 @@ for mode in 1:nModes
 end
 plt3 = plot(plt31,plt32, layout=(2,1))
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter_3.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_Vgf.pdf"))
 # Mode shapes at specified velocity
 U2plot = 25
 ind = findfirst(x->x==U2plot,URange)
@@ -225,6 +236,6 @@ end
 display(plt4)
 display(plt5)
 display(plt6)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter_4.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_modalDisp.pdf"))
 
 println("Finished SMWFlutter.jl")

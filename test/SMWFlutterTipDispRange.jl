@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
 
 # Wing surface
+airfoil = deepcopy(flatPlate)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Wing beam
 θ = π/180*0
@@ -22,17 +23,17 @@ wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_m
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-g = 9.80665
+g = 0
 h = 20e3
 SMWFlutterTipDispRange = create_Model(name="SMWFlutterTipDispRange",beams=[wing],BCs=[clamp],gravityVector=[0;0;-g],altitude=h)
 
-# Set system solver options (limit initial load factor)
-σ0 = 0.5
+# Set system solver options
+σ0 = 1
 σstep = 0.5
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Set tip force and airspeed ranges, and initialize outputs
-F3Range = collect(0:2:88)
+F3Range = collect(-44:2:44)
 URange = collect(13:0.5:35)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(F3Range),length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(F3Range),length(URange))
@@ -64,7 +65,7 @@ for (i,F3) in enumerate(F3Range)
         solve!(problem)
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = problem.frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-12)
+        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-8)
         untrackedEigenvectors[i,j] = problem.eigenvectorsOscillatoryCplx
         # Tip OOP displacement
         tip_u3[i,j] = problem.nodalStatesOverσ[end][nElem].u_n2[3]
@@ -108,7 +109,7 @@ flutterSpeedVsDispRef = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpe
 lw = 2
 ms = 3
 # Flutter speed and frequency vs. tip displacement
-plt11 = plot(ylabel="Flutter speed [m/s]", xlims=[0,3], ylims=[0,35])
+plt11 = plot(ylabel="Flutter speed [m/s]", xlims=[0,3], ylims=[0,35], legend=:bottomleft)
 plot!(flutterTipDisp, flutterSpeed, c=:black,  lw=lw, label="AeroBeams")
 plot!(flutterSpeedRef[1,:], flutterSpeedRef[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
 plt12 = plot(xlabel="Tip displacement [m]", ylabel="Flutter frequency [rad/s]", xlims=[0,3], ylims=[0,35])
@@ -116,12 +117,12 @@ plot!(flutterTipDisp, flutterFreq, c=:black, lw=lw, label=false)
 plot!(flutterFreqRef[1,:], flutterFreqRef[2,:], c=:black, ls=:dash, lw=lw, label=false)
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterTipDispRange_1.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutterTipDispRange/SMWFlutterTipDispRange_flutterVsDisp.pdf"))
 # Complete flutter speed curve
-plt2 = plot(xlabel="Tip displacement [m]", ylabel="Flutter speed [m/s]", xlims=[-3,3], ylims=[0,35])
+plt2 = plot(xlabel="Tip displacement [m]", ylabel="Flutter speed [m/s]", xlims=[-3,3], ylims=[0,35], legend=:bottomleft)
 plot!(flutterTipDisp, flutterSpeed, c=:black, lw=lw, label="AeroBeams")
 plot!(flutterSpeedVsDispRef[1,:], flutterSpeedVsDispRef[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterTipDispRange_2.pdf"))
+savefig(string(pwd(),"/test/outputs/figures/SMWFlutterTipDispRange/SMWFlutterTipDispRange_flutterCurve.pdf"))
 
 println("Finished SMWFlutterTipDispRange.jl")

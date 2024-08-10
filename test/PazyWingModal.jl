@@ -7,7 +7,7 @@ wing,L,_ = create_Pazy()
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-PazyWingModal = create_Model(name="PazyWingModal",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665])
+PazyWingModal = create_Model(name="PazyWingModal",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665],units=create_UnitsSystem(frequency="Hz"))
 
 # Number of modes
 nModes = 5
@@ -30,6 +30,10 @@ for (i,θ) in enumerate(θRange)
     solve!(problem[i])
     # Get frequencies in Hz
     freqs[i] = problem[i].frequenciesOscillatory/(2π)
+    # Plot mode shapes
+    savePath = string("/test/outputs/figures/PazyWingModal/PazyWingModal_",i,".pdf")
+    modesPlot = plot_mode_shapes(problem[i],scale=0.1,view=(30,30),frequencyLabel="frequency",save=true,savePath=savePath)
+    display(modesPlot)
 end
 
 # Load reference data
