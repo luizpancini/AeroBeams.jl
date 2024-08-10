@@ -1277,30 +1277,30 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     # --- F_u --- #
     # F_u_p
     tmp = Δℓ/2 * ω_tilde * mul3(R_p1,R_p2,R_p3,R0P)
-    F_u1_p += tmp
-    F_u2_p += tmp 
+    F_u1_p .+= tmp
+    F_u2_p .+= tmp 
     # F_u_V
     tmp = Δℓ/2 * ω_tilde_RR0 * I_11
     F_u1_V = tmp
-    F_u2_V = tmp 
+    F_u2_V = copy(tmp)
     # F_u_Ω
     tmp = Δℓ/2 * ω_tilde_RR0 * I_12
     F_u1_Ω = tmp
-    F_u2_Ω = tmp 
+    F_u2_Ω = copy(tmp)
     
     # --- F_p --- # 
     # F_p_p
     tmp = Δℓ/2 * (ω_tilde*mul3(R_p1,R_p2,R_p3,R0H) + mul3(R_p1,R_p2,R_p3,R0*cross(V,P)))
-    F_p1_p += tmp
-    F_p2_p += tmp  
+    F_p1_p .+= tmp
+    F_p2_p .+= tmp  
     # F_p_V
     tmp = Δℓ/2 * (ω_tilde_RR0*I_21 + RR0*(V_tilde*I_11-tilde(P)))
     F_p1_V = tmp 
-    F_p2_V = tmp    
+    F_p2_V = copy(tmp)   
     # F_p_Ω
     tmp = Δℓ/2 * (ω_tilde_RR0*I_22 + RR0*V_tilde*I_12)
     F_p1_Ω = tmp 
-    F_p2_Ω = tmp 
+    F_p2_Ω = copy(tmp) 
     
     # --- F_V --- #    
     # F_V_u
@@ -1328,38 +1328,38 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         # --- F_u --- #
         # F_u_p
         tmp = Δℓ/2 * (mul3(Rdot_p1,Rdot_p2,Rdot_p3,R0P) + mul3(R_p1,R_p2,R_p3,R0*Pdot))
-        F_u1_p += tmp
-        F_u2_p += tmp
+        F_u1_p .+= tmp
+        F_u2_p .+= tmp
         # F_u_V
         tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_11
-        F_u1_V += tmp
-        F_u2_V += tmp
+        F_u1_V .+= tmp
+        F_u2_V .+= tmp
         # F_u_Ω
         tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_12
-        F_u1_Ω += tmp
-        F_u2_Ω += tmp  
+        F_u1_Ω .+= tmp
+        F_u2_Ω .+= tmp  
 
         # --- F_p --- #
         # F_p_p
         tmp = Δℓ/2 * (mul3(Rdot_p1,Rdot_p2,Rdot_p3,R0H) + mul3(R_p1,R_p2,R_p3,R0*Hdot))
-        F_p1_p += tmp
-        F_p2_p += tmp
+        F_p1_p .+= tmp
+        F_p2_p .+= tmp
         # F_p_V
         tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_21
-        F_p1_V += tmp
-        F_p2_V += tmp
+        F_p1_V .+= tmp
+        F_p2_V .+= tmp
         # F_p_Ω
         tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_22
-        F_p1_Ω += tmp
-        F_p2_Ω += tmp
+        F_p1_Ω .+= tmp
+        F_p2_Ω .+= tmp
         
         # --- F_V --- #
         # F_V_u
-        F_V_u += -2/Δt * I3
+        F_V_u .+= -2/Δt * I3
 
         # --- F_Ω --- #
         # F_Ω_p
-        F_Ω_p += -R0T * (mul3(HT_p1,HT_p2,HT_p3,pdot) + 2/Δt*HT)
+        F_Ω_p .+= -R0T * (mul3(HT_p1,HT_p2,HT_p3,pdot) + 2/Δt*HT)
 
     end
 
@@ -1368,20 +1368,20 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     if !isnothing(aero)
         @unpack nTotalAeroStates,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ = element.aero
         # F_u_V
-        F_u1_V -= f1χ_V
-        F_u2_V -= f2χ_V 
+        F_u1_V .-= f1χ_V
+        F_u2_V .-= f2χ_V 
         # F_u_Ω
-        F_u1_Ω -= f1χ_Ω
-        F_u2_Ω -= f2χ_Ω
+        F_u1_Ω .-= f1χ_Ω
+        F_u2_Ω .-= f2χ_Ω
         # F_p_V
-        F_p1_V -= m1χ_V
-        F_p2_V -= m2χ_V   
+        F_p1_V .-= m1χ_V
+        F_p2_V .-= m2χ_V   
         # F_p_Ω
-        F_p1_Ω -= m1χ_Ω
-        F_p2_Ω -= m2χ_Ω
+        F_p1_Ω .-= m1χ_Ω
+        F_p2_Ω .-= m2χ_Ω
         # F_χ_χ 
         if problem isa DynamicProblem && nTotalAeroStates > 0
-            F_χ_χ += Matrix(2/Δt*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
+            F_χ_χ .+= Matrix(2/Δt*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
         end
     end
 
@@ -1518,11 +1518,11 @@ function element_inertia!(problem::Problem,model::Model,element::Element)
     # F_u_Vdot
     tmp = Δℓ/2 * RR0 * I_11
     F_u1_Vdot = tmp
-    F_u2_Vdot = tmp
+    F_u2_Vdot = copy(tmp)
     # F_u_Ωdot
     tmp = Δℓ/2 * RR0 * I_12
     F_u1_Ωdot = tmp
-    F_u2_Ωdot = tmp
+    F_u2_Ωdot = copy(tmp)
 
     # --- F_p --- #
     # F_p_pdot
@@ -1531,11 +1531,11 @@ function element_inertia!(problem::Problem,model::Model,element::Element)
     # F_p_Vdot
     tmp = Δℓ/2 * RR0 * I_21
     F_p1_Vdot = tmp
-    F_p2_Vdot = tmp
+    F_p2_Vdot = copy(tmp)
     # F_p_Ωdot
     tmp = Δℓ/2 * RR0 * I_22
     F_p1_Ωdot = tmp
-    F_p2_Ωdot = tmp
+    F_p2_Ωdot = copy(tmp)
 
     # --- F_V --- #
     # F_V_udot

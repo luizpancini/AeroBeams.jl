@@ -52,8 +52,8 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 nModes = 5
 
 # Set tip load and airspeed ranges, and initialize outputs
-F3Range = collect(0:1:35)
-URange = collect(20:0.5:35)
+F3Range = collect(0:5:35)
+URange = collect(20:1:35)
 freqs = Array{Vector{Float64}}(undef,length(ΨRange),length(F3Range),length(URange))
 damps = Array{Vector{Float64}}(undef,length(ΨRange),length(F3Range),length(URange))
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
