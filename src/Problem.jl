@@ -848,6 +848,7 @@ function solve_eigen!(problem::Problem)
 end
 export solve_eigen!
 
+
 """
 get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::Vector{Float64},dampings::Vector{Float64})
 
@@ -881,7 +882,7 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
             u,p,F,M,V,Ω,γ,κ,P,H,u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2 = element_modal_states(element,eigenvector,forceScaling)
             # Manually correct nodal values
             if e > 1
-                u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1 = fix_nodal_modal_states!(model,element,modeShape)
+                u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1 = fix_nodal_modal_states!(model,element,modeShape,u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1)
             end
             # Add states to current mode 
             @pack! modeShape.elementalStates[e] = u,p,F,M,V,Ω
@@ -903,8 +904,7 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
         # Normalize mode shapes by maxima, if applicable
         if normalizeModeShapes
             # Compute norms
-            uNorm = maximum(abs.(uArray)) > 0.0 ? maximum(abs.(uArray)) : 1.0
-            pNorm = maximum(abs.(pArray)) > 0.0 ? maximum(abs.(pArray)) : 1.0
+            upNorm = maximum(abs.(vcat(uArray,pArray))) > 0.0 ? maximum(abs.(vcat(uArray,pArray))) : 1.0
             FNorm = maximum(abs.(FArray)) > 0.0 ? maximum(abs.(FArray)) : 1.0
             MNorm = maximum(abs.(MArray)) > 0.0 ? maximum(abs.(MArray)) : 1.0
             VNorm = maximum(abs.(VArray)) > 0.0 ? maximum(abs.(VArray)) : 1.0
@@ -920,8 +920,8 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
                 @unpack u,p,F,M,V,Ω = modeShape.elementalStates[e]
                 @unpack γ,κ,P,H = modeShape.complementaryElementalStates[e]
                 @unpack u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2 = modeShape.nodalStates[e] 
-                u,u_n1,u_n2,u_n1_b,u_n2_b = divide_inplace!(uNorm, u,u_n1,u_n2,u_n1_b,u_n2_b) 
-                p,p_n1,p_n2,p_n1_b,p_n2_b = divide_inplace!(pNorm, p,p_n1,p_n2,p_n1_b,p_n2_b) 
+                u,u_n1,u_n2,u_n1_b,u_n2_b = divide_inplace!(upNorm, u,u_n1,u_n2,u_n1_b,u_n2_b) 
+                p,p_n1,p_n2,p_n1_b,p_n2_b = divide_inplace!(upNorm, p,p_n1,p_n2,p_n1_b,p_n2_b) 
                 F,F_n1,F_n2 = divide_inplace!(FNorm, F,F_n1,F_n2)
                 M,M_n1,M_n2 = divide_inplace!(MNorm, M,M_n1,M_n2)
                 V ./= VNorm
@@ -952,12 +952,17 @@ Corrects the nodal modal states which may not coincide depending on which elemen
 # Arguments
 - problem::Problem
 """
-function fix_nodal_modal_states!(model,element,modeShape)
+function fix_nodal_modal_states!(model,element,modeShape,u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1)
 
     @unpack elementNodes = model
 
     # Find global ID of the first element that contains the local first node
     firstElem = findfirst(row -> element.nodesGlobalID[1] in row, elementNodes)
+
+    # Skip if this is itself the first element
+    if firstElem == element.globalID
+        return u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1
+    end
 
     # Set value of local first node as that of the second local node of that element
     u_n1 = modeShape.nodalStates[firstElem].u_n2
