@@ -43,12 +43,16 @@ end
 freqsAnalytical = (βL/L).^2*sqrt(EIy/ρA)
 
 # Plot
+relPath = "/test/outputs/figures/beamBendingVibrationCP"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$u_3/L\$")
 for m in 1:nModes
     plot!(x1/L, u3_modeShapes[m]/L, lw=2, c=colors[m], label=string("Mode ",string(m)))
 end
 display(plt1)
+savefig(string(absPath,"/beamBendingVibrationCP_u3.pdf"))
 
 # Show frequency comparison
 ϵ_rel = freqs./freqsAnalytical .- 1.0

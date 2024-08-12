@@ -89,7 +89,11 @@ refFreqs = [11.8; 34.1]
 println("Relative errors: $ϵ_rel")
 
 # Plot mode shapes
-modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/twoStoriesFrame/twoStoriesFrame_modeShapes.pdf")
+relPath = "/test/outputs/figures/twoStoriesFrame"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+
+modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),frequencyLabel="frequency",save=true,savePath=string(relPath,"/twoStoriesFrame_modeShapes.pdf"))
 display(modesPlot)
 
 println("Finished twoStoriesFrame.jl")

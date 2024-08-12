@@ -41,7 +41,12 @@ u3_b = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1_b[3],problem.nodalState
 println("Tip disp = $(u3_b[end])")
 
 # Plots
+relPath = "/test/outputs/figures/springedLFrame"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 plt1 = plot(x1/L2, u3_b/L2, lw=2, label=false, xlabel="\$x_1/L_2\$", ylabel="\$u_3^{+}/L_2\$")
 display(plt1)
+savefig(string(absPath,"/springedLFrame_disp.pdf"))
 
 println("Finished springedLFrame.jl")

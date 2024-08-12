@@ -57,7 +57,7 @@ for c in configurations
         solve!(problem)
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[c,j] = problem.frequenciesOscillatory
-        untrackedDamps[c,j] = round_off!(problem.dampingsOscillatory,1e-12)
+        untrackedDamps[c,j] = round_off!(problem.dampingsOscillatory,1e-8)
         untrackedEigenvectors[c,j] = problem.eigenvectorsOscillatoryCplx
     end
     # Apply mode tracking, if applicable
@@ -81,6 +81,10 @@ modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
 lstyles = [:solid :dash :dot]
+relPath = "/test/outputs/figures/PazyWingFlutterTipMassRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # V-g-f for all configurations
 plt11 = plot(ylabel="Frequency [Hz]")
 for c in configurations
@@ -99,6 +103,6 @@ for c in configurations
 end
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutterTipMassRange_1.pdf"))
+savefig(string(absPath,"/PazyWingFlutterTipMassRange.pdf"))
 
 println("Finished PazyWingFlutterTipMassRange.jl")

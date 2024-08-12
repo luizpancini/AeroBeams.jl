@@ -43,7 +43,7 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,displayStatus=false)
 nModes = 5
 
 # Set airspeed range and initialize outputs
-URange = collect(0:0.5:40)
+URange = collect(0:0.2:35)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
@@ -185,8 +185,11 @@ end
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/SMWFlutter"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 # Mode shapes
-modesPlot = plot_mode_shapes(problem[end],scale=0.5,view=(30,30),save=true,savePath="/test/outputs/figures/SMWFlutter/SMWFlutter_modeShapes.pdf")
+modesPlot = plot_mode_shapes(problem[end],scale=5,view=(30,30),legendPos=(0.3,0.6),save=true,savePath=string(relPath,"/SMWFlutter_modeShapes.pdf"))
 display(modesPlot)
 # Normalized deformed wingspan
 gr()
@@ -195,21 +198,21 @@ for (i,U) in enumerate(URange)
     plot!(x1_def[i]/L, x3_def[i]/L, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_disp.pdf"))
+savefig(string(absPath,"/SMWFlutter_disp.pdf"))
 # Angle of attack over wingspan
 plt11 = plot(xlabel="\$x_1/L\$", ylabel="\$\\alpha\$ [deg]", xlims=[0,1])
 for (i,U) in enumerate(URange)
     plot!(x1_e/L, α_of_x1[i]*180/pi, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
 display(plt11)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_AoA.pdf"))
+savefig(string(absPath,"/SMWFlutter_AoA.pdf"))
 # Root locus
 plt2 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-5,1], ylims=[0,50])
 for mode in 1:nModes
     plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], lw=lw, label="Mode $mode")
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_rootlocus.pdf"))
+savefig(string(absPath,"/SMWFlutter_rootlocus.pdf"))
 # V-g-f
 plt31 = plot(ylabel="Frequency [rad/s]")
 for mode in 1:nModes
@@ -221,7 +224,7 @@ for mode in 1:nModes
 end
 plt3 = plot(plt31,plt32, layout=(2,1))
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_Vgf.pdf"))
+savefig(string(absPath,"/SMWFlutter_Vgf.pdf"))
 # Mode shapes at specified velocity
 U2plot = 25
 ind = findfirst(x->x==U2plot,URange)
@@ -236,6 +239,6 @@ end
 display(plt4)
 display(plt5)
 display(plt6)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutter/SMWFlutter_modalDisp.pdf"))
+savefig(string(absPath,"/SMWFlutter_modalDisp.pdf"))
 
 println("Finished SMWFlutter.jl")

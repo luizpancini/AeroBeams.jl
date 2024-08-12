@@ -46,12 +46,21 @@ root_M2_analytical = F*L
 println("Relative errors:\nu3: $ϵ_rel_u3 \nF3: $ϵ_rel_F3 \nM2: $ϵ_rel_M2")
 
 # Plots
+# ------------------------------------------------------------------------------
+relPath = "/test/outputs/figures/tipLoadedCantileverTrim"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# u3
 plt1 = plot(x1/L, u3/(F*L/(3*EI)), lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$u_3 / (FL/3EI)\$")
 display(plt1)
+savefig(string(absPath,"/tipLoadedCantileverTrim_u3.pdf"))
+# F3
 plt2 = plot(x1/L, F3/F, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3/F\$ [N]")
 display(plt2)
+savefig(string(absPath,"/tipLoadedCantileverTrim_F3.pdf"))
+# M2
 plt3 = plot(x1/L, M2/(F*L), lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2/(FL)\$")
 display(plt3)
-
+savefig(string(absPath,"/tipLoadedCantileverTrim_M2.pdf"))
 
 println("Finished tipLoadedCantileverTrim.jl")

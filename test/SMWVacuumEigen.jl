@@ -33,7 +33,10 @@ freqsAnalytical = vcat(FlapwiseBendingFreqsAnalytical[1:2],TorsionalFreqAnalytic
 println("Relative frequency errors: $ϵ_rel")
 
 # Plot mode shapes
-modesPlot = plot_mode_shapes(problem,scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/SMWVacuumEigen/SMWVacuumEigen_modeShapes.pdf")
+relPath = "/test/outputs/figures/SMWVacuumEigen"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+modesPlot = plot_mode_shapes(problem,scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath=string(relPath,"/SMWVacuumEigen_modeShapes.pdf"))
 display(modesPlot)
 
 println("Finished SMWVacuumEigen.jl")

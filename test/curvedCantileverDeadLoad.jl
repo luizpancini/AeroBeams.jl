@@ -37,4 +37,11 @@ tip_u3 = problem.nodalStatesOverσ[end][nElem].u_n2[3]
 # Print 
 println("Tip displacements:\nu1 = $tip_u1, u2 = $tip_u2, u3 = $tip_u3")
 
+# Plot deformed shape
+relPath = "/test/outputs/figures/curvedCantileverDeadLoad"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/curvedCantileverDeadLoad_deformation.pdf"))
+display(deformationPlot)
+
 println("Finished curvedCantileverDeadLoad.jl")

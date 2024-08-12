@@ -45,8 +45,11 @@ torsion_thetaVsMass_UMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/tors
 
 # Plots
 # ------------------------------------------------------------------------------
+relPath = "/test/outputs/figures/PazyWingTorsionTest"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,view=(30,30),save=true,savePath="/test/outputs/figures/PazyWingTorsionTest/PazyWingTorsionTest_deformation.pdf")
+deformationPlot = plot_steady_deformation(problem,view=(30,30),save=true,savePath=string(relPath,"/PazyWingTorsionTest_deformation.pdf"))
 display(deformationPlot)
 # Tip midchord OOP displacement (offset from zero tip mass value) vs. tip mass
 gr()
@@ -55,13 +58,13 @@ plot!(mRange, (tip_OOP.-tip_OOP[1])/L*100, c=:black, lw=2, label="AeroBeams")
 plot!(torsion_u3VsMass_UMNAST[1,:], torsion_u3VsMass_UMNAST[2,:], c=:blue, ls=:dash, lw=2, label="UM/NAST")
 scatter!(torsion_u3VsMass_Exp[1,:], torsion_u3VsMass_Exp[2,:], mc=:red, ms=3,msw=0, label="Exp.")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingTorsionTest/PazyWingTorsionTest_OOP.pdf"))
+savefig(string(absPath,"/PazyWingTorsionTest_OOP.pdf"))
 # Tip twist vs. tip mass
 plt2 = plot(xlabel="Tip mass [kg]", ylabel="Tip twist [deg]", xlims=[0,3])
 plot!(mRange, tip_twist, c=:black, lw=2, label="AeroBeams")
 plot!(torsion_thetaVsMass_UMNAST[1,:], torsion_thetaVsMass_UMNAST[2,:], c=:blue, ls=:dash, lw=2, label="UM/NAST")
 scatter!(torsion_thetaVsMass_Exp[1,:], torsion_thetaVsMass_Exp[2,:], mc=:red, ms=3,msw=0, label="Exp.")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingTorsionTest/PazyWingTorsionTest_twist.pdf"))
+savefig(string(absPath,"/PazyWingTorsionTest_twist.pdf"))
 
 println("Finished PazyWingTorsionTest.jl")

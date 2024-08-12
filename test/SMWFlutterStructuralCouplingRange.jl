@@ -52,8 +52,8 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 nModes = 5
 
 # Set tip load and airspeed ranges, and initialize outputs
-F3Range = collect(0:5:35)
-URange = collect(20:1:35)
+F3Range = collect(0:1:35)
+URange = collect(20:0.5:35)
 freqs = Array{Vector{Float64}}(undef,length(ΨRange),length(F3Range),length(URange))
 damps = Array{Vector{Float64}}(undef,length(ΨRange),length(F3Range),length(URange))
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
@@ -107,6 +107,10 @@ flutterSpeedVsTipLoadΨm02 = readdlm(string(pwd(),"/test/referenceData/SMW/flutt
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(ΨRange)))
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/SMWFlutterStructuralCouplingRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Flutter speed vs tip load for several structural couplings
 plt1 = plot(xlabel="Tip Load [N]", ylabel="Flutter speed [m/s]", xlims=[0,35], ylims=[0,35])
 plot!([NaN], [NaN], c=:black, lw=lw, legend=:bottomleft, label="AeroBeams")
@@ -122,6 +126,6 @@ for (i,Ψ) in enumerate(ΨRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterStructuralCouplingRange/SMWFlutterStructuralCouplingRange.pdf"))
+savefig(string(absPath,"/SMWFlutterStructuralCouplingRange.pdf"))
 
 println("Finished SMWFlutterStructuralCouplingRange.jl")

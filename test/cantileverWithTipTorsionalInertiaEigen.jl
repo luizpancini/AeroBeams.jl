@@ -38,12 +38,16 @@ for m in 1:nModes
 end
 
 # Plot mode shapes
+relPath = "/test/outputs/figures/cantileverWithTipTorsionalInertiaEigen"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$p_1\$")
 for m in 1:nModes
     plot!(x1/L, p1_modeShapes[m], lw=2, c=colors[m], label=string("Mode ",string(m)))
 end
 display(plt1)
+savefig(string(absPath,"/cantileverWithTipTorsionalInertiaEigen_p1.pdf"))
 
 # Analytical solution for normalized frequencies (solutions of μ*x-cot(x) = 0 for μ=1)
 freqsNormAnalytical = [0.86033; 3.4256; 6.4373; 9.5293]

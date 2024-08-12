@@ -44,7 +44,7 @@ for (i,U) in enumerate(URange)
     solve!(problem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem.dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(problem.dampingsOscillatory,1e-8)
     untrackedEigenvectors[i] = problem.eigenvectorsOscillatoryCplx
     nonOscillatoryDampings[i] = problem.dampingsNonOscillatory
     # Get OOP displacement at midchord
@@ -118,13 +118,18 @@ indicesNonOscillatoryInstability = [findfirst(x->x>0 && x<100,nonOscillatoryDamp
 indexDivergence = findfirst(!isnothing,indicesNonOscillatoryInstability[2:end])
 divergenceSpeed = !isnothing(indexDivergence) ? URange[indexDivergence] : NaN
 println("Divergence speed = $divergenceSpeed m/s")
+# Note: the first value of nonOscillatoryDampings[i] crosses zero at an airspeed between 96.0 and 96.5, but once it becomes positive, it disappears. So the divergence speed is between those values
 
 # Plots
 # ------------------------------------------------------------------------------
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/PazyWingFlutterAndDivergence"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 # V-g-f
+gr()
 plt11 = plot(ylabel="Frequency [Hz]")
 for mode in 1:nModes
     plot!(URange, modeFrequencies[mode]/(2*π), c=modeColors[mode], lw=lw,  label=false)
@@ -135,6 +140,6 @@ for mode in 1:nModes
 end
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutter_1.pdf"))
+savefig(string(absPath,"/PazyWingFlutterAndDivergence_Vgf.pdf"))
 
 println("Finished PazyWingFlutterAndDivergence.jl")

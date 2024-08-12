@@ -30,21 +30,24 @@ M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOve
 
 # Plots
 # ------------------------------------------------------------------------------
+relPath = "/test/outputs/figures/triangleLoadBeam"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,scale=1e3,save=true,savePath="/test/outputs/figures/triangleLoadBeam/triangleLoadBeam_deformation.pdf")
+deformationPlot = plot_steady_deformation(problem,scale=1e3,save=true,savePath=string(relPath,"/triangleLoadBeam_deformation.pdf"))
 display(deformationPlot)
 # Displacement
 gr()
 plt1 = plot(x1/L, u3, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$u_3\$ [m]")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/triangleLoadBeam/triangleLoadBeam_u3.pdf"))
+savefig(string(absPath,"/triangleLoadBeam_u3.pdf"))
 # Force
 plt2 = plot(x1/L, F3, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3\$ [N]")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/triangleLoadBeam/triangleLoadBeam_F3.pdf"))
+savefig(string(absPath,"/triangleLoadBeam_F3.pdf"))
 # Moment
 plt3 = plot(x1/L, M2, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2\$ [N.m]")
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/triangleLoadBeam/triangleLoadBeam_M2.pdf"))
+savefig(string(absPath,"/triangleLoadBeam_M2.pdf"))
 
 println("Finished triangleLoadBeam.jl")

@@ -36,7 +36,10 @@ u1_atForce = [problem.nodalStatesOverσ[i][elemForce].u_n2[1] for i in 1:length(
 u3_atForce = [problem.nodalStatesOverσ[i][elemForce].u_n2[3] for i in 1:length(σVector)]
 
 # Plot deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/pinnedClampedArch/pinnedClampedArch_deformation.pdf")
+relPath = "/test/outputs/figures/pinnedClampedArch"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/pinnedClampedArch_deformation.pdf"))
 display(deformationPlot)
 
 # Plot normalized displacements over load steps
@@ -44,12 +47,12 @@ gr()
 x = [-u1_atForce/R, -u3_atForce/R]
 labels = ["\$-u_1/R\$" "\$-u_3/R\$"]
 colors = [:blue,:orange]
-plt1 = plot()
-plot!(x, σVector*λ, linewidth=2, label=false, xlabel="\$-u_1/L, -u_3/L,\$", ylabel="\$\\lambda\$", title="Displacements at point of force application")
+plt1 = plot(xlabel="\$-u_1/L, -u_3/L,\$", ylabel="\$\\lambda\$", title="Displacements at point of force application")
+plot!(x, σVector*λ, linewidth=2, label=false)
 halfNσ = round(Int,length(σVector)/2)
 annotate!(x[1][halfNσ], σVector[halfNσ]*λ, text(labels[1], :bottom, :right, colors[1]))
 annotate!(x[2][halfNσ], σVector[halfNσ]*λ, text(labels[2], :top, :left, colors[2]))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/pinnedClampedArch/pinnedClampedArch_disp.pdf"))
+savefig(string(absPath,"/pinnedClampedArch_disp.pdf"))
 
 println("Finished pinnedClampedArch.jl")

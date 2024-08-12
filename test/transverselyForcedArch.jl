@@ -35,7 +35,10 @@ tip_u3 = [problem.nodalStatesOverσ[i][end].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][end].θ_n2 for i in 1:length(σVector)]
 
 # Plot deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/transverselyForcedArch/transverselyForcedArch_deformation.pdf")
+relPath = "/test/outputs/figures/transverselyForcedArch"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/transverselyForcedArch_deformation.pdf"))
 display(deformationPlot)
 
 # Plot normalized displacements over load steps
@@ -47,6 +50,6 @@ gr()
 plt1 = plot(xlabel=XLabel, ylabel="\$F\$ [kN]", title="Tip generalized displacements")
 plot!(x, σVector*abs(F)/(1e3), linewidth=2, label=labels)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/transverselyForcedArch/transverselyForcedArch_disp.pdf"))
+savefig(string(absPath,"/transverselyForcedArch_disp.pdf"))
 
 println("Finished transverselyForcedArch.jl")

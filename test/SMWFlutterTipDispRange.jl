@@ -108,6 +108,10 @@ flutterSpeedVsDispRef = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpe
 # ------------------------------------------------------------------------------
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/SMWFlutterTipDispRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Flutter speed and frequency vs. tip displacement
 plt11 = plot(ylabel="Flutter speed [m/s]", xlims=[0,3], ylims=[0,35], legend=:bottomleft)
 plot!(flutterTipDisp, flutterSpeed, c=:black,  lw=lw, label="AeroBeams")
@@ -117,12 +121,12 @@ plot!(flutterTipDisp, flutterFreq, c=:black, lw=lw, label=false)
 plot!(flutterFreqRef[1,:], flutterFreqRef[2,:], c=:black, ls=:dash, lw=lw, label=false)
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterTipDispRange/SMWFlutterTipDispRange_flutterVsDisp.pdf"))
+savefig(string(absPath,"/SMWFlutterTipDispRange_flutterVsDisp.pdf"))
 # Complete flutter speed curve
 plt2 = plot(xlabel="Tip displacement [m]", ylabel="Flutter speed [m/s]", xlims=[-3,3], ylims=[0,35], legend=:bottomleft)
 plot!(flutterTipDisp, flutterSpeed, c=:black, lw=lw, label="AeroBeams")
 plot!(flutterSpeedVsDispRef[1,:], flutterSpeedVsDispRef[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterTipDispRange/SMWFlutterTipDispRange_flutterCurve.pdf"))
+savefig(string(absPath,"/SMWFlutterTipDispRange_flutterCurve.pdf"))
 
 println("Finished SMWFlutterTipDispRange.jl")

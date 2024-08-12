@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
 
 # Wing surface
+airfoil = deepcopy(flatPlate)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Wing beam
 θ = π/180*2
@@ -70,8 +71,11 @@ end
 # ------------------------------------------------------------------------------
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/SMWSteady"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 # Plot deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/SMWSteady/SMWSteady_deformation.pdf")
+deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/SMWSteady_deformation.pdf"))
 display(deformationPlot)
 # Normalized deformed wingspan
 gr()
@@ -80,16 +84,16 @@ for (i,U) in enumerate(URange)
     plot!(x1_def[i]/L, x3_def[i]/L*100, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWSteady/SMWSteady_disp.pdf"))
+savefig(string(absPath,"/SMWSteady_disp.pdf"))
 # Tip OOP disp vs airspeed
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP disp [% semispan]", xlims=[0,30], ylims=[-20,60])
 plot!(URange, tip_u3/L*100, c=:black, lw=lw, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/SMWSteady/SMWSteady_OOP.pdf"))
+savefig(string(absPath,"/SMWSteady_OOP.pdf"))
 # Tip twist vs airspeed
 plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[0,30], ylims=[-1,3])
 plot!(URange, tip_twist, c=:black, lw=lw, label=false)
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/SMWSteady/SMWSteady_twist.pdf"))
+savefig(string(absPath,"/SMWSteady_twist.pdf"))
 
 println("Finished SMWSteady.jl")

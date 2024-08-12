@@ -78,8 +78,11 @@ colors2 = get(colorschemes[:darkrainbow], LinRange(0, 1, 3))
 lw = 2
 ms = 3
 labels = ["\\theta_{r} = 1.0 deg" "\\theta_{r} = 2.2 deg"]
+relPath = "/test/outputs/figures/TDWingAirspeedRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_deformation.pdf")
+deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/TDWingAirspeedRange_deformation.pdf"))
 display(deformationPlot)
 # Tip flapwise displacement
 gr()
@@ -100,7 +103,7 @@ for i=eachindex(θRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_disp.pdf"))
+savefig(string(absPath,"/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_disp.pdf"))
 # Tip twist
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]")
 plot!([NaN], [NaN], lc=:black,  lw=lw, ls=:solid, label="AeroBeams")
@@ -119,7 +122,7 @@ for i=eachindex(θRange)
     end
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_twist.pdf"))
+savefig(string(absPath,"/TDWingAirspeedRange_twist.pdf"))
 # Aeroelastic frequencies at root angle of 1 deg
 plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Frequency [Hz]",legend=:outertop)
 plot!([NaN], [NaN], lc=:black,  lw=lw, ls=:solid, label="AeroBeams")
@@ -132,6 +135,6 @@ for (m,mode) in enumerate([1,2,4])
     annotate!(10, freqsMode[1], text(modeLabels[m], :bottom, colors2[m]))
 end
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/TDWingAirspeedRange/TDWingAirspeedRange_freqs.pdf"))
+savefig(string(absPath,"/TDWingAirspeedRange_freqs.pdf"))
 
 println("Finished TDWingAirspeedRange.jl")

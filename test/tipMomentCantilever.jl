@@ -35,7 +35,10 @@ tip_angle = [problem.nodalStatesOverσ[i][nElem].θ_n2 for i in 1:length(σVecto
 plot_steady_outputs(problem,outputs=["M2"],save=true,saveFolder="/test/outputs/figures/tipMomentCantilever/")
 
 # Plot deformed state
-deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/tipMomentCantilever/tipMomentCantilever_deformation.pdf")
+relPath = "/test/outputs/figures/tipMomentCantilever"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/tipMomentCantilever_deformation.pdf"))
 display(deformationPlot)
 
 # Plot normalized displacements over load steps
@@ -54,6 +57,6 @@ for i=1:3
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/tipMomentCantilever/tipMomentCantilever_summary.pdf"))
+savefig(string(absPath,"/tipMomentCantilever_disp.pdf"))
 
 println("Finished tipMomentCantilever.jl")

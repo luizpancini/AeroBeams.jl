@@ -65,7 +65,7 @@ Plots the initial and final deformed states for the model in the given problem
 - `problem::Problem`
 - `view` = view angles
 """
-function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,linewidth::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,linewidth::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -73,6 +73,7 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
     @assert linewidth > 0
     @assert tolPlane > 0
     @assert 0 < surfα <= 1
+    @assert length(ΔuDef) == 3
 
     # Set backend
     pyplot()
@@ -84,6 +85,7 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
     plt = plot(grid=grid)
     plot!([NaN],[NaN], c=colorUndef, linewidth=linewidth, label="Undeformed")
     plot!([NaN],[NaN], c=colorDef, linewidth=linewidth, label="Deformed")
+    plot!(legend=legendPos)
 
     # Initialize arrays
     x1Undef = Array{Vector{Float64}}(undef,nElementsTotal)
@@ -106,23 +108,22 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
         x2Undef[e] = [r_n1[2]; r_n2[2]]
         x3Undef[e] = [r_n1[3]; r_n2[3]]
         # Set deformed coordinates
-        x1Def[e] = x1Undef[e] .+ scale*[u_n1[1]; u_n2[1]]
-        x2Def[e] = x2Undef[e] .+ scale*[u_n1[2]; u_n2[2]]
-        x3Def[e] = x3Undef[e] .+ scale*[u_n1[3]; u_n2[3]]
+        x1Def[e] = x1Undef[e] .+ scale*[u_n1[1]; u_n2[1]] .+ ΔuDef[1]
+        x2Def[e] = x2Undef[e] .+ scale*[u_n1[2]; u_n2[2]] .+ ΔuDef[2]
+        x3Def[e] = x3Undef[e] .+ scale*[u_n1[3]; u_n2[3]] .+ ΔuDef[3]
         # Skip elements without aero surfaces, or if those are not to be plotted
         if !plotAeroSurf || isnothing(aero)
             undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e],defAirfoilCoords_n1[e],defAirfoilCoords_n2[e] = nothing,nothing,nothing,nothing
             continue
         end
-        @unpack Rw = aero
         # Rotation tensors
         R_n1,_ = rotation_tensor_WM(scale*p_n1)
         R_n2,_ = rotation_tensor_WM(scale*p_n2)
         # Undeformed nodal airfoil coordinates
         undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
-        # Deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*Rw*), then throw back to initial position (+r) and add scaled displacements (+scale*u))
-        defAirfoilCoords_n1[e] = R_n1*Rw*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1    
-        defAirfoilCoords_n2[e] = R_n2*Rw*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2
+        # Deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r) and add scaled displacements (+scale*u))
+        defAirfoilCoords_n1[e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ ΔuDef
+        defAirfoilCoords_n2[e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ ΔuDef
     end
 
     # Set TFs for plane views
@@ -192,9 +193,6 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
         plotMin = min(plotMin,minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
         plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
     end
-
-    # Set legend position
-    plot!(legend=legendPos)
 
     # Save, if applicable
     if save
@@ -444,22 +442,24 @@ Plots the mode shapes of the model in the given problem
 - `problem::Problem`
 - `view` = view angles
 """
-function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",linewidth::Number=1,colorSteady=:black,modalColorScheme=:darkrainbow,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",linewidth::Number=1,colorSteady=:black,modalColorScheme=:jet1,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert problem isa EigenProblem
     @assert linewidth > 0
     @assert tolPlane > 0
     @assert 0 < surfα <= 1
+    nModes = isnothing(nModes) ? problem.nModes : nModes
+    @assert nModes <= problem.nModes
 
     # Set backend
     pyplot()
 
     # Unpack
-    @unpack nModes,modeShapesAbs = problem
+    @unpack modeShapesAbs = problem
     @unpack elements,nElementsTotal,units = problem.model
     damps = problem.dampingsOscillatory
-    freqs = problem.frequenciesOscillatory
+    freqs = problem.frequenciesOscillatory 
 
     # Set mode colors
     modeColors = nModes == 1 ? get(colorschemes[modalColorScheme], LinRange(0,1,nModes+1)) : get(colorschemes[modalColorScheme], LinRange(0,1,nModes))
@@ -475,7 +475,7 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
 
     # Initialize plot
     plt = plot(grid=grid)
-    plot!([NaN],[NaN], c=colorSteady, linewidth=linewidth, label="Steady")
+    plot!([NaN],[NaN], c=colorSteady, linewidth=linewidth, label="Steady", legend=legendPos)
     for m in 1:nModes
         if frequencyLabel == "frequency"
             label = string("Mode $(m): ω = $(round(γ*freqs[m],sigdigits=3)) ", units.frequency)
@@ -514,15 +514,14 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
             undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e],steadyAirfoilCoords_n1[e],steadyAirfoilCoords_n2[e] = nothing,nothing,nothing,nothing
             continue
         end
-        @unpack Rw = aero
         # Rotation tensors
         R_n1,_ = rotation_tensor_WM(p_n1)
         R_n2,_ = rotation_tensor_WM(p_n2)
         # Undeformed nodal airfoil coordinates
         undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
-        # Steady deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*Rw*), then throw back to initial position (+r) and add displacements (+u))
-        steadyAirfoilCoords_n1[e] = R_n1*Rw*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ u_n1    
-        steadyAirfoilCoords_n2[e] = R_n2*Rw*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ u_n2
+        # Steady deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r) and add displacements (+u))
+        steadyAirfoilCoords_n1[e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ u_n1    
+        steadyAirfoilCoords_n2[e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ u_n2
     end
 
     # Initialize arrays
@@ -554,13 +553,12 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
                 continue
             end
             @unpack r_n1,r_n2 = element
-            @unpack Rw = element.aero
             # Rotation tensors
             R_n1,_ = rotation_tensor_WM(scale*p_n1)
             R_n2,_ = rotation_tensor_WM(scale*p_n2)
-            # Modal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*Rw*), then throw back to initial position (+r) and add scaled displacements (+scale*u) )
-            modalAirfoilCoords_n1[m,e] = R_n1*Rw*(steadyAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1    
-            modalAirfoilCoords_n2[m,e] = R_n2*Rw*(steadyAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2
+            # Modal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r), add scaled modal displacements (+scale*u) and steady position displacement)
+            modalAirfoilCoords_n1[m,e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ (steadyAirfoilCoords_n1[e] - undefAirfoilCoords_n1[e])
+            modalAirfoilCoords_n2[m,e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ (steadyAirfoilCoords_n2[e] - undefAirfoilCoords_n2[e])
         end
 
         # Set TFs for plane views
@@ -568,7 +566,7 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
         x2Plane = maximum(abs.(vcat(x2Modal[m,:]...))) < tolPlane ? true : false
         x3Plane = maximum(abs.(vcat(x3Modal[m,:]...))) < tolPlane ? true : false
 
-        # Plot steady and modal beam assemblies actording to view
+        # Plot steady and modal beam assemblies according to view
         if isnothing(view)
             if x1Plane
                 plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
@@ -623,9 +621,6 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
             plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
         end
     end
-
-    # Set legend position
-    plot!(legend=legendPos)
 
     # Save, if applicable
     if save
@@ -719,7 +714,7 @@ function get_undeformed_airfoil_coords(element::Element)
 
     @unpack x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2 = element
     @unpack c,normSparPos = element.parent.aeroSurface
-    @unpack airfoil = element.aero
+    @unpack airfoil,Rw = element.aero
 
     # Airfoil coordinates in the X-plane
     Y,Z = airfoil.coordinates[:,1],airfoil.coordinates[:,2]
@@ -728,12 +723,12 @@ function get_undeformed_airfoil_coords(element::Element)
     N = length(Y)
 
     # Nodal chords and normalized spar positions
-    if c isa Float64
+    if c isa Number
         c1 = c2 = c
     else
         c1,c2 = c(x1_n1),c(x1_n2)
     end
-    if normSparPos isa Float64
+    if normSparPos isa Number
         normSparPos1 = normSparPos2 = normSparPos
     else
         normSparPos1,normSparPos2 = normSparPos(x1_n1),normSparPos(x1_n2)
@@ -753,7 +748,7 @@ function get_undeformed_airfoil_coords(element::Element)
     Z2 *= c2
 
     # Rotate to match initial nodal orientation and translate to initial position
-    XYZRot1,XYZRot2 = R0_n1*[zeros(N)'; Y1'; Z1'], R0_n2*[zeros(N)'; Y2'; Z2']           
+    XYZRot1,XYZRot2 = Rw*R0_n1*[zeros(N)'; Y1'; Z1'], Rw*R0_n2*[zeros(N)'; Y2'; Z2']           
     X1,X2 = XYZRot1[1,:]' .+ r_n1[1], XYZRot2[1,:]' .+ r_n2[1]
     Y1,Y2 = XYZRot1[2,:]' .+ r_n1[2], XYZRot2[2,:]' .+ r_n2[2]
     Z1,Z2 = XYZRot1[3,:]' .+ r_n1[3], XYZRot2[3,:]' .+ r_n2[3]

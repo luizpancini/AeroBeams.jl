@@ -222,7 +222,7 @@ function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepco
     clamp = create_BC(name="clamp",beam=mainWing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
     # Wing model
-    pazyFFWT = create_Model(name="pazyFFWT",beams=[mainWing,wingTip],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=[rotationConstraint])
+    pazyFFWT = create_Model(name="pazyFFWT",beams=[mainWing,wingTip],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=[rotationConstraint],units=create_UnitsSystem(frequency="Hz"))
 
     return pazyFFWT,hingeNode
 end

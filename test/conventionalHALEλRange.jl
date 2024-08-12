@@ -77,7 +77,7 @@ for (i,λ) in enumerate(λRange)
     solve_eigen!(eigenProblem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
     untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
 end
 
@@ -106,28 +106,32 @@ xtick_positions = [1,2,5,10,20,50]
 xtick_labels = ["1","2","5","10","20","50"]
 ytick_positions = [0,10,20,50]
 ytick_labels = ["0","10","20","50"]
+relPath = "/test/outputs/figures/conventionalHALEλRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Trim root angle of attack vs stiffness factor
 plt1 = plot(xlabel="Stiffness factor", ylabel="Trim root AoA [deg]", xlims=[minimum(λRange),maximum(λRange)], xscale=:log10, xticks=(xtick_positions, xtick_labels))
 plot!(λRange, trimAoA*180/π, c=:black, lw=lw, label=false)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλRange_AoA.pdf"))
+savefig(string(absPath,"/conventionalHALEλRange_AoA.pdf"))
 # Trim propeller force vs stiffness factor
 plt2 = plot(xlabel="Stiffness factor", ylabel="Trim thrust [N]", xlims=[minimum(λRange),maximum(λRange)], xscale=:log10, xticks=(xtick_positions, xtick_labels))
 plot!(λRange, trimThrust, c=:black, lw=lw, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλRange_thrust.pdf"))
+savefig(string(absPath,"/conventionalHALEλRange_thrust.pdf"))
 # Trim elevator deflection vs stiffness factor
 plt3 = plot(xlabel="Stiffness factor", ylabel="Trim elevator deflection [deg]", xlims=[minimum(λRange),maximum(λRange)], xscale=:log10, xticks=(xtick_positions, xtick_labels))
 plot!(λRange, trimδ*180/π, c=:black, lw=lw, label=false)
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλRange_delta.pdf"))
+savefig(string(absPath,"/conventionalHALEλRange_delta.pdf"))
 # Root locus
 plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-10,1], ylims=[0,300], yscale=:log10)
 for mode in 1:nModes
     scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
 end
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλRange_rootlocus.pdf"))
+savefig(string(absPath,"/conventionalHALEλRange_rootlocus.pdf"))
 # Frequency and damping evolution
 plt51 = plot(ylabel="Frequency [rad/s]", xlims=[0.9,maximum(λRange)], ylims=[0,50], xticks=(xtick_positions, xtick_labels), yticks=(ytick_positions, ytick_labels), xscale=:log10, yscale=:log10)
 for mode in 1:nModes
@@ -139,6 +143,6 @@ for mode in 1:nModes
 end
 plt5 = plot(plt51,plt52, layout=(2,1))
 display(plt5)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλRange_lambda-g-f.pdf"))
+savefig(string(absPath,"/conventionalHALEλRange_lambda-g-f.pdf"))
 
 println("Finished conventionalHALEλRange.jl")

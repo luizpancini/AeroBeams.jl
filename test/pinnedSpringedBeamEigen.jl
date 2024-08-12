@@ -10,8 +10,8 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_m
 # Spring
 κ = 1
 kp = [0; κ*EIy/L; 0]
-spring = create_Spring(elementID=1,localNode=1,kp=kp)
-add_springs_to_beam!(beam,springs=[spring])
+spring = create_Spring(elementsIDs=[1],nodesSides=[1],kp=kp)
+add_springs_to_beam!(beam=beam,springs=[spring])
 
 # BCs
 pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
@@ -38,6 +38,7 @@ for m in 1:nModes
 end
 
 # Plot mode shapes
+gr()
 colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$u_3\$")
 for m in 1:nModes
@@ -51,5 +52,13 @@ freqsRef = [1.55730; 16.2501]*sqrt(ρA*L^4/EIy)
 # Show frequency comparison
 ϵ_rel = freqs./freqsRef .- 1.0
 println("Relative frequency errors: $ϵ_rel")
+
+# Plot mode shapes
+relPath = "/test/outputs/figures/pinnedSpringedBeamEigen"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+
+modesPlot = plot_mode_shapes(problem,scale=0.5,legendPos=:topleft,frequencyLabel="frequency",save=true,savePath=string(relPath,"/pinnedSpringedBeamEigen_modeShapes.pdf"))
+display(modesPlot)
 
 println("Finished pinnedSpringedBeamEigen.jl")

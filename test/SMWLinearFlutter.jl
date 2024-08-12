@@ -105,8 +105,11 @@ println("Respective relative differences: $ϵUf, $ϵFf, $ϵUd")
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/SMWLinearFlutter"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
 # Plot mode shapes
-modesPlot = plot_mode_shapes(problem[end],scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/SMWLinearFlutter/SMWLinearFlutter_modeShapes.pdf")
+modesPlot = plot_mode_shapes(problem[end],scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath=string(relPath,"/SMWLinearFlutter_modeShapes.pdf"))
 display(modesPlot)
 # V-g-f
 gr()
@@ -121,6 +124,6 @@ for mode in 1:nModes
 end
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWLinearFlutter_Vgf.pdf"))
+savefig(string(absPath,"/SMWLinearFlutter_Vgf.pdf"))
 
 println("Finished SMWLinearFlutter.jl")

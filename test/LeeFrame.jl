@@ -48,7 +48,10 @@ u1_atForce = [problem.nodalStatesOverσ[i][nElem+elemForce].u_n2[1] for i in 1:l
 u3_atForce = [problem.nodalStatesOverσ[i][nElem+elemForce].u_n2[3] for i in 1:length(σVector)]
 
 # Plot deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/LeeFrame/LeeFrame_deformation.pdf")
+relPath = "/test/outputs/figures/hingedSpringedBeam"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+deformationPlot = plot_steady_deformation(problem,legendPos=:bottomright,save=true,savePath=string(relPath,"/LeeFrame_deformation.pdf"))
 display(deformationPlot)
 
 # Plot normalized displacements over load steps
@@ -62,6 +65,6 @@ halfNσ = round(Int,length(σVector)/2)
 annotate!(x[1][halfNσ], σVector[halfNσ]*F/(1e3), text(labels[1], :top, :left, colors[1]))
 annotate!(x[2][halfNσ], σVector[halfNσ]*F/(1e3), text(labels[2], :top, :left, colors[2]))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/LeeFrame/LeeFrame_disp.pdf"))
+savefig(string(absPath,"/LeeFrame_disp.pdf"))
 
 println("Finished LeeFrame.jl")

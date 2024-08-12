@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
 
 # Wing surface
+airfoil = deepcopy(flatPlate)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Wing beam
 θ = π/180*0
@@ -27,7 +28,7 @@ h = 20e3
 SMWFlutterPrecurvatureRange = create_Model(name="SMWFlutterPrecurvatureRange",beams=[wing],BCs=[clamp],gravityVector=[0;0;-g],altitude=h)
 
 # Set system solver options (limit initial load factor)
-σ0 = 0.5
+σ0 = 1
 σstep = 0.5
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
@@ -71,7 +72,7 @@ for (ki,k) in enumerate(kRange)
             solve!(problem)
             # Frequencies, dampings and eigenvectors
             untrackedFreqs[ki,i,j] = problem.frequenciesOscillatory
-            untrackedDamps[ki,i,j] = round_off!(problem.dampingsOscillatory,1e-12)
+            untrackedDamps[ki,i,j] = round_off!(problem.dampingsOscillatory,1e-8)
             untrackedEigenvectors[ki,i,j] = problem.eigenvectorsOscillatoryCplx
             # Tip OOP displacement
             tip_u3[ki,i,j] = problem.nodalStatesOverσ[end][nElem].u_n2[3]
@@ -115,6 +116,10 @@ flutterSpeedVsTipLoadk2 = readdlm(string(pwd(),"/test/referenceData/SMW/flutterS
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(kRange)))
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/SMWFlutterPrecurvatureRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Flutter speed vs. tip load
 plt1 = plot(xlabel="Tip load [N]", ylabel="Flutter speed [m/s]", xlims=[0,40], ylims=[0,40])
 for (ki,k) in enumerate(kRange)
@@ -123,6 +128,6 @@ end
 plot!(flutterSpeedVsTipLoadk0[1,:], flutterSpeedVsTipLoadk0[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
 plot!(flutterSpeedVsTipLoadk2[1,:], flutterSpeedVsTipLoadk2[2,:], c=:black, ls=:dash, lw=lw, label=false)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterPrecurvatureRange_1.pdf"))
+savefig(string(absPath,"/SMWFlutterPrecurvatureRange_flutter.pdf"))
 
 println("Finished SMWFlutterPrecurvatureRange.jl")

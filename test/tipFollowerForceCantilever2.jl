@@ -36,13 +36,21 @@ tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector
 u1_ref = readdlm(string(pwd(),"/test/referenceData/tipFollowerForceCantilever/u1.txt"))
 u3_ref = readdlm(string(pwd(),"/test/referenceData/tipFollowerForceCantilever/u3.txt"))
 
+# Plot deformed state
+relPath = "/test/outputs/figures/tipFollowerForceCantilever2"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+deformationPlot = plot_steady_deformation(problem,legendPos=:bottomright,save=true,savePath=string(relPath,"/tipFollowerForceCantilever2_deformation.pdf"))
+display(deformationPlot)
+
 # Plot configurations
 colors = [:blue,:green]
 labels = ["\$-u_1/L\$" "\$u_3/L\$"]
 lw = 2
 ms = 3
 msw = 0
-plt1 = plot(xlabel="\$F\$ [kN]", ylabel="\$-u_1/L, u_3/L\$", title="Tip generalized displacements", xticks=collect(0:10:F), yticks=collect(-0.6:0.2:1.2))
+gr()
+plt1 = plot(xlabel="\$F\$ [kip]", ylabel="\$-u_1/L, u_3/L\$", title="Tip generalized displacements", xticks=collect(0:10:F), yticks=collect(-0.6:0.2:1.2))
 plot!([NaN], [NaN], lc=:black,  lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], mc=:black, ms=ms, label="Simo & Vu-Quoc (1986)")
 for i=1:2
@@ -53,5 +61,6 @@ end
 scatter!([u1_ref[1,:],u3_ref[1,:]], [u1_ref[2,:]/L,u3_ref[2,:]/L], palette=colors, ms=ms, msw=msw, label=false)
 plot!(σVector*F/(1e3), [-tip_u1/L, tip_u3/L], palette=colors,  lw=lw, label=false)
 display(plt1)
+savefig(string(absPath,"/tipFollowerForceCantilever2_disp.pdf"))
 
-println("Finished tipFollowerForceCantilever.jl")
+println("Finished tipFollowerForceCantilever2.jl")

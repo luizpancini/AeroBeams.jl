@@ -7,16 +7,21 @@ using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 beamPods = false
 
 # Aerodynamic solver
-aeroSolver = Inflow(6)
+aeroSolver = Indicial()
 
 # Option for mode tracking
 modeTracking = true
 
 # Number of modes
-nModes = 5
+nModes = 8
+
+# Set system solver options
+σ0 = 0.5
+σstep = 0.5
+NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Set airspeed range, and initialize outputs
-URange = collect(0.1:0.1:15)
+URange = collect(0.1:0.1:16.9)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
@@ -32,11 +37,11 @@ for (i,U) in enumerate(URange)
     # plt = plot_undeformed_assembly(heliosWing)
     # display(plt)
     # Create and solve trim problem
-    eigenProblem = create_EigenProblem(model=heliosWing,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64])
+    global eigenProblem = create_EigenProblem(model=heliosWing,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],systemSolver=NR)
     solve!(eigenProblem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
     untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
 end
 
@@ -59,11 +64,18 @@ end
 
 # Plots
 # ------------------------------------------------------------------------------
-modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
+modeColors = get(colorschemes[:jet1], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/heliosWingFlutter"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Mode shapes
+modesPlot = plot_mode_shapes(eigenProblem,scale=5,view=(30,30),frequencyLabel="frequency",save=true,savePath=string(relPath,"/heliosWingFlutter_modeShapes.pdf"))
+display(modesPlot)
 # V-g-f
-plt11 = plot(ylabel="Frequency [rad/s]")
+gr()
+plt11 = plot(ylabel="Frequency [rad/s]", ylims=[0,15])
 for mode in 1:nModes
     scatter!(URange, modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
 end
@@ -73,13 +85,13 @@ for mode in 1:nModes
 end
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/heliosWingFlutter_1.pdf"))
+savefig(string(absPath,"/heliosWingFlutter_Vgf.pdf"))
 # Root locus
-plt2 = plot(xlabel="Damping ratio", ylabel="Frequency [rad/s]", xlims=[-1.0,0.25])
+plt2 = plot(xlabel="Damping ratio", ylabel="Frequency [rad/s]", xlims=[-2.0,0.25] ,ylims=[0,15])
 for mode in 1:nModes
     scatter!(modeDampingRatios[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/heliosWingFlutter_2.pdf"))
+savefig(string(absPath,"/heliosWingFlutter_rootlocus.pdf"))
 
 println("Finished heliosWingFlutter.jl")

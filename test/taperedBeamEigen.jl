@@ -32,7 +32,11 @@ freqsRef = [4.31517; 23.5193; 63.1992]*sqrt(ρA0*L^4/EIy0)
 println("Relative frequency errors: $ϵ_rel")
 
 # Plot mode shapes
-modesPlot = plot_mode_shapes(problem,scale=0.5,legendPos=:topleft,frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/taperedBeamEigen/taperedBeamEigen_modeShapes.pdf")
+relPath = "/test/outputs/figures/taperedBeamEigen"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+
+modesPlot = plot_mode_shapes(problem,scale=0.5,legendPos=:topleft,frequencyLabel="frequency",save=true,savePath=string(relPath,"/taperedBeamEigen_modeShapes.pdf"))
 display(modesPlot)
 
 println("Finished taperedBeamEigen.jl")

@@ -27,6 +27,7 @@ U = 40*0.3048
 # Set stiffness factor and payload ranges, and initialize outputs
 λRange = [1,50]
 PRange = collect(0:20:500)
+problem = Array{TrimProblem}(undef,length(λRange),length(PRange))
 trimAoA = Array{Float64}(undef,length(λRange),length(PRange))
 trimThrust = Array{Float64}(undef,length(λRange),length(PRange))
 trimδ = Array{Float64}(undef,length(λRange),length(PRange))
@@ -42,14 +43,14 @@ for (i,λ) in enumerate(λRange)
         # plt = plot_undeformed_assembly(helios)
         # display(plt)
         # Set initial guess solution as previous known solution
-        x0 = (j==1) ? zeros(0) : problem.x
-        # Create and solve trim problem
-        global problem = create_TrimProblem(model=helios,systemSolver=NR,x0=x0)
-        solve!(problem)
+        x0 = (j==1) ? zeros(0) : problem[i,j-1].x
+        # Create and solve trim problem[i,j]
+        problem[i,j] = create_TrimProblem(model=helios,systemSolver=NR,x0=x0)
+        solve!(problem[i,j])
         # Trim results
-        trimAoA[i,j] = problem.aeroVariablesOverσ[end][midSpanElem].flowAnglesAndRates.αₑ*180/π
-        trimThrust[i,j] = problem.x[end-1]*problem.model.forceScaling
-        trimδ[i,j] = problem.x[end]*180/π
+        trimAoA[i,j] = problem[i,j].aeroVariablesOverσ[end][midSpanElem].flowAnglesAndRates.αₑ*180/π
+        trimThrust[i,j] = problem[i,j].x[end-1]*problem[i,j].model.forceScaling
+        trimδ[i,j] = problem[i,j].x[end]*180/π
         println("AoA = $(trimAoA[i,j]), T = $(trimThrust[i,j]), δ = $(trimδ[i,j])")
     end
 end
@@ -66,7 +67,14 @@ colors = get(colorschemes[:rainbow], LinRange(0, 1, length(λRange)))
 lw = 2
 ms = 3
 labels = ["Flexible" "Rigid"]
+relPath = "/test/outputs/figures/heliosTrim"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Deformed shape of flexible aircraft at highest payload
+deformationPlot = plot_steady_deformation(problem[1,end],view=(30,30),save=true,savePath=string(relPath,"/heliosTrim_deformation.pdf"))
+display(deformationPlot)
 # Trim root angle of attack vs airspeed
+gr()
 plt1 = plot(xlabel="Payload [lb]", ylabel="Trim root AoA [deg]", xlims=[0,500], ylims=[0,5])
 plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")
@@ -79,14 +87,14 @@ for (i,λ) in enumerate(λRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/heliosTrim_AoA.pdf"))
+savefig(string(absPath,"/heliosTrim_AoA.pdf"))
 # Trim propeller force vs airspeed
 plt2 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500])
 for (i,λ) in enumerate(λRange)
     plot!(PRange, trimThrust[i,:], c=colors[i], lw=lw, label=labels[i])
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/heliosTrim_thrust.pdf"))
+savefig(string(absPath,"/heliosTrim_thrust.pdf"))
 # Trim elevator deflection vs airspeed
 plt3 = plot(xlabel="Payload [lb]", ylabel="Trim elevator deflection [deg]", xlims=[0,500], ylims=[0,10])
 plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
@@ -100,6 +108,6 @@ for (i,λ) in enumerate(λRange)
     end
 end
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/heliosTrim_delta.pdf"))
+savefig(string(absPath,"/heliosTrim_delta.pdf"))
 
 println("Finished heliosTrim.jl")

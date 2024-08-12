@@ -74,8 +74,11 @@ expFreqs = [5.2374e+00   7.4239e+00   1.1018e+01   1.5820e+01;
 colors = get(colorschemes[:darkrainbow], LinRange(0, 1, 4))
 labels = ["1B", "2B", "3B", "4B"]
 
-# Mode shapes
-modesPlot = plot_mode_shapes(problem,scale=5,view=(30,30),frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/unsweptTipRotor/unsweptTipRotor_modeShapes.pdf")
+# Plot mode shapes
+relPath = "/test/outputs/figures/unsweptTipRotor"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+modesPlot = plot_mode_shapes(problem,scale=5,view=(30,30),frequencyLabel="frequency",save=true,savePath=string(relPath,"/unsweptTipRotor_modeShapes.pdf"))
 display(modesPlot)
 
 # Plot frequency over angular velocity for several modes
@@ -92,6 +95,6 @@ for (m,mode) in enumerate(modes)
 end
 plot!(legend=(0.15,0.8))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/unsweptTipRotor/unsweptTipRotor_freqVsOmega.pdf"))
+savefig(string(absPath,"/unsweptTipRotor_freqVsOmega.pdf"))
 
 println("Finished unsweptTipRotor.jl")

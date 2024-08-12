@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
 
 # Wing surface
+airfoil = deepcopy(flatPlate)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Wing beam
 L = 16
@@ -34,7 +35,7 @@ nModes = 5
 
 # Set root angle and airspeed ranges, and initialize outputs
 θRange = collect(0:0.1:5.0)
-URange = collect(0:0.1:35)
+URange = collect(0:0.2:35)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(θRange),length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(θRange),length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(θRange),length(URange))
@@ -66,7 +67,7 @@ for (i,θ) in enumerate(θRange)
         solve!(problem)
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = problem.frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-12)
+        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-8)
         untrackedEigenvectors[i,j] = problem.eigenvectorsOscillatoryCplx
         # Tip OOP displacement
         tip_u3[i,j] = problem.nodalStatesOverσ[end][nElem].u_n2[3]
@@ -133,6 +134,10 @@ ms = 3
 flutterModes = [2,5]
 flutterOnsetModesLabels = ["2nd OOP - onset" "2nd T-IP - onset"]
 flutterOffsetModesLabels = ["2nd OOP - offset" "2nd T-IP - offset"]
+relPath = "/test/outputs/figures/SMWFlutterPitchRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Flutter speed and frequency vs. root pitch angle
 plt11 = plot(ylabel="Flutter speed [m/s]", xlims=[0,5], ylims=[0,35], legend=:bottomleft)
 for (i,m) in enumerate(flutterModes)
@@ -148,7 +153,7 @@ end
 plot!(flutterFreqRef[1,:], flutterFreqRef[2,:], c=:black, ls=:solid, lw=lw, label=false)
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterPitchRange_1.pdf"))
+savefig(string(absPath,"/SMWFlutterPitchRange_flutterSpeed.pdf"))
 # Flutter tip displacement vs. root pitch angle
 plt2 = plot(xlabel="Root pitch angle, \$\\theta\$ [deg]",ylabel="Flutter tip displacement [m]", xlims=[0,5], ylims=[-3,3])
 for (i,m) in enumerate(flutterModes)
@@ -157,7 +162,7 @@ for (i,m) in enumerate(flutterModes)
 end
 plot!(flutterTipDispRef[1,:], flutterTipDispRef[2,:], c=:black, ls=:solid, lw=lw, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterPitchRange_2.pdf"))
+savefig(string(absPath,"/SMWFlutterPitchRange_flutterDisp.pdf"))
 # Tip displacement vs airspeed
 θplot = [0; 0.5; 1.0; 2.0]
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(θplot)))
@@ -178,7 +183,7 @@ for i in eachindex(indθ2plot)
     end
 end
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterPitchRange_3.pdf"))
+savefig(string(absPath,"/SMWFlutterPitchRange_tipDisp.pdf"))
 # V-g-f of selected mode for selected root angles
 mode2plot = 2
 θplot = [2.0; 3.0; 5.0]
@@ -210,6 +215,6 @@ for i in eachindex(indθ2plot)
 end
 plt4 = plot(plt41,plt42, layout=(2,1))
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterPitchRange_4.pdf"))
+savefig(string(absPath,"/SMWFlutterPitchRange_Vgf.pdf"))
 
 println("Finished SMWFlutterPitchRange.jl")

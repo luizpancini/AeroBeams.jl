@@ -34,6 +34,7 @@ freqs = Array{Vector{Float64}}(undef,length(λRange),length(URange))
 damps = Array{Vector{Float64}}(undef,length(λRange),length(URange))
 modeDampings = Array{Vector{Float64}}(undef,length(λRange),nModes)
 modeFrequencies =  Array{Vector{Float64}}(undef,length(λRange),nModes)
+eigenProblem = Array{EigenProblem}(undef,length(λRange),length(URange))
 
 # Attachment springs
 μ = 1e-1
@@ -72,12 +73,12 @@ for (i,λ) in enumerate(λRange)
         conventionalHALEeigen.skipValidationMotionBasisA = true
         update_model!(conventionalHALEeigen)
         # Create and solve eigen problem
-        eigenProblem = create_EigenProblem(model=conventionalHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia)
-        solve_eigen!(eigenProblem)
+        eigenProblem[i,j] = create_EigenProblem(model=conventionalHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia)
+        solve_eigen!(eigenProblem[i,j])
         # Frequencies, dampings and eigenvectors
-        untrackedFreqs[i,j] = eigenProblem.frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
-        untrackedEigenvectors[i,j] = eigenProblem.eigenvectorsOscillatoryCplx
+        untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory
+        untrackedDamps[i,j] = round_off!(eigenProblem[i,j].dampingsOscillatory,1e-8)
+        untrackedEigenvectors[i,j] = eigenProblem[i,j].eigenvectorsOscillatoryCplx
     end
     # Frequencies and dampings after mode tracking
     if modeTracking
@@ -99,7 +100,14 @@ lw = 2
 ms = 5
 lstyle = [:solid, :dash, :dot]
 mshape = [:circle, :star, :utriangle]
+relPath = "/test/outputs/figures/conventionalHALEλURange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Mode shapes of flexible aircraft at lowest airspeed
+modesPlot = plot_mode_shapes(eigenProblem[1,1],nModes=5,scale=10,view=(30,30),legendPos=:outertop,save=true,savePath=string(relPath,"/conventionalHALEλURange_modeShapes.pdf"))
+display(modesPlot)
 # Root locus
+gr()
 plt0 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", ylims=[0,50])
 scatter!([NaN], [NaN], c=colors[1], shape=mshape[1], ms=ms, msw=0, label="Flexible")
 scatter!([NaN], [NaN], c=colors[2], shape=mshape[2], ms=ms, msw=0, label="Stiffened")
@@ -110,7 +118,7 @@ for (i,λ) in enumerate(λRange)
     end
 end
 display(plt0)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλURange_0.pdf"))
+savefig(string(absPath,"/conventionalHALEλURange_rootlocus.pdf"))
 # Root locus
 plt1 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-10,0], ylims=[0,10])
 scatter!([NaN], [NaN], c=colors[1], shape=mshape[1], ms=ms, msw=0, label="Flexible")
@@ -122,7 +130,7 @@ for (i,λ) in enumerate(λRange)
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλURange_1.pdf"))
+savefig(string(absPath,"/conventionalHALEλURange_rootlocus2.pdf"))
 # Root locus (zoom)
 plt2 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-0.1,0.1], ylims=[0,0.5])
 scatter!([NaN], [NaN], c=colors[1], shape=mshape[1], ms=ms, msw=0, label="Flexible")
@@ -134,6 +142,6 @@ for (i,λ) in enumerate(λRange)
     end
 end
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEλURange_2.pdf"))
+savefig(string(absPath,"/conventionalHALEλURange_rootlocuszoom.pdf"))
 
 println("Finished conventionalHALEλURange.jl")

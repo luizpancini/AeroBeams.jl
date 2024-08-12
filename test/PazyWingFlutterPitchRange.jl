@@ -55,7 +55,7 @@ for (i,θ) in enumerate(θRange)
         solve!(problem)
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = problem.frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-12)
+        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-8)
         untrackedEigenvectors[i,j] = problem.eigenvectorsOscillatoryCplx
         # Get OOP displacement at midchord
         tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
@@ -133,6 +133,10 @@ flutterOnsetDispDown = [28.5; 31.5]
 # ------------------------------------------------------------------------------
 lw = 2
 ms = 10
+relPath = "/test/outputs/figures/PazyWingFlutterPitchRange"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Flutter onset and offset speeds vs root pitch angle
 mode2plot = 3
 x1 = [flutterOnsetSpeedsOfMode[i,mode2plot][1] for i in eachindex(θRange)]
@@ -144,7 +148,7 @@ scatter!(flutterOffsetVelUp, rootPitchVelUp, shape=:rtriangle, mc=:green, ms=ms,
 scatter!(flutterOnsetVelDown, rootPitchVelDown, shape=:ltriangle, mc=:red, ms=ms, msw=0, label="Test onset down")
 scatter!(flutterOffsetVelDown, rootPitchVelDown, shape=:ltriangle, mc=:green, ms=ms, msw=0, label="Test offset down")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutterPitchRange_1.pdf"))
+savefig(string(absPath,"/PazyWingFlutterPitchRange_flutterBoundaryPitch.pdf"))
 # Flutter onset and offset speeds vs tip OOP displacement for varying root pitch angle
 θ2plot = [0.5,1,2,3,5,7]
 indθ2plot = findall(vec(any(θRange .== θ2plot', dims=2)))
@@ -175,6 +179,6 @@ end
 scatter!(flutterOnsetDispUp, flutterOnsetVelUp, shape=:rtriangle, mc=:red, ms=ms, msw=0, label="Test onset up")
 scatter!(flutterOnsetDispDown, flutterOnsetVelDown, shape=:ltriangle, mc=:red, ms=ms, msw=0, label="Test onset down")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/PazyWingFlutterPitchRange_2.pdf"))
+savefig(string(absPath,"/PazyWingFlutterPitchRange_flutterBoundaryDisp.pdf"))
 
 println("Finished PazyWingFlutterPitchRange.jl")

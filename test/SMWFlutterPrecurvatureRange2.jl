@@ -1,11 +1,12 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
 
 # Wing surface
+airfoil = deepcopy(flatPlate)
 chord = 1.0
 normSparPos = 0.5
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=flatPlate,c=chord,normSparPos=normSparPos)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
 # Wing beam
 L = 16
@@ -35,8 +36,8 @@ nModes = 5
 
 # Set precurvature, root angle, and airspeed ranges, and initialize outputs
 kRange = collect(0:0.018:0.018)
-θRange = collect(0:0.1:5)
-URange = collect(0.1:0.1:35)
+θRange = collect(0:0.2:5)
+URange = collect(0:0.5:33)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(kRange),length(θRange),length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(kRange),length(θRange),length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(kRange),length(θRange),length(URange))
@@ -70,7 +71,7 @@ for (ki,k) in enumerate(kRange)
             solve!(problem)
             # Frequencies, dampings and eigenvectors
             untrackedFreqs[ki,i,j] = problem.frequenciesOscillatory
-            untrackedDamps[ki,i,j] = round_off!(problem.dampingsOscillatory,1e-12)
+            untrackedDamps[ki,i,j] = round_off!(problem.dampingsOscillatory,1e-8)
             untrackedEigenvectors[ki,i,j] = problem.eigenvectorsOscillatoryCplx
             # Tip OOP displacement
             tip_u3[ki,i,j] = problem.nodalStatesOverσ[end][nElem].u_n2[3]
@@ -121,6 +122,10 @@ end
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(kRange)))
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/SMWFlutterPrecurvatureRange2"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Flutter speed vs. tip load
 plt1 = plot(xlabel="Root angle [deg]", ylabel="Flutter speed [m/s]", xlims=[0,5], ylims=[0,40])
 for (ki,k) in enumerate(kRange)
@@ -136,6 +141,6 @@ for m in 1:nModes
     end
 end
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/SMWFlutterPrecurvatureRange2_1.pdf"))
+savefig(string(absPath,"/SMWFlutterPrecurvatureRange2_flutter.pdf"))
 
 println("Finished SMWFlutterPrecurvatureRange2.jl")

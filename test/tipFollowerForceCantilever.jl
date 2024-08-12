@@ -36,7 +36,10 @@ u1_ref = readdlm(string(pwd(),"/test/referenceData/tipFollowerForceCantilever/u1
 u3_ref = readdlm(string(pwd(),"/test/referenceData/tipFollowerForceCantilever/u3.txt"))
 
 # Plot deformed state
-deformationPlot = plot_steady_deformation(problem,save=true,savePath="/test/outputs/figures/tipFollowerForceCantilever/tipFollowerForceCantilever_deformation.pdf")
+relPath = "/test/outputs/figures/tipFollowerForceCantilever"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+deformationPlot = plot_steady_deformation(problem,legendPos=:bottomright,save=true,savePath=string(relPath,"/tipFollowerForceCantilever_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations
@@ -57,5 +60,6 @@ end
 scatter!([u1_ref[1,:],u3_ref[1,:]], [u1_ref[2,:]/L,u3_ref[2,:]/L], palette=colors, ms=ms, msw=msw, label=false)
 plot!(σVector*F/(1e3), [-tip_u1/L, tip_u3/L], palette=colors,  lw=lw, label=false)
 display(plt1)
+savefig(string(absPath,"/tipFollowerForceCantilever_disp.pdf"))
 
 println("Finished tipFollowerForceCantilever.jl")

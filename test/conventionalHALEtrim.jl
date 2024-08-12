@@ -71,7 +71,14 @@ colors = get(colorschemes[:rainbow], LinRange(0, 1, 2))
 labels = ["Elastic" "Rigid"]
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/conventionalHALEtrim"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Deformation plot
+deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/conventionalHALEtrim_deformation.pdf"))
+display(deformationPlot)
 # Trim root angle of attack vs airspeed
+gr()
 plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root angle of attack [deg]", xlims=[URange[1],URange[end]], ylims=[0,20])
 plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], c=:black, ms=ms, msw=0, label="Patil et al. (2001)")
@@ -83,7 +90,7 @@ for (i,λ) in enumerate(λRange)
         scatter!(trimAoARRef[1,:], trimAoARRef[2,:], c=colors[i], ms=ms, msw=0, label=false)
     end
 end
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEtrim_AoA.pdf"))
+savefig(string(absPath,"/conventionalHALEtrim_AoA.pdf"))
 display(plt1)
 # Trim deflected wingspan at U = 25 m/s
 U2plot = 25.0
@@ -93,7 +100,7 @@ if !isnothing(indU)
     plot!(x1_0.+(trim_u1[1,indU].-trim_u1[1,indU][1]), x3_0.+trim_u3[1,indU].-trim_u3[1,indU][1], c=:black, lw=lw, label="AeroBeams")
     scatter!(trimDispRef[1,:], trimDispRef[2,:], c=:black, ms=ms, msw=0, label="Patil et al. (2001)")
     display(plt2)
-    savefig(string(pwd(),"/test/outputs/figures/conventionalHALEtrim_disp.pdf"))
+    savefig(string(absPath,"/conventionalHALEtrim_disp.pdf"))
 end
 # Trim deflected wingspan over airspeed
 plt3 = plot(xlabel="Normalized spanwise length", ylabel="Vertical displacement [% semispan]", xlims=[0,1], ylims=[0,100])
@@ -101,6 +108,6 @@ for (i,U) in enumerate(URange)
     plot!((x1_0.+(trim_u1[1,i].-trim_u1[1,i][1]))/16, (x3_0.+(trim_u3[1,i].-trim_u3[1,i][1]))/16*100, lz=U, c=:rainbow, lw=lw, label=false, colorbar_title="Airspeed [m/s]")
 end
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALEtrim_u3OverU.pdf"))
+savefig(string(absPath,"/conventionalHALEtrim_u3OverU.pdf"))
 
 println("Finished conventionalHALEtrim.jl")
