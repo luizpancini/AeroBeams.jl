@@ -36,11 +36,19 @@ u₃_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 
 # Plots
 # ------------------------------------------------------------------------------
-# Nomalized tip u₁
+lw = 2
+ms = 5
+relPath = "/test/outputs/figures/momentDrivenRobotArm"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,plotFrequency=1,showScale=false,timeStampPos=[0.15;-0.05;0],plotLimits=[(-L,L),(-L,L),(0,L)],save=true,savePath=string(relPath,"/momentDrivenRobotArm_deformation.gif"),displayProgress=true)
+# Nomalized tip displacements
+gr()
 plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip normalized displacements")
-plot!(t,u₁_tip/L, linewidth=2, label="\$u_1/L\$")
-plot!(t,u₃_tip/L, linewidth=2, label="\$u_3/L\$")
+plot!(t,u₁_tip/L, lw=lw, label="\$u_1/L\$")
+plot!(t,u₃_tip/L, lw=lw, label="\$u_3/L\$")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/momentDrivenRobotArm.pdf"))
+savefig(string(absPath,"/momentDrivenRobotArm_disp.pdf"))
 
 println("Finished momentDrivenRobotArm.jl")

@@ -143,17 +143,22 @@ end
 lw = 2
 ms = 5
 i = argmin(abs.(t .- t₀))
+relPath = "/test/outputs/figures/OMCgustTests"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Separation points
 plt1 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="Separation points")
 plot!((t[i:end].-t[i])*U/b, fN[i:end], color=:green, lw=lw, label="\$f_N\$")
 plot!((t[i:end].-t[i])*U/b, fPrimeN[i:end], color=:blue, lw=lw, label="\$f^{\\prime}_N\$")
 plot!((t[i:end].-t[i])*U/b, f2PrimeN[i:end], color=:black, lw=lw, label="\$f^{\\prime\\prime}_N\$")
 display(plt1)
+savefig(string(absPath,"/OMCgustTests_f.pdf"))
 # Δcl
 plt2 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$")
 plot!((t[i:end].-t[i])*U/b, cl[i:end].-cl[i], color=:black, lw=lw, label="AeroBeams")
 scatter!(clRef[1,:], clRef[2,:], color=:black, ms=ms, label="Mallik & Raveh (2019)")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/OMCgustTests_dcl.pdf"))
+savefig(string(absPath,"/OMCgustTests_dcl.pdf"))
 
 println("Finished OMCgustTests.jl")

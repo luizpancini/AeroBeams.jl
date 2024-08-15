@@ -41,7 +41,7 @@ trimProblem = create_TrimProblem(model=heliosTrim,systemSolver=NR)
 # Extract trim variables
 trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
 trimδ = trimProblem.x[end]
-println("T = $(trimThrust), δ = $(trimδ*180/π)")
+println("Trim variables: T = $(trimThrust), δ = $(trimδ*180/π)")
 
 # Set checked elevator deflection profile
 Δδ = 5*π/180
@@ -67,7 +67,7 @@ heliosDynamic,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamP
 
 # Time variables
 Δt = 1e-2
-tf = 1
+tf = 30
 
 # Set NR system solver for dynamic problem
 maxit = 50
@@ -81,22 +81,28 @@ dynamicProblem = create_DynamicProblem(model=heliosDynamic,x0=trimProblem.x[1:en
 
 # Unpack numerical solution
 t = dynamicProblem.timeVector
-rootAoA = [dynamicProblem.flowVariablesOverTime[i][midSpanElem].αₑ for i in 1:length(t)]
+rootAoA = [dynamicProblem.aeroVariablesOverTime[i][midSpanElem].flowAnglesAndRates.αₑ for i in 1:length(t)]
 Δu3 = [dynamicProblem.nodalStatesOverTime[i][midSpanElem].u_n2[3] for i in 1:length(t)] .- dynamicProblem.nodalStatesOverTime[1][midSpanElem].u_n2[3]
 
 # Plots
 # ------------------------------------------------------------------------------
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/heliosCheckedPitchManeuver"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(90,0),plotDistLoads=false,plotFrequency=5,plotLimits=[(-30,30),(0,300),(-20,20)],save=true,savePath=string(relPath,"/heliosCheckedPitchManeuver_deformation.gif"),displayProgress=true)
 # Altitude
+gr()
 plt1 = plot(xlabel="Time [s]", ylabel="Altitude [m]")
 plot!(t, Δu3, color=:black, lw=lw, label=false)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/heliosCheckedPitchManeuver_altitude.pdf"))
+savefig(string(absPath,"/heliosCheckedPitchManeuver_altitude.pdf"))
 # Root AoA
 plt2 = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]")
 plot!(t, rootAoA*180/π, color=:black, lw=lw, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/heliosCheckedPitchManeuver_rootAoA.pdf"))
+savefig(string(absPath,"/heliosCheckedPitchManeuver_rootAoA.pdf"))
 
 println("Finished heliosCheckedPitchManeuver.jl")

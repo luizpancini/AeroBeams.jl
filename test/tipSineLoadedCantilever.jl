@@ -39,20 +39,27 @@ M2_root = [problem.nodalStatesOverTime[i][1].M_n1[2] for i in 1:length(t)]
 
 # Plots
 # ------------------------------------------------------------------------------
+lw = 1
+relPath = "/test/outputs/figures/tipSineLoadedCantilever"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,scale=1e3,plotLimits=[(0,L),(-0.5,0.5),(0,1)],save=true,savePath=string(relPath,"/tipSineLoadedCantilever_deformation.gif"),displayProgress=true)
 # Tip u3
-plt3 = plot()
-plot!(t,u3_tip*1e3, c=:black, linewidth=1, xlabel="\$t\$ [s]", ylabel="Tip \$u_3\$ [mm] ", label=false)
-display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/tipSineLoadedCantilever_u3.pdf"))
+gr()
+plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip \$u_3\$ [mm]")
+plot!(t,u3_tip*1e3, c=:black, lw=lw, label=false)
+display(plt1)
+savefig(string(absPath,"/tipSineLoadedCantilever_u3.pdf"))
 # Root F3 
-plt9 = plot()
-plot!(t,F3_root, c=:black, linewidth=1, xlabel="\$t\$ [s]", ylabel="Root \$F_3^*\$ [N] ", label=false)
-display(plt9)
-savefig(string(pwd(),"/test/outputs/figures/tipSineLoadedCantilever_F3.pdf"))
+plt2 = plot(xlabel="\$t\$ [s]", ylabel="Root \$F_3^*\$ [N]")
+plot!(t,F3_root, c=:black, lw=lw, label=false)
+display(plt2)
+savefig(string(absPath,"/tipSineLoadedCantilever_F3.pdf"))
 # Root M2 
-plt11 = plot()
-plot!(t,M2_root, c=:black, linewidth=1, xlabel="\$t\$ [s]", ylabel="Root \$M_2^*\$ [Nm] ", label=false)
-display(plt11)
-savefig(string(pwd(),"/test/outputs/figures/tipSineLoadedCantilever_M2.pdf"))
+plt3 = plot(xlabel="\$t\$ [s]", ylabel="Root \$M_2^*\$ [Nm]")
+plot!(t,M2_root, c=:black, lw=lw, label=false)
+display(plt3)
+savefig(string(absPath,"/tipSineLoadedCantilever_M2.pdf"))
 
 println("Finished tipSineLoadedCantilever.jl")

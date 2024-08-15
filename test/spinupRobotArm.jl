@@ -54,25 +54,33 @@ u₂_tip = [problem.nodalStatesOverTime[i][nElements].u_n2[2] for i in 1:length(
 u₁_tip_rigid = L*(cos.(θ(t)).-1)
 u₂_tip_rigid = L*sin.(θ(t))
 
-# Plots: flexible vs. rigid
+# Plots
 # ------------------------------------------------------------------------------
+lw = 2
+ms = 5
+relPath = "/test/outputs/figures/spinupRobotArm"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=5,showScale=false,timeStampPos=[0.1;-0.05;0],plotLimits=[(-L,L),(-L,L),(0,L)],save=true,savePath=string(relPath,"/spinupRobotArm_deformation.gif"),displayProgress=true)
 # Normalized tip u₁
-plt1 = plot()
-plot!(t,u₁_tip/L, c=:black, linewidth=2, xlabel="\$t\$ [s]", ylabel="Tip \$u_1/L\$ ", label="Flexible", show=true)
-scatter!(t[1:5:end],u₁_tip_rigid[1:5:end]/L, c=:blue, markersize=3, label="Rigid", show=true)
+gr()
+plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip \$u_1/L\$")
+plot!(t,u₁_tip/L, c=:black, lw=lw, label="Flexible")
+scatter!(t[1:5:end],u₁_tip_rigid[1:5:end]/L, c=:blue, ms=ms, msw=0, label="Rigid")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/spinupRobotArm_1.pdf"))
+savefig(string(absPath,"/spinupRobotArm_u1.pdf"))
 # Normalized tip u₂
-plt2 = plot()
-plot!(t,u₂_tip/L, c=:black, linewidth=2, xlabel="\$t\$ [s]", ylabel="Tip \$u_2/L\$", label="Flexible", show=true)
-scatter!(t[1:5:end],u₂_tip_rigid[1:5:end]/L, c=:blue, markersize=3, label="Rigid", show=true)
+plt2 = plot(xlabel="\$t\$ [s]", ylabel="Tip \$u_2/L\$")
+plot!(t,u₂_tip/L, c=:black, lw=lw, label="Flexible")
+scatter!(t[1:5:end],u₂_tip_rigid[1:5:end]/L, c=:blue, ms=ms, msw=0, label="Rigid")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/spinupRobotArm_2.pdf"))
+savefig(string(absPath,"/spinupRobotArm_u2.pdf"))
 # Root rotation
-plt3 = plot()
-plot!(t,θ₃_root/π, c=:black, linewidth=2, xlabel="\$t\$ [s]", ylabel="Root \$\\theta/\\pi\$", label="Numerical", show=true)
-scatter!(t[1:20:end],θ(t[1:20:end])/π, c=:blue, markersize=3, label="Analytical", show=true)
+plt3 = plot(xlabel="\$t\$ [s]", ylabel="Root \$\\theta/\\pi\$")
+plot!(t,θ₃_root/π, c=:black, lw=lw, label="Numerical")
+scatter!(t[1:20:end],θ(t[1:20:end])/π, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/spinupRobotArm_3.pdf"))
+savefig(string(absPath,"/spinupRobotArm_3.pdf"))
 
 println("Finished spinupRobotArm.jl")

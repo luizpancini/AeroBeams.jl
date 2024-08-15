@@ -37,11 +37,18 @@ u₃_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 
 # Plots
 # ------------------------------------------------------------------------------
+lw = 2
+relPath = "/test/outputs/figures/flyingFlexibleBeam2D"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=10,plotLimits=[(0,3*L),(-L,0),(-L/2,L/2)],save=true,savePath=string(relPath,"/flyingFlexibleBeam2D_deformation.gif"),displayProgress=true)
 # Nomalized tip displacements
+gr()
 labels = ["\$u_1/L\$" "\$u_3/L\$"]
 plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip normalized displacements")
-plot!(t,[u₁_tip/L, u₃_tip/L], lw=2, label=labels)
+plot!(t,[u₁_tip/L, u₃_tip/L], lw=lw, label=labels)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/flyingFlexibleBeam2D_1.pdf"))
+savefig(string(absPath,"/flyingFlexibleBeam2D_disp.pdf"))
 
 println("Finished flyingFlexibleBeam2D.jl")

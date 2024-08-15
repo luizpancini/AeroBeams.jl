@@ -9,6 +9,8 @@ Ma = 0.5
 U = Ma*atmosphere.a
 
 # Wing surface data
+aeroSolver = Indicial()
+flapLoadsSolver = ThinAirfoilTheory()
 airfoil = deepcopy(flatPlate)
 chord = 0.1
 normSparPos = 0.25
@@ -22,8 +24,8 @@ A = 2.5*π/180
 δ = t -> A*sin(ω*t)
 
 # Create wing surfaces
-surf1 = create_AeroSurface(airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan,δ=δ)
-surf2 = create_AeroSurface(airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan)
+surf1 = create_AeroSurface(solver=aeroSolver,flapLoadsSolver=flapLoadsSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan,δ=δ)
+surf2 = create_AeroSurface(solver=aeroSolver,flapLoadsSolver=flapLoadsSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan)
 
 # Wing beams
 L = 1
@@ -66,13 +68,19 @@ cmSlave = [problem.aeroVariablesOverTime[i][2].aeroCoefficients.cm for i in 1:le
 lw = 2
 ms = 3
 labels = ["Master" "Slave"]
+relPath = "/test/outputs/figures/flapOscillationLinked"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,plotLimits=[(0,2*L),(-L,L),(-L,L)],save=true,savePath=string(relPath,"/flapOscillationLinked_deformation.gif"),displayProgress=true,plotAeroSurf=false)
 # cn and cm vs time
+gr()
 plt11 = plot(ylabel="\$c_n\$", xlims=[0,cycles])
 plot!(tNorm, [cnMaster, cnSlave], lw=lw, label=labels)
 plt12 = plot(xlabel="\$t/T\$", ylabel="\$c_m\$", xlims=[0,cycles])
 plot!(tNorm, [cmMaster, cmSlave], lw=lw, label=false)
 plt1 = plot(plt11,plt12, layout=(2,1))
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/flapOscillationLinked.pdf"))
+savefig(string(absPath,"/flapOscillationLinked.pdf"))
 
 println("Finished flapOscillationLinked.jl")

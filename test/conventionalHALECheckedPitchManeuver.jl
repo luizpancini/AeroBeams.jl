@@ -33,7 +33,7 @@ trimδ = trimProblem.x[end]
 
 # Set checked elevator deflection profile
 Δδ = 5*π/180
-tδinit = 0.5
+tδinit = 2
 tδpeak = 1+tδinit
 tδfinal = 1+tδpeak
 δ = t -> ifelse(
@@ -55,7 +55,7 @@ conventionalHALEdynamic,leftWing,rightWing,_ = create_conventional_HALE(aeroSolv
 
 # Time variables
 Δt = 1e-3
-tf = 1e-2
+tf = 2
 
 # Set NR system solver for trim problem
 maxit = 100
@@ -80,15 +80,21 @@ rootAoA = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowAnglesAndRate
 # ------------------------------------------------------------------------------
 lw = 2
 ms = 3
+relPath = "/test/outputs/figures/conventionalHALECheckedPitchManeuver"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(90,0),plotDistLoads=false,plotFrequency=20,plotLimits=[(-20,20),(-10,50),(-30,30)],save=true,savePath=string(relPath,"/conventionalHALECheckedPitchManeuver_deformation.gif"),displayProgress=true)
 # Altitude
+gr()
 plt1 = plot(xlabel="Time [s]", ylabel="Altitude [m]")
 plot!(t, Δu3, color=:black, lw=lw, label=false)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALECheckedPitchManeuver_altitude.pdf"))
+savefig(string(absPath,"/conventionalHALECheckedPitchManeuver_altitude.pdf"))
 # Root AoA
 plt2 = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]")
 plot!(t, rootAoA*180/π, color=:black, lw=lw, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/conventionalHALECheckedPitchManeuver_rootAoA.pdf"))
+savefig(string(absPath,"/conventionalHALECheckedPitchManeuver_rootAoA.pdf"))
 
 println("Finished conventionalHALECheckedPitchManeuver.jl")

@@ -57,8 +57,10 @@ lw = 1
 relPath = "/test/outputs/figures/compositeCantilever"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,scale=1,plotLimits=[(0,L),(-5,5),(-5,5)],save=true,savePath=string(relPath,"/compositeCantilever_deformation.gif"),displayProgress=true)
+# Tip u1
 gr()
-# Tip u1 
 plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip \$u_1\$ [m] ")
 plot!(t,u1_tip, c=:black, lw=lw, label=false)
 display(plt1)

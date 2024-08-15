@@ -53,29 +53,27 @@ u3_tip_analytical = L*(cos(θ₀) .- cos.(θ))
 
 # Plots
 # ------------------------------------------------------------------------------
+lw = 2
+ms = 3
+relPath = "/test/outputs/figures/tipPendulum"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,plotLimits=[(-L,L),(-L,0),(0,1)],save=true,savePath=string(relPath,"/tipPendulum_deformation.gif"))
 # Normalized tip u1 displacement
-plt1 = plot()
-plot!(t/T,u1_tip/L, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="Tip \$u_1/L\$ ", label="Numerical")
-scatter!(t[1:2:end]/T,u1_tip_analytical[1:2:end]/L, c=:blue, markersize=3, label="Analytical")
+gr()
+plt1 = plot(xlabel="\$t/T\$", ylabel="Tip \$u_1/L\$ ")
+plot!(t/T,u1_tip/L, c=:black, lw=lw, label="Numerical")
+scatter!(t[1:2:end]/T,u1_tip_analytical[1:2:end]/L, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/tipPendulum_1.pdf"))
+savefig(string(absPath,"/tipPendulum_u1.pdf"))
 # Normalized tip u3 displacement
-plt2 = plot()
-plot!(t/T,u3_tip/L, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="Tip \$u_3/L\$ ", label="Numerical")
-scatter!(t[1:2:end]/T,u3_tip_analytical[1:2:end]/L, c=:blue, markersize=3, label="Analytical")
+plt2 = plot(xlabel="\$t/T\$", ylabel="Tip \$u_3/L\$ ")
+plot!(t/T,u3_tip/L, c=:black, lw=lw, label="Numerical")
+scatter!(t[1:2:end]/T,u3_tip_analytical[1:2:end]/L, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/tipPendulum_2.pdf"))
-# Gif of tip displacements on the plane
-plt3 = plot()
-r1_tip = problem.model.elements[end].r_n2[1]
-r3_tip = problem.model.elements[end].r_n2[3]
-anim = @animate for i=1:length(t)
-    x = [(r1_tip + u1_tip[i])/L]
-    y = [(r3_tip + u3_tip[i])/L]
-    scatter(x, y, c=:black, xlabel="\$x_1/L\$", ylabel="\$x_3/L\$", xlims=(-1, 1), ylims=(-1, 1), label=false)
-end
-gif(anim, string(pwd(),"/test/outputs/figures/tipPendulum.gif"), fps = 30)
-
+savefig(string(absPath,"/tipPendulum_u3.pdf"))
+# Print warning, if applicable
 if abs(θ₀) > π/8
     println("Initial angle of release is large, analytical comparison is not valid")
 end

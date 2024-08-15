@@ -88,42 +88,50 @@ Vdot₃_quarter_analytic = -δ*ω₂^2*cos.(ω₂*t)*sin(2*π*1/4)
 Ωdot₂_mid_analytic = δ*2*π/L*ω₂^2*cos.(ω₂*t)*cos(2*π*1/2)
 
 # Plots
-# --------------
+# ------------------------------------------------------------------------------
+lw = 2
+ms = 5
+relPath = "/test/outputs/figures/initialDisplacementBeam"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;0.05;0],timeStampPos=[0.5;0.05;0],plotFrequency=1,plotLimits=[(0,L),(-L/4,L/4),(-L,L)],save=true,savePath=string(relPath,"/initialDisplacementBeam_deformation.gif"),displayProgress=true)
 # Normalized displacement at quarter-length
-plt1 = plot()
-plot!(tNorm,u₃_quarter/δ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$u_3/\\delta\$ at \$x_1=L/4\$", label="Numerical")
-scatter!(tNorm[1:5:end],u₃_quarter_analytic[1:5:end]/δ, c=:blue, markersize=3, label="Analytical")
+gr()
+plt1 = plot(xlabel="\$t/T\$", ylabel="\$u_3/\\delta\$ at \$x_1=L/4\$")
+plot!(tNorm,u₃_quarter/δ, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],u₃_quarter_analytic[1:5:end]/δ, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/initialDisplacementBeam_1.pdf"))
+savefig(string(absPath,"/initialDisplacementBeam_disp.pdf"))
 # Normalized velocity at quarter-length
-plt2 = plot()
-plot!(tNorm,V₃_quarter/δ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$V_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/s]", label="Numerical")
-scatter!(tNorm[1:5:end],V₃_quarter_analytic[1:5:end]/δ, c=:blue, markersize=3, label="Analytical")
+plt2 = plot(xlabel="\$t/T\$", ylabel="\$V_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/s]")
+plot!(tNorm,V₃_quarter/δ, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],V₃_quarter_analytic[1:5:end]/δ, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/initialDisplacementBeam_2.pdf"))
+savefig(string(absPath,"/initialDisplacementBeam_vel.pdf"))
 # Normalized acceleration at quarter-length
-plt3 = plot()
-plot!(tNorm,Vdot₃_quarter/δ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\dot{V}_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/\$s^2\$]", label="Numerical")
-scatter!(tNorm[1:5:end],Vdot₃_quarter_analytic[1:5:end]/δ, c=:blue, markersize=3, label="Analytical")
+plt3 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{V}_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/\$s^2\$]")
+plot!(tNorm,Vdot₃_quarter/δ, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],Vdot₃_quarter_analytic[1:5:end]/δ, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/initialDisplacementBeam_3.pdf"))
+savefig(string(absPath,"/initialDisplacementBeam_acc.pdf"))
 # Normalized rotation at root
-plt4 = plot()
-plot!(tNorm,θ₂_root/(2*π)/δ, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi\\delta)\$ at \$x_1=0\$", label="Numerical")
-scatter!(tNorm[1:5:end],θ₂_root_analytic[1:5:end]/(2*π)/δ, c=:blue, markersize=3, label="Analytical")
+plt4 = plot(xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi\\delta)\$ at \$x_1=0\$")
+plot!(tNorm,θ₂_root/(2*π)/δ, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],θ₂_root_analytic[1:5:end]/(2*π)/δ, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/initialDisplacementBeam_4.pdf"))
+savefig(string(absPath,"/initialDisplacementBeam_rot.pdf"))
 # Angular velocity at mid-length
-plt5 = plot()
-plot!(tNorm,Ω₂_mid, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\Omega_2\$ at \$x_1=L/2\$ [rad/s]", label="Numerical")
-scatter!(tNorm[1:5:end],Ω₂_mid_analytic[1:5:end], c=:blue, markersize=3, label="Analytical")
+plt5 = plot(xlabel="\$t/T\$", ylabel="\$\\Omega_2\$ at \$x_1=L/2\$ [rad/s]")
+plot!(tNorm,Ω₂_mid, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],Ω₂_mid_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt5)
-savefig(string(pwd(),"/test/outputs/figures/initialDisplacementBeam_5.pdf"))
+savefig(string(absPath,"/initialDisplacementBeam_angVel.pdf"))
 # Angular acceleration at mid-length
-plt6 = plot()
-plot!(tNorm,Ωdot₂_mid, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\dot{\\Omega}_2\$ at \$x_1=L/2\$ [rad/\$s^2\$]", label="Numerical")
-scatter!(tNorm[1:5:end],Ωdot₂_mid_analytic[1:5:end], c=:blue, markersize=3, label="Analytical")
+plt6 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{\\Omega}_2\$ at \$x_1=L/2\$ [rad/\$s^2\$]")
+plot!(tNorm,Ωdot₂_mid, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],Ωdot₂_mid_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt6)
-savefig(string(pwd(),"/test/outputs/figures/initialDisplacementBeam_6.pdf"))
+savefig(string(absPath,"/initialDisplacementBeam_angAcc.pdf"))
 
 println("Finished initialDisplacementBeam.jl")

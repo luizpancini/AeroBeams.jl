@@ -40,15 +40,25 @@ x1_ref = collect(LinRange(0,L,21))
 u1_08_ref = vec(readdlm(string(pwd(),"/test/referenceData/axialTractionCantilever/t0.8.txt")))
 u1_10_ref = vec(readdlm(string(pwd(),"/test/referenceData/axialTractionCantilever/t1.0.txt")))
 
-# Plots axial displacement
-plt1 = plot()
-plot!(x1,u1_08*1e3, c=:black, lw=2, xlabel="\$x_1\$ [m]", ylabel="\$u_1\$ [mm]", label="AeroBeams")
-scatter!(x1_ref,u1_08_ref, c=:black, ms=5, label="Reddy (2005)")
-plot!([NaN], [NaN], lc=:black, m=:black, lw=2, ms=5, label="\$t\$ = 0.8 s")
-
-plot!(x1,u1_10*1e3, c=:blue, lw=2, label=false)
-scatter!(x1_ref,u1_10_ref, c=:blue, ms=5, label=false)
-plot!([NaN], [NaN], lc=:blue, m=:blue, lw=2, ms=5, label="\$t\$ = 1.0 s")
+# Plots
+# ------------------------------------------------------------------------------
+lw = 2
+ms = 5
+relPath = "/test/outputs/figures/axialTractionCantilever"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,scale=1e4,plotLimits=[(0,2*L),(-0.1,0.1),(0,1)],save=true,savePath=string(relPath,"/axialTractionCantilever_deformation.gif"))
+# Axial displacement at time instances 0.8 s and 1.0 s
+gr()
+plt1 = plot(xlabel="\$x_1\$ [m]", ylabel="\$u_1\$ [mm]")
+plot!(x1,u1_08*1e3, c=:black, lw=lw, label="AeroBeams")
+scatter!(x1_ref,u1_08_ref, c=:black, ms=ms, msw=0, label="Reddy (2005)")
+plot!([NaN], [NaN], lc=:black, m=:black, lw=2, ms=ms, msw=0, label="\$t\$ = 0.8 s")
+plot!(x1,u1_10*1e3, c=:blue, lw=lw, label=false)
+scatter!(x1_ref,u1_10_ref, c=:blue, ms=ms, msw=0, label=false)
+plot!([NaN], [NaN], lc=:blue, m=:blue, lw=lw, ms=ms, msw=0, label="\$t\$ = 1.0 s")
 display(plt1)
+savefig(string(absPath,"/axialTractionCantilever_u1.pdf"))
 
 println("Finished axialTractionCantilever.jl")

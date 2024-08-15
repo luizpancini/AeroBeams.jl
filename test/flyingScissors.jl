@@ -46,15 +46,22 @@ u₃_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[3] for i in 1:le
 
 # Plots
 # ------------------------------------------------------------------------------
+lw = 2
+relPath = "/test/outputs/figures/flyingScissors"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=2,plotLimits=[(0,2*L),(-L,0),(-L/2,L/2)],save=true,savePath=string(relPath,"/flyingScissors_deformation.gif"),displayProgress=true)
 # Nomalized tip displacements
+gr()
 labels = ["Tip A" "Hinge" "Tip B"]
 plt1 = plot(xlabel="\$t\$ [s]", ylabel="\$u_1/L\$")
-plot!(t,[u₁_tipA/L, u₁_hinge/L, u₁_tipB/L], lw=2, label=labels)
+plot!(t,[u₁_tipA/L, u₁_hinge/L, u₁_tipB/L], lw=lw, label=labels)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/flyingScissors_1.pdf"))
+savefig(string(absPath,"/flyingScissors_u1.pdf"))
 plt2 = plot(xlabel="\$t\$ [s]", ylabel="\$u_3/L\$")
-plot!(t,[u₃_tipA/L, u₃_hinge/L, u₃_tipB/L], lw=2, label=labels)
+plot!(t,[u₃_tipA/L, u₃_hinge/L, u₃_tipB/L], lw=lw, label=labels)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/flyingScissors_2.pdf"))
+savefig(string(absPath,"/flyingScissors_u3.pdf"))
 
 println("Finished flyingScissors.jl")

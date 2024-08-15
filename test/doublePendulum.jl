@@ -39,27 +39,24 @@ u3_tip = [problem.nodalStatesOverTime[i][end].u_n2[3] for i in 1:length(t)]
 
 # Plots
 # ------------------------------------------------------------------------------
+lw = 2
 labels = ["Hinge" "Tip"]
 colors = [:black,:blue]
+relPath = "/test/outputs/figures/doublePendulum"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,plotFrequency=10,fps=60,scale=1,plotUndeformed=false,plotLimits=[(-L,L),(-L,0),(-L,L)],save=true,savePath=string(relPath,"/doublePendulum_deformation.gif"),displayProgress=true)
 # Normalized tip u1 displacement
+gr()
 plt1 = plot(palette=colors, xlabel="\$t\$ [s]", ylabel="\$u_1/L\$ ")
-plot!(t,[u1_hinge,u1_tip]/L, lw=2, label=labels)
+plot!(t,[u1_hinge,u1_tip]/L, lw=lw, label=labels)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/pendulum_1.pdf"))
+savefig(string(absPath,"/doublePendulum_u1.pdf"))
 # Normalized tip u3 displacement
 plt2 = plot(palette=colors, xlabel="\$t\$ [s]", ylabel="\$u_3/L\$ ")
-plot!(t,[u3_hinge,u3_tip]/L, lw=2 ,label=labels)
+plot!(t,[u3_hinge,u3_tip]/L, lw=lw, label=labels)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/pendulum_2.pdf"))
-# Gif of tip displacements on the plane
-plt3 = plot()
-r1_tip = problem.model.elements[end].r_n2[1]
-r3_tip = problem.model.elements[end].r_n2[3]
-anim = @animate for i=1:length(t)
-    x = [(r1_tip + u1_tip[i])/L]
-    y = [(r3_tip + u3_tip[i])/L]
-    scatter(x, y, pallete=colors, xlabel="\$x_1/L\$", ylabel="\$x_3/L\$", xlims=(-1, 1), ylims=(-1, 1), label=false)
-end
-gif(anim, string(pwd(),"/test/outputs/figures/doublePendulum.gif"), fps = 30)
+savefig(string(absPath,"/doublePendulum_u3.pdf"))
 
 println("Finished doublePendulum.jl")

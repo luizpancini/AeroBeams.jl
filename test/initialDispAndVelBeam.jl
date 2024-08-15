@@ -96,41 +96,49 @@ Vdot₃_quarter_analytic = -δ*ω₂^2*cos.(ω₂*t)*sin(2*π*1/4) + -σ*ω₂*s
 
 # Plots
 # --------------------------------------------------------------------------------
+lw = 2
+ms = 5
+relPath = "/test/outputs/figures/initialDispAndVelBeam"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;-0.05;0],timeStampPos=[0.5;-0.05;0],plotFrequency=1,plotLimits=[(0,L),(-L/2,L/2),(-L,L)],save=true,savePath=string(relPath,"/initialDispAndVelBeam_deformation.gif"),displayProgress=true)
 # Displacement at quarter-length
-plt1 = Plots.plot()
-Plots.plot!(tNorm,u₃_quarter, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$u_3\$ at \$x_1=L/4\$", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:5:end],u₃_quarter_analytic[1:5:end], c=:blue, markersize=3, label="Analytical", show=true)
+gr()
+plt1 = plot(xlabel="\$t/T\$", ylabel="\$u_3\$ at \$x_1=L/4\$")
+plot!(tNorm,u₃_quarter, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],u₃_quarter_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/initialDispAndVelBeam_1.pdf"))
+savefig(string(absPath,"/initialDispAndVelBeam_disp.pdf"))
 # Velocity at quarter-length
-plt2 = Plots.plot()
-Plots.plot!(tNorm,V₃_quarter, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$V_3\$ at \$x_1=L/4\$ [\$1\$/s]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:5:end],V₃_quarter_analytic[1:5:end], c=:blue, markersize=3, label="Analytical", show=true)
+plt2 = plot(xlabel="\$t/T\$", ylabel="\$V_3\$ at \$x_1=L/4\$ [\$1\$/s]")
+plot!(tNorm,V₃_quarter, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],V₃_quarter_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/initialDispAndVelBeam_2.pdf"))
+savefig(string(absPath,"/initialDispAndVelBeam_vel.pdf"))
 # Acceleration at quarter-length
-plt3 = Plots.plot()
-Plots.plot!(tNorm,Vdot₃_quarter, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\dot{V}_3\$ at \$x_1=L/4\$ [\$1\$/\$s^2\$]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:5:end],Vdot₃_quarter_analytic[1:5:end], c=:blue, markersize=3, label="Analytical", show=true)
+plt3 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{V}_3\$ at \$x_1=L/4\$ [\$1\$/\$s^2\$]")
+plot!(tNorm,Vdot₃_quarter, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],Vdot₃_quarter_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/initialDispAndVelBeam_3.pdf"))
+savefig(string(absPath,"/initialDispAndVelBeam_acc.pdf"))
 # Rotation at root
-plt4 = Plots.plot()
-Plots.plot!(tNorm,θ₂_root/(2*π), c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi\\delta)\$ at \$x_1=0\$", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:5:end],θ₂_root_analytic[1:5:end]/(2*π), c=:blue, markersize=3, label="Analytical", show=true)
+plt4 = plot(xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi\\delta)\$ at \$x_1=0\$")
+plot!(tNorm,θ₂_root/(2*π), c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],θ₂_root_analytic[1:5:end]/(2*π), c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt4)
-savefig(string(pwd(),"/test/outputs/figures/initialDispAndVelBeam_4.pdf"))
+savefig(string(absPath,"/initialDispAndVelBeam_rot.pdf"))
 # Angular velocity at mid-length
-plt5 = Plots.plot()
-Plots.plot!(tNorm,Ω₂_mid, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\Omega_2\$ at \$x_1=L/2\$ [rad/s]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:5:end],Ω₂_mid_analytic[1:5:end], c=:blue, markersize=3, label="Analytical", show=true)
+plt5 = plot(xlabel="\$t/T\$", ylabel="\$\\Omega_2\$ at \$x_1=L/2\$ [rad/s]")
+plot!(tNorm,Ω₂_mid, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],Ω₂_mid_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt5)
-savefig(string(pwd(),"/test/outputs/figures/initialDispAndVelBeam_5.pdf"))
+savefig(string(absPath,"/initialDispAndVelBeam_angVel.pdf"))
 # Angular acceleration at mid-length
-plt6 = Plots.plot()
-Plots.plot!(tNorm,Ωdot₂_mid, c=:black, linewidth=2, xlabel="\$t/T\$", ylabel="\$\\dot{\\Omega}_2\$ at \$x_1=L/2\$ [rad/\$s^2\$]", label="Numerical", show=true)
-Plots.scatter!(tNorm[1:5:end],Ωdot₂_mid_analytic[1:5:end], c=:blue, markersize=3, label="Analytical", show=true)
+plt6 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{\\Omega}_2\$ at \$x_1=L/2\$ [rad/\$s^2\$]")
+plot!(tNorm,Ωdot₂_mid, c=:black, lw=lw, label="Numerical")
+scatter!(tNorm[1:5:end],Ωdot₂_mid_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt6)
-savefig(string(pwd(),"/test/outputs/figures/initialDispAndVelBeam_6.pdf"))
+savefig(string(absPath,"/initialDispAndVelBeam_angAcc.pdf"))
 
 println("Finished initialDispAndVelBeam.jl")

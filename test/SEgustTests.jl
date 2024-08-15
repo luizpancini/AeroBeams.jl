@@ -83,8 +83,8 @@ cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(
 ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
 χ = [problem.elementalStatesOverTime[i][1].χ for i in 1:length(t)]
 if typeof(aeroSolver) == BLi
-    fN = [problem.aeroVariablesOverTime[i][1].BLflow.fN for i in 1:length(t)]
-    fPrimeN = [problem.aeroVariablesOverTime[i][1].BLflow.fPrimeN for i in 1:length(t)]
+    fN = [problem.aeroVariablesOverTime[i][1].BLiFlow.fN for i in 1:length(t)]
+    fPrimeN = [problem.aeroVariablesOverTime[i][1].BLiFlow.fPrimeN for i in 1:length(t)]
     f2PrimeN = [problem.elementalStatesOverTime[i][1].χ[4] for i in 1:length(t)]
 end
 cl = @. cn*cos(θ) + ct*sin(θ)
@@ -104,6 +104,10 @@ lw = 2
 ms = 5
 i = argmin(abs.(t .- t₀))
 # i=1
+relPath = "/test/outputs/figures/SEgustTests"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+gr()
 # Separation points
 if typeof(aeroSolver) == BLi
     plt1 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="Separation points")
@@ -111,6 +115,7 @@ if typeof(aeroSolver) == BLi
     plot!((t[i:end].-t[i])*U/b, fPrimeN[i:end], color=:blue, lw=lw, label="\$f^{\\prime}_N\$")
     plot!((t[i:end].-t[i])*U/b, f2PrimeN[i:end], color=:black, lw=lw, label="\$f^{\\prime\\prime}_N\$")
     display(plt1)
+    savefig(string(absPath,"/SEgustTests_f.pdf"))
 end
 # Aerodynamic states
 nTotalAeroStates = problem.model.elements[1].aero.nTotalAeroStates
@@ -124,11 +129,12 @@ for j in 1:nTotalAeroStates
     plot!(t*U/b, χ_[j], c=colors[j], lw=lw, label="\$\\chi $(j)\$")
 end
 display(plt2)
+savefig(string(absPath,"/SEgustTests_states.pdf"))
 # Δcl
 plt3 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$")
 plot!((t[i:end].-t[i])*U/b, cl[i:end].-cl[i], color=:black, lw=lw, label="AeroBeams")
 scatter!(clRef[1,:], clRef[2,:], color=:black, ms=ms, label="Mallik & Raveh (2019)")
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/SEgustTests_dcl.pdf"))
+savefig(string(absPath,"/SEgustTests_dcl.pdf"))
 
 println("Finished SEgustTests.jl")

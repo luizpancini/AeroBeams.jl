@@ -40,17 +40,23 @@ u₃_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 
 # Plots
 # ------------------------------------------------------------------------------
+lw = 2
+relPath = "/test/outputs/figures/flyingSpaghetti3D"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=50,view=(30,30),plotLimits=[(0,2*L),(-L,L),(0,2*L)],save=true,savePath=string(relPath,"/flyingSpaghetti3D_deformation.gif"),displayProgress=true)
 # Nomalized tip displacements
+gr()
 labels = ["\$u_1/L\$" "\$u_2/L\$" "\$u_3/L\$"]
 plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip normalized displacements")
 plot!(t,[u₁_tip/L, u₂_tip/L, u₃_tip/L], lw=2, label=labels)
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/flyingSpaghetti3D_1.pdf"))
-
+savefig(string(absPath,"/flyingSpaghetti3D_disp.pdf"))
 # Nomalized tip angle
 plt2 = plot(xlabel="\$t\$ [s]", ylabel="Tip \$\\theta/(2\\pi)\$")
 plot!(t,θ_tip/(2*π), lw=2, label=false)
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/flyingSpaghetti3D_2.pdf"))
+savefig(string(absPath,"/flyingSpaghetti3D_angle.pdf"))
 
 println("Finished flyingSpaghetti3D.jl")

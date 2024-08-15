@@ -146,6 +146,9 @@ Defines the problem of steady type
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
     aeroVariablesOverσ::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
+    # Maximum absolute value of aerodynamic load coefficients over time
+    maxAeroForce::Number = 0
+    maxAeroMoment::Number = 0
 
 end
 export SteadyProblem
@@ -226,6 +229,9 @@ Defines the problem of trim type
     nodalStatesOverσ::Vector{Vector{NodalStates{Float64}}} = Vector{Vector{NodalStates{Float64}}}()
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
     aeroVariablesOverσ::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
+    # Maximum absolute value of aerodynamic load coefficients over time
+    maxAeroForce::Number = 0
+    maxAeroMoment::Number = 0
 
 end
 export TrimProblem
@@ -326,6 +332,9 @@ Defines the problem of eigen type
     modeShapesCplx::Vector{ModeShape{ComplexF64}} = Vector{ModeShape{ComplexF64}}()
     modeShapesAbs::Vector{ModeShape{Float64}} = Vector{ModeShape{Float64}}()
     modeShapesAbsNonOsc::Vector{ModeShape{Float64}} = Vector{ModeShape{Float64}}()
+    # Maximum absolute value of aerodynamic load coefficients over time
+    maxAeroForce::Number = 0
+    maxAeroMoment::Number = 0
 
 end
 export EigenProblem
@@ -387,12 +396,12 @@ Defines the problem of dynamic type
     getLinearSolution::Bool
     # Time variables
     initialTime::Number
-    Δt::Number
-    finalTime::Number
+    Δt::Union{Nothing,Number}
+    finalTime::Union{Nothing,Number}
     timeVector::Union{Nothing,Vector{Float64}}
     adaptableΔt::Bool
-    minΔt::Number
-    maxΔt::Number
+    minΔt::Union{Nothing,Number}
+    maxΔt::Union{Nothing,Number}
     # Boundary-crossing tolerance
     δb::Float64
     # Initial states update options
@@ -436,21 +445,32 @@ Defines the problem of dynamic type
     elementalStatesRatesOverTime::Vector{Vector{ElementalStatesRates}} = Vector{Vector{ElementalStatesRates}}()
     compElementalStatesRatesOverTime::Vector{Vector{ComplementaryElementalStatesRates}} = Vector{Vector{ComplementaryElementalStatesRates}}()
     aeroVariablesOverTime::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
+    # Maximum absolute value of aerodynamic load coefficients over time
+    maxAeroForce::Number = 0
+    maxAeroMoment::Number = 0
 
 end
 export DynamicProblem
 
 
 # Constructor
-function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Number,finalTime::Number,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Number=Δt/2^6,maxΔt::Number=Δt,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
+function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Number}=nothing,maxΔt::Union{Nothing,Number}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,adaptableΔt=adaptableΔt,minΔt=minΔt,maxΔt=maxΔt,δb=δb,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency)
 
     # Check time step data
-    @assert Δt > 0
-    @assert minΔt <= Δt/2
-    @assert maxΔt >= Δt
+    if !isnothing(Δt)
+        @assert Δt > 0
+    end
+    if !isnothing(minΔt)
+        @assert !isnothing(Δt)
+        @assert minΔt <= Δt/2
+    end
+    if !isnothing(maxΔt)
+        @assert !isnothing(Δt)
+        @assert maxΔt >= Δt
+    end
 
     # Check boundary-crossing tolerance
     @assert δb < 0
@@ -468,6 +488,7 @@ function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_N
         problem.Δt = Δt
     else
         set_initial_states!(problem)
+        update_initial_aero_states!(problem,preInitialization=true)
     end   
 
     # Check and initialize time variables
@@ -1216,7 +1237,7 @@ function update_initial_velocities!(problem::Problem)
     timeEndTimeStep = timeNow 
     @pack! problem = timeVector,Δt,timeNow,indexBeginTimeStep,indexEndTimeStep,timeBeginTimeStep,timeEndTimeStep
     # Update basis A orientation
-    update_basis_A_orientation!(problem)
+    update_basis_A_orientation!(problem,update_R_A_array=false)
     # Update boundary conditions
     for BC in model.BCs
         update_BC_data!(BC,timeNow)
@@ -1352,7 +1373,7 @@ function time_march!(problem::Problem)
             save_time_step_data!(problem,timeNow)           
         end
         # Display progress, if applicable
-        if displayProgress && rem(timeIndex,displayFrequency) == 0
+        if displayProgress && (rem(timeIndex,displayFrequency) == 0 || timeIndex == sizeOfTime)
             progress = round(timeIndex/sizeOfTime*100,digits=1)
             println("Simulation progress: $progress %")
         end
@@ -1518,14 +1539,15 @@ end
 
 
 """
-update_basis_A_orientation!(problem::Problem)
+update_basis_A_orientation!(problem::Problem,update_R_A_array::Bool=true)
 
 Updates the orientation of the basis A for the next time step
 
 # Arguments
 - problem::Problem
+- update_R_A_array::Bool
 """
-function update_basis_A_orientation!(problem::Problem)
+function update_basis_A_orientation!(problem::Problem;update_R_A_array::Bool=true)
 
     @unpack model,timeNow,Δt = problem
     @unpack R_A,ω_A = model
@@ -1537,6 +1559,11 @@ function update_basis_A_orientation!(problem::Problem)
     R_A = inv((2/Δt*I3-ω_A_tilde))*(2/Δt*I3+ω_A_tilde)*R_A
     round_off!(R_A)
     R_AT = Matrix(R_A')
+
+    # Add to rotation tensors array over time, if applicable
+    if update_R_A_array
+        push!(problem.model.R_A_ofTime, R_A)
+    end
 
     @pack! model = R_A,R_AT
 

@@ -33,7 +33,7 @@ for (i,θ) in enumerate(θRange)
     # Plot mode shapes
     mkpath(string(pwd(),"/test/outputs/figures/PazyWingModal"))
     savePath = string("/test/outputs/figures/PazyWingModal/PazyWingModal_",i,".pdf")
-    modesPlot = plot_mode_shapes(problem[i],scale=0.1,view=(30,30),frequencyLabel="frequency",save=true,savePath=savePath)
+    modesPlot = plot_mode_shapes(problem[i],scale=0.5,modalColorScheme=:rainbow,view=(30,30),frequencyLabel="frequency",save=true,savePath=savePath)
     display(modesPlot)
 end
 

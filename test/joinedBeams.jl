@@ -41,18 +41,27 @@ u1 = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
 u2 = [problem.nodalStatesOverTime[i][nElem].u_n2[2] for i in 1:length(t)]
 u3 = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 
+# Plots
+# ------------------------------------------------------------------------------
+lw = 2
+ms = 5
+relPath = "/test/outputs/figures/joinedBeams"
+absPath = string(pwd(),relPath)
+mkpath(absPath)
+# Animation
+plot_dynamic_deformation(problem,scale=100,plotFrequency=10,view=(90,0),plotLimits=[(-L,L),(-15,15),(0,8)],save=true,savePath=string(relPath,"/joinedBeams_deformation.gif"),displayProgress=true)
 # Plot u1 of left tip over time
 gr()
-plt1 = plot(t, u1, linewidth=2, label=false, xlabel="\$t\$ [s]", ylabel="\$u_1\$ [m]")
+plt1 = plot(t, u1, lw=lw, label=false, xlabel="\$t\$ [s]", ylabel="\$u_1\$ [m]")
 display(plt1)
-savefig(string(pwd(),"/test/outputs/figures/joinedBeams/joinedBeams_u1.pdf"))
+savefig(string(absPath,"/joinedBeams_u1.pdf"))
 # Plot u2 of left tip over time
-plt2 = plot(t, u2, linewidth=2, label=false, xlabel="\$t\$ [s]", ylabel="\$u_2\$ [m]")
+plt2 = plot(t, u2, lw=lw, label=false, xlabel="\$t\$ [s]", ylabel="\$u_2\$ [m]")
 display(plt2)
-savefig(string(pwd(),"/test/outputs/figures/joinedBeams/joinedBeams_u2.pdf"))
+savefig(string(absPath,"/joinedBeams_u2.pdf"))
 # Plot u3 of left tip over time
-plt3 = plot(t, u3, linewidth=2, label=false, xlabel="\$t\$ [s]", ylabel="\$u_3\$ [m]")
+plt3 = plot(t, u3, lw=lw, label=false, xlabel="\$t\$ [s]", ylabel="\$u_3\$ [m]")
 display(plt3)
-savefig(string(pwd(),"/test/outputs/figures/joinedBeams/joinedBeams_u3.pdf"))
+savefig(string(absPath,"/joinedBeams_u3.pdf"))
 
 println("Finished joinedBeams.jl")
