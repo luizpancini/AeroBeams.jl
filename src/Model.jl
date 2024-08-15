@@ -59,6 +59,7 @@ Model composite type
     forceScaling::Float64 = 1.0
     R_A::Matrix{Float64} = I3
     R_AT::Matrix{Float64} = I3
+    R_A_ofTime::Vector{Matrix{Float64}} = Vector{Matrix{Float64}}()
     skipValidationMotionBasisA::Bool = false
     nTrimVariables::Int64 = 0
     nRotationConstraints::Int64 = 0
@@ -135,7 +136,7 @@ function update_model!(model::Model)
     # Get special nodes
     get_special_nodes!(model)
 
-    # Update initial conditions
+    # Update initial conditions and states
     update_initial_conditions!(model)
 
     # Get system indices
@@ -835,6 +836,7 @@ function initialize_basis_A_rotation!(model::Model)
 
     R_A,_ = rotation_tensor_WM(p_A0)
     R_AT = Matrix(R_A')
+    push!(model.R_A_ofTime, R_A)
 
     @pack! model = R_A,R_AT
 
