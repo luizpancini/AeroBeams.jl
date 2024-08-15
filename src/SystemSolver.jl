@@ -176,6 +176,8 @@ function solve_NewtonRaphson!(problem::Problem)
                     element_inertia!(problem,problem.model,element)
                 end
             end
+            # Update loads extrema
+            update_maximum_aero_loads!(problem)
         end
     end    
 
@@ -413,4 +415,40 @@ function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
 
     @pack! problem = savedσ,xOverσ,elementalStatesOverσ,nodalStatesOverσ,compElementalStatesOverσ,aeroVariablesOverσ
 
+end
+
+
+"""
+update_maximum_aero_loads!(problem::Problem)
+
+Updates the maximum absolute values of aerodynamic loads
+
+# Arguments
+- problem::Problem
+"""
+function update_maximum_aero_loads!(problem::Problem)
+
+    @unpack maxAeroForce,maxAeroMoment = problem
+
+    # Initialize arrays
+    aeroForces = Vector{Float64}()
+    aeroMoment = Vector{Float64}()
+
+    # Loop elements
+    for element in problem.model.elements
+        # Skip elements without aero
+        if isnothing(element.aero)
+            continue
+        end
+        push!(aeroForces,element.aero.aeroCoefficients.ct,element.aero.aeroCoefficients.cn)
+        push!(aeroMoment,element.aero.aeroCoefficients.cm)
+    end
+
+    # Update, if applicable
+    if !isempty(aeroForces)
+        maxAeroForce = max(maxAeroForce,maximum(abs.(aeroForces)))
+        maxAeroMoment = max(maxAeroMoment,maximum(abs.(aeroMoment)))
+    end
+
+    @pack! problem = maxAeroForce,maxAeroMoment
 end
