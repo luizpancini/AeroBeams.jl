@@ -345,10 +345,10 @@ mutable struct BLiFlowVariables
         fPrimeN = 1.0 
         fPrimeM = 1.0 
         fPrimeT = 1.0 
-        Ta_SO = 0.0
-        TfN = 0.0
-        TfM = 0.0
-        TfT = 0.0
+        Ta_SO = 1.0
+        TfN = 1.0
+        TfM = 1.0
+        TfT = 1.0
 
         return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT)
     end
