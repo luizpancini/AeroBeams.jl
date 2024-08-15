@@ -40,6 +40,8 @@ function aero_steady_kinematics!(element::Element,V,Ω)
     @pack! element.aero.flowAnglesAndRates = α,β
     @pack! element.aero.flowVelocitiesAndRates = U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC
 
+    return Uₜ,Uₙ,Uᵢ,α,UₙTQC
+
 end
 
 
@@ -80,6 +82,7 @@ function aero_unsteady_kinematics!(element::Element,Vdot,Ωdot)
     @pack! element.aero.flowAnglesAndRates = αdot
     @pack! element.aero.flowVelocitiesAndRates = Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC
 
+    return Uᵢdot,UₙdotTQC,αdot
 end
 
 
@@ -117,6 +120,7 @@ function nondimensional_flow_parameters!(model::Model,element::Element)
     @pack! element.aero.flowParameters = Re,Ma,βₚ,βₚ²,Θ
     @pack! element.aero.BLoFlow = Tᵢ
 
+    return βₚ,βₚ²,Θ
 end
 
 
@@ -2128,12 +2132,12 @@ Updates the initial aerodynamic states assuming their rates are zero
 # Arguments
 - problem::Problem
 """
-function update_initial_aero_states!(problem::Problem)
+function update_initial_aero_states!(problem::Problem;preInitialization::Bool=false)
 
-    @unpack x,model = problem
+    @unpack x = problem
 
     # Loop over elements
-    for element in model.elements
+    for element in problem.model.elements
 
         @unpack DOF_χ = element
 
@@ -2142,13 +2146,21 @@ function update_initial_aero_states!(problem::Problem)
             continue 
         end
 
-        @unpack a = model.atmosphere
+        @unpack a = problem.model.atmosphere
         @unpack V,Ω,χ = element.states
         @unpack Vdot,Ωdot = element.statesRates
         @unpack solver,pitchPlungeStatesRange,flapStatesRange,pitchPlungeStatesRange,RwT,c,b,normSparPos = element.aero
-        @unpack βₚ,βₚ²,Θ = element.aero.flowParameters
-        @unpack α,αdot = element.aero.flowAnglesAndRates
-        @unpack UₙTQC,UₙdotTQC,Uₜ,Uₙ,Uᵢ,Uᵢdot = element.aero.flowVelocitiesAndRates
+
+        # Get aerodynamic quantities according to pre-initialization flag
+        if preInitialization
+            Uₜ,Uₙ,Uᵢ,α,UₙTQC = aero_steady_kinematics!(element,V,Ω)
+            Uᵢdot,UₙdotTQC,αdot = aero_unsteady_kinematics!(element,Vdot,Ωdot)
+            βₚ,βₚ²,Θ = nondimensional_flow_parameters!(problem.model,element)
+        else
+            @unpack βₚ,βₚ²,Θ = element.aero.flowParameters
+            @unpack α,αdot = element.aero.flowAnglesAndRates
+            @unpack UₙTQC,UₙdotTQC,Uₜ,Uₙ,Uᵢ,Uᵢdot = element.aero.flowVelocitiesAndRates
+        end
 
         # Pitch-plunge states
         if typeof(solver) == Indicial
