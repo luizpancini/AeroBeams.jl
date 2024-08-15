@@ -31,9 +31,6 @@ tip_u1 = [problem.nodalStatesOverσ[i][nElem].u_n2[1] for i in 1:length(σVector
 tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][nElem].θ_n2 for i in 1:length(σVector)]
 
-# Plot internal bending moment
-plot_steady_outputs(problem,outputs=["M2"],save=true,saveFolder="/test/outputs/figures/tipMomentCantilever/")
-
 # Plot deformed state
 relPath = "/test/outputs/figures/tipMomentCantilever"
 absPath = string(pwd(),relPath)
@@ -41,8 +38,11 @@ mkpath(absPath)
 deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/tipMomentCantilever_deformation.pdf"))
 display(deformationPlot)
 
-# Plot normalized displacements over load steps
+# Plot internal bending moment and strain
 gr()
+plot_steady_outputs(problem,outputs=["M2","κ2"],save=true,saveFolder=string(relPath,"/"))
+
+# Plot normalized displacements over load steps
 y = [1.0 .+ tip_u1/L, tip_u3/L, tip_angle/π]
 labels = ["\$1+u_1/L\$" "\$u_3/L\$" "\$\\theta/\\pi\$"]
 colors = [:blue,:orange,:green]

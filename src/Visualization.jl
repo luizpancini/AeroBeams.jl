@@ -212,7 +212,7 @@ Plots outputs of a steady problem
 function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",saveExtension::String=".pdf")
 
     # Validate
-    validOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3","V","V1","V2","V3","Ω","Ω1","Ω2","Ω3","α","cn","cm","ct","cl","cd"]
+    validOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3","V","V1","V2","V3","Ω","Ω1","Ω2","Ω3","γ","γ1","γ2","γ3","κ","κ1","κ2","κ3","P","P1","P2","P3","H","H1","H2","H3","α","cn","cm","ct","cl","cd"]
     @assert all(out -> out in validOutputs, outputs) "set outputs as one of $(join(validOutputs, ','))"
 
     # Set backend
@@ -228,6 +228,10 @@ function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p",
     MNodes = [Vector{Float64}() for _ in 1:Nbeams]
     VElems = [Vector{Float64}() for _ in 1:Nbeams]
     ΩElems = [Vector{Float64}() for _ in 1:Nbeams]
+    γElems = [Vector{Float64}() for _ in 1:Nbeams]
+    κElems = [Vector{Float64}() for _ in 1:Nbeams]
+    PElems = [Vector{Float64}() for _ in 1:Nbeams]
+    HElems = [Vector{Float64}() for _ in 1:Nbeams]
     αₑElems = [Vector{Float64}() for _ in 1:Nbeams]
     cnElems = [Vector{Float64}() for _ in 1:Nbeams]
     cmElems = [Vector{Float64}() for _ in 1:Nbeams]
@@ -249,6 +253,10 @@ function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p",
         M = vcat(problem.nodalStatesOverσ[end][e].M_n1,problem.nodalStatesOverσ[end][e].M_n2)
         V = problem.elementalStatesOverσ[end][e].V
         Ω = problem.elementalStatesOverσ[end][e].Ω
+        γ = problem.compElementalStatesOverσ[end][e].γ
+        κ = problem.compElementalStatesOverσ[end][e].κ
+        P = problem.compElementalStatesOverσ[end][e].P
+        H = problem.compElementalStatesOverσ[end][e].H
         # Add to arrays
         append!(x1Nodes[beamID],x1_n)
         append!(x1Elems[beamID],x1_e)
@@ -258,6 +266,10 @@ function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p",
         append!(MNodes[beamID],M)
         append!(VElems[beamID],V)
         append!(ΩElems[beamID],Ω)
+        append!(γElems[beamID],γ)
+        append!(κElems[beamID],κ)
+        append!(PElems[beamID],P)
+        append!(HElems[beamID],H)
         # Skip elements without aero
         if isnothing(element.aero)
             continue
@@ -386,6 +398,78 @@ function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p",
         plt_Ω3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=3,units=units,YLabel="Ω_3^*",lw=lw,legendPos=legendPos)
         if save
             savefig(string(pwd(),saveFolder,"Ω3",saveExtension))
+        end
+    end
+    if "γ" in outputs || "γ1" in outputs
+        plt_γ1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=1,units=units,YLabel="γ_1^+",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"γ1",saveExtension))
+        end
+    end
+    if "γ" in outputs || "γ2" in outputs
+        plt_γ2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=2,units=units,YLabel="γ_2^+",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"γ2",saveExtension))
+        end
+    end
+    if "γ" in outputs || "γ3" in outputs
+        plt_γ3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=3,units=units,YLabel="γ_3^+",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"γ3",saveExtension))
+        end
+    end
+    if "κ" in outputs || "κ1" in outputs
+        plt_κ1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=1,units=units,YLabel="κ_1^+",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"κ1",saveExtension))
+        end
+    end
+    if "κ" in outputs || "κ2" in outputs
+        plt_κ2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=2,units=units,YLabel="κ_2^+",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"κ2",saveExtension))
+        end
+    end
+    if "κ" in outputs || "κ3" in outputs
+        plt_κ3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=3,units=units,YLabel="κ_3^+",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"κ3",saveExtension))
+        end
+    end
+    if "P" in outputs || "P1" in outputs
+        plt_P1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=1,units=units,YLabel="P_1^*",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"P1",saveExtension))
+        end
+    end
+    if "P" in outputs || "P2" in outputs
+        plt_P2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=2,units=units,YLabel="P_2^*",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"P2",saveExtension))
+        end
+    end
+    if "P" in outputs || "P3" in outputs
+        plt_P3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=3,units=units,YLabel="P_3^*",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"P3",saveExtension))
+        end
+    end
+    if "H" in outputs || "H1" in outputs
+        plt_H1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=1,units=units,YLabel="H_1^*",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"H1",saveExtension))
+        end
+    end
+    if "H" in outputs || "H2" in outputs
+        plt_H2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=2,units=units,YLabel="H_2^*",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"H2",saveExtension))
+        end
+    end
+    if "H" in outputs || "H3" in outputs
+        plt_H3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=3,units=units,YLabel="H_3^*",lw=lw,legendPos=legendPos)
+        if save
+            savefig(string(pwd(),saveFolder,"H3",saveExtension))
         end
     end
     if "α" in outputs 
@@ -946,7 +1030,15 @@ function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(col
         yLabelUnit = string(units.length,"/s")
     elseif occursin("Ω",YLabel)
         γ = units.angle == "deg" ? 180/π : 1
-        yLabelUnit = string(units.angle,"/s") 
+        yLabelUnit = string(units.angle,"/s")
+    elseif occursin("γ",YLabel)
+        yLabelUnit = " "
+    elseif occursin("κ",YLabel)
+        yLabelUnit = " "
+    elseif occursin("P",YLabel)
+        yLabelUnit = string(units.mass,"/s")
+    elseif occursin("H",YLabel)
+        yLabelUnit = string(units.mass,".",units.length,"/s")       
     end
 
     # Initialize plot 
