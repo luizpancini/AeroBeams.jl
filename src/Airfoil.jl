@@ -79,7 +79,7 @@
             else
                 error("Unavailable flap site ID")
             end
-        elseif name in ["NACA0018"]
+        elseif name in ["NACA0015","NACA0018"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.062,min(0.15,Ma))
             β = sqrt(1-Ma^2)
@@ -1648,9 +1648,10 @@ flatPlate = create_Airfoil(name="flatPlate")
 NACA0002 = create_Airfoil(name="NACA0002")
 NACA0006 = create_Airfoil(name="NACA0006")
 NACA0012 = create_Airfoil(name="NACA0012")
+NACA0015 = create_Airfoil(name="NACA0015")
 NACA0018 = create_Airfoil(name="NACA0018")
 NACA23012A = create_Airfoil(name="NACA23012A")
 HeliosWingAirfoil = create_Airfoil(name="HeliosWingAirfoil")
 HeliosPodAirfoil = create_Airfoil(name="HeliosPodAirfoil")
 BWBAirfoil = create_Airfoil(name="BWBAirfoil")
-export flatPlate, NACA0002, NACA0006, NACA0012, NACA0018, NACA23012A, HeliosWingAirfoil, HeliosPodAirfoil, BWBAirfoil
+export flatPlate, NACA0002, NACA0006, NACA0012, NACA0015, NACA0018, NACA23012A, HeliosWingAirfoil, HeliosPodAirfoil, BWBAirfoil
