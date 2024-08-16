@@ -76,7 +76,7 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
     @assert length(ΔuDef) == 3
 
     # Set backend
-    pyplot()
+    pythonplot()
 
     # Unpack
     @unpack elements,nElementsTotal,units = problem.model
@@ -202,14 +202,22 @@ export plot_steady_deformation
 
 
 """
-plot_steady_outputs(problem::Problem)
+plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,colorScheme=:rainbow,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
 
 Plots outputs of a steady problem
 
 # Arguments
-- `problem::Problem`
+- `problem::Problem` = AeroBeams problem
+- `outputs::Vector{String}` = list of outputs
+- `beamGroups` = list of beams in each group for which arclengths are concatenated
+- `lw::Number` = line width
+- `colorScheme` = color scheme
+- `legendPos` = legend position
+- `save::Bool` = TF to save plots
+- `saveFolder::String` = relative path of folder where to save
+- `figureExtension::String` = figure extension
 """
-function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",saveExtension::String=".pdf")
+function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,colorScheme=:rainbow,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
 
     # Validate
     validOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3","V","V1","V2","V3","Ω","Ω1","Ω2","Ω3","γ","γ1","γ2","γ3","κ","κ1","κ2","κ3","P","P1","P2","P3","H","H1","H2","H3","α","cn","cm","ct","cl","cd"]
@@ -293,225 +301,307 @@ function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p",
     # Plot outputs
     @unpack units = problem.model
     if "u" in outputs || "u1" in outputs
-        plt_u1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=1,units=units,YLabel="u_1",lw=lw,legendPos=legendPos)
+        plt_u1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=1,units=units,YLabel="u_1",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"u1",saveExtension))
+            savefig(string(pwd(),saveFolder,"u1",figureExtension))
         end
     end
     if "u" in outputs || "u2" in outputs
-        plt_u2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=2,units=units,YLabel="u_2",lw=lw,legendPos=legendPos)
+        plt_u2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=2,units=units,YLabel="u_2",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"u2",saveExtension))
+            savefig(string(pwd(),saveFolder,"u2",figureExtension))
         end
     end
     if "u" in outputs || "u3" in outputs
-        plt_u3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=3,units=units,YLabel="u_3",lw=lw,legendPos=legendPos)
+        plt_u3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=uNodes,ind=3,units=units,YLabel="u_3",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"u3",saveExtension))
+            savefig(string(pwd(),saveFolder,"u3",figureExtension))
         end
     end
     if "p" in outputs || "p1" in outputs
-        plt_p1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=1,units=units,YLabel="p_1",lw=lw,legendPos=legendPos)
+        plt_p1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=1,units=units,YLabel="p_1",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"p1",saveExtension))
+            savefig(string(pwd(),saveFolder,"p1",figureExtension))
         end
     end
     if "p" in outputs || "p2" in outputs
-        plt_p2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=2,units=units,YLabel="p_2",lw=lw,legendPos=legendPos)
+        plt_p2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=2,units=units,YLabel="p_2",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"p2",saveExtension))
+            savefig(string(pwd(),saveFolder,"p2",figureExtension))
         end
     end 
     if "p" in outputs || "p3" in outputs
-        plt_p3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=3,units=units,YLabel="p_3",lw=lw,legendPos=legendPos)
+        plt_p3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=pNodes,ind=3,units=units,YLabel="p_3",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"p3",saveExtension))
+            savefig(string(pwd(),saveFolder,"p3",figureExtension))
         end
     end
     if "F" in outputs || "F1" in outputs
-        plt_F1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=1,units=units,YLabel="F_1^*",lw=lw,legendPos=legendPos)
+        plt_F1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=1,units=units,YLabel="F_1^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"F1",saveExtension))
+            savefig(string(pwd(),saveFolder,"F1",figureExtension))
         end
     end
     if "F" in outputs || "F2" in outputs
-        plt_F2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=2,units=units,YLabel="F_2^*",lw=lw,legendPos=legendPos)
+        plt_F2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=2,units=units,YLabel="F_2^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"F2",saveExtension))
+            savefig(string(pwd(),saveFolder,"F2",figureExtension))
         end
     end
     if "F" in outputs || "F3" in outputs
-        plt_F3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=3,units=units,YLabel="F_3^*",lw=lw,legendPos=legendPos)
+        plt_F3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=FNodes,ind=3,units=units,YLabel="F_3^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"F3",saveExtension))
+            savefig(string(pwd(),saveFolder,"F3",figureExtension))
         end
     end
     if "M" in outputs || "M1" in outputs
-        plt_M1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=1,units=units,YLabel="M_1^*",lw=lw,legendPos=legendPos)
+        plt_M1 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=1,units=units,YLabel="M_1^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"M1",saveExtension))
+            savefig(string(pwd(),saveFolder,"M1",figureExtension))
         end
     end
     if "M" in outputs || "M2" in outputs
-        plt_M2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=2,units=units,YLabel="M_2^*",lw=lw,legendPos=legendPos)
+        plt_M2 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=2,units=units,YLabel="M_2^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"M2",saveExtension))
+            savefig(string(pwd(),saveFolder,"M2",figureExtension))
         end
     end
     if "M" in outputs || "M3" in outputs
-        plt_M3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=3,units=units,YLabel="M_3^*",lw=lw,legendPos=legendPos)
+        plt_M3 = plot_output_of_x1(beamGroups,x1=x1Nodes,output=MNodes,ind=3,units=units,YLabel="M_3^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"M3",saveExtension))
+            savefig(string(pwd(),saveFolder,"M3",figureExtension))
         end
     end
     if "V" in outputs || "V1" in outputs
-        plt_V1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=1,units=units,YLabel="V_1^*",lw=lw,legendPos=legendPos)
+        plt_V1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=1,units=units,YLabel="V_1^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"V1",saveExtension))
+            savefig(string(pwd(),saveFolder,"V1",figureExtension))
         end
     end
     if "V" in outputs || "V2" in outputs
-        plt_V2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=2,units=units,YLabel="V_2^*",lw=lw,legendPos=legendPos)
+        plt_V2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=2,units=units,YLabel="V_2^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"V2",saveExtension))
+            savefig(string(pwd(),saveFolder,"V2",figureExtension))
         end
     end
     if "V" in outputs || "V3" in outputs
-        plt_V3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=3,units=units,YLabel="V_3^*",lw=lw,legendPos=legendPos)
+        plt_V3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=VElems,ind=3,units=units,YLabel="V_3^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"V3",saveExtension))
+            savefig(string(pwd(),saveFolder,"V3",figureExtension))
         end
     end
     if "Ω" in outputs || "Ω1" in outputs
-        plt_Ω1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=1,units=units,YLabel="Ω_1^*",lw=lw,legendPos=legendPos)
+        plt_Ω1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=1,units=units,YLabel="\\Omega_1^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"Ω1",saveExtension))
+            savefig(string(pwd(),saveFolder,"Ω1",figureExtension))
         end
     end
     if "Ω" in outputs || "Ω2" in outputs
-        plt_Ω2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=2,units=units,YLabel="Ω_2^*",lw=lw,legendPos=legendPos)
+        plt_Ω2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=2,units=units,YLabel="\\Omega_2^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"Ω2",saveExtension))
+            savefig(string(pwd(),saveFolder,"Ω2",figureExtension))
         end
     end
     if "Ω" in outputs || "Ω3" in outputs
-        plt_Ω3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=3,units=units,YLabel="Ω_3^*",lw=lw,legendPos=legendPos)
+        plt_Ω3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=ΩElems,ind=3,units=units,YLabel="\\Omega_3^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"Ω3",saveExtension))
+            savefig(string(pwd(),saveFolder,"Ω3",figureExtension))
         end
     end
     if "γ" in outputs || "γ1" in outputs
-        plt_γ1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=1,units=units,YLabel="γ_1^+",lw=lw,legendPos=legendPos)
+        plt_γ1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=1,units=units,YLabel="\\gamma_1^+",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"γ1",saveExtension))
+            savefig(string(pwd(),saveFolder,"γ1",figureExtension))
         end
     end
     if "γ" in outputs || "γ2" in outputs
-        plt_γ2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=2,units=units,YLabel="γ_2^+",lw=lw,legendPos=legendPos)
+        plt_γ2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=2,units=units,YLabel="\\gamma_2^+",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"γ2",saveExtension))
+            savefig(string(pwd(),saveFolder,"γ2",figureExtension))
         end
     end
     if "γ" in outputs || "γ3" in outputs
-        plt_γ3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=3,units=units,YLabel="γ_3^+",lw=lw,legendPos=legendPos)
+        plt_γ3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=γElems,ind=3,units=units,YLabel="\\gamma_3^+",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"γ3",saveExtension))
+            savefig(string(pwd(),saveFolder,"γ3",figureExtension))
         end
     end
     if "κ" in outputs || "κ1" in outputs
-        plt_κ1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=1,units=units,YLabel="κ_1^+",lw=lw,legendPos=legendPos)
+        plt_κ1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=1,units=units,YLabel="\\kappa_1^+",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"κ1",saveExtension))
+            savefig(string(pwd(),saveFolder,"κ1",figureExtension))
         end
     end
     if "κ" in outputs || "κ2" in outputs
-        plt_κ2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=2,units=units,YLabel="κ_2^+",lw=lw,legendPos=legendPos)
+        plt_κ2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=2,units=units,YLabel="\\kappa_2^+",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"κ2",saveExtension))
+            savefig(string(pwd(),saveFolder,"κ2",figureExtension))
         end
     end
     if "κ" in outputs || "κ3" in outputs
-        plt_κ3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=3,units=units,YLabel="κ_3^+",lw=lw,legendPos=legendPos)
+        plt_κ3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=κElems,ind=3,units=units,YLabel="\\kappa_3^+",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"κ3",saveExtension))
+            savefig(string(pwd(),saveFolder,"κ3",figureExtension))
         end
     end
     if "P" in outputs || "P1" in outputs
-        plt_P1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=1,units=units,YLabel="P_1^*",lw=lw,legendPos=legendPos)
+        plt_P1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=1,units=units,YLabel="P_1^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"P1",saveExtension))
+            savefig(string(pwd(),saveFolder,"P1",figureExtension))
         end
     end
     if "P" in outputs || "P2" in outputs
-        plt_P2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=2,units=units,YLabel="P_2^*",lw=lw,legendPos=legendPos)
+        plt_P2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=2,units=units,YLabel="P_2^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"P2",saveExtension))
+            savefig(string(pwd(),saveFolder,"P2",figureExtension))
         end
     end
     if "P" in outputs || "P3" in outputs
-        plt_P3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=3,units=units,YLabel="P_3^*",lw=lw,legendPos=legendPos)
+        plt_P3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=PElems,ind=3,units=units,YLabel="P_3^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"P3",saveExtension))
+            savefig(string(pwd(),saveFolder,"P3",figureExtension))
         end
     end
     if "H" in outputs || "H1" in outputs
-        plt_H1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=1,units=units,YLabel="H_1^*",lw=lw,legendPos=legendPos)
+        plt_H1 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=1,units=units,YLabel="H_1^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"H1",saveExtension))
+            savefig(string(pwd(),saveFolder,"H1",figureExtension))
         end
     end
     if "H" in outputs || "H2" in outputs
-        plt_H2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=2,units=units,YLabel="H_2^*",lw=lw,legendPos=legendPos)
+        plt_H2 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=2,units=units,YLabel="H_2^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"H2",saveExtension))
+            savefig(string(pwd(),saveFolder,"H2",figureExtension))
         end
     end
     if "H" in outputs || "H3" in outputs
-        plt_H3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=3,units=units,YLabel="H_3^*",lw=lw,legendPos=legendPos)
+        plt_H3 = plot_output_of_x1(beamGroups,x1=x1Elems,output=HElems,ind=3,units=units,YLabel="H_3^*",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"H3",saveExtension))
+            savefig(string(pwd(),saveFolder,"H3",figureExtension))
         end
     end
     if "α" in outputs 
-        plt_α = plot_output_of_x1(beamGroups,x1=x1Elems,output=αₑElems,ind=0,units=units,YLabel="\\alpha",lw=lw,legendPos=legendPos)
+        plt_α = plot_output_of_x1(beamGroups,x1=x1Elems,output=αₑElems,ind=0,units=units,YLabel="\\alpha",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"α",saveExtension))
+            savefig(string(pwd(),saveFolder,"α",figureExtension))
         end
     end
     if "cn" in outputs 
-        plt_cn = plot_output_of_x1(beamGroups,x1=x1Elems,output=cnElems,ind=0,units=units,YLabel="c_n",lw=lw,legendPos=legendPos)
+        plt_cn = plot_output_of_x1(beamGroups,x1=x1Elems,output=cnElems,ind=0,units=units,YLabel="c_n",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"cn",saveExtension))
+            savefig(string(pwd(),saveFolder,"cn",figureExtension))
         end
     end
     if "cm" in outputs 
-        plt_cm = plot_output_of_x1(beamGroups,x1=x1Elems,output=cmElems,ind=0,units=units,YLabel="c_m",lw=lw,legendPos=legendPos)
+        plt_cm = plot_output_of_x1(beamGroups,x1=x1Elems,output=cmElems,ind=0,units=units,YLabel="c_m",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"cm",saveExtension))
+            savefig(string(pwd(),saveFolder,"cm",figureExtension))
         end
     end
     if "ct" in outputs 
-        plt_ct = plot_output_of_x1(beamGroups,x1=x1Elems,output=ctElems,ind=0,units=units,YLabel="c_t",lw=lw,legendPos=legendPos)
+        plt_ct = plot_output_of_x1(beamGroups,x1=x1Elems,output=ctElems,ind=0,units=units,YLabel="c_t",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"ct",saveExtension))
+            savefig(string(pwd(),saveFolder,"ct",figureExtension))
         end
     end
     if "cl" in outputs 
-        plt_cl = plot_output_of_x1(beamGroups,x1=x1Elems,output=clElems,ind=0,units=units,YLabel="c_l",lw=lw,legendPos=legendPos)
+        plt_cl = plot_output_of_x1(beamGroups,x1=x1Elems,output=clElems,ind=0,units=units,YLabel="c_l",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"cl",saveExtension))
+            savefig(string(pwd(),saveFolder,"cl",figureExtension))
         end
     end
     if "cd" in outputs 
-        plt_cd = plot_output_of_x1(beamGroups,x1=x1Elems,output=cdElems,ind=0,units=units,YLabel="c_d",lw=lw,legendPos=legendPos)
+        plt_cd = plot_output_of_x1(beamGroups,x1=x1Elems,output=cdElems,ind=0,units=units,YLabel="c_d",lw=lw,colorScheme=colorScheme,legendPos=legendPos)
         if save
-            savefig(string(pwd(),saveFolder,"cd",saveExtension))
+            savefig(string(pwd(),saveFolder,"cd",figureExtension))
         end
     end
 
     return nothing
 end
 export plot_steady_outputs
+
+
+"""
+plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colorScheme=:rainbow,lw=1,legendPos=:best)
+
+Plots output along the arclength coordinate for each beam group
+
+# Arguments
+- `problem::Problem`
+"""
+function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colorScheme=:rainbow,lw=1,legendPos=:best)
+
+    # Initialize multiplication factor
+    γ = 1
+
+    # Set ylabel unit
+    if YLabel == "\\alpha"
+        γ = 180/π
+        yLabelUnit = "deg"
+    elseif YLabel in ["c_n","c_m","c_t","c_l","c_d"]
+        yLabelUnit = " "   
+    elseif occursin("u",YLabel)
+        yLabelUnit = units.length
+    elseif occursin("p",YLabel)
+        yLabelUnit = " "
+    elseif occursin("F",YLabel)
+        yLabelUnit = units.force
+    elseif occursin("M",YLabel)
+        yLabelUnit = string(units.force,".",units.length)
+    elseif occursin("V",YLabel)
+        yLabelUnit = string(units.length,"/s")
+    elseif occursin("\\Omega",YLabel)
+        γ = units.angle == "deg" ? 180/π : 1
+        yLabelUnit = string(units.angle,"/s")
+    elseif occursin("\\gamma",YLabel)
+        yLabelUnit = " "
+    elseif occursin("\\kappa",YLabel)
+        yLabelUnit = " "
+    elseif occursin("P",YLabel)
+        yLabelUnit = string(units.mass,"/s")
+    elseif occursin("H",YLabel)
+        yLabelUnit = string(units.mass,".",units.length,"/s")       
+    end
+
+    # Define pallete
+    p = palette(colorScheme,length(beamGroups))
+
+    # Initialize plot 
+    plt = plot(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$",YLabel,"\$ [",yLabelUnit,"]"))
+
+    # Loop beam groups
+    for (i,beamGroup) in enumerate(beamGroups)
+        # Initialize x1 end coordinate from previous beam in the group
+        x1Previous = 0
+        # Initialize arrays for plot
+        x1BeamGroup = Vector{Float64}()
+        outputBeamGroup = Vector{Float64}()
+        # Loop over beams
+        for (b,beamID) in enumerate(beamGroup)
+            # Range of current x1 array
+            Nx1 = length(x1[beamID])
+            # Adjust x1 coordinate
+            append!(x1BeamGroup,x1[beamID])
+            if b > 1
+                x1Previous += x1[b-1][end]
+                x1BeamGroup[end-Nx1+1:end] += x1Previous
+            end
+            # Set range of outputs array to be plotted
+            range = ind > 0 ? (ind:3:length(output[beamID])) : (1:length(output[beamID]))
+            # Concatenate outputs for beam group
+            append!(outputBeamGroup,γ*output[beamID][range])
+        end
+        # Plot output
+        beamGroupLabel = length(beamGroups) > 1 ? string("Beam group ",i) : false
+        plt = plot!(plt, x1BeamGroup,outputBeamGroup,lw=lw,palette=p,label=beamGroupLabel,legend=legendPos)
+    end
+
+    # Display
+    display(plt)
+
+    return plt
+end
 
 
 """
@@ -1000,14 +1090,790 @@ export plot_dynamic_deformation
 
 
 """
-plot_output_of_x1(beamGroups,x1,output,ind,colors=get(colorschemes[:rainbow], LinRange(0,1,length(beamGroups))))
+plot_time_outputs(problem::Problem)
 
-Plots output along the arclength coordinate for each beam group
+Plots outputs of a dynamic problem
 
 # Arguments
 - `problem::Problem`
 """
-function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(colorschemes[:rainbow],LinRange(0,1,length(beamGroups)+1)),lw=1,legendPos=:best)
+function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=Vector{Tuple{Int64,Int64}}(),elements::Vector{Int64}=Vector{Int64}(),nodalOutputs::Vector{String}=["u","p","F","M"],elementalOutputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],lw::Number=1,colorScheme=:rainbow,showLegend::Bool=true,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
+
+    # Validate
+    validNodalOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3"]
+    validElementalOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3","V","V1","V2","V3","Ω","Ω1","Ω2","Ω3","γ","γ1","γ2","γ3","κ","κ1","κ2","κ3","P","P1","P2","P3","H","H1","H2","H3","α","cn","cm","ct","cl","cd","udot","udot1","udot2","udot3","pdot","pdot1","pdot2","pdot3","Vdot","Vdot1","Vdot2","Vdot3","Ωdot","Ωdot1","Ωdot2","Ωdot3"]
+    @assert all(out -> out in validNodalOutputs, nodalOutputs) "set 'nodalOutputs' as one of $(join(validNodalOutputs, ','))"
+    @assert all(out -> out in validElementalOutputs, elementalOutputs) "set 'elementalOutputs' as one of $(join(validElementalOutputs, ','))"
+    @assert all(n -> 0 < n[1] <= problem.model.nElementsTotal, nodes) "element of 'nodes' must be between 0 and total number of elements in the model"
+    @assert all(n -> n[2] in [1,2], nodes) "set 'nodes' as a tuple in which the first value is the element and the second is its local node (1 or 2)"
+
+    # Set backend
+    gr()
+
+    # Unpack 
+    @unpack timeVector,sizeOfTime = problem
+    @unpack units = problem.model
+
+    # Initialize plots
+    plt_u1 = plot()
+    plt_u2 = plot()
+    plt_u3 = plot()
+    plt_p1 = plot()
+    plt_p2 = plot()
+    plt_p3 = plot()
+    plt_F1 = plot()
+    plt_F2 = plot()
+    plt_F3 = plot()
+    plt_M1 = plot()
+    plt_M2 = plot()
+    plt_M3 = plot()
+    plt_V1 = plot()
+    plt_V2 = plot()
+    plt_V3 = plot()
+    plt_Ω1 = plot()
+    plt_Ω2 = plot()
+    plt_Ω3 = plot()
+    plt_γ1 = plot()
+    plt_γ2 = plot()
+    plt_γ3 = plot()
+    plt_κ1 = plot()
+    plt_κ2 = plot()
+    plt_κ3 = plot()
+    plt_P1 = plot()
+    plt_P2 = plot()
+    plt_P3 = plot()
+    plt_H1 = plot()
+    plt_H2 = plot()
+    plt_H3 = plot()
+    plt_udot1 = plot()
+    plt_udot2 = plot()
+    plt_udot3 = plot()
+    plt_pdot1 = plot()
+    plt_pdot2 = plot()
+    plt_pdot3 = plot()
+    plt_Vdot1 = plot()
+    plt_Vdot2 = plot()
+    plt_Vdot3 = plot()
+    plt_Ωdot1 = plot()
+    plt_Ωdot2 = plot()
+    plt_Ωdot3 = plot()
+    plt_α = plot()
+    plt_cn = plot()
+    plt_cm = plot()
+    plt_ct = plot()
+    plt_cl = plot()
+    plt_cd = plot()
+
+    # Loop over elements
+    Ne = length(elements)
+    for (i,e) in enumerate(elements)
+        # u1
+        if "u" in elementalOutputs || "u1" in elementalOutputs
+            u1 = [problem.elementalStatesOverTime[t][e].u[1] for t in 1:sizeOfTime]
+            plt_u1 = plot_output_of_time!(plt_u1,t=timeVector,output=u1,element=e,units=units,YLabel="u_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"u1",figureExtension))
+            end
+            if i == Ne
+                display(plt_u1)
+            end
+        end
+        # u2
+        if "u" in elementalOutputs || "u2" in elementalOutputs
+            u2 = [problem.elementalStatesOverTime[t][e].u[2] for t in 1:sizeOfTime]
+            plt_u2 = plot_output_of_time!(plt_u2,t=timeVector,output=u2,element=e,units=units,YLabel="u_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"u2",figureExtension))
+            end
+            if i == Ne
+                display(plt_u2)
+            end
+        end
+        # u3
+        if "u" in elementalOutputs || "u3" in elementalOutputs
+            u3 = [problem.elementalStatesOverTime[t][e].u[3] for t in 1:sizeOfTime]
+            plt_u3 = plot_output_of_time!(plt_u3,t=timeVector,output=u3,element=e,units=units,YLabel="u_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"u3",figureExtension))
+            end
+            if i == Ne
+                display(plt_u3)
+            end
+        end
+        # p1
+        if "p" in elementalOutputs || "p1" in elementalOutputs
+            p1 = [problem.elementalStatesOverTime[t][e].p[1] for t in 1:sizeOfTime]
+            plt_p1 = plot_output_of_time!(plt_p1,t=timeVector,output=p1,element=e,units=units,YLabel="p_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"p1",figureExtension))
+            end
+            if i == Ne
+                display(plt_p1)
+            end
+        end
+        # p2
+        if "p" in elementalOutputs || "p2" in elementalOutputs
+            p2 = [problem.elementalStatesOverTime[t][e].p[2] for t in 1:sizeOfTime]
+            plt_p2 = plot_output_of_time!(plt_p2,t=timeVector,output=p2,element=e,units=units,YLabel="p_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"p2",figureExtension))
+            end
+            if i == Ne
+                display(plt_p2)
+            end
+        end
+        # p3
+        if "p" in elementalOutputs || "p3" in elementalOutputs
+            p3 = [problem.elementalStatesOverTime[t][e].p[3] for t in 1:sizeOfTime]
+            plt_p3 = plot_output_of_time!(plt_p3,t=timeVector,output=p3,element=e,units=units,YLabel="p_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"p3",figureExtension))
+            end
+            if i == Ne
+                display(plt_p3)
+            end
+        end
+        # F1
+        if "F" in elementalOutputs || "F1" in elementalOutputs
+            F1 = [problem.elementalStatesOverTime[t][e].F[1] for t in 1:sizeOfTime]
+            plt_F1 = plot_output_of_time!(plt_F1,t=timeVector,output=F1,element=e,units=units,YLabel="F_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"F1",figureExtension))
+            end
+            if i == Ne
+                display(plt_F1)
+            end
+        end
+        # F2
+        if "F" in elementalOutputs || "F2" in elementalOutputs
+            F2 = [problem.elementalStatesOverTime[t][e].F[2] for t in 1:sizeOfTime]
+            plt_F2 = plot_output_of_time!(plt_F2,t=timeVector,output=F2,element=e,units=units,YLabel="F_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"F2",figureExtension))
+            end
+            if i == Ne
+                display(plt_F2)
+            end
+        end
+        # F3
+        if "F" in elementalOutputs || "F3" in elementalOutputs
+            F3 = [problem.elementalStatesOverTime[t][e].F[3] for t in 1:sizeOfTime]
+            plt_F3 = plot_output_of_time!(plt_F3,t=timeVector,output=F3,element=e,units=units,YLabel="F_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"F3",figureExtension))
+            end
+            if i == Ne
+                display(plt_F3)
+            end
+        end
+        # M1
+        if "M" in elementalOutputs || "M1" in elementalOutputs
+            M1 = [problem.elementalStatesOverTime[t][e].M[1] for t in 1:sizeOfTime]
+            plt_M1 = plot_output_of_time!(plt_M1,t=timeVector,output=M1,element=e,units=units,YLabel="M_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"M1",figureExtension))
+            end
+            if i == Ne
+                display(plt_M1)
+            end
+        end
+        # M2
+        if "M" in elementalOutputs || "M2" in elementalOutputs
+            M2 = [problem.elementalStatesOverTime[t][e].M[2] for t in 1:sizeOfTime]
+            plt_M2 = plot_output_of_time!(plt_M2,t=timeVector,output=M2,element=e,units=units,YLabel="M_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"M2",figureExtension))
+            end
+            if i == Ne
+                display(plt_M1)
+            end
+        end
+        # M3
+        if "M" in elementalOutputs || "M3" in elementalOutputs
+            M3 = [problem.elementalStatesOverTime[t][e].M[3] for t in 1:sizeOfTime]
+            plt_M3 = plot_output_of_time!(plt_M3,t=timeVector,output=M3,element=e,units=units,YLabel="M_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"M3",figureExtension))
+            end
+            if i == Ne
+                display(plt_M3)
+            end
+        end
+        # V1
+        if "V" in elementalOutputs || "V1" in elementalOutputs
+            V1 = [problem.elementalStatesOverTime[t][e].V[1] for t in 1:sizeOfTime]
+            plt_V1 = plot_output_of_time!(plt_V1,t=timeVector,output=V1,element=e,units=units,YLabel="V_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"V1",figureExtension))
+            end
+            if i == Ne
+                display(plt_V1)
+            end
+        end
+        # V2
+        if "V" in elementalOutputs || "V2" in elementalOutputs
+            V2 = [problem.elementalStatesOverTime[t][e].V[2] for t in 1:sizeOfTime]
+            plt_V2 = plot_output_of_time!(plt_V2,t=timeVector,output=V2,element=e,units=units,YLabel="V_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"V2",figureExtension))
+            end
+            if i == Ne
+                display(plt_V2)
+            end
+        end
+        # V3
+        if "V" in elementalOutputs || "V3" in elementalOutputs
+            V3 = [problem.elementalStatesOverTime[t][e].V[3] for t in 1:sizeOfTime]
+            plt_V3 = plot_output_of_time!(plt_V3,t=timeVector,output=V3,element=e,units=units,YLabel="V_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"V3",figureExtension))
+            end
+            if i == Ne
+                display(plt_V3)
+            end
+        end
+        # Ω1
+        if "Ω" in elementalOutputs || "Ω1" in elementalOutputs
+            Ω1 = [problem.elementalStatesOverTime[t][e].Ω[1] for t in 1:sizeOfTime]
+            plt_Ω1 = plot_output_of_time!(plt_Ω1,t=timeVector,output=Ω1,element=e,units=units,YLabel="\\Omega_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Ω1",figureExtension))
+            end
+            if i == Ne
+                display(plt_Ω1)
+            end
+        end
+        # Ω2
+        if "Ω" in elementalOutputs || "Ω2" in elementalOutputs
+            Ω2 = [problem.elementalStatesOverTime[t][e].Ω[2] for t in 1:sizeOfTime]
+            plt_Ω2 = plot_output_of_time!(plt_Ω2,t=timeVector,output=Ω2,element=e,units=units,YLabel="\\Omega_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Ω2",figureExtension))
+            end
+            if i == Ne
+                display(plt_Ω2)
+            end
+        end
+        # Ω3
+        if "Ω" in elementalOutputs || "Ω3" in elementalOutputs
+            Ω3 = [problem.elementalStatesOverTime[t][e].Ω[3] for t in 1:sizeOfTime]
+            plt_Ω3 = plot_output_of_time!(plt_Ω3,t=timeVector,output=Ω3,element=e,units=units,YLabel="\\Omega_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Ω3",figureExtension))
+            end
+            if i == Ne
+                display(plt_Ω3)
+            end
+        end
+        # γ1
+        if "γ" in elementalOutputs || "γ1" in elementalOutputs
+            γ1 = [problem.compElementalStatesOverTime[t][e].γ[1] for t in 1:sizeOfTime]
+            plt_γ1 = plot_output_of_time!(plt_γ1,t=timeVector,output=γ1,element=e,units=units,YLabel="\\gamma_1^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"γ1",figureExtension))
+            end
+            if i == Ne
+                display(plt_γ1)
+            end
+        end
+        # γ2
+        if "γ" in elementalOutputs || "γ2" in elementalOutputs
+            γ2 = [problem.compElementalStatesOverTime[t][e].γ[2] for t in 1:sizeOfTime]
+            plt_γ2 = plot_output_of_time!(plt_γ2,t=timeVector,output=γ2,element=e,units=units,YLabel="\\gamma_2^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"γ2",figureExtension))
+            end
+            if i == Ne
+                display(plt_γ2)
+            end
+        end
+        # γ3
+        if "γ" in elementalOutputs || "γ3" in elementalOutputs
+            γ3 = [problem.compElementalStatesOverTime[t][e].γ[3] for t in 1:sizeOfTime]
+            plt_γ3 = plot_output_of_time!(plt_γ3,t=timeVector,output=γ3,element=e,units=units,YLabel="\\gamma_3^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"γ3",figureExtension))
+            end
+            if i == Ne
+                display(plt_γ3)
+            end
+        end
+        # κ1
+        if "κ" in elementalOutputs || "κ1" in elementalOutputs
+            κ1 = [problem.compElementalStatesOverTime[t][e].κ[1] for t in 1:sizeOfTime]
+            plt_κ1 = plot_output_of_time!(plt_κ1,t=timeVector,output=κ1,element=e,units=units,YLabel="\\kappa_1^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"κ1",figureExtension))
+            end
+            if i == Ne
+                display(plt_κ1)
+            end
+        end
+        # κ2
+        if "κ" in elementalOutputs || "κ2" in elementalOutputs
+            κ2 = [problem.compElementalStatesOverTime[t][e].κ[2] for t in 1:sizeOfTime]
+            plt_κ2 = plot_output_of_time!(plt_κ2,t=timeVector,output=κ2,element=e,units=units,YLabel="\\kappa_2^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"κ2",figureExtension))
+            end
+            if i == Ne
+                display(plt_κ2)
+            end
+        end
+        # κ3
+        if "κ" in elementalOutputs || "κ3" in elementalOutputs
+            κ3 = [problem.compElementalStatesOverTime[t][e].κ[3] for t in 1:sizeOfTime]
+            plt_κ3 = plot_output_of_time!(plt_κ3,t=timeVector,output=κ3,element=e,units=units,YLabel="\\kappa_3^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"κ3",figureExtension))
+            end
+            if i == Ne
+                display(plt_κ3)
+            end
+        end
+        # P1
+        if "P" in elementalOutputs || "P1" in elementalOutputs
+            P1 = [problem.compElementalStatesOverTime[t][e].P[1] for t in 1:sizeOfTime]
+            plt_P1 = plot_output_of_time!(plt_P1,t=timeVector,output=P1,element=e,units=units,YLabel="P_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"P1",figureExtension))
+            end
+            if i == Ne
+                display(plt_P1)
+            end
+        end
+        # P2
+        if "P" in elementalOutputs || "P2" in elementalOutputs
+            P2 = [problem.compElementalStatesOverTime[t][e].P[2] for t in 1:sizeOfTime]
+            plt_P2 = plot_output_of_time!(plt_P2,t=timeVector,output=P2,element=e,units=units,YLabel="P_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"P2",figureExtension))
+            end
+            if i == Ne
+                display(plt_P2)
+            end
+        end
+        # P3
+        if "P" in elementalOutputs || "P3" in elementalOutputs
+            P3 = [problem.compElementalStatesOverTime[t][e].P[3] for t in 1:sizeOfTime]
+            plt_P3 = plot_output_of_time!(plt_P3,t=timeVector,output=P3,element=e,units=units,YLabel="P_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"P3",figureExtension))
+            end
+            if i == Ne
+                display(plt_P3)
+            end
+        end
+        # H1
+        if "H" in elementalOutputs || "H1" in elementalOutputs
+            H1 = [problem.compElementalStatesOverTime[t][e].H[1] for t in 1:sizeOfTime]
+            plt_H1 = plot_output_of_time!(plt_H1,t=timeVector,output=H1,element=e,units=units,YLabel="H_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"H1",figureExtension))
+            end
+            if i == Ne
+                display(plt_H1)
+            end
+        end
+        # H2
+        if "H" in elementalOutputs || "H2" in elementalOutputs
+            H2 = [problem.compElementalStatesOverTime[t][e].H[2] for t in 1:sizeOfTime]
+            plt_H2 = plot_output_of_time!(plt_H2,t=timeVector,output=H2,element=e,units=units,YLabel="H_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"H2",figureExtension))
+            end
+            if i == Ne
+                display(plt_H2)
+            end
+        end
+        # H3
+        if "H" in elementalOutputs || "H3" in elementalOutputs
+            H3 = [problem.compElementalStatesOverTime[t][e].H[3] for t in 1:sizeOfTime]
+            plt_H3 = plot_output_of_time!(plt_H3,t=timeVector,output=H3,element=e,units=units,YLabel="H_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"H3",figureExtension))
+            end
+            if i == Ne
+                display(plt_H3)
+            end
+        end
+        # udot1
+        if "udot" in elementalOutputs || "udot1" in elementalOutputs
+            udot1 = [problem.elementalStatesRatesOverTime[t][e].udot[1] for t in 1:sizeOfTime]
+            plt_udot1 = plot_output_of_time!(plt_udot1,t=timeVector,output=udot1,element=e,units=units,YLabel="\\dot{u}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"udot1",figureExtension))
+            end
+            if i == Ne
+                display(plt_udot1)
+            end
+        end
+        # udot2
+        if "udot" in elementalOutputs || "udot2" in elementalOutputs
+            udot2 = [problem.elementalStatesRatesOverTime[t][e].udot[2] for t in 1:sizeOfTime]
+            plt_udot2 = plot_output_of_time!(plt_udot2,t=timeVector,output=udot2,element=e,units=units,YLabel="\\dot{u}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"udot2",figureExtension))
+            end
+            if i == Ne
+                display(plt_udot2)
+            end
+        end
+        # udot3
+        if "udot" in elementalOutputs || "udot3" in elementalOutputs
+            udot3 = [problem.elementalStatesRatesOverTime[t][e].udot[3] for t in 1:sizeOfTime]
+            plt_udot3 = plot_output_of_time!(plt_udot3,t=timeVector,output=udot3,element=e,units=units,YLabel="\\dot{u}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"udot3",figureExtension))
+            end
+            if i == Ne
+                display(plt_udot3)
+            end
+        end
+        # pdot1
+        if "pdot" in elementalOutputs || "pdot1" in elementalOutputs
+            pdot1 = [problem.elementalStatesRatesOverTime[t][e].pdot[1] for t in 1:sizeOfTime]
+            plt_pdot1 = plot_output_of_time!(plt_pdot1,t=timeVector,output=pdot1,element=e,units=units,YLabel="\\dot{p}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"pdot1",figureExtension))
+            end
+            if i == Ne
+                display(plt_pdot1)
+            end
+        end
+        # pdot2
+        if "pdot" in elementalOutputs || "pdot2" in elementalOutputs
+            pdot2 = [problem.elementalStatesRatesOverTime[t][e].pdot[2] for t in 1:sizeOfTime]
+            plt_pdot2 = plot_output_of_time!(plt_pdot2,t=timeVector,output=pdot2,element=e,units=units,YLabel="\\dot{p}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"pdot2",figureExtension))
+            end
+            if i == Ne
+                display(plt_pdot2)
+            end
+        end
+        # pdot3
+        if "pdot" in elementalOutputs || "pdot3" in elementalOutputs
+            pdot3 = [problem.elementalStatesRatesOverTime[t][e].pdot[3] for t in 1:sizeOfTime]
+            plt_pdot3 = plot_output_of_time!(plt_pdot3,t=timeVector,output=pdot3,element=e,units=units,YLabel="\\dot{p}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"pdot3",figureExtension))
+            end
+            if i == Ne
+                display(plt_pdot3)
+            end
+        end   
+        # Vdot1
+        if "Vdot" in elementalOutputs || "Vdot1" in elementalOutputs
+            Vdot1 = [problem.elementalStatesRatesOverTime[t][e].Vdot[1] for t in 1:sizeOfTime]
+            plt_Vdot1 = plot_output_of_time!(plt_Vdot1,t=timeVector,output=Vdot1,element=e,units=units,YLabel="\\dot{V}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Vdot1",figureExtension))
+            end
+            if i == Ne
+                display(plt_Vdot1)
+            end
+        end
+        # Vdot2
+        if "Vdot" in elementalOutputs || "Vdot2" in elementalOutputs
+            Vdot2 = [problem.elementalStatesRatesOverTime[t][e].Vdot[2] for t in 1:sizeOfTime]
+            plt_Vdot2 = plot_output_of_time!(plt_Vdot2,t=timeVector,output=Vdot2,element=e,units=units,YLabel="\\dot{V}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Vdot2",figureExtension))
+            end
+            if i == Ne
+                display(plt_Vdot2)
+            end
+        end
+        # Vdot3
+        if "Vdot" in elementalOutputs || "Vdot3" in elementalOutputs
+            Vdot3 = [problem.elementalStatesRatesOverTime[t][e].Vdot[3] for t in 1:sizeOfTime]
+            plt_Vdot3 = plot_output_of_time!(plt_Vdot3,t=timeVector,output=Vdot3,element=e,units=units,YLabel="\\dot{V}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Vdot3",figureExtension))
+            end
+            if i == Ne
+                display(plt_Vdot3)
+            end
+        end
+        # Ωdot1
+        if "Ωdot" in elementalOutputs || "Ωdot1" in elementalOutputs
+            Ωdot1 = [problem.elementalStatesRatesOverTime[t][e].Ωdot[1] for t in 1:sizeOfTime]
+            plt_Ωdot1 = plot_output_of_time!(plt_Ωdot1,t=timeVector,output=Ωdot1,element=e,units=units,YLabel="\\dot{\\Omega}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Ωdot1",figureExtension))
+            end
+            if i == Ne
+                display(plt_Ωdot1)
+            end
+        end
+        # Ωdot2
+        if "Ωdot" in elementalOutputs || "Ωdot2" in elementalOutputs
+            Ωdot2 = [problem.elementalStatesRatesOverTime[t][e].Ωdot[2] for t in 1:sizeOfTime]
+            plt_Ωdot2 = plot_output_of_time!(plt_Ωdot2,t=timeVector,output=Ωdot2,element=e,units=units,YLabel="\\dot{\\Omega}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Ωdot2",figureExtension))
+            end
+            if i == Ne
+                display(plt_Ωdot2)
+            end
+        end
+        # Ωdot3
+        if "Ωdot" in elementalOutputs || "Ωdot3" in elementalOutputs
+            Ωdot3 = [problem.elementalStatesRatesOverTime[t][e].Ωdot[3] for t in 1:sizeOfTime]
+            plt_Ωdot3 = plot_output_of_time!(plt_Ωdot3,t=timeVector,output=Ωdot3,element=e,units=units,YLabel="\\dot{\\Omega}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"Ωdot3",figureExtension))
+            end
+            if i == Ne
+                display(plt_Ωdot3)
+            end
+        end
+        # Skip elements without aero
+        if isnothing(problem.model.elements[e].aero)
+            continue
+        end
+        # Aerodynamic variables
+        αₑ = [problem.aeroVariablesOverTime[t][e].flowAnglesAndRates.αₑ for t in 1:sizeOfTime]
+        cn = [problem.aeroVariablesOverTime[t][e].aeroCoefficients.cn for t in 1:sizeOfTime]
+        cm = [problem.aeroVariablesOverTime[t][e].aeroCoefficients.cm for t in 1:sizeOfTime]
+        ct = [problem.aeroVariablesOverTime[t][e].aeroCoefficients.ct for t in 1:sizeOfTime]
+        cl = cn .* cos.(αₑ) .+ ct .* sin.(αₑ)
+        cd = cn .* sin.(αₑ) .- ct .* cos.(αₑ)
+        # α
+        if "α" in elementalOutputs
+            plt_α = plot_output_of_time!(plt_α,t=timeVector,output=αₑ,element=e,units=units,YLabel="\\alpha",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"α",figureExtension))
+            end
+            if i == Ne
+                display(plt_α)
+            end
+        end
+        # cn
+        if "cn" in elementalOutputs
+            plt_cn = plot_output_of_time!(plt_cn,t=timeVector,output=cn,element=e,units=units,YLabel="c_n",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"cn",figureExtension))
+            end
+            if i == Ne
+                display(plt_cn)
+            end
+        end
+        # cm
+        if "cm" in elementalOutputs
+            plt_cm = plot_output_of_time!(plt_cm,t=timeVector,output=cm,element=e,units=units,YLabel="c_m",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"cm",figureExtension))
+            end
+            if i == Ne
+                display(plt_cm)
+            end
+        end
+        # ct
+        if "ct" in elementalOutputs
+            plt_ct = plot_output_of_time!(plt_ct,t=timeVector,output=ct,element=e,units=units,YLabel="c_t",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"ct",figureExtension))
+            end
+            if i == Ne
+                display(plt_ct)
+            end
+        end
+        # cl
+        if "cl" in elementalOutputs
+            plt_cl = plot_output_of_time!(plt_cl,t=timeVector,output=cl,element=e,units=units,YLabel="c_l",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"cl",figureExtension))
+            end
+            if i == Ne
+                display(plt_cl)
+            end
+        end
+        # cd
+        if "cd" in elementalOutputs
+            plt_cd = plot_output_of_time!(plt_cd,t=timeVector,output=cd,element=e,units=units,YLabel="c_d",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"cd",figureExtension))
+            end
+            if i == Ne
+                display(plt_cd)
+            end
+        end
+    end
+
+    # Loop over nodal tuples
+    Nn = length(nodes)
+    for (i,tup) in enumerate(nodes)
+        # Extract element and local node
+        e = tup[1]
+        localNode = tup[2]
+        # Extract global node ID
+        nodeGlobalID = problem.model.elements[e].nodesGlobalID[localNode]
+        # Set fields
+        if localNode == 1
+            uField = :u_n1
+            pField = :p_n1
+            FField = :F_n1
+            MField = :N_n1
+        else
+            uField = :u_n2
+            pField = :p_n2
+            FField = :F_n2
+            MField = :M_n2
+        end
+        # u1
+        if "u" in nodalOutputs || "u1" in nodalOutputs
+            u1 = [getfield(problem.nodalStatesOverTime[t][e],uField)[1] for t in 1:sizeOfTime]
+            plt_u1 = plot_output_of_time!(plt_u1,t=timeVector,output=u1,node=nodeGlobalID,units=units,YLabel="u_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"u1",figureExtension))
+            end
+            if i == Nn
+                display(plt_u1)
+            end
+        end
+        # u2
+        if "u" in nodalOutputs || "u2" in nodalOutputs
+            u2 = [getfield(problem.nodalStatesOverTime[t][e],uField)[2] for t in 1:sizeOfTime]
+            plt_u2 = plot_output_of_time!(plt_u2,t=timeVector,output=u2,node=nodeGlobalID,units=units,YLabel="u_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"u2",figureExtension))
+            end
+            if i == Nn
+                display(plt_u2)
+            end
+        end
+        # u3
+        if "u" in nodalOutputs || "u3" in nodalOutputs
+            u3 = [getfield(problem.nodalStatesOverTime[t][e],uField)[3] for t in 1:sizeOfTime]
+            plt_u3 = plot_output_of_time!(plt_u3,t=timeVector,output=u3,node=nodeGlobalID,units=units,YLabel="u_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"u3",figureExtension))
+            end
+            if i == Nn
+                display(plt_u3)
+            end
+        end
+        # p1
+        if "p" in nodalOutputs || "p1" in nodalOutputs
+            p1 = [getfield(problem.nodalStatesOverTime[t][e],pField)[1] for t in 1:sizeOfTime]
+            plt_p1 = plot_output_of_time!(plt_p1,t=timeVector,output=p1,node=nodeGlobalID,units=units,YLabel="p_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"p1",figureExtension))
+            end
+            if i == Nn
+                display(plt_p1)
+            end
+        end
+        # p2
+        if "p" in nodalOutputs || "p2" in nodalOutputs
+            p2 = [getfield(problem.nodalStatesOverTime[t][e],pField)[2] for t in 1:sizeOfTime]
+            plt_p2 = plot_output_of_time!(plt_p2,t=timeVector,output=p2,node=nodeGlobalID,units=units,YLabel="p_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"p2",figureExtension))
+            end
+            if i == Nn
+                display(plt_p2)
+            end
+        end
+        # p3
+        if "p" in nodalOutputs || "p3" in nodalOutputs
+            p3 = [getfield(problem.nodalStatesOverTime[t][e],pField)[3] for t in 1:sizeOfTime]
+            plt_p3 = plot_output_of_time!(plt_p3,t=timeVector,output=u3,node=nodeGlobalID,units=units,YLabel="p_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"p3",figureExtension))
+            end
+            if i == Nn
+                display(plt_p3)
+            end
+        end
+        # F1
+        if "F" in nodalOutputs || "F1" in nodalOutputs
+            F1 = [getfield(problem.nodalStatesOverTime[t][e],FField)[1] for t in 1:sizeOfTime]
+            plt_F1 = plot_output_of_time!(plt_F1,t=timeVector,output=F1,node=nodeGlobalID,units=units,YLabel="F_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"F1",figureExtension))
+            end
+            if i == Nn
+                display(plt_F1)
+            end
+        end
+        # F2
+        if "F" in nodalOutputs || "F2" in nodalOutputs
+            F2 = [getfield(problem.nodalStatesOverTime[t][e],FField)[2] for t in 1:sizeOfTime]
+            plt_F2 = plot_output_of_time!(plt_F2,t=timeVector,output=F2,node=nodeGlobalID,units=units,YLabel="F_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"F2",figureExtension))
+            end
+            if i == Nn
+                display(plt_F2)
+            end
+        end
+        # F3
+        if "F" in nodalOutputs || "F3" in nodalOutputs
+            F3 = [getfield(problem.nodalStatesOverTime[t][e],FField)[3] for t in 1:sizeOfTime]
+            plt_F3 = plot_output_of_time!(plt_F3,t=timeVector,output=F3,node=nodeGlobalID,units=units,YLabel="F_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"F3",figureExtension))
+            end
+            if i == Nn
+                display(plt_F3)
+            end
+        end
+        # M1
+        if "M" in nodalOutputs || "M1" in nodalOutputs
+            M1 = [getfield(problem.nodalStatesOverTime[t][e],MField)[1] for t in 1:sizeOfTime]
+            plt_M1 = plot_output_of_time!(plt_M1,t=timeVector,output=M1,node=nodeGlobalID,units=units,YLabel="M_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"M1",figureExtension))
+            end
+            if i == Nn
+                display(plt_M1)
+            end
+        end
+        # M2
+        if "M" in nodalOutputs || "M2" in nodalOutputs
+            M2 = [getfield(problem.nodalStatesOverTime[t][e],MField)[2] for t in 1:sizeOfTime]
+            plt_M2 = plot_output_of_time!(plt_M2,t=timeVector,output=M2,node=nodeGlobalID,units=units,YLabel="M_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"M2",figureExtension))
+            end
+            if i == Nn
+                display(plt_M2)
+            end
+        end
+        # M3
+        if "M" in nodalOutputs || "M3" in nodalOutputs
+            M3 = [getfield(problem.nodalStatesOverTime[t][e],MField)[3] for t in 1:sizeOfTime]
+            plt_M3 = plot_output_of_time!(plt_M3,t=timeVector,output=M3,node=nodeGlobalID,units=units,YLabel="M_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            if save
+                savefig(string(pwd(),saveFolder,"M3",figureExtension))
+            end
+            if i == Nn
+                display(plt_M3)
+            end
+        end
+    end
+
+    return nothing
+end
+export plot_time_outputs
+
+
+"""
+plot_output_of_time!(plt; t,output,element=NaN,node=NaN,units,YLabel,lw=1,colorScheme=:rainbow,legendPos=:best)
+
+Plots output over time
+
+# Arguments
+- `problem::Problem`
+"""
+function plot_output_of_time!(plt; t,output,element=NaN,node=NaN,units,YLabel,lw=1,colorScheme=:rainbow,showLegend=true,legendPos=:best)
+
+    # Validate: either "element" or "node" is NaN
+    @assert isnan(element) || isnan(node)
+    @assert !(isnan(element) && isnan(node))
 
     # Initialize multiplication factor
     γ = 1
@@ -1018,6 +1884,15 @@ function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(col
         yLabelUnit = "deg"
     elseif YLabel in ["c_n","c_m","c_t","c_l","c_d"]
         yLabelUnit = " "   
+    elseif occursin("\\dot{u}",YLabel)
+        yLabelUnit = string(units.length,"/s")
+    elseif occursin("\\dot{p}",YLabel)
+        yLabelUnit = "1/s"
+    elseif occursin("\\dot{V}",YLabel)
+        yLabelUnit = string(units.length,"\$/s^2\$")
+    elseif occursin("\\dot{\\Omega}",YLabel)
+        γ = units.angle == "deg" ? 180/π : 1
+        yLabelUnit = string(units.angle,"\$/s^2\$")    
     elseif occursin("u",YLabel)
         yLabelUnit = units.length
     elseif occursin("p",YLabel)
@@ -1028,12 +1903,12 @@ function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(col
         yLabelUnit = string(units.force,".",units.length)
     elseif occursin("V",YLabel)
         yLabelUnit = string(units.length,"/s")
-    elseif occursin("Ω",YLabel)
+    elseif occursin("\\Omega",YLabel)
         γ = units.angle == "deg" ? 180/π : 1
         yLabelUnit = string(units.angle,"/s")
-    elseif occursin("γ",YLabel)
+    elseif occursin("\\gamma",YLabel)
         yLabelUnit = " "
-    elseif occursin("κ",YLabel)
+    elseif occursin("\\kappa",YLabel)
         yLabelUnit = " "
     elseif occursin("P",YLabel)
         yLabelUnit = string(units.mass,"/s")
@@ -1041,37 +1916,24 @@ function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colors=get(col
         yLabelUnit = string(units.mass,".",units.length,"/s")       
     end
 
-    # Initialize plot 
-    plt = plot(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$",YLabel,"\$ [",yLabelUnit,"]"))
+    # Define pallete
+    p = palette(colorScheme,length(plt.series_list)+1)
 
-    # Loop beam groups
-    for (i,beamGroup) in enumerate(beamGroups)
-        # Initialize x1 end coordinate from previous beam in the group
-        x1Previous = 0
-        # Initialize arrays for plot
-        x1BeamGroup = Vector{Float64}()
-        outputBeamGroup = Vector{Float64}()
-        # Loop over beams
-        for (b,beamID) in enumerate(beamGroup)
-            # Range of current x1 array
-            Nx1 = length(x1[beamID])
-            # Adjust x1 coordinate
-            append!(x1BeamGroup,x1[beamID])
-            if b > 1
-                x1Previous += x1[b-1][end]
-                x1BeamGroup[end-Nx1+1:end] += x1Previous
-            end
-            # Set range of outputs array to be plotted
-            range = ind > 0 ? (ind:3:length(output[beamID])) : (1:length(output[beamID]))
-            # Concatenate outputs for beam group
-            append!(outputBeamGroup,γ*output[beamID][range])
-        end
-        # Plot output
-        plt = plot!(plt, x1BeamGroup,outputBeamGroup,lw=lw,color=colors[i],label="Beam group $(i)",legend=legendPos)
+    # Set axis labels
+    plt = plot!(plt, xlabel=string("\$t\$ [s]"),ylabel=string("\$",YLabel,"\$ [",yLabelUnit,"]"))
+
+    # Set legend
+    if showLegend
+        currentLegend = !isnan(element) ? string("Element ", element) : string("Node ", node)
+    else
+        currentLegend = false
     end
 
-    # Display
-    display(plt)
+    # Plot output
+    plt = plot!(plt, t,γ*output,lw=lw,palette=p,label=currentLegend,legend=legendPos)
+
+    # Update colors from previous plots
+    [(plt.series_list[i][:linecolor] = p[i]) for i in 1:length(plt.series_list)]
 
     return plt
 end

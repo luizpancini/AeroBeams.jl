@@ -124,5 +124,7 @@ for i in 1:nAeroStates
 end
 display(plt7)
 savefig(string(absPath,"/PazyWingTipImpulse_statesRates.pdf"))
+# Root, 3/4-span and tip lift and drag coefficients over time
+plot_time_outputs(problem,elements=[1,12,nElem],elementalOutputs=["cl","cd"],save=true,saveFolder=string(relPath,"/"))
 
 println("Finished PazyWingTipImpulse.jl")

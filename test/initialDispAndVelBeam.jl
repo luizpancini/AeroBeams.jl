@@ -140,5 +140,7 @@ plot!(tNorm,Ωdot₂_mid, c=:black, lw=lw, label="Numerical")
 scatter!(tNorm[1:5:end],Ωdot₂_mid_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt6)
 savefig(string(absPath,"/initialDispAndVelBeam_angAcc.pdf"))
+# Acceleration of elements
+plot_time_outputs(problem,elements=collect(1:nElem),elementalOutputs=["Vdot3"],save=true,saveFolder=string(relPath,"/"))
 
 println("Finished initialDispAndVelBeam.jl")

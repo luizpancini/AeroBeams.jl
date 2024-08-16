@@ -107,5 +107,7 @@ for (i,θ) in enumerate(θRange)
 end
 display(plt4)
 savefig(string(pwd(),"/test/outputs/figures/PazyWingPitchRange/PazyWingPitchRange_tipIP.pdf"))
+# Lift coefficient
+plot_steady_outputs(problem,outputs=["cl"],colorScheme=:grays,lw=lw,save=true,saveFolder=string(relPath,"/"))
 
 println("Finished PazyWingPitchRange.jl")

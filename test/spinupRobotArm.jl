@@ -81,6 +81,8 @@ plt3 = plot(xlabel="\$t\$ [s]", ylabel="Root \$\\theta/\\pi\$")
 plot!(t,θ₃_root/π, c=:black, lw=lw, label="Numerical")
 scatter!(t[1:20:end],θ(t[1:20:end])/π, c=:blue, ms=ms, msw=0, label="Analytical")
 display(plt3)
-savefig(string(absPath,"/spinupRobotArm_3.pdf"))
+savefig(string(absPath,"/spinupRobotArm_theta.pdf"))
+# Axial force
+plot_time_outputs(problem,nodes=[(1,1)],elements=[1,nElements],nodalOutputs=["F1"],elementalOutputs=["F1"],save=true,saveFolder=string(relPath,"/"))
 
 println("Finished spinupRobotArm.jl")
