@@ -76,7 +76,7 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
     @assert length(ΔuDef) == 3
 
     # Set backend
-    pythonplot()
+    pyplot()
 
     # Unpack
     @unpack elements,nElementsTotal,units = problem.model
