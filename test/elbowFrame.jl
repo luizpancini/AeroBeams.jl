@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
 
 # Beam frame
 L = 10
@@ -32,9 +32,14 @@ t = problem.timeVector
 u3_elbow = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 u3_tip = [problem.nodalStatesOverTime[i][end].u_n2[3] for i in 1:length(t)]
 
+# Load reference solution
+u3ElbowRef = readdlm(string(pwd(),"/test/referenceData/elbowFrame/u3_elbow.txt"))
+u3TipRef = readdlm(string(pwd(),"/test/referenceData/elbowFrame/u3_tip.txt"))
+
 # Plots
 # ------------------------------------------------------------------------------
 lw = 2
+ms = 4
 relPath = "/test/outputs/figures/elbowFrame"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
@@ -43,10 +48,16 @@ plot_dynamic_deformation(problem,plotFrequency=5,view=(30,30),plotLimits=[(0,L),
 # Plot displacements over time
 gr()
 y = [u3_elbow, u3_tip]
-labels = ["Elbow Tip"]
-plt1 = plot( xlabel="\$t\$ [s]", ylabel="\$u_3\$ [in]", title="OOP displacements")
-plot!(t, u3_elbow, lw=lw, label="Elbow")
-plot!(t, u3_tip, lw=lw, label="Tip")
+labels = ["Elbow" "Tip"]
+colors = [:blue,:orange]
+plt1 = plot( xlabel="\$t\$ [s]", ylabel="\$u_3\$ [in]", title="OOP displacements",legend=:bottomleft)
+plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
+scatter!([NaN], [NaN], mc=:black, ms=ms, label="Simo & Vu-Quoc (1987)")
+for i=1:2
+    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
+end
+plot!(t, y, lw=lw, palette=colors, label=false)
+scatter!([u3ElbowRef[1,:],u3TipRef[1,:]], [u3ElbowRef[2,:],u3TipRef[2,:]], palette=colors,ms=ms,msw=msw,label=false)
 display(plt1)
 savefig(string(absPath,"/elbowFrame_disp.pdf"))
 

@@ -34,8 +34,16 @@ tip_u1 = problem.nodalStatesOverσ[end][nElem].u_n2[1]
 tip_u2 = problem.nodalStatesOverσ[end][nElem].u_n2[2]
 tip_u3 = problem.nodalStatesOverσ[end][nElem].u_n2[3] 
 
-# Print 
-println("Tip displacements:\nu1 = $tip_u1, u2 = $tip_u2, u3 = $tip_u3")
+# Reference solution by Bathe & Bolourchi - Large displacement analysis of three-dimensional beam structures (1979)
+u1Ref = -23.5
+u2Ref = -13.4
+u3Ref = 53.4
+
+# Compute and print relative errors
+ϵu1 = 1 - tip_u1/u1Ref
+ϵu2 = 1 - tip_u2/u2Ref
+ϵu3 = 1 - tip_u3/u3Ref
+println("Relative errors: u1 = $ϵu1, u2 = $ϵu2, u3 = $ϵu3")
 
 # Plot deformed shape
 relPath = "/test/outputs/figures/curvedCantileverDeadLoad"

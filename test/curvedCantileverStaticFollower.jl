@@ -44,7 +44,7 @@ labels = ["\$-u_1\$" "\$u_2\$" "\$u_3\$"]
 lw = 2
 ms = 3
 msw = 0
-relPath = "/test/outputs/figures/curvedCantileverDeadLoad"
+relPath = "/test/outputs/figures/curvedCantileverStaticFollower"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
 # Deformed shape

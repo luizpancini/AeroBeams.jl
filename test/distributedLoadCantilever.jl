@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
 
 # Beam
 L = 1
@@ -32,6 +32,11 @@ tip_u1 = [problem.nodalStatesOverσ[i][nElem].u_n2[1] for i in 1:length(σVector
 tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][nElem].θ_n2 for i in 1:length(σVector)]
 
+# Load reference solution
+u1Ref = readdlm(string(pwd(),"/test/referenceData/distributedLoadCantilever/u1.txt"))
+u3Ref = readdlm(string(pwd(),"/test/referenceData/distributedLoadCantilever/u3.txt"))
+θRef = readdlm(string(pwd(),"/test/referenceData/distributedLoadCantilever/theta.txt"))
+
 # Plot deformed state
 relPath = "/test/outputs/figures/distributedLoadCantilever"
 absPath = string(pwd(),relPath)
@@ -40,18 +45,20 @@ deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relP
 display(deformationPlot)
 
 # Plot normalized displacements over load steps
-gr()
+lw = 2
+ms = 4
 x = [-tip_u1/L, tip_u3/L, -tip_angle/π]
 labels = ["\$-u_1/L\$" "\$u_3/L\$" "\$-\\theta/\\pi\$"]
 colors = [:blue,:orange,:green]
 gr()
-plt1 = plot(xlabel="\$-u_1/L, u_3/L, -\\theta/L\$", ylabel="\$q [kN]\$", title="Tip generalized displacements")
-plot!(x, σVector*q, palette=colors, lw=2, label=false)
-halfNσ = round(Int,length(σVector)/2)
-tqNσ = round(Int,length(σVector)*3/4)
-annotate!(x[1][halfNσ], σVector[halfNσ]*q, text(labels[1], :top, :left, colors[1]))
-annotate!(x[2][tqNσ], σVector[tqNσ]*q, text(labels[2], :top, :right, colors[2]))
-annotate!(x[3][tqNσ], σVector[tqNσ]*q, text(labels[3], :top, :left, colors[3]))
+plt1 = plot(xlabel="\$-u_1/L, u_3/L, -\\theta/L\$", ylabel="\$q [kN]\$", title="Tip generalized displacements",legend=:bottomright)
+plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
+scatter!([NaN], [NaN], mc=:black, ms=ms, label="Argyris & Symeonidis (1981)")
+for i=1:3
+    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
+end
+plot!(x, σVector*q, palette=colors, lw=lw, label=false)
+scatter!([u1Ref[1,:],u3Ref[1,:],θRef[1,:]], [u1Ref[2,:],u3Ref[2,:],θRef[2,:]], palette=colors,ms=ms,msw=msw,label=false)
 display(plt1)
 savefig(string(absPath,"/distributedLoadCantilever_disp.pdf"))
 
