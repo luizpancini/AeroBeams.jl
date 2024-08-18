@@ -6,5 +6,5 @@ CurrentModule = AeroBeams
 ```
 
 ```@autodocs
-Modules = [AeroBeams]
+Modules = [AeroBeams.Aerodynamics]
 ```
