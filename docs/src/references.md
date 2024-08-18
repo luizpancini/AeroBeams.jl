@@ -6,5 +6,6 @@ CurrentModule = AeroBeams
 ```
 
 ```@autodocs
-Modules = [AeroBeams.Aerodynamics]
+Modules = [AeroBeams]
+Pages = ["Beam"]
 ```
