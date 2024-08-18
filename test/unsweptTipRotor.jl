@@ -83,15 +83,18 @@ display(modesPlot)
 
 # Plot frequency over angular velocity for several modes
 gr()
+lw = 2
+ms = 5
+msw = 0
 plt1 = plot(xlabel="Angular velocity [rpm]", ylabel="Frequency [Hz]", title="Bending modes", xticks=ωRPMExp, yticks=collect(0:20:200))
 modes = [1,2,5,6]
-plot!([NaN], [NaN], lc=:black, lw=2, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=5, msw=0, label="Epps & Chandra (1996)")
+plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
+scatter!([NaN], [NaN], mc=:black, ms=ms, msw=msw, label="Epps & Chandra (1996)")
 for (m,mode) in enumerate(modes)  
     numFreqsMode = [numFreqs[j][mode]/(2*π) for j in 1:length(ωRPM)]
-    plot!(ωRPM,numFreqsMode, lc=colors[m], lw=2, label=false)
-    scatter!(ωRPMExp,expFreqs[m,:], mc=colors[m], ms=5, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[m], m=colors[m], lw=2, ms=5, msw=0, label=labels[m])
+    plot!(ωRPM,numFreqsMode, lc=colors[m], lw=lw, label=false)
+    scatter!(ωRPMExp,expFreqs[m,:], mc=colors[m], ms=ms, msw=msw, label=false)
+    plot!([NaN], [NaN], lc=colors[m], m=colors[m], lw=lw, ms=ms, msw=msw, label=labels[m])
 end
 plot!(legend=(0.15,0.8))
 display(plt1)
