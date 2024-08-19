@@ -3,22 +3,6 @@
 
 Model composite type
 
-# Fields
-- name::String = name of the model
-- units::UnitsSystem = unit system (length, force, angle and frequency) 
-- beams::Vector{Beam} = beams that compose the model's assembly
-- initialPosition::Vector{<:Number} = initial position of the first node of the first beam of the model, defined in basis A 
-- gravityVector::Vector{<:Number} = gravity vector, defined in the I (inertial) frame
-- BCs::Dict{Int64,Int64} = boundary conditions applied to the model
-- nElementsTotal::Int64 = total number of elements of the beam's assembly
-- nNodesTotal::Int64 = total number of nodes of the beam's assembly
-- elementNodes::Vector{Vector{Int64}} = a nElementsTotal x 2 matrix in which the row represents the element, and the columns are the corresponding element's nodes
-- p_A0::Vector{Float64} = initial Euler 3-2-1 rotation parameters that bring basis I to basis A
-- R_A::Matrix{Float64}= 1.0I(3) = initial rotation tensor that brings basis I to basis A, resolved in basis A
-- nTrimVariables::Int64 = number of trim variables
-- trimLoadsLinks::Vector{TrimLoadsLink} = trim links among loads
-# Notes
- - The default is an empty model
 """
 @with_kw mutable struct Model
 
@@ -74,8 +58,32 @@ end
 export Model
 
 
-# Constructor
-function create_Model(;name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}()) 
+"""
+create_Model(;name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
+
+Creates a model
+
+# Keyword arguments
+- `name::String` = name of the model
+- `units::create_UnitsSystem` = units system
+- `beams::Vector{Beam}` = beams in the assembly
+- `initialPosition::Vector{<:Number}` = initial position vector of the first node of the first beam, resolved in the inertial frame I
+- `gravityVector::Vector{<:Number}` = gravity vector
+- `BCs::Vector{BC}` = boundary condtions
+- `p_A0::Vector{Float64}` = initial rotation parameters that bring basis I to basis A
+- `u_A::Union{Vector{<:Number},<:Function,Nothing}` = displacement of basis A relative to basis I
+- `v_A::Union{Vector{<:Number},<:Function,Nothing}` = velocity of basis A relative to basis I
+- `ω_A::Union{Vector{<:Number},<:Function,Nothing}` = angular velocity of basis A relative to basis I
+- `vdot_A::Union{Vector{<:Number},<:Function,Nothing}` = acceleration of basis A relative to basis I
+- `ωdot_A::Union{Vector{<:Number},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
+- `altitude::Union{Nothing,Number}` = altidude
+- `atmosphere::Union{Nothing,Atmosphere}` = atmosphere
+- `gust::Union{Nothing,Gust}` = gust
+- `trimLoadsLinks::Vector{TrimLoadsLink}` = links between trim loads
+- `flapLinks::Vector{FlapLink}` = links between flapped surfaces
+- `rotationConstraints::Vector{RotationConstraint}` = rotation constraints
+"""
+function create_Model(;name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
     
     # Initialize 
     self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,rotationConstraints=rotationConstraints)
@@ -156,8 +164,6 @@ validate_model!(model::Model)
 
 Validates the inputs to the model
 
-# Arguments
-- model::Model
 """
 function validate_model!(model::Model)
 
@@ -191,8 +197,6 @@ validate_and_update_motion_basis_A!(model::Model)
 
 Validates and updates the motion variables of basis A
 
-# Arguments
-- model::Model
 """
 function validate_and_update_motion_basis_A!(model::Model)
 
@@ -334,10 +338,6 @@ assemble_model!(model::Model,beams::Vector{Beam})
 
 Loads the assembly of beams into the model
 
-# Arguments
-- model::Model = model at hand
-- beams::Vector{Beam} = beams to load into the model
-# Notes
 """
 function assemble_model!(model::Model,beams::Vector{Beam})
 
@@ -499,8 +499,6 @@ inertia_properties!(model::Model)
 
 Computes the inertia properties of the undeformed assembly
 
-# Arguments
-- model::Model
 """
 function inertia_properties!(model::Model)
 
@@ -538,8 +536,6 @@ set_atmosphere!(model::Model)
 
 Sets the atmosphere data
 
-# Arguments
-- model::Model
 """
 function set_atmosphere!(model::Model)
 
@@ -564,8 +560,6 @@ update_linked_flap_deflections!(model::Model)
 
 Updates the linked flap deflections for the slave beams
 
-# Arguments
-- model::Model
 """
 function update_linked_flap_deflections!(model::Model)
 
@@ -637,8 +631,6 @@ update_number_gust_states!(model::Model)
 
 Updates the number of gust states in every element with aerodynamic surface
 
-# Arguments
-- model::Model
 """
 function update_number_gust_states!(model::Model) 
 
@@ -710,8 +702,6 @@ update_loads_trim_links_global_ids!(model::Model)
 
 Updates the nodes' global IDs of the loads trim links
 
-# Arguments
-- model::Model
 """
 function update_loads_trim_links_global_ids!(model::Model)
 
@@ -742,8 +732,6 @@ update_spring_nodes_ids!(model::Model)
 
 Updates the global IDs of the springs' nodes, the list of springed nodes and the list of springs on nodes
 
-# Arguments
-- model::Model
 """
 function update_spring_nodes_ids!(model::Model)
 
@@ -794,8 +782,6 @@ update_relative_rotation_constraint_elements_ids!(model::Model)
 
 Updates the global IDs of the elements with relative rotation constraints
 
-# Arguments
-- model::Model
 """
 function update_relative_rotation_constraint_elements_ids!(model::Model)
 
@@ -827,8 +813,6 @@ initialize_basis_A_rotation!(model::Model)
 
 Initializes the rotation tensor from basis I (fixed, inertial) to basis A, and its transpose
 
-# Arguments
-- model::Model
 """
 function initialize_basis_A_rotation!(model::Model)
 
@@ -848,8 +832,6 @@ update_initial_conditions!(model::Model)
 
 Updates the initial condition states on all elements of the assembly
 
-# Arguments
-- model::Model
 """
 function update_initial_conditions!(model::Model)
 
@@ -966,8 +948,6 @@ set_BCs!(model::Model)
 
 Sets the BCs onto the model
 
-# Arguments
-- model::Model
 """
 function set_BCs!(model::Model,BCs::Vector{BC})
 
@@ -993,8 +973,6 @@ get_special_nodes!(model::Model)
 
 Gets the special nodes in the system of equations: connection, boundary, and BC'ed nodes
 
-# Arguments
-- model::Model
 """
 function get_special_nodes!(model::Model)
 
@@ -1090,8 +1068,6 @@ get_system_indices!(model::Model)
 
 Gets the indices (for equations and DOFs) of the system of equations
 
-# Arguments
-- model::Model
 """
 function get_system_indices!(model::Model)
 
@@ -1447,8 +1423,6 @@ update_relative_rotation_constraint_data!(model::Model)
 
 Updates the aggregate data of relative rotation constraints
 
-# Arguments
-- model::Model
 """
 function update_relative_rotation_constraint_data!(model::Model)
 
@@ -1475,13 +1449,13 @@ set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Number},<:Function,Nothin
 
 Sets the motion of basis A into the model
 
-# Arguments
-- model::Model
-- u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
-- v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
-- ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
-- vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
-- ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing
+# Keyword arguments
+- `model::Model` = model
+- `u_A::Union{Vector{<:Number},<:Function,Nothing}` = displacement of basis A relative to basis I
+- `v_A::Union{Vector{<:Number},<:Function,Nothing}` = velocity of basis A relative to basis I
+- `ω_A::Union{Vector{<:Number},<:Function,Nothing}` = angular velocity of basis A relative to basis I
+- `vdot_A::Union{Vector{<:Number},<:Function,Nothing}` = acceleration of basis A relative to basis I
+- `ωdot_A::Union{Vector{<:Number},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
 """
 function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing)
 

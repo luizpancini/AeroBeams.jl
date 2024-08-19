@@ -3,8 +3,6 @@
 
     RotationConstraint composite type
 
-# Fields
-- 
 """
 @with_kw mutable struct RotationConstraint
 
@@ -22,7 +20,20 @@
 
 end
 
-# Constructor
+
+"""
+create_RotationConstraint(; masterBeam::Beam,slaveBeam::Beam,masterElementLocalID::Int64,slaveElementLocalID::Int64,DOF::Int64,value::Number)
+
+Rotation constraint constructor
+
+# Keyword arguments
+- `masterBeam::Beam` = master beam
+- `slaveBeam::Beam` = slave beam
+- `masterElementLocalID::Int64` = local ID of the master element
+- `slaveElementLocalID::Int64` = local ID of the slave element
+- `DOF::Int64` = constrained rotation degree-of-freedom
+- `value::Number` = value of the slave DOF relative to the master DOF
+"""
 function create_RotationConstraint(; masterBeam::Beam,slaveBeam::Beam,masterElementLocalID::Int64,slaveElementLocalID::Int64,DOF::Int64,value::Number)
 
     # Validate

@@ -3,10 +3,6 @@ aero_steady_kinematics!(element::Element,V,Ω)
 
 Computes the steady aerodynamic kinematic variables
 
-# Arguments
-- element::Element
-- V
-- Ω
 """
 function aero_steady_kinematics!(element::Element,V,Ω)
 
@@ -50,10 +46,6 @@ aero_unsteady_kinematics!(element::Element,Vdot,Ωdot)
 
 Computes the unsteady aerodynamic kinematic variables
 
-# Arguments
-- element::Element
-- Vdot
-- Ωdot
 """
 function aero_unsteady_kinematics!(element::Element,Vdot,Ωdot)
 
@@ -91,9 +83,6 @@ nondimensional_flow_parameters!(model::Model,element::Element)
 
 Computes the nondimensional flow parameters
 
-# Arguments
-- model::Model
-- element::Element
 """
 function nondimensional_flow_parameters!(model::Model,element::Element)
 
@@ -129,10 +118,6 @@ local_gust_velocity!(problem::Problem,model::Model,element::Element)
 
 Computes the gust velocity in the local, deformed aerodynamic basis (basis W)
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function local_gust_velocity!(problem::Problem,model::Model,element::Element)
 
@@ -174,9 +159,6 @@ flap_deflection_rates!(problem,element::Element)
 
 Computes the current values of flap deflection rates
 
-# Arguments
-- problem
-- element::Element
 """
 function flap_deflection_rates!(problem,element::Element)
 
@@ -194,11 +176,6 @@ aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
 Computes the aerodynamic coefficients
 
-# Arguments
-- problem::Problem
-- element::Element
-- χ
-- δNow
 """
 function aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
@@ -220,9 +197,6 @@ aero_state_matrices!(element::Element,δNow)
 
 Computes the aerodynamic state matrices
 
-# Arguments
-- element::Element
-- δNow
 """
 function aero_state_matrices!(element::Element,δNow)
 
@@ -246,9 +220,6 @@ aero_loads_resultants!(model::Model,element::Element)
 
 Computes the aerodynamic nodal loads resultants
 
-# Arguments
-- model::Model
-- element::Element
 """
 function aero_loads_resultants!(model::Model,element::Element)
 
@@ -297,9 +268,6 @@ attached_flow_aero_coefficients!(element::Element,δNow)
 
 Computes the aerodynamic coefficients under attached flow conditions
 
-# Arguments
-- element::Element
-- δNow
 """
 function attached_flow_aero_coefficients!(element::Element,δNow)
 
@@ -320,9 +288,6 @@ update_airfoil_parameters!(problem::Problem,element::Element)
 
 Updates the aerodynamic parameters of the airfoil according to current nondimensional flow parameters 
 
-# Arguments
-- problem::Problem
-- element::Element
 """
 function update_airfoil_parameters!(problem::Problem,element::Element)
 
@@ -363,10 +328,6 @@ effective_angle_of_attack!(element::Element,χ,δNow)
 
 Computes the effective (unsteady) angle of attack
 
-# Arguments
-- element::Element
-- χ
-- δNow
 """
 function effective_angle_of_attack!(element::Element,χ,δNow)
 
@@ -398,9 +359,6 @@ attached_flow_cn!(element::Element,δNow)
 
 Computes the normal force aerodynamic coefficient for attached flow
 
-# Arguments
-- element::Element
-- δNow
 """
 function attached_flow_cn!(element::Element,δNow)
 
@@ -437,9 +395,6 @@ attached_flow_cm!(element::Element,δNow)
 
 Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for attached flow
 
-# Arguments
-- element::Element
-- δNow
 """
 function attached_flow_cm!(element::Element,δNow)
 
@@ -481,9 +436,6 @@ attached_flow_ct!(element::Element,δNow)
 
 Computes the tangential force aerodynamic coefficient for attached flow
 
-# Arguments
-- element::Element
-- δNow
 """
 function attached_flow_ct!(element::Element,δNow)
 
@@ -510,9 +462,6 @@ pitch_plunge_effective_normalwash(element::Element,χ)
 
 Computes the effective (unsteady) pitch-plunge-induced normalwash
 
-# Arguments
-- element::Element
-- χ
 """
 function pitch_plunge_effective_normalwash(element::Element,χ)
 
@@ -549,9 +498,6 @@ flap_effective_normalwash(element::Element,χ,δNow)
 
 Computes the effective (unsteady) flap-induced normalwash
 
-# Arguments
-- element::Element
-- δNow
 """
 function flap_effective_normalwash(element::Element,χ,δNow)
 
@@ -577,9 +523,6 @@ flap_normalwash(element::Element,δNow)
 
 Computes the instantaneous (quasi-steady) flap-induced normalwash
 
-# Arguments
-- element::Element
-- δNow
 """
 function flap_normalwash(element::Element,δNow)
 
@@ -598,9 +541,6 @@ gust_effective_normalwash(element::Element,χ)
 
 Computes the effective (unsteady) gust-induced normalwash
 
-# Arguments
-- element::Element
-- χ
 """
 function gust_effective_normalwash(element::Element,χ)
 
@@ -628,9 +568,6 @@ flap_normalwash_rate(element::Element,δNow)
 
 Computes the time rate of the instantaneous flap-induced normalwash
 
-# Arguments
-- element::Element
-- δNow
 """
 function flap_normalwash_rate(element::Element,δNow)
 
@@ -649,8 +586,6 @@ cnαUₙTQC_rate(element::Element)
 
 Computes the time rate of the product of cnα by UₙTQC
 
-# Arguments
-- element::Element
 """
 function cnαUₙTQC_rate(element::Element)
 
@@ -672,9 +607,6 @@ attached_flow_state_matrices!(element::Element,δNow)
 
 Computes the aerodynamic state matrices for the indicial and inflow solvers
 
-# Arguments
-- element::Element
-- δNow
 """
 function attached_flow_state_matrices!(element::Element,δNow)
 
@@ -737,11 +669,6 @@ BLi_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
 Computes the aerodynamic coefficients according to the modified incompressible flow Beddoes-Leishman model
 
-# Arguments
-- problem::Problem
-- element::Element
-- χ
-- δNow
 """
 function BLi_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
@@ -790,8 +717,6 @@ BLi_kinematics!(element::Element)
 
 Computes additional kinematics associated with the Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLi_kinematics!(element::Element)
 
@@ -819,9 +744,6 @@ BLi_nonlinear_states!(element::Element,χ)
 
 Sets the nonlinear states of the Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- χ
 """
 function BLi_nonlinear_states!(element::Element,χ)
 
@@ -850,9 +772,6 @@ BLi_motion_qualifiers!(problem::Problem,element::Element)
 
 Computes motion qualifiers of the modified Beddoes-Leishman model
 
-# Arguments
-- problem::Problem
-- element::Element
 """
 function BLi_motion_qualifiers!(problem::Problem,element::Element)
 
@@ -917,8 +836,6 @@ BLi_breakpoint_angles!(element::Element)
 
 Computes the breakpoint angles of the modified Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLi_breakpoint_angles!(element::Element)
 
@@ -956,8 +873,6 @@ BLi_time_delays!(element::Element)
 
 Computes time delay variables for the modified Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLi_time_delays!(element::Element)
 
@@ -985,8 +900,6 @@ BLi_separation_points!(element::Element)
 
 Computes the flow separation points of the modified Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLi_separation_points!(element::Element)
 
@@ -1078,10 +991,6 @@ BLi_quasi_steady_separation_points(element::Element,Uₜ,Uₙ)
 
 Computes the quasi-steady flow separation points of the modified Beddoes-Leishman model for an element
 
-# Arguments
-- element::Element
-- Uₜ
-- Uₙ
 """
 function BLi_quasi_steady_separation_points(element::Element,Uₜ,Uₙ)
 
@@ -1114,9 +1023,6 @@ BLi_stall_time!(problem::Problem,element::Element)
 
 Computes variables at the time of stall onset for the modified Beddoes-Leishman model
 
-# Arguments
-- problem::Problem
-- element::Element
 """
 function BLi_stall_time!(problem::Problem,element::Element)
 
@@ -1187,8 +1093,6 @@ BLi_DSV_loads!(element::Element)
 
 Computes DSV loads for the modified Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLi_DSV_loads!(element::Element)
 
@@ -1340,9 +1244,6 @@ BLi_cn!(element::Element,δNow)
 
 Computes normal force coefficient for the modified incompressible Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- δNow
 """
 function BLi_cn!(element::Element,δNow)
 
@@ -1385,9 +1286,6 @@ BLi_cm!(element::Element,δNow)
 
 Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the modified incompressible Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- δNow
 """
 function BLi_cm!(element::Element,δNow)
 
@@ -1440,9 +1338,6 @@ BLi_ct!(element::Element,δNow)
 
 Computes the tangential force aerodynamic coefficient for the modified incompressible Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- δNow
 """
 function BLi_ct!(element::Element,δNow)
 
@@ -1483,9 +1378,6 @@ BLi_state_matrices!(element::Element,δNow)
 
 Computes the aerodynamic state matrices for the modified incompressible Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- δNow
 """
 function BLi_state_matrices!(element::Element,δNow)
 
@@ -1561,11 +1453,6 @@ BLo_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
 Computes the aerodynamic coefficients according to the original Beddoes-Leishman model
 
-# Arguments
-- problem::Problem
-- element::Element
-- χ
-- δNow
 """
 function BLo_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
@@ -1613,9 +1500,6 @@ BLo_nonlinear_states!(element::Element,χ)
 
 Sets the nonlinear states of the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- χ
 """
 function BLo_nonlinear_states!(element::Element,χ)
 
@@ -1636,8 +1520,6 @@ BLo_motion_qualifiers!(element::Element)
 
 Computes motion qualifiers of the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLo_motion_qualifiers!(element::Element)
 
@@ -1669,8 +1551,6 @@ BLo_breakpoint_angle!(element::Element)
 
 Computes the breakpoint angle of the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLo_breakpoint_angle!(element::Element)
 
@@ -1694,8 +1574,6 @@ BLo_separation_points!(element::Element)
 
 Computes the flow separation point of the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLo_separation_points!(element::Element)
 
@@ -1724,9 +1602,6 @@ BLo_stall_time!(problem::Problem,element::Element)
 
 Computes variables at the time of stall onset for the original Beddoes-Leishman model
 
-# Arguments
-- problem::Problem
-- element::Element
 """
 function BLo_stall_time!(problem::Problem,element::Element)
 
@@ -1763,8 +1638,6 @@ BLo_time_delays!(element::Element)
 
 Computes time delay variables for the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLo_time_delays!(element::Element)
 
@@ -1830,8 +1703,6 @@ BLo_update_impulsive_parameters!(element::Element)
 
 Updates the impulsive parameters for the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
 """
 function BLo_update_impulsive_parameters!(element::Element)
 
@@ -1854,9 +1725,6 @@ BLo_vortex_accumulation_rate!(element::Element,χ)
 
 Compute the dynamic stall vortex accumulation rate for the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- χ
 """
 function BLo_vortex_accumulation_rate!(element::Element,χ)
 
@@ -1896,10 +1764,6 @@ BLo_cn!(element::Element,χ,δNow)
 
 Computes normal force coefficient for the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- χ
-- δNow
 """
 function BLo_cn!(element::Element,χ,δNow)
 
@@ -1951,10 +1815,6 @@ BLo_cm!(element::Element,χ,δNow)
 
 Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- χ
-- δNow
 """
 function BLo_cm!(element::Element,χ,δNow)
 
@@ -2014,9 +1874,6 @@ BLo_ct!(element::Element,δNow)
 
 Computes the tangential force aerodynamic coefficient for the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- δNow
 """
 function BLo_ct!(element::Element,δNow)
 
@@ -2051,9 +1908,6 @@ BLo_state_matrices!(element::Element,δNow)
 
 Computes the aerodynamic state matrices for the original Beddoes-Leishman model
 
-# Arguments
-- element::Element
-- δNow
 """
 function BLo_state_matrices!(element::Element,δNow)
 
@@ -2129,8 +1983,6 @@ update_initial_aero_states!(problem::Problem)
 
 Updates the initial aerodynamic states assuming their rates are zero
 
-# Arguments
-- problem::Problem
 """
 function update_initial_aero_states!(problem::Problem;preInitialization::Bool=false)
 

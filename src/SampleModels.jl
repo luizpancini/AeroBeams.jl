@@ -3,7 +3,6 @@ Pazy_nodal_positions()
 
 Gets the normalized nodal positions of the Pazy wing
 
-# Arguments
 """
 function Pazy_nodal_positions()
     return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
@@ -15,9 +14,6 @@ Pazy_stiffness_matrices(GAy::Number,GAz::Number)
 
 Gets the sectional stiffness matrices of the Pazy wing
 
-# Arguments
-- GAy::Number
-- GAz::Number
 """
 function Pazy_stiffness_matrices(GAy::Number,GAz::Number)
 
@@ -46,6 +42,7 @@ function Pazy_stiffness_matrices(GAy::Number,GAz::Number)
 
     return C
 end
+
 
 """
 Pazy_inertia_matrices()
@@ -96,15 +93,17 @@ create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver
 
 Creates the Pazy wing
 
+Returns the beam and geometrical properties
+
 # Arguments
-- p0::Vector{<:Number}
-- airfoil::Airfoil=NACA0018
-- aeroSolver::AeroSolver=Indicial()
-- gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner")
-- derivationMethod::DerivationMethod=AD()
-- withTipCorrection::Bool=true
-- GAy::Number=1e16
-- GAz::Number=GAy
+- `p0::Vector{<:Number}` = initial rotation parameters
+- `airfoil::Airfoil=NACA0018` = airfoil section
+- `aeroSolver::AeroSolver=Indicial()` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner")` = indicial gust loads solver
+- `derivationMethod::DerivationMethod=AD()` = method for aerodynamic derivatives
+- `withTipCorrection::Bool=true` = flag for aerodynamic tip correction 
+- `GAy::Number` = shear stiffness in the x2 direction
+- `GAz::Number` = shear stiffness in the x3 direction
 """
 function create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy)
 
@@ -141,20 +140,25 @@ export create_Pazy
 
 
 """
-create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14)
+create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=0,airspeed::Number)
 
 Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 
 # Arguments
-- p0::Vector{<:Number}
-- airfoil::Airfoil=NACA0018
-- aeroSolver::AeroSolver=Indicial()
-- gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner")
-- derivationMethod::DerivationMethod=AD()
-- withTipCorrection::Bool=true
-- GAy::Number=1e16
-- GAz::Number=GAy
-- hingeNode::Int64=14
+- `p0::Vector{<:Number}` = initial rotation parameters
+- `airfoil::Airfoil=NACA0018` = airfoil section
+- `aeroSolver::AeroSolver=Indicial()` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner")` = indicial gust loads solver
+- `derivationMethod::DerivationMethod=AD()` = method for aerodynamic derivatives
+- `withTipCorrection::Bool=true` = flag for aerodynamic tip correction 
+- `GAy::Number` = shear stiffness in the x2 direction
+- `GAz::Number` = shear stiffness in the x3 direction
+- `hingeNode::Int64` = hinge node
+- `hingeAngle::Number` = hinge (fold) angle
+- `flareAngle::Number` = flare angle
+- `kSpring::Number` = stiffness of the hinge
+- `g::Number=0` = local acceleration of gravity
+- `airspeed::Number` = local airspeed
 """
 function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=0,airspeed::Number)
 
@@ -235,8 +239,8 @@ Pazy_tip_loss_factor(αᵣ::Number,U::Number)
 Computes the tip loss factor for the Pazy wing's tip correction function
 
 # Arguments
-- αᵣ::Number
-- U::Number
+- `αᵣ::Number` = root pitch angle, in degrees
+- `U::Number` = airspeed
 """
 function Pazy_tip_loss_factor(αᵣ::Number,U::Number)
 
@@ -265,26 +269,26 @@ Creates a model based on the flying-wing aircraft described by Patil and Hodges 
 
 # Keyword arguments
 - `altitude::Number` = altitude
-- `aeroSolver::AeroSolver` = aerodynamic solver for pitch and plunge loads
-- `gustLoadsSolver::GustAeroSolver`
-- `derivationMethod::DerivationMethod`
-- `g::Number`
-- `wingAirfoil::Airfoil`
-- `podAirfoil::Airfoil`
-- `beamPods::Bool`
-- `stiffnessFactor::Number`
-- `∞::Number`
-- `nElemStraightSemispan::Int64`
-- `nElemDihedralSemispan::Int64`
-- `nElemPod::Int64`
-- `payloadPounds::Number`
-- `airspeed::Number`
-- `δIsTrimVariable::Bool`
-- `thrustIsTrimVariable::Bool`
-- `δ::Union{Nothing,Number,<:Function}`
-- `thrust::Union{Number,<:Function}`
-- `reducedChord::Bool`
-- `payloadOnWing::Bool`
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
+- `g::Number` = local acceleration of gravity
+- `wingAirfoil::Airfoil` = airfoil section of the wing
+- `podAirfoil::Airfoil` = airfoil section of the pods
+- `beamPods::Bool` = flag to include pods
+- `stiffnessFactor::Number` = stiffness factor for the wing structure
+- `∞::Number` = value for rigid structural properties
+- `nElemStraightSemispan::Int64` = number of elements in the straight section of the semispan
+- `nElemDihedralSemispan::Int64` = number of elements in the dihedral section of the semispan
+- `nElemPod::Int64` = number of elements in the pods
+- `payloadPounds::Number` = payload, in pounds
+- `airspeed::Number` = local initial/trim airspeed
+- `δIsTrimVariable::Bool` = flag for flap deflection being a trim variable
+- `thrustIsTrimVariable::Bool` = flag for motors' thrust being a trim variable
+- `δ::Union{Nothing,Number,<:Function}` = flap deflection
+- `thrust::Union{Number,<:Function}` = motors' thrust
+- `reducedChord::Bool` = flag to employ a reduced (7 ft) chord
+- `payloadOnWing::Bool` = flag to set the payload on the wing's reference line
 """
 function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),g::Number=-9.80665,wingAirfoil::Airfoil=deepcopy(HeliosWingAirfoil),podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false)
 
@@ -418,24 +422,40 @@ export create_Helios
 
 
 """
-create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=5,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,wingCd0::Number=0)
+create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
 
 Creates a model based on the conventional HALE aircraft described by Patil, Hodges and Cesnik in: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
 
 # Keyword arguments
 - `altitude::Number` = altitude
-- `aeroSolver::AeroSolver` = aerodynamic solver for pitch and plunge loads
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
 - `flapLoadsSolver::FlapAeroSolver` = aerodynamic solver for flap loads
-- `gustLoadsSolver::GustAeroSolver`
-- `stabilizersAero::Bool` = TF for stabilizers with aerodynamic surfaces
-- `includeVS::Bool=true` = TF to include a vertical stabilizer in the model   
-- `nElemWing::Int64` = # of elements of the full wing
-- `nElemHorzStabilizer::Int64` = # of elements of the horizontal stabilizer
-- `nElemTailBoom::Int64` = # of elements of the tail boom
-- `nElemVertStabilizer::Int64` = # of elements of the vertical stabilizer
-- `∞::Number=1e12` = value of rigid sectional stiffness properties
-- `stiffnessFactor::Number=1` = multiplier factor for the wing's sectional stiffness properties
-- `wingCd0::Number=0` = parisite drag coefficient for the wing
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `stabilizersAero::Bool` = flag for stabilizers with aerodynamic surfaces
+- `includeVS::Bool` = flag to include a vertical stabilizer in the model   
+- `nElemWing::Int64` = number of elements of the full wing
+- `nElemHorzStabilizer::Int64` = number of elements of the horizontal stabilizer
+- `nElemTailBoom::Int64` = number of elements of the tail boom
+- `nElemVertStabilizer::Int64` = number of elements of the vertical stabilizer
+- `∞::Number=1e12` = value of rigid structural properties
+- `stiffnessFactor::Number` = stiffness factor for the wing structure
+- `k1::Number` = undeformed wing torsional curvature
+- `k2::Number` = undeformed wing flapwise bending curvature
+- `airspeed::Number` = local initial/trim airspeed
+- `δElevIsTrimVariable::Bool` = flag for elevator deflection being a trim variable
+- `thrustIsTrimVariable::Bool` = flag for motors' thrust being a trim variable
+- `δElev::Union{Nothing,Number,<:Function}` = elevator deflection
+- `thrust::Union{Number,<:Function}` = motors' thrust
+- `g::Number` = local acceleration of gravity
+- `wingCd0::Number` = parisite drag coefficient for the wing
+- `wingcnδ::Number` = cn vs δ slope for the wing
+- `wingcmδ::Number` = cm vs δ slope for the wing
+- `wingcdδ::Number` = cd vs δ slope for the wing
+- `stabsCd0::Number` = parisite drag coefficient for the stabilizers
+- `stabscnδ::Number` = cn vs δ slope for the stabilizers
+- `stabscmδ::Number` = cm vs δ slope for the stabilizers
+- `stabscdδ::Number` = cd vs δ slope for the stabilizers
 """
 function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
 
@@ -573,19 +593,26 @@ export create_conventional_HALE
 
 
 """
-create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),nElemWing::Int64=16,nElemFus::Int64=6,∞::Number=1e12,stiffnessFactor::Number=1,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Number=40)
+create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),∞::Number=1e12,stiffnessFactor::Number=1,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Number=40)
 
-Creates a model based on the conventional HALE aircraft described by Patil, Hodges and Cesnik in: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
+Creates a model based on the blended-wing-body described by Weihua Su's PhD thesis
 
 # Keyword arguments
 - `altitude::Number` = altitude
-- `aeroSolver::AeroSolver` = aerodynamic solver for pitch and plunge loads
-- `gustLoadsSolver::GustAeroSolver`
-- `flapLoadsSolver::FlapAeroSolver` = aerodynamic solver for flap loads  
-- `nElemWing::Int64` = # of elements of the full wing
-- `nElemFus::Int64` = # of elements of the fuselage
-- `∞::Number=1e12` = value of rigid sectional stiffness properties
-- `stiffnessFactor::Number=1` = multiplier factor for the wing's sectional stiffness properties
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives 
+- `∞::Number=1e12` = value of rigid structural properties
+- `stiffnessFactor::Number` = stiffness factor for the wing structure
+- airspeed::Number = local initial/trim airspeed
+- `δElevIsTrimVariable::Bool` = flag for elevator deflection being a trim variable
+- `thrustIsTrimVariable::Bool` = flag for motors' thrust being a trim variable
+- `δElev::Union{Nothing,Number,<:Function}` = elevator deflection
+- `thrust::Union{Number,<:Function}` = motors' thrust
+- `g::Number` = local acceleration of gravity
+- `updateAirfoilParameters::Bool` = flag to update airfoil parameters with airspeed
+- `hasTipCorrection::Bool` = flag to employ aerodynamic tip correction
+- `tipLossDecayFactor::Number` = tip loss decay factor
 """
 function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),∞::Number=1e12,stiffnessFactor::Number=1,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Number=40)
 

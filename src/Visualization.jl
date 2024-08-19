@@ -5,8 +5,10 @@ Plots the nodal coordinates of the assembly of beams
 
 # Arguments
 - `model::Model`
+- `view::Tuple{<:Number,<:Number}` = view angles
+- `equalAspectRatio::Bool` = flag to set equal aspect ratio plot
 """
-function plot_undeformed_assembly(model::Model,view=(45,45),equalAspectRatio::Bool=true)
+function plot_undeformed_assembly(model::Model,view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true)
 
     # Initialize backend
     pyplot()
@@ -57,13 +59,28 @@ export plot_undeformed_assembly
 
 
 """
-plot_steady_deformation(problem::Problem)
+plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
 Plots the initial and final deformed states for the model in the given problem
 
 # Arguments
-- `problem::Problem`
-- `view` = view angles
+- `problem::Problem` = problem
+
+# Keyword arguments
+- `plotBCs::Bool` = flag to plot BCs
+- `view::Union{Nothing,Tuple{Int64,Int64}}` = view angles
+- `scale::Number` = displacements and rotations scale
+- `lw::Number` = linewidth
+- `colorUndef` = color for undeformed assembly
+- `colorDef` = color for deformed assembly
+- `grid::Bool` = flag for grid
+- `legendPos` = legend position
+- `tolPlane::Number` = displacement tolerance to plot as plane
+- `plotAeroSurf` = flag to plot aerodynamic surfaces
+- `surfα::Float64` = transparency factor of aerodynamic surfaces 
+- `ΔuDef::Vector{<:Number}` = displacement vector for first node of deformed assembly relative to the undeformed one
+- `save::Bool` = flag to save the figure
+- `savePath::String` = relative path on which to save the figure
 """
 function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
@@ -207,14 +224,16 @@ plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","
 Plots outputs of a steady problem
 
 # Arguments
-- `problem::Problem` = AeroBeams problem
+- `problem::Problem` = problem
+
+# Keyword arguments
 - `outputs::Vector{String}` = list of outputs
 - `beamGroups` = list of beams in each group for which arclengths are concatenated
-- `lw::Number` = line width
+- `lw::Number` = linewidth
 - `colorScheme` = color scheme
 - `legendPos` = legend position
-- `save::Bool` = TF to save plots
-- `saveFolder::String` = relative path of folder where to save
+- `save::Bool` = flag to save figures
+- `saveFolder::String` = relative path of folder where to save figures
 - `figureExtension::String` = figure extension
 """
 function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,colorScheme=:rainbow,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
@@ -527,8 +546,6 @@ plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colorScheme=:rainbow,lw
 
 Plots output along the arclength coordinate for each beam group
 
-# Arguments
-- `problem::Problem`
 """
 function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colorScheme=:rainbow,lw=1,legendPos=:best)
 
@@ -605,13 +622,29 @@ end
 
 
 """
-plot_mode_shapes(problem::Problem)
+plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",lw::Number=1,colorSteady=:black,modalColorScheme=:jet1,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
 Plots the mode shapes of the model in the given problem
 
 # Arguments
-- `problem::Problem`
-- `view` = view angles
+- `problem::Problem` = problem
+
+# Keyword arguments
+- `plotBCs::Bool` = flag to plot BCs
+- `view::Union{Nothing,Tuple{Int64,Int64}}` = view angles
+- `nModes::Union{Nothing,Int64}` = number of modes to plot
+- `scale::Number` = displacements and rotations scale
+- `frequencyLabel::String` = option for frequency label (only frequency or frequency and damping)
+- `lw::Number` = linewidth
+- `colorSteady` = color for steadily deformed assembly
+- `modalColorScheme` = color scheme for mode shapes
+- `grid::Bool` = flag for grid
+- `legendPos` = legend position
+- `tolPlane::Number` = displacement tolerance to plot as plane
+- `plotAeroSurf` = flag to plot aerodynamic surfaces
+- `surfα::Float64` = transparency factor of aerodynamic surfaces 
+- `save::Bool` = flag to save the figure
+- `savePath::String` = relative path on which to save the figure
 """
 function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",lw::Number=1,colorSteady=:black,modalColorScheme=:jet1,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
@@ -804,13 +837,39 @@ export plot_mode_shapes
 
 
 """
-plot_dynamic_deformation(problem::Problem)
+plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,fps::Number=30,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Number}=[0.1;0.05;0.05],timeStampPos::Vector{<:Number}=[0.5;0.05;0.05],displayProgress::Bool=false) where {T1<:Number,T2<:Number}
 
-Plots the dynamic deformation of the model in the given problem
+Plots the animated deformation of the model in the given problem
 
 # Arguments
-- `problem::Problem`
-- `view` = view angles
+- `problem::Problem` = problem
+
+# Keyword arguments
+- `refBasis::String` = reference basis for plot
+- `plotFrequency::Int64` = frequency of time steps to plot
+- `plotUndeformed::Bool` = flag to plot undeformed assembly
+- `plotBCs::Bool` = flag to plot BCs
+- `plotDistLoads::Bool` = flag to plot distributed loads (includes gravitational and aerodynamic loads)
+- `view::Union{Nothing,Tuple{Int64,Int64}}` = view angles
+- `fps::Number` = frame rate for gif
+- `scale::Number` = displacements and rotations scale
+- `frequencyLabel::String` = option for frequency label (only frequency or frequency and damping)
+- `lw::Number` = linewidth
+- `colorUndef` = color for undeformed assembly
+- `colorDef` = color for deformed assembly
+- `grid::Bool` = flag for grid
+- `legendPos` = legend position
+- `tolPlane::Number` = displacement tolerance to plot as plane
+- `plotAeroSurf` = flag to plot aerodynamic surfaces
+- `surfα::Float64` = transparency factor of aerodynamic surfaces 
+- `plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}` = plot axis limits
+- `save::Bool` = flag to save the figure
+- `savePath::String` = relative path on which to save the figure
+- `showScale::Bool` = flag to show scale on plot
+- `showTimeStamp::Bool` = flag to show time stamp on plot
+- `scalePos::Vector{<:Number}` = position of scale on plot
+- `timeStampPos::Vector{<:Number}` = position of time stamp on plot
+- `displayProgress::Bool` = flag to display progress of gif creation
 """
 function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,fps::Number=30,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Number}=[0.1;0.05;0.05],timeStampPos::Vector{<:Number}=[0.5;0.05;0.05],displayProgress::Bool=false) where {T1<:Number,T2<:Number}
 
@@ -1090,12 +1149,25 @@ export plot_dynamic_deformation
 
 
 """
-plot_time_outputs(problem::Problem)
+plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=Vector{Tuple{Int64,Int64}}(),elements::Vector{Int64}=Vector{Int64}(),nodalOutputs::Vector{String}=["u","p","F","M"],elementalOutputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],lw::Number=1,colorScheme=:rainbow,showLegend::Bool=true,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
 
 Plots outputs of a dynamic problem
 
 # Arguments
-- `problem::Problem`
+- `problem::Problem` = problem
+
+# Keyword arguments
+- nodes::Vector{Tuple{Int64,Int64}} = global IDs of nodes for which to plot
+- elements::Vector{Int64} = global IDs of elements for which to plot
+- nodalOutputs::Vector{String} = nodal outputs to plot
+- `elementalOutputs::Vector{String}` = elemental outputs to plot
+- `lw::Number` = linewidth
+- `colorScheme` = color scheme
+- `showLegend::Bool` = flag to show legend
+- `legendPos` = legend position
+- `save::Bool` = flag to save figures
+- `saveFolder::String` = relative path of folder where to save figures
+- `figureExtension::String` = figure extension
 """
 function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=Vector{Tuple{Int64,Int64}}(),elements::Vector{Int64}=Vector{Int64}(),nodalOutputs::Vector{String}=["u","p","F","M"],elementalOutputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],lw::Number=1,colorScheme=:rainbow,showLegend::Bool=true,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
 
@@ -1866,8 +1938,6 @@ plot_output_of_time!(plt; t,output,element=NaN,node=NaN,units,YLabel,lw=1,colorS
 
 Plots output over time
 
-# Arguments
-- `problem::Problem`
 """
 function plot_output_of_time!(plt; t,output,element=NaN,node=NaN,units,YLabel,lw=1,colorScheme=:rainbow,showLegend=true,legendPos=:best)
 
@@ -1944,8 +2014,6 @@ get_undeformed_airfoil_coords(element::Element)
 
 Computes the undeformed nodal airfoil coordinates
 
-# Arguments
-- `element::Element`
 """
 function get_undeformed_airfoil_coords(element::Element)
 
@@ -2009,8 +2077,6 @@ plot_BCs!(plt,problem::Problem,element::Element)
 
 Plots all boundary conditions at the current time
 
-# Arguments
-- `element::Element`
 """
 function plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,timeNow,tIndNow)
 
@@ -2050,8 +2116,6 @@ draw_BC!(plt,problem::Problem,element::Element)
 
 Draws boundary condition
 
-# Arguments
-- 
 """
 function draw_BC!(plt; isLoad,deadLoadsOnA,followerLoadsOnA,deadLoadsOnb,followerLoadsOnb,R0_n,R_n,Fmax,Mmax,L,P2,x1Plane,x2Plane,x3Plane,view)
 
@@ -2114,8 +2178,6 @@ draw_concentrated_force!(plt,problem::Problem,element::Element)
 
 Draws concentrated force
 
-# Arguments
-- 
 """
 function draw_concentrated_force!(plt; DOF,F,R,P2,Fmax,L,x1Plane,x2Plane,x3Plane,view,color=:green,λ=1/10)
 
@@ -2152,8 +2214,6 @@ draw_concentrated_moment!(plt,problem::Problem,element::Element)
 
 Draws concentrated moment
 
-# Arguments
-- 
 """
 function draw_concentrated_moment!(plt; DOF,M,R,P2,Mmax,L,x1Plane,x2Plane,x3Plane,view,color=:green,λ=1)
 
@@ -2178,8 +2238,6 @@ draw_generalized_displacement!(plt,problem::Problem,element::Element)
 
 Draws generalized displacement boundary condition
 
-# Arguments
-- 
 """
 function draw_generalized_displacement!(plt; axis,P2,L,x1Plane,x2Plane,x3Plane,view,Δ=zeros(3),λ=1/200,Ndiv=21,color=:red)
 
@@ -2245,8 +2303,6 @@ plot_distributed_loads!(plt,problem::Problem,element::Element)
 
 Plots all distributed loads at the current time
 
-# Arguments
-- 
 """
 function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,tIndNow)
 
@@ -2454,8 +2510,6 @@ draw_distributed_forces!(element::Element)
 
 Draws distributed forces
 
-# Arguments
-- element::Element
 """
 function draw_distributed_forces!(plt; F,Fmax=maximum(abs.(F)),R,ai,P2,Ndiv,L,x1Plane,x2Plane,x3Plane,view,color=:purple,λ=1/10)
 
@@ -2487,8 +2541,6 @@ draw_distributed_moments!(element::Element)
 
 Draws distributed moments
 
-# Arguments
-- element::Element
 """
 function draw_distributed_moments!(plt; M,Mmax,R,axis,P2,Ndiv,L,x1Plane,x2Plane,x3Plane,view,color=:purple,λ=1/2)
 
@@ -2510,8 +2562,6 @@ draw_aero_loads!(element::Element)
 
 Draws aerodynamic loads
 
-# Arguments
-- element::Element
 """
 function draw_aero_loads!(plt; ctNorm,cnNorm,cmNorm,R,P2,L,x1Plane,x2Plane,x3Plane,view,color=:green,λ=1/4)
         
@@ -2550,8 +2600,6 @@ draw_aero_loads!(element::Element)
 
 Draws aerodynamic loads
 
-# Arguments
-- element::Element
 """
 function draw_circular_vector!(plt; origin,M,R,L,axis,x1Plane,x2Plane,x3Plane,view,color=:red,r=L*abs(M)/20,angle=9π/5,ah=0.3*r,divisions=30)
     

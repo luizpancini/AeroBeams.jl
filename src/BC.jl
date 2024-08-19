@@ -3,12 +3,6 @@
 
 Boundary conditions composite type
 
-# Fields
-- name::String = name of the BC
-- beam::Beam = beam at which the BC is applied
-- node::Int64 = node of the beam at which the BC is applied
-- types::Vector{String} = types of BCs applied to the node (generalized forces and displacements)
-- values = corresponding values of the applied BCs (constants or functions of time)
 """
 @with_kw mutable struct BC
 
@@ -41,7 +35,19 @@ end
 export BC
 
 
-# Constructor
+"""
+create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
+
+BC constructor
+
+# Keyword arguments
+- `name::String` = name of the BC
+- `beam::Beam` = beam at which the BC is applied
+- `node::Int64` = node of the beam at which the BC is applied
+- `types::Vector{String} `= types of BCs applied to the node (generalized forces and displacements)
+- `values` = corresponding values of the applied BCs (constants or functions of time)
+- `toBeTrimmed::Union{BitVector,Vector{Bool}}` = TF on whether the BC is to be trimmed
+"""
 function create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
 
     # Validate inputs
@@ -100,9 +106,6 @@ update_BC_data!(bc::BC,timeNow::Number=0)
 
 Updates the boundary conditions at the current time
 
-# Arguments
-- bc::BC
-- timeNow::Number
 """
 function update_BC_data!(bc::BC,timeNow::Number=0)
 

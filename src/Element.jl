@@ -4,7 +4,13 @@ mutable struct ElementalStates
     ElementalStates composite type
 
 # Fields
-
+- `u::Vector{T}` = displacements resolved in basis A
+- `p::Vector{T}` = rotation parameters resolved in basis A
+- `F::Vector{T}` = sectional forces resolved in basis B
+- `M::Vector{T}` = sectional moments resolved in basis B
+- `V::Vector{T}` = sectional velocities resolved in basis B
+- `Ω::Vector{T}` = sectional angular velocities resolved in basis B
+- `χ::Vector{T}` = aerodynamic states
 """
 mutable struct ElementalStates{T<:Union{Float64,ComplexF64}}
     
@@ -33,7 +39,10 @@ mutable struct ComplementaryElementalStates
     ComplementaryElementalStates composite type
 
 # Fields
-
+- `γ::Vector{T}` = force strains resolved in basis b
+- `κ::Vector{T}` = moment strains resolved in basis b
+- `P::Vector{T}` = linear momenta resolved in basis B
+- `H::Vector{T}` = angular momenta resolved in basis B
 """
 mutable struct ComplementaryElementalStates{T<:Union{Float64,ComplexF64}}
     
@@ -59,7 +68,11 @@ mutable struct ElementalStatesRates
     ElementalStatesRates composite type
 
 # Fields
-
+- `udot::Vector{Float64}` = displacements derivatives
+- `pdot::Vector{Float64}` = rotation parameters derivatives
+- `Vdot::Vector{Float64}` = sectional velocities derivatives
+- `Ωdot::Vector{Float64}` = sectional angular velocities derivatives
+- `χdot::Vector{Float64}` = aerodynamic states derivatives
 """
 mutable struct ElementalStatesRates
     
@@ -88,7 +101,8 @@ mutable struct ComplementaryElementalStatesRates
     ComplementaryElementalStatesRates composite type
 
 # Fields
-
+- `Pdot::Vector{Float64}` = linear momenta derivatives
+- `Hdot::Vector{Float64}` = angular momenta derivatives
 """
 mutable struct ComplementaryElementalStatesRates
     
@@ -112,7 +126,20 @@ mutable struct NodalStates
     NodalStates composite type
 
 # Fields
-
+- `u_n1::Vector{T}` = displacements of node 1 resolved in basis A
+- `u_n2::Vector{T}` = displacements of node 2 resolved in basis A
+- `p_n1::Vector{T}` = rotation parameters of node 1 resolved in basis A
+- `p_n2::Vector{T}` = rotation parameters of node 2 resolved in basis A
+- `u_n1_b::Vector{T}` = displacements of node 1 resolved in basis b
+- `u_n2_b::Vector{T}` = displacements of node 2 resolved in basis b
+- `p_n1_b::Vector{T}` = rotation parameters of node 1 resolved in basis b
+- `p_n2_b::Vector{T}` = rotation parameters of node 2 resolved in basis b
+- `F_n1::Vector{T}` = sectional forces of node 1 resolved in basis B
+- `F_n2::Vector{T}` = sectional forces of node 2 resolved in basis B
+- `M_n1::Vector{T}` = sectional moments of node 1 resolved in basis B
+- `M_n2::Vector{T}` = sectional moments of node 2 resolved in basis B
+- `θ_n1::T` = rotation angle of node 1
+- `θ_n2::T` = rotation angle of node 2
 """
 mutable struct NodalStates{T<:Union{Float64,ComplexF64}}
     
@@ -147,9 +174,6 @@ mutable struct Element <: BeamElement
 
     Element composite type
 
-# Fields
-- parent::Beam
-- localID::Int64
 # Notes
  - Finite elements belong to a Beam
 """
@@ -493,9 +517,6 @@ get_hinged_nodes_matrices(parent::Beam,nodesLocalID::Vector{Int64})
 
 Gets the TF matrices resulting from hinged and not hinged nodal DoFs times the identity matrix
 
-# Arguments
-- parent::Beam
-- nodesLocalID::Vector{Int64}
 """
 function get_hinged_nodes_matrices(parent::Beam,nodesLocalID::Vector{Int64})
 
@@ -537,10 +558,6 @@ get_element_distributed_loads(parent::Beam,Δℓ::Number,x1_n1::Number)
 
 Gets the distributed loads in the element's local coordinate
 
-# Arguments
-- parent::Beam
-- Δℓ::Number
-- x1_n1::Number
 """
 function get_element_distributed_loads(parent::Beam,Δℓ::Number,x1_n1::Number)
 
@@ -574,10 +591,6 @@ update_element_distributed_loads!(element::Element,loadType::String,loadFun::Fun
 
 Update the distributed loads in the element's local coordinate
 
-# Arguments
-- element::Element
-- loadType::String
-- loadFun::Function
 """
 function update_element_distributed_loads!(element::Element,loadType::String,loadFun::Function)
 

@@ -46,7 +46,8 @@ round_off!(x)
 Rounds the array or number to input tolerance (defaults to machine epsilon)
 
 # Arguments
-- x
+- `x` = array / number
+- `tol` = tolerance
 """
 function round_off!(x,tol=eps())
 
@@ -69,10 +70,8 @@ export round_off!
 """
 rms(x)
 
-Computes the root mean square
+Computes the root mean square of an array
 
-# Arguments
-- x
 """
 function rms(x)
     return sqrt(mean(x .^ 2))
@@ -86,8 +85,8 @@ divide_inplace!(divisor::Number, vars...)
 Divides the input variables in-place
 
 # Arguments
-- divisor::Number = divisor
-- vars... = variables to be divided
+- `divisor::Number` = divisor
+- `vars...` = variables to be divided
 """
 function divide_inplace!(divisor::Number, vars...)
     return (var ./ divisor for var in vars)
@@ -100,8 +99,8 @@ multiply_inplace!(divisor::Number, vars...)
 Multiplies the input variables in-place
 
 # Arguments
-- multiplier::Number = multiplier
-- vars... = variables to be multiplied
+- `multiplier::Number` = multiplier
+- `vars...` = variables to be multiplied
 """
 function multiply_inplace!(multiplier::Number, vars...)
     return (var .* multiplier for var in vars)
@@ -114,7 +113,7 @@ tilde(v::Vector{<:Number})
 Computes the skew-symmetric matrix associated with a vector
 
 # Arguments
-- v::Vector{<:Number} = three-element vector
+- `v::Vector{<:Number}` = three-element vector
 """
 function tilde(v::Vector{<:Number})
     return [  0.0  -v[3]   v[2]
@@ -129,11 +128,6 @@ mul3(A1,A2,A3,b)
 
 Computes the scalar product of a third-order tensor represented by matrices A1, A2, and A3 with the vector b
 
-# Arguments
-- A1
-- A2
-- A3
-- b
 """
 function mul3(A1,A2,A3,b)
     
@@ -149,13 +143,13 @@ isotropic_stiffness_matrix(;EA::Number,GAy::Number,GAz::Number,GJ::Number,EIy::N
 Creates a 6x6 sectional stiffness matrix
 
 # Arguments
-- ∞::Number
-- EA::Number
-- GAy::Number
-- GAz::Number
-- GJ::Number
-- EIy::Number
-- EIz::Number
+- `∞::Number` = value for rigid properties
+- `EA::Number` = axial stiffness
+- `GAy::Number` = shear stiffness in the x2 direction
+- `GAz::Number` = shear stiffness in the x3 direction
+- `GJ::Number` = torsional stiffness
+- `EIy::Number` = bending stiffness about the x2 direction
+- `EIz::Number` = bending stiffness about the x3 direction
 """
 function isotropic_stiffness_matrix(;∞::Number=1e16,EA::Number=∞,GAy::Number=∞,GAz::Number=∞,GJ::Number=∞,EIy::Number=∞,EIz::Number=∞)
 
@@ -179,12 +173,12 @@ inertia_matrix(;ρA::Number,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz
 Creates a 6x6 sectional inertia matrix
 
 # Arguments
-- ρA::Number
-- ρIy::Number
-- ρIz::Number
-- ρIs::Number
-- e2::Number
-- e3::Number
+- `ρA::Number` = mass per unit length
+- `ρIy::Number` = mass moment of inertia per unit length about the x2-axis
+- `ρIz::Number` = mass moment of inertia per unit length about the x3-axis
+- `ρIs::Number` = mass moment of inertia per unit length about the x1-axis
+- `e2::Number` = offset of center of gravity in the x2 direction with respect to the local reference line
+- `e3::Number` = offset of center of gravity in the x3 direction with respect to the local reference line
 """
 function inertia_matrix(;ρA::Number=0,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
 
@@ -209,8 +203,6 @@ curvature_quantities(k::Vector{<:Number})
 
 Computes some useful functions of the curvature vector
 
-# Arguments
-- k::Vector{<:Number} = curvature vector
 """
 function curvature_quantities(k::Vector{<:Number})
 
@@ -232,10 +224,6 @@ position_vector_from_curvature(R0::Matrix{Float64}, k::Vector{<:Number}, x1::Num
 
 Computes the position vector at an arclength value
 
-# Arguments
-- R0::Matrix{Float64} = initial rotation tensor (at arclength position zero)
-- k::Vector{<:Number} = curvature vector
-- x1::Number = arclength position
 """
 function position_vector_from_curvature(R0::Matrix{Float64},k::Vector{<:Number},x1::Number) 
 
@@ -255,10 +243,6 @@ rotation_tensor_from_curvature(R0::Matrix{Float64}, k::Vector{<:Number}, x1::Num
 
 Computes the rotation tensor at an arclength position 
 
-# Arguments
-- R0::Matrix{Float64} = initial rotation tensor (at arclength position zero)
-- k::Vector{<:Number} = curvature vector
-- x1::Number = arclength position
 """
 function rotation_tensor_from_curvature(R0::Matrix{Float64},k::Vector{<:Number},x1::Number) 
 
@@ -284,7 +268,7 @@ rotation_tensor_E321(p::Vector{<:Number})
 Computes the rotation tensor according to Euler parameters sequence 3-2-1
 
 # Arguments
-- p::Vector{<:Number} = rotation parameters
+- `p::Vector{<:Number}` = rotation parameters
 """
 function rotation_tensor_E321(p::Vector{<:Number})
 
@@ -309,7 +293,7 @@ function rotation_tensor_E321(p::Vector{<:Number})
     return R
 
 end
-
+export rotation_tensor_E321
 
 """
 rotation_tensor_E321(p::Vector{<:Number})
@@ -317,7 +301,7 @@ rotation_tensor_E321(p::Vector{<:Number})
 Computes the rotation tensor according to Euler parameters sequence 3-1-3
 
 # Arguments
-- p::Vector{<:Number} = rotation parameters
+- `p::Vector{<:Number}` = rotation parameters
 """
 function rotation_tensor_E313(p::Vector{<:Number})
 
@@ -342,7 +326,7 @@ function rotation_tensor_E313(p::Vector{<:Number})
     return R
 
 end
-
+export rotation_tensor_E313
 
 """
 rotation_tensor_WM(p::Vector{<:Number})
@@ -350,7 +334,7 @@ rotation_tensor_WM(p::Vector{<:Number})
 Computes the rotation tensor according to Wiener-Milenkovic parameters
 
 # Arguments
-- p::Vector{<:Number} = rotation parameters
+- `p::Vector{<:Number}` = rotation parameters
 """
 function rotation_tensor_WM(p::Vector{<:Number})
 
@@ -396,8 +380,6 @@ rotation_parameter_scaling(p::Vector{<:Number})
 
 Scales the Wiener-Milenkovic rotation parameters
 
-# Arguments
-- p::Vector{<:Number} = unscaled rotation parameters
 """
 function rotation_parameter_scaling(p::Vector{<:Number})
 
@@ -430,8 +412,6 @@ rotation_tensor_derivatives_scaled_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,
 
 Computes the derivatives of the rotation tensor with respect to the scaled rotation parameters
 
-# Arguments
-- ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²
 """
 function rotation_tensor_derivatives_scaled_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²)
 
@@ -477,10 +457,6 @@ scaling_derivatives_extended_parameters(λ::Float64,p::Vector{<:Number},pNorm::N
 
 Computes the derivatives of the scaling factor with respect to the extended rotation parameters
 
-# Arguments
-- λ::Float64 = scaling factor
-- p::Vector{<:Number} = rotation parameters
-- pNorm::Number = norm of rotation parameters
 """
 function scaling_derivatives_extended_parameters(λ::Float64,p::Vector{<:Number},pNorm::Number)
 
@@ -496,8 +472,6 @@ rotation_tensor_derivatives_extended_parameters(p,pNorm,λ,ps,ps0,ps1,ps2,ps3,ps
 
 Computes the derivatives of the rotation tensor with respect to the extended rotation parameters
 
-# Arguments
-- p,pNorm,λ,ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²
 """
 function rotation_tensor_derivatives_extended_parameters(p,pNorm,λ,ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²)
 
@@ -527,15 +501,6 @@ function rotation_tensor_derivatives_extended_parameters(p,pNorm,λ,ps,ps0,ps1,p
     return R_p1,R_p2,R_p3,R_ps1,R_ps2,R_ps3,υ²_ps1,υ²_ps2,υ²_ps3,Θ_ps1,Θ_ps2,Θ_ps3,ps_p,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3
 end
 
-
-"""
-rotation_tensor_derivatives_extended_parameters(p::Vector{Float64})
-
-Computes the derivatives of the rotation tensor with respect to the extended rotation parameters
-
-# Arguments
-- p::Vector{Float64}
-"""
 function rotation_tensor_derivatives_extended_parameters(p::Vector{Float64})
 
     _,Θ,pNorm,λ,ps,ps1,ps2,ps3,ps0,υ,υ²,ps1s,ps2s,ps3s,ps1ps2,ps2ps3,ps1ps3 = rotation_tensor_WM(p)
@@ -572,8 +537,6 @@ rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot)
 
 Computes the time derivative of the rotation tensor 
 
-# Arguments
-- R_ps1,R_ps2,R_ps3,ps_p,pdot
 """
 function rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot)
 
@@ -590,16 +553,6 @@ function rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot)
 
 end
 
-
-"""
-rotation_tensor_time_derivative(p::Vector{Float64},pdot::Vector{Float64})
-
-Computes the derivatives of the time derivative of the rotation tensor, given the rotation parameters and their rates 
-
-# Arguments
-- p::Vector{Float64}
-- pdot::Vector{Float64}
-"""
 function rotation_tensor_time_derivative(p::Vector{Float64},pdot::Vector{Float64})
 
     # Rotation parameters' variables
@@ -620,8 +573,6 @@ rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2
 
 Computes the derivatives of the time derivative of the rotation tensor with respect to the extended rotation parameters 
 
-# Arguments
-- ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,Θ_ps1,Θ_ps2,Θ_ps3,υ,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps1dot,ps2dot,ps3dot,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3
 """
 function rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,Θ_ps1,Θ_ps2,Θ_ps3,υ,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps1dot,ps2dot,ps3dot,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3)
 
@@ -693,7 +644,7 @@ tangent_operator_transpose_WM(p::Vector{Float64})
 Computes the transpose of tangent operator tensor according to Wiener-Milenkovic parameters
 
 # Arguments
-- p::Vector{Float64} = rotation parameters
+- `p::Vector{Float64}` = rotation parameters
 """
 function tangent_operator_transpose_WM(p::Vector{Float64})
 
@@ -716,10 +667,6 @@ tangent_operator_transpose_WM(ps::Vector{Float64},ps0::Float64,υ²::Float64)
 
 Computes the transpose of tangent operator tensor according to Wiener-Milenkovic parameters
 
-# Arguments
-- ps::Vector{Float64} = scaled rotation parameters
-- ps0::Float64
-- υ²::Float64
 """
 function tangent_operator_transpose_WM(ps::Vector{Float64},ps0::Float64,υ²::Float64)
 
@@ -733,8 +680,6 @@ tangent_operator_transpose_inverse_WM(p::Vector{<:Number})
 
 Computes the inverse of the transpose of the tangent operator tensor according to Wiener-Milenkovic parameters
 
-# Arguments
-- p::Vector{<:Number} = rotation parameters
 """
 function tangent_operator_transpose_inverse_WM(p::Vector{<:Number})
 
@@ -755,9 +700,6 @@ tangent_operator_transpose_inverse_WM(ps::Vector{Float64},ps0::Float64)
 
 Computes the inverse of the transpose of the tangent operator tensor according to Wiener-Milenkovic parameters
 
-# Arguments
-- ps::Vector{Float64} = scaled rotation parameters
-- ps0::Float64
 """
 function tangent_operator_transpose_inverse_WM(ps::Vector{Float64},ps0::Float64)
 
@@ -771,8 +713,6 @@ tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3,υ²,υ�
 
 Computes the derivatives of the tangent tensor's transpose and its inverse with respect to the extended rotation parameters
 
-# Arguments
-- HT,ps1,ps2,ps3,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps_p
 """
 function tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps_p)
 
@@ -807,7 +747,7 @@ tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Float64})
 Computes the derivatives of the tangent tensor's transpose with respect to the extended rotation parameters
 
 # Arguments
-- p::Vector{Float64}
+- `p::Vector{Float64}` = rotation parameters
 """
 function tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Float64})
 
@@ -855,8 +795,6 @@ force_scaling(S::Vector{Matrix{Float64}})
 
 Computes the appropriate force scaling for the linear system of equations
 
-# Arguments
-- S::Vector{Matrix{Float64}} = array of elemental sectional compliance matrices
 """
 function force_scaling(S::Vector{Matrix{Float64}})
 
@@ -886,8 +824,6 @@ rotation_angle(p::Vector{<:Number})
 
 Computes the rotation angle
 
-# Arguments
-- p::Vector{<:Number} = rotation parameters
 """
 function rotation_angle(p::Vector{<:Number})
 
@@ -911,7 +847,7 @@ rotation_parameters_WM(R::Matrix{<:Number})
 Computes the Wiener-Milenkovic rotation parameters given a rotation tensor
 
 # Arguments
-- R::Matrix{<:Number} = rotation tensor
+- `R::Matrix{<:Number}` = rotation tensor
 """
 function rotation_parameters_WM(R::Matrix{<:Number})
 
@@ -941,8 +877,8 @@ ypr_from_rotation_tensor(R::Matrix{<:Number},tol::Float64=1e-6)
 Computes the Euler angles from the sequence 3-2-1 given the rotation tensor
 
 # Arguments
-- R::Matrix{<:Number} = rotation tensor
-- tol::Float64=1e-6
+- `R::Matrix{<:Number}` = rotation tensor
+- `tol::Float64` = round-off tolerance
 """
 function ypr_from_rotation_tensor(R::Matrix{<:Number},tol::Float64=1e-6)
     
@@ -1003,7 +939,7 @@ quaternion_from_rotation_tensor(R::Matrix{<:Number})
 Computes the quaternion (Euler parameters) given a rotation tensor
 
 # Arguments
-- R::Matrix{<:Number} = rotation tensor
+- `R::Matrix{<:Number}` = rotation tensor
 """
 function quaternion_from_rotation_tensor(R::Matrix{<:Number})
 
@@ -1030,18 +966,18 @@ function quaternion_from_rotation_tensor(R::Matrix{<:Number})
 
     return q 
 end
-
+export quaternion_from_rotation_tensor
 
 """
 mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
-Applies mode tracking based on eigenvector's match
+Applies mode tracking based on eigenvectors match
 
 # Arguments
-- controlParam::Vector{<:Number}
-- freqs::Array{Vector{Float64}}
-- damps::Array{Vector{Float64}}
-- eigenvectors::Array{Matrix{ComplexF64}}
+- `controlParam::Vector{<:Number}` = vector of control parameter
+- `freqs::Array{Vector{Float64}}` = frequencies vector
+- `damps::Array{Vector{Float64}}` = dampings vector
+- `eigenvectors::Array{Matrix{ComplexF64}}` = complex-valued eigenvectors
 """
 function mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
@@ -1091,8 +1027,6 @@ highest_in_rowcol(O::Matrix{<:Number})
 
 Finds the unrepeated columns of the n highest values in matrix O, where n is the size of O
 
-# Arguments
-- O::Matrix{<:Number}
 """
 function highest_in_rowcol(O::Matrix{<:Number})
 

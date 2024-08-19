@@ -3,8 +3,6 @@
 
     Spring composite type
 
-# Fields
-- 
 """
 @with_kw mutable struct Spring
 
@@ -28,7 +26,23 @@
 
 end
 
-# Constructor
+
+"""
+create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Number}=zeros(3),kp::Vector{<:Number}=zeros(3),kTranslational::Number=0,kTwist::Number=0,kIPBending::Number=0,kOOPBending::Number=0)
+
+Creates a spring
+
+# Keyword arguments
+- `basis::String` = basis on which stiffnesses are defined
+- `elementsIDs::Vector{Int64}` = local IDs of the element(s)' node(s) to which the spring is attached
+- `nodesSides::Vector{Int64}` = sides (1 or 2) of the node(s) to which the spring is attached
+- `ku::Vector{<:Number}` = translational stiffness vector
+- `kp::Vector{<:Number}` = rotational stiffness vector
+- `kTranslational::Number` = translational stiffness (same in all directions)
+- `kTwist::Number` = twist stiffness (rotation about x1 direction)
+- `kIPBending::Number` = in-plane bending stiffness (rotation about x3 direction)
+- `kOOPBending::Number` = out-of-plane bending stiffness (rotation about x2 direction)
+"""
 function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Number}=zeros(3),kp::Vector{<:Number}=zeros(3),kTranslational::Number=0,kTwist::Number=0,kIPBending::Number=0,kOOPBending::Number=0)
 
     # Number of attachments
@@ -58,7 +72,7 @@ function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides
     # Initialize spring stiffness matrices, resolved in basis A
     if hasDoubleAttachment
         Ku = [kTranslational 0 0; 0 kTranslational 0; 0 0 kTranslational]
-        Kp = [kTwist 0 0; 0 kIPBending 0; 0 0 kOOPBending]
+        Kp = [kTwist 0 0; 0 kOOPBending 0; 0 0 kIPBending]
     else
         Ku = [ku[1] 0 0; 0 ku[2] 0; 0 0 ku[3]]
         Kp = [kp[1] 0 0; 0 kp[2] 0; 0 0 kp[3]]

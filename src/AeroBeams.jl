@@ -1,6 +1,3 @@
-"""
-    Module for the AeroBeams package
-"""
 module AeroBeams
 
 include("Utilities.jl")

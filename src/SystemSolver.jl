@@ -3,8 +3,6 @@
 
     Newton-Raphson system solver composite type
 
-# Fields
-- 
 """
 @with_kw mutable struct NewtonRaphson <: SystemSolver
 
@@ -34,8 +32,30 @@
 
 end
 
-# Constructor
-function create_NewtonRaphson(;absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Number=2.0,minConvRateJacUpdate::Number=2.0,alwaysUpdateJacobian::Bool=true)
+"""
+create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Number=2.0,minConvRateJacUpdate::Number=2.0,alwaysUpdateJacobian::Bool=true)
+
+Newton-Raphson nonlinear system solver constructor
+
+# Keyword arguments
+- `absoluteTolerance::Float64` = absolute convergence tolerance
+- `relativeTolerance::Float64` = relative convergence tolerance
+- `maximumIterations::Int64` = maximum number of iterations
+- `desiredIterations::Int64` = desired number of iterations
+- `maximumAbsoluteError::Number` = maximum absolute error for divergence detection
+- `maximumRelativeError::Number` = maximum relative error for divergence detection
+- `initialLoadFactor::Number` = initial load factor
+- `minimumLoadFactor::Float64` = minimum load factor
+- `maximumLoadFactorStep::Float64` = maximum load factor step
+- `minimumLoadFactorStep::Float64` = minimum load factor step
+- `ρ::Float64` = relaxation factor for trim variables
+- `trackingLoadSteps::Bool` = flag to track partial load steps solutions
+- `displayStatus::Bool` = flag to display status
+- `minConvRateAeroJacUpdate::Number` = minimum convergence rate to skip computation of aerodynamic Jacobians
+- `minConvRateJacUpdate::Number` = minimum convergence rate to skip computation of structural Jacobians
+- `alwaysUpdateJacobian::Bool` = flag to update Jacobians on every iteration
+"""
+function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Number=2.0,minConvRateJacUpdate::Number=2.0,alwaysUpdateJacobian::Bool=true)
 
     @assert 0.5 <= ρ <= 1 "relaxation factor (ρ) must be between 0.5 and 1.0"
     @assert minConvRateAeroJacUpdate > 1 "minConvRateAeroJacUpdate to skip calculation of aerodynamic derivatives must be greater than 1"
@@ -52,8 +72,6 @@ solve_NewtonRaphson!(problem::Problem)
 
 Solves the nonlinear system of equations at current time step 
 
-# Arguments
-- problem::Problem
 """
 function solve_NewtonRaphson!(problem::Problem)
 
@@ -190,8 +208,6 @@ assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
 
 Assembles the residual vector, Jacobian and inertia matrices of the system of equations
 
-# Arguments
-- problem::Problem
 """
 function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
 
@@ -234,8 +250,6 @@ solve_linear_system!(problem::Problem)
 
 Solves the linear system of equations at current time step and load factor
 
-# Arguments
-- problem::Problem
 """
 function solve_linear_system!(problem::Problem)
 
@@ -297,11 +311,6 @@ line_search(x,residual,jacobian,λ=1e-8)
 
 Performs a line search to solve the current Newton step
 
-# Arguments
-- x
-- residual
-- jacobian
-- λ=1e-8
 """
 function line_search(x,residual,jacobian,λ=1e-8)
 
@@ -327,13 +336,6 @@ line_search_step_size(x,p,residual,jacobian,c1=1e-4,ρ=0.5)
 
 Updates the step size (α) of the line search
 
-# Arguments
-- x
-- p
-- residual
-- jacobian
-- c1=1e-4
-- ρ=0.5
 """
 function line_search_step_size(x,p,residual,jacobian,c1=1e-4,ρ=0.5)
 
@@ -363,10 +365,6 @@ save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
 
 Saves the solution at the current load factor
 
-# Arguments
-- problem::Problem
-- σ::Float64
-- x::Vector{Float64}
 """
 function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
 
@@ -423,8 +421,6 @@ update_maximum_aero_loads!(problem::Problem)
 
 Updates the maximum absolute values of aerodynamic loads
 
-# Arguments
-- problem::Problem
 """
 function update_maximum_aero_loads!(problem::Problem)
 

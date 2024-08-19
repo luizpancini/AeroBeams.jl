@@ -8,8 +8,6 @@ struct AD <: DerivationMethod
 
     AD (Automatic Differentiation) DerivationMethod composite type
 
-# Fields
-- 
 """
 struct AD <: DerivationMethod
 
@@ -50,15 +48,12 @@ export FD
 
 
 """
-function TheodorsenFlapConstants(normSparPos::Float64,normFlapPos::Float64)
+function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
 
 Computes Theodorsen's flap constants
 
-# Fields
-- normSparPos::Float64
-- normFlapPos::Float64
 """
-function TheodorsenFlapConstants(normSparPos::Float64,normFlapPos::Float64)
+function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
 
     # Semichord-normalized spar position after midchord
     a = 2*normSparPos-1
@@ -99,9 +94,6 @@ struct QuasiSteady <: AeroSolver
 
     QuasiSteady AeroSolver composite type
 
-# Fields
-- nStates::Int64
-- availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
 """
 struct QuasiSteady <: AeroSolver
 
@@ -123,11 +115,6 @@ struct Indicial <: AeroSolver
 
     Indicial AeroSolver composite type
 
-# Fields
-- nStates::Int64
-- availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
-- AW::Vector{Float64}
-- bW::Vector{Float64}
 """
 struct Indicial <: AeroSolver
 
@@ -155,11 +142,6 @@ struct BLi <: AeroSolver
 
     Incompressible modified Beddoes-Leishman AeroSolver composite type
 
-# Fields
-- nStates::Int64
-- availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
-- AW::Vector{Float64}
-- bW::Vector{Float64}
 """
 struct BLi <: AeroSolver
 
@@ -187,16 +169,6 @@ struct BLo <: AeroSolver
 
     Original Beddoes-Leishman AeroSolver composite type
 
-# Fields
-- nStates::Int64
-- availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
-- A::Vector{Float64}
-- b::Vector{Float64}
-- b12Mat::Matrix{Float64}
-- AW::Vector{Float64}
-- bW::Vector{Float64}
-- bWMat::Matrix{Float64}
-- A1b1A2b2::Vector{Float64}
 """
 struct BLo <: AeroSolver
 
@@ -232,12 +204,6 @@ struct Inflow <: AeroSolver
 
     Inflow AeroSolver composite type
 
-# Fields
-- nStates::Int64
-- availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
-- AₚInv::Matrix{Float64}
-- AₚInvcₚ::Vector{Float64}
-- bₚ::Vector{Float64}
 """
 struct Inflow <: AeroSolver
 
@@ -264,8 +230,6 @@ inflow_arrays(N::Int64)
 
 Computes the fixed state arrays from Peters' inflow theory
 
-# Arguments
-- N::Int64
 """
 function inflow_arrays(N::Int64)
 
@@ -309,8 +273,6 @@ struct TableLookup <: FlapAeroSolver
 
     TableLookup FlapAeroSolver composite type
 
-# Fields
-- nStates::Int64
 """
 struct TableLookup <: FlapAeroSolver
 
@@ -330,10 +292,6 @@ mutable struct ThinAirfoilTheory <: FlapAeroSolver
 
     ThinAirfoilTheory FlapAeroSolver composite type
 
-# Fields
-- nStates::Int64
-- AWf::Vector{Float64}
-- bWf::Vector{Float64}
 """
 mutable struct ThinAirfoilTheory <: FlapAeroSolver
 
@@ -348,7 +306,7 @@ mutable struct ThinAirfoilTheory <: FlapAeroSolver
         AWf = [0.165; 0.335]
         bWf = [0.0455; 0.3]
         bWfMat = diagm(bWf)
-        Th = TheodorsenFlapConstants(0.25,1.0)
+        Th = theodorsen_flap_constants(0.25,1.0)
         return new(nStates,AWf,bWf,bWfMat,Th)
     end
 
@@ -361,8 +319,6 @@ struct IndicialGust <: GustAeroSolver
 
     IndicialGust GustAeroSolver composite type
 
-# Fields
-- nStates::Int64
 """
 struct IndicialGust <: GustAeroSolver
 

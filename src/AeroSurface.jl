@@ -3,24 +3,6 @@
 
     AeroSurface composite type
 
-# Fields
-- solver::AeroSolver
-- flapLoadsSolver::FlapAeroSolver
-- gustLoadsSolver::GustAeroSolver
-- airfoil::Airfoil
-- c::Union{<:Function,Number}
-- Λ::Union{<:Function,Number}
-- normSparPos::Union{<:Function,Float64}
-- normFlapSpan::Union{Nothing,Vector{<:Number}}
-- normFlapPos::Union{Nothing,Float64}
-- flapSiteID::Union{Nothing,Int64}
-- updateAirfoilParameters::Bool
-- hasTipCorrection::Bool
-- tipLossFunction::String
-- tipLossDecayFactor::Float64
-- αᵣ::Number
-- δdot::Function
-- δddot::Function
 """
 @with_kw mutable struct AeroSurface
 
@@ -77,7 +59,31 @@ end
 export AeroSurface
 
 
-# Constructor
+"""
+create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
+
+Creates and aerodynamic surface
+
+# Keyword arguments
+-` solver::AeroSolver`
+- `flapLoadsSolver::FlapAeroSolver`
+- `gustLoadsSolver::GustAeroSolver`
+- `derivationMethod::DerivationMethod`
+- `airfoil::Airfoil`
+- `c::Union{<:Function,Number}`
+- `Λ::Union{<:Function,Number}`
+- `normSparPos::Union{<:Function,Float64}`
+- `normFlapSpan::Union{Nothing,Vector{<:Number}}`
+- `normFlapPos::Union{Nothing,Float64}`
+- `δIsTrimVariable::Bool`
+- `δ::Union{Nothing,<:Function,Number}`
+- `flapSiteID::Union{Nothing,Int64}`
+- `updateAirfoilParameters::Bool`
+- `hasTipCorrection::Bool`
+- `tipLossFunction::String`
+- `tipLossDecayFactor::Float64`
+- `smallAngles::Bool`
+"""
 function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
 
     # Validate
@@ -115,7 +121,7 @@ function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::Flap
     if !isnothing(flapSiteID)
         airfoil = create_flapped_Airfoil(name=airfoil.name,flapSiteID=flapSiteID)
         if typeof(flapLoadsSolver) == ThinAirfoilTheory
-            flapLoadsSolver.Th = TheodorsenFlapConstants(normSparPos,normFlapPos)
+            flapLoadsSolver.Th = theodorsen_flap_constants(normSparPos,normFlapPos)
         end
     end
 

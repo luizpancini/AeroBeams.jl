@@ -4,9 +4,9 @@
     Atmosphere composite type
 
 # Fields
-- ρ::Number 
-- μ::Number 
-- a::Number
+- `ρ::Number`
+- `μ::Number`
+- `a::Number`
 """
 @with_kw mutable struct Atmosphere
 
@@ -23,13 +23,6 @@ air_properties_from_pressure_and_temperature(p::Number,T::Number,R::Number,γ::N
 
 Calculates air properties from given pressure and temperature
 
-# Fields
-- p::Number
-- T::Number
-- R::Number
-- γ::Number
-- β::Number
-- S::Number
 """
 function air_properties_from_pressure_and_temperature(p::Number,T::Number,R::Number=287.05864074988347,γ::Number=1.4,β::Number=1.458e-6,S::Number=110.4)
 
@@ -61,7 +54,7 @@ standard_atmosphere(altitude::Number)
 Calculates air properties from the International Standard Atmosphere (https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
 
 # Fields
-- altitude::Number
+- `altitude::Number`
 """
 function standard_atmosphere(altitude::Number)
 

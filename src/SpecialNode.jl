@@ -1,11 +1,3 @@
-"""
-@with_kw mutable struct SpecialNode
-
-    Special node composite type
-
-# Fields
-- 
-"""
 @with_kw mutable struct SpecialNode
 
     # Fields
@@ -38,7 +30,21 @@
 
 end
 
-# Constructor 
+
+"""
+SpecialNode(localID::Int64,globalID::Int64,connectedElementsGlobalIDs::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64},springs::Vector{Spring}=Vector{Spring}(),BCs::Vector{BC}=Vector{BC}())
+
+Creates a special node
+
+# Arguments
+- `localID::Int64` = local ID of the node
+- `globalID::Int64` = global ID of the node
+- `connectedElementsGlobalIDs::Vector{Int64}` = global IDs of the connected elements
+- `connectedElements::Vector{Element}` = connected elements
+- `ζonElements::Vector{Int64}` = local coordinate on parent element
+- `springs::Vector{Spring}` = attached springs
+- `BCs::Vector{BC}` = associated boundary condtions
+"""
 function SpecialNode(localID::Int64,globalID::Int64,connectedElementsGlobalIDs::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64},springs::Vector{Spring}=Vector{Spring}(),BCs::Vector{BC}=Vector{BC}())
 
     # Set TFs for generalized displacements and trim loads being prescribed 

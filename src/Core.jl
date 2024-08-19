@@ -3,10 +3,6 @@ element_arrays!(problem::Problem,model::Model,element::Element)
 
 Computes the elemental contributions to the system's arrays (residual, Jacobian, inertia)
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function element_arrays!(problem::Problem,model::Model,element::Element)
 
@@ -73,10 +69,6 @@ special_node_arrays!(problem::Problem,model::Model,specialNode::SpecialNode)
 
 Computes the nodal contributions to the system's arrays (residual, Jacobian, inertia)
 
-# Arguments
-- problem::Problem
-- model::Model
-- specialNode::SpecialNode
 """
 function special_node_arrays!(problem::Problem,model::Model,specialNode::SpecialNode)
 
@@ -115,11 +107,6 @@ element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNo
 
 Computes the generalized velocities of basis b at the element's midpoint, resolved in basis A
 
-# Arguments
-- model::Model
-- element::Element
-- σ::Float64 = load factor
-- timeNow::Number = current time
 """
 function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
 
@@ -144,11 +131,6 @@ element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,tim
 
 Computes the generalized accelerations of basis b at the element's midpoint, resolved in basis A
 
-# Arguments
-- model::Model
-- element::Element
-- σ::Float64 = load factor
-- timeNow::Number = current time
 """
 function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
 
@@ -173,10 +155,6 @@ element_states!(problem::Problem,model::Model,element::Element)
 
 Gets the states (generalized displacements, forces, velocities and aerodynamic) of the element
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function element_states!(problem::Problem,model::Model,element::Element)
 
@@ -208,9 +186,6 @@ element_states_rates!(problem::Problem,element::Element)
 
 Computes the states' rates of the current element
 
-# Arguments
-- problem::Problem
-- element::Element
 """
 function element_states_rates!(problem::Problem,element::Element)
 
@@ -244,9 +219,6 @@ element_rotation_variables!(problem::Problem,element::Element)
 
 Computes the rotation variables for the current element
 
-# Arguments
-- problem::Problem
-- element::Element
 """
 function element_rotation_variables!(problem::Problem,element::Element)
 
@@ -298,10 +270,6 @@ element_distributed_loads!(problem::Problem,model::Model,element::Element)
 
 Computes the nodal resultants from distributed loads on the current element, resolved in basis A
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function element_distributed_loads!(problem::Problem,model::Model,element::Element)
 
@@ -333,10 +301,6 @@ gravitational_loads!(model::Model,element::Element,σ::Float64)
 
 Computes the nodal resultants from the distributed gravitational loads on the current element
 
-# Arguments
-- model::Model
-- element::Element
-- σ::Float64
 """
 function gravitational_loads!(model::Model,element::Element,σ::Float64)
 
@@ -363,10 +327,6 @@ distributed_external_loads!(problem::Problem,element::Element,σ::Float64)
 
 Computes the nodal resultants from the externally applied distributed loads on the current element
 
-# Arguments
-- model::Model
-- element::Element
-- σ::Float64
 """
 function distributed_external_loads!(problem::Problem,element::Element,σ::Float64)
 
@@ -462,10 +422,6 @@ aerodynamic_loads!(problem::Problem,model::Model,element::Element)
 
 Computes the nodal resultants from the aerodynamic loads on the current element
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function aerodynamic_loads!(problem::Problem,model::Model,element::Element)
 
@@ -503,11 +459,6 @@ wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::Model,elem
 
 Wrapper function for aerodynamic loads using elemental states as inputs
 
-# Arguments
-- states
-- problem::Problem
-- model::Model
-- element::Element
 """
 function wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::Model,element::Element)
 
@@ -534,11 +485,6 @@ wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Problem,model:
 
 Wrapper function for aerodynamic loads using elemental states' rates as inputs
 
-# Arguments
-- statesRates
-- problem::Problem
-- model::Model
-- element::Element
 """
 function wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Problem,model::Model,element::Element)
 
@@ -562,16 +508,6 @@ aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ,Vdot,Ωd
 
 Computes the nodal resutants from aerodynamic loads and aerodynamic state matrices
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
-- V
-- Ω
-- χ
-- Vdot
-- Ωdot
-- δNow
 """
 function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ,Vdot,Ωdot,δNow)
 
@@ -625,9 +561,6 @@ interpolate_distributed_loads(problem::Problem,loadArray::Array{Float64})
 
 Interpolates the loads array at the current time
 
-# Arguments
-- problem::Problem
-- loadArray::Array{Float64}
 """
 function interpolate_distributed_loads(problem::Problem,loadArray::Array{Float64})
 
@@ -664,8 +597,6 @@ element_strains!(element::Element)
 
 Computes the strains for the current element, resolved in basis B
 
-# Arguments
-- element::Element
 """
 function element_strains!(element::Element)
 
@@ -691,8 +622,6 @@ element_momenta!(element::Element)
 
 Computes the momenta for the current element, resolved in basis B
 
-# Arguments
-- element::Element
 """
 function element_momenta!(element::Element)
 
@@ -718,8 +647,6 @@ element_momenta_rates!(element::Element)
 
 Computes the momenta rates for the current element, resolved in basis B
 
-# Arguments
-- element::Element
 """
 function element_momenta_rates!(element::Element)
 
@@ -745,10 +672,6 @@ element_residual!(problem::Problem,model::Model,element::Element)
 
 Computes the contributions from the current element to the residual array
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function element_residual!(problem::Problem,model::Model,element::Element)
 
@@ -912,8 +835,6 @@ distributed_loads_derivatives_rotation_parameters!(element::Element)
 
 Computes the derivatives of the distributed loads w.r.t the rotation parameters
 
-# Arguments
-- element::Element
 """
 function distributed_loads_derivatives_rotation_parameters!(element::Element)
 
@@ -944,8 +865,6 @@ gravitational_loads_derivatives_rotation_parameters(element::Element)
 
 Computes the contributions of the gravitational loads to the Jacobian matrix
 
-# Arguments
-- element::Element
 """
 function gravitational_loads_derivatives_rotation_parameters(element::Element)
 
@@ -968,8 +887,6 @@ distributed_external_loads_derivatives_rotation_parameters(element::Element)
 
 Computes the contributions of the externally applied distributed loads to the Jacobian matrix
 
-# Arguments
-- element::Element
 """
 function distributed_external_loads_derivatives_rotation_parameters(element::Element)
 
@@ -1012,8 +929,6 @@ aero_loads_derivatives_rotation_parameters(element::Element)
 
 Computes the derivatives of the aerodynamic loads w.r.t the extended rotation parameters
 
-# Arguments
-- element::Element
 """
 function aero_loads_derivatives_rotation_parameters(element::Element)
 
@@ -1043,10 +958,6 @@ aero_derivatives!(problem::Problem,model::Model,element::Element)
 
 Computes the derivatives of the aerodynamic loads and aerodynamic states w.r.t remaining elemental states and their rates (excludes rotation parameters, already computed)
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
@@ -1195,10 +1106,6 @@ element_jacobian!(problem::Problem,model::Model,element::Element)
 
 Computes the contributions from the current element to the Jacobian matrix
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function element_jacobian!(problem::Problem,model::Model,element::Element)
 
@@ -1495,10 +1402,6 @@ element_inertia!(problem::Problem,model::Model,element::Element)
 
 Computes the contributions from the current element to the inertia matrix
 
-# Arguments
-- problem::Problem
-- model::Model
-- element::Element
 """
 function element_inertia!(problem::Problem,model::Model,element::Element)
 
@@ -1601,8 +1504,6 @@ element_nodal_states!(element::Element)
 
 Updates the nodal states of the element
 
-# Arguments
-- element::Element
 """
 function element_nodal_states!(element::Element)
 
@@ -1654,10 +1555,6 @@ special_node_states!(problem::Problem,model::Model,specialNode::SpecialNode)
 
 Computes the nodal states
 
-# Arguments
-- problem::Problem
-- model::Model
-- specialNode::SpecialNode
 """
 function special_node_states!(problem::Problem,model::Model,specialNode::SpecialNode)
 
@@ -1782,9 +1679,6 @@ spring_loads!(model::Model,specialNode::SpecialNode)
 
 Adds the contributions of attached springs to the special node's loads
 
-# Arguments
-- model::Model
-- specialNode::SpecialNode
 """
 function spring_loads!(model::Model,specialNode::SpecialNode)
 
@@ -1821,10 +1715,6 @@ special_node_residual!(problem::Problem,model::Model,specialNode::SpecialNode)
 
 Computes the contributions from the current node to the residual array
 
-# Arguments
-- problem::Problem
-- model::Model
-- specialNode::SpecialNode
 """
 function special_node_residual!(problem::Problem,model::Model,specialNode::SpecialNode)
 
@@ -1858,9 +1748,6 @@ special_node_follower_loads_derivatives_rotation_parameters!(problem::Problem,sp
 
 Computes the contributions from the nodal follower loads to the Jacobian matrix
 
-# Arguments
-- problem::Problem
-- specialNode::SpecialNode
 """
 function special_node_follower_loads_derivatives_rotation_parameters!(problem::Problem,specialNode::SpecialNode)
 
@@ -1927,10 +1814,6 @@ special_node_jacobian!(problem::Problem,model::Model,specialNode::SpecialNode)
 
 Computes the contributions from the current node to the Jacobian matrix
 
-# Arguments
-- problem::Problem
-- model::Model
-- specialNode::SpecialNode
 """
 function special_node_jacobian!(problem::Problem,model::Model,specialNode::SpecialNode)
 
@@ -1964,10 +1847,6 @@ update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,
 
 Updates the Jacobian matrix with the contributions from the current BC (if any) on the current node 
 
-# Arguments
-- problem::Problem
-- model::Model
-- specialNode::SpecialNode
 """
 function update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed,isLoad=trues(6),isTrim=falses(6))
 
@@ -2043,16 +1922,6 @@ spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_u
 
 Adds the contributions of the spring loads to the Jacobian matrix
 
-# Arguments
-- model
-- jacobian
-- forceScaling
-- globalID
-- eqs_Fu
-- eqs_Fp
-- DOF_uF
-- DOF_pM
-- springs
 """
 function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,springs)
 
@@ -2084,10 +1953,6 @@ element_modal_states(element::Element,eigenvector::Vector{T},forceScaling::Float
 
 Computes the modal states (generalized displacements, forces, strains, velocities and momenta) of the element at midpoint and at the nodes
 
-# Arguments
-- element::Element
-- eigenvector::Vector{T}
-- forceScaling::Float64
 """
 function element_modal_states(element::Element,eigenvector::Vector{T},forceScaling::Float64) where T<:Union{Float64,ComplexF64}
 
@@ -2157,8 +2022,6 @@ update_states!(problem::Problem)
 
 Updates the elemental and nodal states
 
-# Arguments
-- problem::Problem
 """
 function update_states!(problem::Problem)
 
@@ -2211,8 +2074,6 @@ reset_dual_numbers(obj)
 
 Resets dual numbers from the ForwardDiff package back into their values
 
-# Arguments
-- obj
 """
 function reset_dual_numbers(obj)
 
@@ -2235,8 +2096,6 @@ convert_to_values(arr)
 
 Functional unit of reset_dual_numbers()
 
-# Arguments
-- arr
 """
 function convert_to_values(arr)
     if isa(arr, AbstractArray)

@@ -1,7 +1,9 @@
-using AeroBeams
-using Documenter
+using AeroBeams, Documenter, DocumenterCitations
 
-DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
+# DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
+
+bib_filepath = joinpath(@__DIR__, "src/references.bib")
+bib = CitationBibliography(bib_filepath, style=:authoryear)
 
 push!(LOAD_PATH,"../src/")
 makedocs(;
@@ -14,9 +16,13 @@ makedocs(;
         assets=String[],
     ),
     pages=[
-        "Home" => "index.md",
-        "References" => "references.md"
+        "Home" => "home.md",
+        "API" => [
+            "Public" => "public.md"
+            "Private" => "private.md"
+            ]
     ],
+    plugins = [bib]
 )
 
 deploydocs(;
