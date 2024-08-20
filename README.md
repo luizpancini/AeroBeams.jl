@@ -17,9 +17,11 @@ The software is a general-purpose aeroelastic solver for fixed-wing aircraft str
 - Dynamic: time-marching.
 
 A simple built-in post-processing tool allows the visualization of the results. Here is an example of the large-displacement motion of the [Pazy](https://nescacademy.nasa.gov/workshops/AePW3/public/wg/largedeflection) wing benchmark upon encountering a continuous gust (simulated atmospheric turbulence):
+
 ![Pazy Wing Continuous 1D Gust Deformation](test/outputs/figures/PazyWingContinuous1DGust/PazyWingContinuous1DGust_deformation.gif)
 
 Purely structural problems (in the abscence of aerodynamic loads) can also be solved, such as the "flying spaghetti" proposed by [[8]](#8):
+
 ![flying spaghetti](test/outputs/figures/flyingSpaghetti2D/flyingSpaghetti2D_deformation.gif)
 
 ## References
