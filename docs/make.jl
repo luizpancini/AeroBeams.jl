@@ -1,6 +1,6 @@
 using AeroBeams, Documenter, DocumenterCitations
 
-# DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
+DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
 
 bib_filepath = joinpath(@__DIR__, "src/references.bib")
 bib = CitationBibliography(bib_filepath, style=:authoryear)
