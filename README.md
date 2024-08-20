@@ -1,9 +1,7 @@
 # AeroBeams
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://luizpancini.github.io/AeroBeams.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://luizpancini.github.io/AeroBeams.jl/dev/)
 [![Build Status](https://github.com/luizpancini/AeroBeams.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/luizpancini/AeroBeams.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/luizpancini/AeroBeams.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/luizpancini/AeroBeams.jl)
 
 ## Overview
 AeroBeams is a finite-element implementation of the geometrically exact beam theory of [Hodges](#1), augmented with aerodynamic formulations in order to solve aeroelastic problems. The structural part of the code was developed based on the works of [[2]](#2), [[3]](#3) and [[4]](#4), whereas the aerodynamic part follows [[5]](#5), [[6]](#6) and [[7]](#7), all written in [Julia](https://julialang.org/).

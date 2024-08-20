@@ -16,7 +16,7 @@ makedocs(;
         assets=String[],
     ),
     pages=[
-        "Home" => "home.md",
+        "Home" => "index.md",
         "API" => [
             "Public" => "public.md"
             "Private" => "private.md"
@@ -28,4 +28,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/luizpancini/AeroBeams.jl.git",
     devbranch="main",
+    target="gh-pages",
 )
