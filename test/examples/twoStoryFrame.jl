@@ -1,7 +1,5 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, BenchmarkTools
+using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 
-## User inputs (problem definition)
-#-------------------------------------------------------------------------------
 # Geometric properties
 L = 1
 b1,b2,h = 5e-2,15e-2,5e-2
@@ -27,8 +25,6 @@ inertiaMatrices = [diagm([ρ*A1,ρ*A1,ρ*A1,ρ*Is1,ρ*Iy1,ρ*Iz1]),diagm([ρ*A2,
 # Number of elements for each beam
 nElem = 10
 
-## Problem setup
-#-------------------------------------------------------------------------------
 # Beams
 beams = Vector{Beam}(undef,16)
 
@@ -80,20 +76,5 @@ solve!(problem)
 
 # Get frequencies
 freqs = problem.frequenciesOscillatory
-
-# Reference frequencies (in Hz) by PETYT - Introduction to Finite Element Vibration Analysis - [2nd Ed.] (2010)
-refFreqs = [11.8; 34.1]
-
-# Display relative errors
-ϵ_rel = freqs[[1,4]]/(2π)./refFreqs .- 1.0
-println("Relative errors: $ϵ_rel")
-
-# Plot mode shapes
-relPath = "/test/outputs/figures/twoStoryFrame"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-
-modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),frequencyLabel="frequency",save=true,savePath=string(relPath,"/twoStoryFrame_modeShapes.pdf"))
-display(modesPlot)
 
 println("Finished twoStoryFrame.jl")
