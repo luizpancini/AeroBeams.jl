@@ -78,11 +78,11 @@ mutable struct ModeShape{T<:Union{Float64,ComplexF64}}
 end
 
 
-"""
+#
 
-    SteadyProblem composite type
+    # SteadyProblem composite type
 
-"""
+#
 @with_kw mutable struct SteadyProblem <: Problem
 
     # Primary (inputs to problem creation)
@@ -163,11 +163,11 @@ end
 export create_SteadyProblem
 
 
-"""
+#
 
-    TrimProblem composite type
+    # TrimProblem composite type
 
-"""
+#
 @with_kw mutable struct TrimProblem <: Problem
 
     
@@ -252,11 +252,11 @@ end
 export create_TrimProblem
 
 
-"""
+#
 
-    EigenProblem composite type
+    # EigenProblem composite type
 
-"""
+#
 @with_kw mutable struct EigenProblem <: Problem
 
     # Primary (inputs to problem creation)
@@ -372,11 +372,11 @@ end
 export create_EigenProblem
 
 
-"""
+#
 
-    DynamicProblem composite type
+    # DynamicProblem composite type
 
-"""
+#
 @with_kw mutable struct DynamicProblem <: Problem
 
     # Primary (inputs to problem creation)

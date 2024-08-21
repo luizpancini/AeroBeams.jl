@@ -48,7 +48,7 @@ for c in configurations
         # Display progress
         println("Solving for configuration $c, U = $U m/s")
         # Set tip loss function at current airspeed and root angle
-        surf.tipLossDecayFactor = Pazy_tip_loss_factor(0,U)
+        surf.tipLossDecayFactor = tip_loss_factor_Pazy(0,U)
         update_beam!(wing)
         # Update velocity of basis A (and update model)
         set_motion_basis_A!(model=PazyWingFlutterTipMassRange,v_A=[0;U;0])

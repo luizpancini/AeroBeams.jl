@@ -4,7 +4,7 @@ using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
 aeroSolver = Indicial()
 
 # Airfoil
-airfoil = deepcopy(flatPlate)
+airfoil = deepcopy(NACA0012)
 
 # Derivation method
 derivationMethod = AD()
@@ -36,7 +36,7 @@ gust = create_Continuous1DGust(spectrum=spectrum,generationMethod=generationMeth
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Set tip loss function at specified airspeed and root angle
-surf.tipLossDecayFactor = Pazy_tip_loss_factor(θ*180/π,U)
+surf.tipLossDecayFactor = tip_loss_factor_Pazy(θ*180/π,U)
 update_beam!(wing)
 
 # Model
@@ -49,7 +49,7 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displa
 
 # Time variables
 Δt = τ/500
-tf = 5*t0 + τ
+tf = 3*t0 + τ
 
 # Initial velocities update options
 initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=true, relaxFactor=0.5, Δt=Δt/10)

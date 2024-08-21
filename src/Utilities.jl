@@ -1,4 +1,4 @@
-using Revise, Parameters, SparseArrays, LinearAlgebra, Statistics, QuadGK, LinearInterpolations, ForwardDiff, FiniteDifferences, Random, FFTW
+using FFTW, FiniteDifferences, ForwardDiff, LinearAlgebra, LinearInterpolations, Parameters, QuadGK, Random, Revise, SparseArrays, Statistics
 
 # First vector of basis A, resolved in that basis
 const a1 = [1.0; 0.0; 0.0]
@@ -59,18 +59,6 @@ end
 export rms
 
 
-# Divides the input variables in-place
-function divide_inplace!(divisor::Number, vars...)
-    return (var ./ divisor for var in vars)
-end
-
-
-# Multiplies the input variables in-place
-function multiply_inplace!(multiplier::Number, vars...)
-    return (var .* multiplier for var in vars)
-end
-
-
 """
     tilde(v::Vector{<:Number})
 
@@ -86,19 +74,24 @@ function tilde(v::Vector{<:Number})
 end
 export tilde
 
+# Divides the input variables in-place
+function divide_inplace!(divisor::Number, vars...)
+    return (var ./ divisor for var in vars)
+end
 
-"""
-    mul3(A1,A2,A3,b)
 
-Computes the scalar product of a third-order tensor represented by matrices A1, A2, and A3 with the vector b
+# Multiplies the input variables in-place
+function multiply_inplace!(multiplier::Number, vars...)
+    return (var .* multiplier for var in vars)
+end
 
-"""
+
+# Computes the scalar product of a third-order tensor represented by matrices A1, A2, and A3 with the vector b
 function mul3(A1,A2,A3,b)
     
     return hcat(A1*b, A2*b, A3*b)
     
 end
-export mul3
 
 
 """
@@ -559,14 +552,7 @@ function rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3
 end
 
 
-"""
-    tangent_operator_transpose_WM(p::Vector{Float64})
-
-Computes the transpose of tangent operator tensor according to Wiener-Milenkovic parameters
-
-# Arguments
-- `p::Vector{Float64}` = rotation parameters
-"""
+# Computes the transpose of tangent operator tensor according to Wiener-Milenkovic parameters
 function tangent_operator_transpose_WM(p::Vector{Float64})
 
     # Scaling factor and scaled rotation parameters
@@ -638,14 +624,7 @@ function tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3
 end
 
 
-"""
-    tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Float64})
-
-Computes the derivatives of the tangent tensor's transpose with respect to the extended rotation parameters
-
-# Arguments
-- `p::Vector{Float64}` = rotation parameters
-"""
+# Computes the derivatives of the tangent tensor's transpose with respect to the extended rotation parameters
 function tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Float64})
 
     # Scaling factor and scaled rotation parameters

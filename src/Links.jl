@@ -23,7 +23,7 @@ end
 """
     create_TrimLoadsLink(; masterBC::BC,slaveBCs::Vector{BC})
 
-Creates a link between trim loads so that they are equal
+Trim loads link constructor (a link between trim loads so that they are equal)
 
 # Keyword arguments
 - `masterBC::BC` = master BC
@@ -79,7 +79,7 @@ end
 """
     create_FlapLink(; kwargs...)
 
-Creates a link between flapped surfaces
+Flap link constructor (a link between flapped surfaces)
 
 # Keyword arguments
 - `masterBeam::Beam` = beam of the master surface

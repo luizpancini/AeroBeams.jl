@@ -38,13 +38,16 @@ for (i,m) in enumerate(mRange)
 end
 
 # Load reference data
-torsion_u3VsMass_Exp = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_u3VsMass_Exp.txt"))
-torsion_u3VsMass_UMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_u3VsMass_UMNAST.txt"))
-torsion_thetaVsMass_Exp = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_thetaVsMass_Exp.txt"))
-torsion_thetaVsMass_UMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_thetaVsMass_UMNAST.txt"))
+u3Exp = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_u3VsMass_Exp.txt"))
+u3UMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_u3VsMass_UMNAST.txt"))
+θExp = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_thetaVsMass_Exp.txt"))
+θUMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/torsion_thetaVsMass_UMNAST.txt"))
 
 # Plots
 # ------------------------------------------------------------------------------
+lw = 2
+ms = 4
+msw = 0
 relPath = "/test/outputs/figures/PazyWingTorsionTest"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
@@ -54,16 +57,16 @@ display(deformationPlot)
 # Tip midchord OOP displacement (offset from zero tip mass value) vs. tip mass
 gr()
 plt1 = plot(xlabel="Tip mass [kg]", ylabel="Tip OOP displacement offset [% semispan]", xlims=[0,3])
-plot!(mRange, (tip_OOP.-tip_OOP[1])/L*100, c=:black, lw=2, label="AeroBeams")
-plot!(torsion_u3VsMass_UMNAST[1,:], torsion_u3VsMass_UMNAST[2,:], c=:blue, ls=:dash, lw=2, label="UM/NAST")
-scatter!(torsion_u3VsMass_Exp[1,:], torsion_u3VsMass_Exp[2,:], mc=:red, ms=3,msw=0, label="Exp.")
+plot!(mRange, (tip_OOP.-tip_OOP[1])/L*100, c=:black, lw=lw, label="AeroBeams")
+plot!(u3UMNAST[1,:], u3UMNAST[2,:], c=:blue, ls=:dash, lw=lw, label="UM/NAST")
+scatter!(u3Exp[1,:], u3Exp[2,:], mc=:red, ms=ms, msw=msw, label="Exp.")
 display(plt1)
 savefig(string(absPath,"/PazyWingTorsionTest_OOP.pdf"))
 # Tip twist vs. tip mass
 plt2 = plot(xlabel="Tip mass [kg]", ylabel="Tip twist [deg]", xlims=[0,3])
-plot!(mRange, tip_twist, c=:black, lw=2, label="AeroBeams")
-plot!(torsion_thetaVsMass_UMNAST[1,:], torsion_thetaVsMass_UMNAST[2,:], c=:blue, ls=:dash, lw=2, label="UM/NAST")
-scatter!(torsion_thetaVsMass_Exp[1,:], torsion_thetaVsMass_Exp[2,:], mc=:red, ms=3,msw=0, label="Exp.")
+plot!(mRange, tip_twist, c=:black, lw=lw, label="AeroBeams")
+plot!(θUMNAST[1,:], θUMNAST[2,:], c=:blue, ls=:dash, lw=lw, label="UM/NAST")
+scatter!(θExp[1,:], θExp[2,:], mc=:red, ms=ms, msw=msw, label="Exp.")
 display(plt2)
 savefig(string(absPath,"/PazyWingTorsionTest_twist.pdf"))
 

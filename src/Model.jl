@@ -1,9 +1,8 @@
-"""
-@with_kw mutable struct Model
+#
 
-    Model composite type
+    # Model composite type
 
-"""
+#
 @with_kw mutable struct Model
 
     # Primary (inputs for the definition of the model)

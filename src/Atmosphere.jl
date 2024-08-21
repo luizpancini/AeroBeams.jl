@@ -1,12 +1,8 @@
-"""
+#
 
-    Atmosphere composite type
+    # Atmosphere composite type
 
-# Fields
-- `ρ::Number`
-- `μ::Number`
-- `a::Number`
-"""
+#
 @with_kw mutable struct Atmosphere
 
     ρ::Number = 1.225
@@ -45,7 +41,7 @@ end
 """
     standard_atmosphere(altitude::Number)
 
-Calculates air properties from the International Standard Atmosphere (https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
+Atmosphere constructor based on the International Standard Atmosphere (https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
 
 # Arguments
 - `altitude::Number`

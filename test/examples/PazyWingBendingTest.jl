@@ -37,13 +37,14 @@ for (i,m) in enumerate(mRange)
 end
 
 # Load reference data
-bending_u3VsMass_Exp = readdlm(string(pwd(),"/test/referenceData/Pazy/bending_u3VsMass_Exp.txt"))
-bending_u3VsMass_UMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/bending_u3VsMass_UMNAST.txt"))
+u3Exp = readdlm(string(pwd(),"/test/referenceData/Pazy/bending_u3VsMass_Exp.txt"))
+u3UMNAST = readdlm(string(pwd(),"/test/referenceData/Pazy/bending_u3VsMass_UMNAST.txt"))
 
 # Plots
 # ------------------------------------------------------------------------------
 lw = 2
-ms = 3
+ms = 4
+msw = 0
 relPath = "/test/outputs/figures/PazyWingBendingTest"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
@@ -54,8 +55,8 @@ display(deformationPlot)
 gr()
 plt1 = plot(xlabel="Tip mass [kg]", ylabel="Tip OOP displacement offset [% semispan]", xlims=[0,3])
 plot!(mRange, (tip_OOP.-tip_OOP[1])/L*100, c=:black, lw=lw, label="AeroBeams")
-plot!(bending_u3VsMass_UMNAST[1,:], bending_u3VsMass_UMNAST[2,:], c=:blue, ls=:dash, lw=lw, label="UM/NAST")
-scatter!(bending_u3VsMass_Exp[1,:], bending_u3VsMass_Exp[2,:], mc=:red, ms=ms,msw=0, label="Exp.")
+plot!(u3UMNAST[1,:], u3UMNAST[2,:], c=:blue, ls=:dash, lw=lw, label="UM/NAST")
+scatter!(u3Exp[1,:], u3Exp[2,:], mc=:red, ms=ms, msw=msw, label="Exp.")
 display(plt1)
 savefig(string(absPath,"/PazyWingBendingTest_OOP.pdf"))
 

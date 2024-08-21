@@ -1,3 +1,5 @@
+using DelimitedFiles
+
 # Gets the normalized nodal positions of the Pazy wing
 function Pazy_nodal_positions()
     return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
@@ -219,7 +221,7 @@ export create_PazyFFWT
 
 
 """
-    Pazy_tip_loss_factor(αᵣ::Number,U::Number)
+    tip_loss_factor_Pazy(αᵣ::Number,U::Number)
 
 Computes the tip loss factor for the Pazy wing's tip correction function
 
@@ -227,7 +229,7 @@ Computes the tip loss factor for the Pazy wing's tip correction function
 - `αᵣ::Number` = root pitch angle, in degrees
 - `U::Number` = airspeed
 """
-function Pazy_tip_loss_factor(αᵣ::Number,U::Number)
+function tip_loss_factor_Pazy(αᵣ::Number,U::Number)
 
     # Bound inputs
     αᵣ = min(7,max(αᵣ,0))
@@ -244,7 +246,7 @@ function Pazy_tip_loss_factor(αᵣ::Number,U::Number)
     
     return τ₀ + τ₁*U + τ₂*U^2
 end
-export Pazy_tip_loss_factor
+export tip_loss_factor_Pazy
 
 
 """

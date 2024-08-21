@@ -1,8 +1,8 @@
-"""
+#
 
-    Boundary conditions composite type
+    # Boundary conditions composite type
 
-"""
+#
 @with_kw mutable struct BC
 
     # Primary fields (inputs)

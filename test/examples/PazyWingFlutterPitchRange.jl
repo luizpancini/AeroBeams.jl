@@ -46,7 +46,7 @@ for (i,θ) in enumerate(θRange)
         # Display progress
         println("Solving for θ = $θ deg, U = $U m/s")
         # Set tip loss function at current airspeed and root angle
-        surf.tipLossDecayFactor = Pazy_tip_loss_factor(θ,U)
+        surf.tipLossDecayFactor = tip_loss_factor_Pazy(θ,U)
         update_beam!(wing)
         # Update velocity of basis A (and update model)
         set_motion_basis_A!(model=PazyWingFlutterPitchRange,v_A=[0;U;0])

@@ -1,10 +1,10 @@
 abstract type BeamElement end
 
-"""
+#
 
-    Beam composite type
+    # Beam composite type
 
-"""
+#
 @with_kw mutable struct Beam
 
     # Primary (inputs to beam creation)
@@ -84,7 +84,7 @@ export Beam
 """
     create_Beam(; kwargs...)
 
-Creates a beam
+Beam constructor
 
 # Keyword Arguments
 - `name::String` = name of the beam

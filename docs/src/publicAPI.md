@@ -20,32 +20,27 @@ IndicialGust
 
 ### Creating an airfoil
 ```@docs
-Airfoil
 create_Airfoil
 create_flapped_Airfoil
 ```
 
 ### Creating an aerodynamic surface
 ```@docs
-AeroSurface
 create_AeroSurface
 ```
 
 ### Creating an atmosphere
 ```@docs
-Atmosphere
 standard_atmosphere
 ```
 
 ### Creating boundary conditions
 ```@docs
-BC
 create_BC
 ```
 
 ### Creating a beam
 ```@docs
-Beam
 create_Beam
 update_beam!
 add_point_inertias_to_beam!
@@ -73,7 +68,6 @@ create_FlapLink
 
 ### Creating a model
 ```@docs
-Model
 create_Model
 update_model!
 set_motion_basis_A!
@@ -87,13 +81,9 @@ PointInertia
 ### Creating and solving a problem
 ```@docs
 InitialVelocitiesUpdateOptions
-SteadyProblem
 create_SteadyProblem
-TrimProblem
 create_TrimProblem
-EigenProblem
 create_EigenProblem
-DynamicProblem
 create_DynamicProblem
 solve!
 solve_eigen!
@@ -108,7 +98,7 @@ create_RotationConstraint
 ```@docs
 create_Pazy
 create_PazyFFWT
-Pazy_tip_loss_factor
+tip_loss_factor_Pazy
 create_Helios
 create_conventional_HALE
 create_BWB
@@ -134,14 +124,11 @@ create_UnitsSystem
 round_off!
 rms
 tilde
-mul3
 isotropic_stiffness_matrix
 inertia_matrix
 rotation_tensor_E321
 rotation_tensor_E313
 rotation_tensor_WM
-tangent_operator_transpose_WM
-tangent_tensor_transpose_derivatives_extended_parameters
 rotation_parameters_WM
 ypr_from_rotation_tensor
 quaternion_from_rotation_tensor

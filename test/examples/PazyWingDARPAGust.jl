@@ -35,7 +35,7 @@ gust = create_DiscreteSpaceGust(type="DARPA",length=gustLength,width=gustWidth,v
 clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Set tip loss function at specified airspeed and root angle
-surf.tipLossDecayFactor = Pazy_tip_loss_factor(θ*180/π,U)
+surf.tipLossDecayFactor = tip_loss_factor_Pazy(θ*180/π,U)
 update_beam!(wing)
 
 # Model

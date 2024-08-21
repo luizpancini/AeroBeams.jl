@@ -102,11 +102,11 @@ for (i,λᵤ) in enumerate(λᵤRange)
 end
 
 # Analytical solution for angular velocity and acceleration
-HT = t -> tangent_operator_transpose_WM([p(t);0;0])
-HT_p = t -> tangent_tensor_transpose_derivatives_extended_parameters([p(t);0;0])
+HT = t -> AeroBeams.tangent_operator_transpose_WM([p(t);0;0])
+HT_p = t -> AeroBeams.tangent_tensor_transpose_derivatives_extended_parameters([p(t);0;0])
 HT_p1,HT_p2,HT_p3 = t -> HT_p(t)[1], t -> HT_p(t)[2], t -> HT_p(t)[3]
 ΩAnalytical = t -> HT(t)*[pdot(t);0;0]
-ΩdotAnalytical = t -> mul3(HT_p1(t),HT_p2(t),HT_p3(t),[pdot(t);0;0])*[pdot(t);0;0] + HT(t)*[pddot(t);0;0]
+ΩdotAnalytical = t -> AeroBeams.mul3(HT_p1(t),HT_p2(t),HT_p3(t),[pdot(t);0;0])*[pdot(t);0;0] + HT(t)*[pddot(t);0;0]
 Ω1Analytical = t -> ΩAnalytical(t)[1]
 Ωdot1Analytical = t -> ΩdotAnalytical(t)[1]
 

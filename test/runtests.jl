@@ -1,7 +1,8 @@
-using Test
+using Test, BenchmarkTools
 
 @testset "Cantilever with distributed follower force static analysis" begin
     include("examples/distributedLoadCantilever.jl")
+    @btime rms(tip_u1)
     @test isapprox(-tip_u1[end]/L,1.4299, atol=1e-4)
     @test isapprox(tip_u3[end]/L,0.3725, atol=1e-4)
     @test isapprox(-tip_angle[end]/π,1.0321, atol=1e-4)

@@ -1,8 +1,8 @@
-"""
+#
 
-    AeroSurface composite type
+    # AeroSurface composite type
 
-"""
+#
 @with_kw mutable struct AeroSurface
 
     # Primary (inputs to aero surface creation)
@@ -61,7 +61,7 @@ export AeroSurface
 """
     create_AeroSurface(; kwargs...)
 
-Creates an aerodynamic surface
+Aerodynamic surface constructor
 
 # Keyword arguments
 - `solver::AeroSolver` = aerodynamic solver for pitch-plunge-induced loads

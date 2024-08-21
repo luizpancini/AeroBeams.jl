@@ -1,5 +1,4 @@
 #
-# @with_kw mutable struct RotationConstraint
 
 #     RotationConstraint composite type
 

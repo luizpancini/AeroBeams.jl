@@ -1567,16 +1567,11 @@ function get_airfoil_coordinates(name::String)
 end
 
 
-"""
-    Airfoil composite type
+#
 
-# Fields
-- `name::String`
-- `coordinates::Matrix{Float64}`
-- `attachedFlowParameters::AttachedFlowParameters`
-- `parametersBLi::BLiParameters`
-- `parametersBLo::BLoParameters`
-"""
+    # Airfoil composite type
+
+#
 @with_kw mutable struct Airfoil
 
     name::String
@@ -1590,18 +1585,18 @@ export Airfoil
 
 
 """
-    create_Airfoil(;name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+    create_Airfoil(; kwargs...)
 
-Initializes the airfoil with the predefined name 
+Airfoil constructor
 
 # Arguments
-- `name::String`
-- `Re::Number`
-- `Ma::Number`
-- `U::Number`
-- `b::Number`
+- `name::String` = name of the airfoil
+- `Re::Number` = Reynolds number
+- `Ma::Number` = Mach number
+- `U::Number` = relative airspeed
+- `b::Number` = semichord
 """
-function create_Airfoil(;name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+function create_Airfoil(; name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
     coordinates = get_airfoil_coordinates(name)
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
@@ -1616,15 +1611,15 @@ export create_Airfoil
 """
     create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0)
 
-Initializes the airfoil with the predefined name and flap site ID 
+Airfoil constructor (with a trailing-edge flap) 
 
 # Arguments
-- `name::String`
-- `flapSiteID::Int64`
-- `Re::Number`
-- `Ma::Number`
-- `U::Number`
-- `b::Number`
+- `name::String` = name of the airfoil
+- `flapSiteID::Int64` = flap site ID
+- `Re::Number` = Reynolds number
+- `Ma::Number` = Mach number
+- `U::Number` = relative airspeed
+- `b::Number` = semichord
 """
 function create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
