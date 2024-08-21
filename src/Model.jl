@@ -1,7 +1,7 @@
 """
 @with_kw mutable struct Model
 
-Model composite type
+    Model composite type
 
 """
 @with_kw mutable struct Model
@@ -59,7 +59,7 @@ export Model
 
 
 """
-create_Model(;name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
+    create_Model(; kwargs...)
 
 Creates a model
 
@@ -83,7 +83,7 @@ Creates a model
 - `flapLinks::Vector{FlapLink}` = links between flapped surfaces
 - `rotationConstraints::Vector{RotationConstraint}` = rotation constraints
 """
-function create_Model(;name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
+function create_Model(; name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
     
     # Initialize 
     self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,rotationConstraints=rotationConstraints)
@@ -97,7 +97,7 @@ export create_Model
 
 
 """
-update_model!(model::Model)
+    update_model!(model::Model)
 
 Updates the model with its current settings
 
@@ -159,12 +159,7 @@ end
 export update_model!
 
 
-"""
-validate_model!(model::Model)
-
-Validates the inputs to the model
-
-"""
+# Validates the inputs to the model
 function validate_model!(model::Model)
 
     @unpack units,initialPosition,gravityVector,p_A0,altitude = model
@@ -192,12 +187,7 @@ function validate_model!(model::Model)
 end
 
 
-"""
-validate_and_update_motion_basis_A!(model::Model)
-
-Validates and updates the motion variables of basis A
-
-"""
+# Validates and updates the motion variables of basis A
 function validate_and_update_motion_basis_A!(model::Model)
 
     @unpack u_A,v_A,ω_A,vdot_A,ωdot_A,skipValidationMotionBasisA = model
@@ -333,12 +323,7 @@ function validate_and_update_motion_basis_A!(model::Model)
 end
 
 
-"""
-assemble_model!(model::Model,beams::Vector{Beam})
-
-Loads the assembly of beams into the model
-
-"""
+# Loads the assembly of beams into the model
 function assemble_model!(model::Model,beams::Vector{Beam})
 
     # Reset to a model empty of beams and elements
@@ -494,12 +479,7 @@ function assemble_model!(model::Model,beams::Vector{Beam})
 end
 
 
-"""
-inertia_properties!(model::Model)
-
-Computes the inertia properties of the undeformed assembly
-
-"""
+# Computes the inertia properties of the undeformed assembly
 function inertia_properties!(model::Model)
 
     @unpack elements = model
@@ -531,12 +511,7 @@ function inertia_properties!(model::Model)
 end
 
 
-"""
-set_atmosphere!(model::Model)
-
-Sets the atmosphere data
-
-"""
+# Sets the atmosphere data
 function set_atmosphere!(model::Model)
 
     @unpack altitude,atmosphere = model
@@ -555,12 +530,7 @@ function set_atmosphere!(model::Model)
 end
 
 
-"""
-update_linked_flap_deflections!(model::Model)
-
-Updates the linked flap deflections for the slave beams
-
-"""
+# Updates the linked flap deflections for the slave beams
 function update_linked_flap_deflections!(model::Model)
 
     @unpack flapLinks = model
@@ -626,12 +596,7 @@ function update_linked_flap_deflections!(model::Model)
 end
 
 
-"""
-update_number_gust_states!(model::Model)
-
-Updates the number of gust states in every element with aerodynamic surface
-
-"""
+# Updates the number of gust states in every element with aerodynamic surface
 function update_number_gust_states!(model::Model) 
 
     @unpack gust,elements = model
@@ -697,12 +662,7 @@ function update_number_gust_states!(model::Model)
 end
 
 
-"""
-update_loads_trim_links_global_ids!(model::Model)
-
-Updates the nodes' global IDs of the loads trim links
-
-"""
+# Updates the nodes' global IDs of the loads trim links
 function update_loads_trim_links_global_ids!(model::Model)
 
     @unpack trimLoadsLinks = model
@@ -727,12 +687,7 @@ function update_loads_trim_links_global_ids!(model::Model)
 end
 
 
-"""
-update_spring_nodes_ids!(model::Model)
-
-Updates the global IDs of the springs' nodes, the list of springed nodes and the list of springs on nodes
-
-"""
+# Updates the global IDs of the springs' nodes, the list of springed nodes and the list of springs on nodes
 function update_spring_nodes_ids!(model::Model)
 
     @unpack beams,nNodesTotal = model
@@ -777,12 +732,7 @@ function update_spring_nodes_ids!(model::Model)
 end
 
 
-"""
-update_relative_rotation_constraint_elements_ids!(model::Model)
-
-Updates the global IDs of the elements with relative rotation constraints
-
-"""
+# Updates the global IDs of the elements with relative rotation constraints
 function update_relative_rotation_constraint_elements_ids!(model::Model)
 
     @unpack rotationConstraints,elements = model
@@ -808,12 +758,7 @@ function update_relative_rotation_constraint_elements_ids!(model::Model)
 end
 
 
-"""
-initialize_basis_A_rotation!(model::Model)
-
-Initializes the rotation tensor from basis I (fixed, inertial) to basis A, and its transpose
-
-"""
+# Initializes the rotation tensor from basis I (fixed, inertial) to basis A, and its transpose
 function initialize_basis_A_rotation!(model::Model)
 
     @unpack p_A0 = model
@@ -827,12 +772,7 @@ function initialize_basis_A_rotation!(model::Model)
 end
 
 
-"""
-update_initial_conditions!(model::Model)
-
-Updates the initial condition states on all elements of the assembly
-
-"""
+# Updates the initial condition states on all elements of the assembly
 function update_initial_conditions!(model::Model)
 
     @unpack beams,specialNodes = model
@@ -943,12 +883,7 @@ function update_initial_conditions!(model::Model)
 end
 
 
-"""
-set_BCs!(model::Model)
-
-Sets the BCs onto the model
-
-"""
+# Sets the BCs onto the model
 function set_BCs!(model::Model,BCs::Vector{BC})
 
     # Set BCs on model
@@ -965,15 +900,9 @@ function set_BCs!(model::Model,BCs::Vector{BC})
     # Remove duplicated nodes from list
     unique!(model.BCedNodes)
 end
-export set_BCs!
 
 
-"""
-get_special_nodes!(model::Model)
-
-Gets the special nodes in the system of equations: connection, boundary, and BC'ed nodes
-
-"""
+# Gets the special nodes in the system of equations: connection, boundary, and BC'ed nodes
 function get_special_nodes!(model::Model)
 
     @unpack elements,nNodesTotal,elementNodes,BCs,BCedNodes,springedNodes,springsOnNodes = model
@@ -1063,12 +992,7 @@ function get_special_nodes!(model::Model)
 end
 
 
-"""
-get_system_indices!(model::Model)
-
-Gets the indices (for equations and DOFs) of the system of equations
-
-"""
+# Gets the indices (for equations and DOFs) of the system of equations
 function get_system_indices!(model::Model)
 
     @unpack beams,elements,nNodesTotal,specialNodes,specialNodesGlobalIDs,BCedNodes,trimLoadsLinks,flapLinks,rotationConstraints = model
@@ -1418,12 +1342,7 @@ function get_system_indices!(model::Model)
 end
 
 
-"""
-update_relative_rotation_constraint_data!(model::Model)
-
-Updates the aggregate data of relative rotation constraints
-
-"""
+# Updates the aggregate data of relative rotation constraints
 function update_relative_rotation_constraint_data!(model::Model)
 
     @unpack rotationConstraints,elements = model
@@ -1445,7 +1364,7 @@ end
 
 
 """
-set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing)
+    set_motion_basis_A!(; kwargs...)
 
 Sets the motion of basis A into the model
 

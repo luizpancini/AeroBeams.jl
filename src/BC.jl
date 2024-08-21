@@ -1,7 +1,6 @@
 """
-@with_kw mutable struct BC
 
-Boundary conditions composite type
+    Boundary conditions composite type
 
 """
 @with_kw mutable struct BC
@@ -36,7 +35,7 @@ export BC
 
 
 """
-create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
+    create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
 
 BC constructor
 
@@ -101,12 +100,7 @@ end
 export create_BC
 
 
-"""
-update_BC_data!(bc::BC,timeNow::Number=0)
-
-Updates the boundary conditions at the current time
-
-"""
+# Updates the boundary conditions at the current time
 function update_BC_data!(bc::BC,timeNow::Number=0)
 
     @unpack name,types,values,R0_n,toBeTrimmed,Fmax,Mmax = bc
@@ -301,4 +295,3 @@ function update_BC_data!(bc::BC,timeNow::Number=0)
     end
 
 end
-

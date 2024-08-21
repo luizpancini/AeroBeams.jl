@@ -1,20 +1,10 @@
-"""
-Pazy_nodal_positions()
-
-Gets the normalized nodal positions of the Pazy wing
-
-"""
+# Gets the normalized nodal positions of the Pazy wing
 function Pazy_nodal_positions()
     return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
 end
 
 
-"""
-Pazy_stiffness_matrices(GAy::Number,GAz::Number)
-
-Gets the sectional stiffness matrices of the Pazy wing
-
-"""
+# Gets the sectional stiffness matrices of the Pazy wing
 function Pazy_stiffness_matrices(GAy::Number,GAz::Number)
 
     @assert GAy > 0
@@ -44,12 +34,7 @@ function Pazy_stiffness_matrices(GAy::Number,GAz::Number)
 end
 
 
-"""
-Pazy_inertia_matrices()
-
-Gets the sectional inertia matrices of the Pazy wing
-
-"""
+# Gets the sectional inertia matrices of the Pazy wing
 function Pazy_inertia_matrices()
 
     # Length and nodal position
@@ -89,7 +74,7 @@ end
 
 
 """
-create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=NACA0018,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy)
+    create_Pazy(; kwargs...)
 
 Creates the Pazy wing
 
@@ -140,7 +125,7 @@ export create_Pazy
 
 
 """
-create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=0,airspeed::Number)
+    create_PazyFFWT(; kwargs...)
 
 Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 
@@ -234,7 +219,7 @@ export create_PazyFFWT
 
 
 """
-Pazy_tip_loss_factor(αᵣ::Number,U::Number)
+    Pazy_tip_loss_factor(αᵣ::Number,U::Number)
 
 Computes the tip loss factor for the Pazy wing's tip correction function
 
@@ -263,7 +248,7 @@ export Pazy_tip_loss_factor
 
 
 """
-create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),g::Number=-9.80665,wingAirfoil::Airfoil=HeliosWingAirfoil,podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool,payloadOnWing::Bool=false)
+    create_Helios(; kwargs...)
 
 Creates a model based on the flying-wing aircraft described by Patil and Hodges in: Flight Dynamics of Highly Flexible Flying Wings (2006)
 
@@ -290,7 +275,7 @@ Creates a model based on the flying-wing aircraft described by Patil and Hodges 
 - `reducedChord::Bool` = flag to employ a reduced (7 ft) chord
 - `payloadOnWing::Bool` = flag to set the payload on the wing's reference line
 """
-function create_Helios(;altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),g::Number=-9.80665,wingAirfoil::Airfoil=deepcopy(HeliosWingAirfoil),podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false)
+function create_Helios(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),g::Number=-9.80665,wingAirfoil::Airfoil=deepcopy(HeliosWingAirfoil),podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Number=1.0,∞::Number=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Number=0,airspeed::Number=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false)
 
     # Validate
     @assert ∞ > 1e8
@@ -422,7 +407,7 @@ export create_Helios
 
 
 """
-create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
+    create_conventional_HALE(; kwargs...)
 
 Creates a model based on the conventional HALE aircraft described by Patil, Hodges and Cesnik in: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
 
@@ -593,7 +578,7 @@ export create_conventional_HALE
 
 
 """
-create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),∞::Number=1e12,stiffnessFactor::Number=1,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Number=40)
+    create_BWB(; kwargs...)
 
 Creates a model based on the blended-wing-body described by Weihua Su's PhD thesis
 

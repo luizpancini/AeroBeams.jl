@@ -1,9 +1,9 @@
-"""
-@with_kw mutable struct UnitsSystem 
+#
+# @with_kw mutable struct UnitsSystem 
 
-    UnitsSystem composite type
+#     UnitsSystem composite type
 
-"""
+#
 @with_kw mutable struct UnitsSystem
 
     # Fields
@@ -15,8 +15,9 @@
 
 end
 
+
 """
-create_UnitsSystem(;length::String="m",force::String="N",angle::String="rad",frequency::String="rad/s",mass::String="kg")
+create_UnitsSystem(; kwargs...)
 
 Creates a system composed of length, force, angle, frequency and mass units (this is only for plotting purposes and does not influence calculations)
 
@@ -41,12 +42,7 @@ end
 export create_UnitsSystem
 
 
-"""
-validate_units_system(units::UnitsSystem)
-
-Validates the units system
-
-"""
+# Validates the units system
 function validate_units_system(units::UnitsSystem)
 
     @unpack length,force,angle,frequency,mass = units

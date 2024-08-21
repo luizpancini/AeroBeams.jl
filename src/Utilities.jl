@@ -1,47 +1,27 @@
-using Revise, Parameters, BenchmarkTools, SparseArrays, LinearAlgebra, Statistics, Plots, QuadGK, LinearInterpolations, ForwardDiff, FiniteDifferences, DelimitedFiles, Random, FFTW, ColorSchemes
+using Revise, Parameters, SparseArrays, LinearAlgebra, Statistics, QuadGK, LinearInterpolations, ForwardDiff, FiniteDifferences, Random, FFTW
 
-"""
-const a1 = [1.0; 0.0; 0.0]
-
-First vector of basis A, resolved in that basis
-"""
+# First vector of basis A, resolved in that basis
 const a1 = [1.0; 0.0; 0.0]
 
 
-"""
-const a2 = [0.0; 1.0; 0.0]
-
-Second vector of basis A, resolved in that basis
-"""
+# Second vector of basis A, resolved in that basis
 const a2 = [0.0; 1.0; 0.0]
 
 
-"""
-const a3 = [0.0; 0.0; 1.0]
-
-Third vector of basis A, resolved in that basis
-"""
+# Third vector of basis A, resolved in that basis
 const a3 = [0.0; 0.0; 1.0]
 
 
-"""
-I3 = Matrix(1.0*LinearAlgebra.I,3,3)
-
-3x3 identity matrix
-"""
+# 3x3 identity matrix
 const I3 = Matrix(1.0*LinearAlgebra.I,3,3)
 
 
-"""
-I6 = Matrix(1.0*LinearAlgebra.I,6,6)
-
-6x6 identity matrix
-"""
+# 6x6 identity matrix
 const I6 = Matrix(1.0*LinearAlgebra.I,6,6)
 
 
 """
-round_off!(x)
+    round_off!(x)
 
 Rounds the array or number to input tolerance (defaults to machine epsilon)
 
@@ -68,7 +48,7 @@ export round_off!
 
 
 """
-rms(x)
+    rms(x)
 
 Computes the root mean square of an array
 
@@ -79,36 +59,20 @@ end
 export rms
 
 
-"""
-divide_inplace!(divisor::Number, vars...)
-
-Divides the input variables in-place
-
-# Arguments
-- `divisor::Number` = divisor
-- `vars...` = variables to be divided
-"""
+# Divides the input variables in-place
 function divide_inplace!(divisor::Number, vars...)
     return (var ./ divisor for var in vars)
 end
 
 
-"""
-multiply_inplace!(divisor::Number, vars...)
-
-Multiplies the input variables in-place
-
-# Arguments
-- `multiplier::Number` = multiplier
-- `vars...` = variables to be multiplied
-"""
+# Multiplies the input variables in-place
 function multiply_inplace!(multiplier::Number, vars...)
     return (var .* multiplier for var in vars)
 end
 
 
 """
-tilde(v::Vector{<:Number})
+    tilde(v::Vector{<:Number})
 
 Computes the skew-symmetric matrix associated with a vector
 
@@ -124,7 +88,7 @@ export tilde
 
 
 """
-mul3(A1,A2,A3,b)
+    mul3(A1,A2,A3,b)
 
 Computes the scalar product of a third-order tensor represented by matrices A1, A2, and A3 with the vector b
 
@@ -138,7 +102,7 @@ export mul3
 
 
 """
-isotropic_stiffness_matrix(;EA::Number,GAy::Number,GAz::Number,GJ::Number,EIy::Number,EIz::Number)
+    isotropic_stiffness_matrix(;EA::Number,GAy::Number,GAz::Number,GJ::Number,EIy::Number,EIz::Number)
 
 Creates a 6x6 sectional stiffness matrix
 
@@ -168,7 +132,7 @@ export isotropic_stiffness_matrix
 
 
 """
-inertia_matrix(;ρA::Number,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
+    inertia_matrix(;ρA::Number,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
 
 Creates a 6x6 sectional inertia matrix
 
@@ -198,12 +162,7 @@ end
 export inertia_matrix
 
 
-"""
-curvature_quantities(k::Vector{<:Number})
-
-Computes some useful functions of the curvature vector
-
-"""
+# Computes some useful functions of the curvature vector
 function curvature_quantities(k::Vector{<:Number})
 
     # External self-product 
@@ -219,12 +178,7 @@ function curvature_quantities(k::Vector{<:Number})
 end
 
 
-"""
-position_vector_from_curvature(R0::Matrix{Float64}, k::Vector{<:Number}, x1::Number)
-
-Computes the position vector at an arclength value
-
-"""
+# Computes the position vector at an arclength value
 function position_vector_from_curvature(R0::Matrix{Float64},k::Vector{<:Number},x1::Number) 
 
     kkT, ktilde, knorm = curvature_quantities(k)
@@ -238,12 +192,7 @@ function position_vector_from_curvature(R0::Matrix{Float64},k::Vector{<:Number},
 end
 
 
-"""
-rotation_tensor_from_curvature(R0::Matrix{Float64}, k::Vector{<:Number}, x1::Number)
-
-Computes the rotation tensor at an arclength position 
-
-"""
+# Computes the rotation tensor at an arclength position
 function rotation_tensor_from_curvature(R0::Matrix{Float64},k::Vector{<:Number},x1::Number) 
 
     kkT, ktilde, knorm = curvature_quantities(k)
@@ -263,7 +212,7 @@ end
 
 
 """
-rotation_tensor_E321(p::Vector{<:Number})
+    rotation_tensor_E321(p::Vector{<:Number})
 
 Computes the rotation tensor according to Euler parameters sequence 3-2-1
 
@@ -295,8 +244,9 @@ function rotation_tensor_E321(p::Vector{<:Number})
 end
 export rotation_tensor_E321
 
+
 """
-rotation_tensor_E321(p::Vector{<:Number})
+    rotation_tensor_E313(p::Vector{<:Number})
 
 Computes the rotation tensor according to Euler parameters sequence 3-1-3
 
@@ -328,8 +278,9 @@ function rotation_tensor_E313(p::Vector{<:Number})
 end
 export rotation_tensor_E313
 
+
 """
-rotation_tensor_WM(p::Vector{<:Number})
+    rotation_tensor_WM(p::Vector{<:Number})
 
 Computes the rotation tensor according to Wiener-Milenkovic parameters
 
@@ -375,12 +326,7 @@ end
 export rotation_tensor_WM
 
 
-"""
-rotation_parameter_scaling(p::Vector{<:Number})
-
-Scales the Wiener-Milenkovic rotation parameters
-
-"""
+# Scales the Wiener-Milenkovic rotation parameters
 function rotation_parameter_scaling(p::Vector{<:Number})
 
     # Initialize scaling factor and number of odd half rotations
@@ -407,12 +353,7 @@ function rotation_parameter_scaling(p::Vector{<:Number})
 end
 
 
-"""
-rotation_tensor_derivatives_scaled_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²)
-
-Computes the derivatives of the rotation tensor with respect to the scaled rotation parameters
-
-"""
+# Computes the derivatives of the rotation tensor with respect to the scaled rotation parameters
 function rotation_tensor_derivatives_scaled_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²)
 
     # Derivatives of υ² w.r.t. scaled rotation parameters
@@ -452,12 +393,7 @@ function rotation_tensor_derivatives_scaled_parameters(ps,ps0,ps1,ps2,ps3,ps1s,p
 end
 
 
-"""
-scaling_derivatives_extended_parameters(λ::Float64,p::Vector{<:Number},pNorm::Number)
-
-Computes the derivatives of the scaling factor with respect to the extended rotation parameters
-
-"""
+# Computes the derivatives of the scaling factor with respect to the extended rotation parameters
 function scaling_derivatives_extended_parameters(λ::Float64,p::Vector{<:Number},pNorm::Number)
 
     λ_p = λ == 1.0 ? zeros(3) : (1-λ)*p/pNorm^2
@@ -467,12 +403,7 @@ function scaling_derivatives_extended_parameters(λ::Float64,p::Vector{<:Number}
 end
 
 
-"""
-rotation_tensor_derivatives_extended_parameters(p,pNorm,λ,ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²)
-
-Computes the derivatives of the rotation tensor with respect to the extended rotation parameters
-
-"""
+# Computes the derivatives of the rotation tensor with respect to the extended rotation parameters
 function rotation_tensor_derivatives_extended_parameters(p,pNorm,λ,ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²)
 
     # Rotation tensor derivatives w.r.t. scaled rotation parameters
@@ -532,12 +463,7 @@ function rotation_tensor_derivatives_extended_parameters(p::Vector{Float64})
 end
 
 
-"""
-rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot)
-
-Computes the time derivative of the rotation tensor 
-
-"""
+# Computes the time derivative of the rotation tensor 
 function rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot)
 
     # Scaled rotation parameters time derivative
@@ -568,12 +494,7 @@ function rotation_tensor_time_derivative(p::Vector{Float64},pdot::Vector{Float64
 end
 
 
-"""
-rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,Θ_ps1,Θ_ps2,Θ_ps3,υ,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps1dot,ps2dot,ps3dot,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3)
-
-Computes the derivatives of the time derivative of the rotation tensor with respect to the extended rotation parameters 
-
-"""
+# Computes the derivatives of the time derivative of the rotation tensor with respect to the extended rotation parameters 
 function rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,Θ_ps1,Θ_ps2,Θ_ps3,υ,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps1dot,ps2dot,ps3dot,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3)
 
     # υ² second derivatives w.r.t. scaled rotation parameters
@@ -639,7 +560,7 @@ end
 
 
 """
-tangent_operator_transpose_WM(p::Vector{Float64})
+    tangent_operator_transpose_WM(p::Vector{Float64})
 
 Computes the transpose of tangent operator tensor according to Wiener-Milenkovic parameters
 
@@ -661,13 +582,6 @@ function tangent_operator_transpose_WM(p::Vector{Float64})
 end
 export tangent_operator_transpose_WM
 
-
-"""
-tangent_operator_transpose_WM(ps::Vector{Float64},ps0::Float64,υ²::Float64)
-
-Computes the transpose of tangent operator tensor according to Wiener-Milenkovic parameters
-
-"""
 function tangent_operator_transpose_WM(ps::Vector{Float64},ps0::Float64,υ²::Float64)
 
     return 2*υ²*(ps0*I3 + 1/4*ps*(ps') - tilde(ps))
@@ -675,12 +589,7 @@ function tangent_operator_transpose_WM(ps::Vector{Float64},ps0::Float64,υ²::Fl
 end
 
 
-"""
-tangent_operator_transpose_inverse_WM(p::Vector{<:Number})
-
-Computes the inverse of the transpose of the tangent operator tensor according to Wiener-Milenkovic parameters
-
-"""
+# Computes the inverse of the transpose of the tangent operator tensor according to Wiener-Milenkovic parameters
 function tangent_operator_transpose_inverse_WM(p::Vector{<:Number})
 
     # Scaling factor and scaled rotation parameters
@@ -694,13 +603,6 @@ function tangent_operator_transpose_inverse_WM(p::Vector{<:Number})
 
 end
 
-
-"""
-tangent_operator_transpose_inverse_WM(ps::Vector{Float64},ps0::Float64)
-
-Computes the inverse of the transpose of the tangent operator tensor according to Wiener-Milenkovic parameters
-
-"""
 function tangent_operator_transpose_inverse_WM(ps::Vector{Float64},ps0::Float64)
 
     return 1/2*(ps0*I3 + 1/4*ps*(ps') + tilde(ps))
@@ -708,12 +610,7 @@ function tangent_operator_transpose_inverse_WM(ps::Vector{Float64},ps0::Float64)
 end
 
 
-"""
-tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps_p)
-
-Computes the derivatives of the tangent tensor's transpose and its inverse with respect to the extended rotation parameters
-
-"""
+# Computes the derivatives of the tangent tensor's transpose and its inverse with respect to the extended rotation parameters
 function tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps_p)
 
     # Tangent operator transpose derivatives w.r.t. scaled rotation parameters
@@ -742,7 +639,7 @@ end
 
 
 """
-tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Float64})
+    tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Float64})
 
 Computes the derivatives of the tangent tensor's transpose with respect to the extended rotation parameters
 
@@ -790,12 +687,8 @@ function tangent_tensor_transpose_derivatives_extended_parameters(p::Vector{Floa
 end
 export tangent_tensor_transpose_derivatives_extended_parameters
 
-"""
-force_scaling(S::Vector{Matrix{Float64}})
 
-Computes the appropriate force scaling for the linear system of equations
-
-"""
+# Computes the appropriate force scaling for the linear system of equations
 function force_scaling(S::Vector{Matrix{Float64}})
 
     # Create array with compliance entries
@@ -819,12 +712,7 @@ function force_scaling(S::Vector{Matrix{Float64}})
 end
 
 
-"""
-rotation_angle(p::Vector{<:Number})
-
-Computes the rotation angle
-
-"""
+# Computes the rotation angle given the Wiener-Milenkovic rotation parameters
 function rotation_angle(p::Vector{<:Number})
 
     # Scale rotation parameters and get number of half rotations
@@ -842,7 +730,7 @@ end
 
 
 """
-rotation_parameters_WM(R::Matrix{<:Number})
+    rotation_parameters_WM(R::Matrix{<:Number})
 
 Computes the Wiener-Milenkovic rotation parameters given a rotation tensor
 
@@ -872,7 +760,7 @@ export rotation_parameters_WM
 
 
 """
-ypr_from_rotation_tensor(R::Matrix{<:Number},tol::Float64=1e-6)
+    ypr_from_rotation_tensor(R::Matrix{<:Number},tol::Float64=1e-6)
 
 Computes the Euler angles from the sequence 3-2-1 given the rotation tensor
 
@@ -934,7 +822,7 @@ export ypr_from_rotation_tensor
 
 
 """
-quaternion_from_rotation_tensor(R::Matrix{<:Number})
+    quaternion_from_rotation_tensor(R::Matrix{<:Number})
 
 Computes the quaternion (Euler parameters) given a rotation tensor
 
@@ -968,8 +856,9 @@ function quaternion_from_rotation_tensor(R::Matrix{<:Number})
 end
 export quaternion_from_rotation_tensor
 
+
 """
-mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
+    mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
 Applies mode tracking based on eigenvectors match
 
@@ -1022,12 +911,7 @@ end
 export mode_tracking
 
 
-"""
-highest_in_rowcol(O::Matrix{<:Number})
-
-Finds the unrepeated columns of the n highest values in matrix O, where n is the size of O
-
-"""
+# Finds the unrepeated columns of the n highest values in matrix O, where n is the size of O
 function highest_in_rowcol(O::Matrix{<:Number})
 
     # Size of the original matrix
@@ -1064,19 +948,21 @@ end
 
 
 """
-get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number},diffTol::Float64=1e3*eps())
+    get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number}; tol::Float64=1e3*eps())
 
 Computes the FFT and PSD of signal y(t)
 
 # Arguments
 - `t::Vector{<:Number}` = time signal
 - `y::Vector{<:Number}` = quantity signal
-- `diffTol::Float64` = tolerance for time signal being equally spaced
+
+# Keyword arguments
+- `tol::Float64` = tolerance for time signal being equally spaced
 """
-function get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number},diffTol::Float64=1e3*eps())
+function get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number}; tol::Float64=1e3*eps())
     
     @assert length(t) > 1
-    @assert maximum(abs.(diff(diff(t)))) < diffTol "t must be an evenly spaced vector"
+    @assert maximum(abs.(diff(diff(t)))) < tol "t must be an evenly spaced vector"
     @assert length(y) == length(t) "t and y must have the same length"
 
     # Frequency vector

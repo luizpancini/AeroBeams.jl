@@ -1,9 +1,9 @@
-"""
-@with_kw mutable struct TrimLoadsLink
+#
+# @with_kw mutable struct TrimLoadsLink
 
-TrimLoadsLink composite type
+# TrimLoadsLink composite type
 
-"""
+#
 @with_kw mutable struct TrimLoadsLink
 
     # Primary fields (inputs)
@@ -21,7 +21,7 @@ end
 
 
 """
-create_TrimLoadsLink(;masterBC::BC,slaveBCs::Vector{BC})
+    create_TrimLoadsLink(; masterBC::BC,slaveBCs::Vector{BC})
 
 Creates a link between trim loads so that they are equal
 
@@ -29,7 +29,7 @@ Creates a link between trim loads so that they are equal
 - `masterBC::BC` = master BC
 - `slaveBCs::Vector{BC}` = slave BCs
 """
-function create_TrimLoadsLink(;masterBC::BC,slaveBCs::Vector{BC})
+function create_TrimLoadsLink(; masterBC::BC,slaveBCs::Vector{BC})
 
     # Get BCs information
     masterBeam = masterBC.beam
@@ -61,12 +61,12 @@ end
 export create_TrimLoadsLink
 
 
-"""
-@with_kw mutable struct FlapLink
+#
+# @with_kw mutable struct FlapLink
 
-    FlapLink composite type
+#     FlapLink composite type
     
-"""
+#
 @with_kw mutable struct FlapLink
 
     masterBeam::Beam
@@ -77,7 +77,7 @@ end
 
 
 """
-create_FlapLink(;masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Number}=ones(length(slaveBeams)))
+    create_FlapLink(; kwargs...)
 
 Creates a link between flapped surfaces
 
@@ -86,7 +86,7 @@ Creates a link between flapped surfaces
 - `slaveBeams::Vector{Beam}` = beams of the slave surfaces
 - `δMultipliers::Vector{<:Number}` = multiplication factors of flap deflection in slave surfaces relative to the master surface
 """
-function create_FlapLink(;masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Number}=ones(length(slaveBeams)))
+function create_FlapLink(; masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Number}=ones(length(slaveBeams)))
 
     # Validate 
     @assert !isnothing(masterBeam.aeroSurface) "master beam has no aerodynamic surface"

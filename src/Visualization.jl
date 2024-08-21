@@ -1,5 +1,7 @@
+using Plots, ColorSchemes
+
 """
-plot_undeformed_assembly(model::Model)
+plot_undeformed_assembly(model::Model,view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true)
 
 Plots the nodal coordinates of the assembly of beams
 
@@ -541,12 +543,7 @@ end
 export plot_steady_outputs
 
 
-"""
-plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colorScheme=:rainbow,lw=1,legendPos=:best)
-
-Plots output along the arclength coordinate for each beam group
-
-"""
+# Plots output along the arclength coordinate (x1) for each beam group
 function plot_output_of_x1(beamGroups; x1,output,ind,units,YLabel,colorScheme=:rainbow,lw=1,legendPos=:best)
 
     # Initialize multiplication factor
@@ -1933,12 +1930,7 @@ end
 export plot_time_outputs
 
 
-"""
-plot_output_of_time!(plt; t,output,element=NaN,node=NaN,units,YLabel,lw=1,colorScheme=:rainbow,legendPos=:best)
-
-Plots output over time
-
-"""
+# Plots output over time
 function plot_output_of_time!(plt; t,output,element=NaN,node=NaN,units,YLabel,lw=1,colorScheme=:rainbow,showLegend=true,legendPos=:best)
 
     # Validate: either "element" or "node" is NaN
@@ -2009,12 +2001,7 @@ function plot_output_of_time!(plt; t,output,element=NaN,node=NaN,units,YLabel,lw
 end
 
 
-"""
-get_undeformed_airfoil_coords(element::Element)
-
-Computes the undeformed nodal airfoil coordinates
-
-"""
+# Computes the undeformed nodal airfoil coordinates
 function get_undeformed_airfoil_coords(element::Element)
 
     @unpack x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2 = element
@@ -2072,12 +2059,7 @@ function get_undeformed_airfoil_coords(element::Element)
 end
 
 
-"""
-plot_BCs!(plt,problem::Problem,element::Element)
-
-Plots all boundary conditions at the current time
-
-"""
+# Plots all boundary conditions at the current time
 function plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,timeNow,tIndNow)
 
     @unpack BCs = problem.model
@@ -2111,12 +2093,7 @@ function plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,ti
 end
 
 
-"""
-draw_BC!(plt,problem::Problem,element::Element)
-
-Draws boundary condition
-
-"""
+# Draws boundary condition
 function draw_BC!(plt; isLoad,deadLoadsOnA,followerLoadsOnA,deadLoadsOnb,followerLoadsOnb,R0_n,R_n,Fmax,Mmax,L,P2,x1Plane,x2Plane,x3Plane,view)
 
     # Loop DOFs
@@ -2173,12 +2150,7 @@ function draw_BC!(plt; isLoad,deadLoadsOnA,followerLoadsOnA,deadLoadsOnb,followe
 end
 
 
-"""
-draw_concentrated_force!(plt,problem::Problem,element::Element)
-
-Draws concentrated force
-
-"""
+# Draws concentrated force
 function draw_concentrated_force!(plt; DOF,F,R,P2,Fmax,L,x1Plane,x2Plane,x3Plane,view,color=:green,λ=1/10)
 
     # Get direction vector
@@ -2209,12 +2181,7 @@ function draw_concentrated_force!(plt; DOF,F,R,P2,Fmax,L,x1Plane,x2Plane,x3Plane
 end
 
 
-"""
-draw_concentrated_moment!(plt,problem::Problem,element::Element)
-
-Draws concentrated moment
-
-"""
+# Draws concentrated moment
 function draw_concentrated_moment!(plt; DOF,M,R,P2,Mmax,L,x1Plane,x2Plane,x3Plane,view,color=:green,λ=1)
 
     # Get direction vector
@@ -2233,12 +2200,7 @@ function draw_concentrated_moment!(plt; DOF,M,R,P2,Mmax,L,x1Plane,x2Plane,x3Plan
 end
 
 
-"""
-draw_generalized_displacement!(plt,problem::Problem,element::Element)
-
-Draws generalized displacement boundary condition
-
-"""
+# Draws generalized displacement boundary condition
 function draw_generalized_displacement!(plt; axis,P2,L,x1Plane,x2Plane,x3Plane,view,Δ=zeros(3),λ=1/200,Ndiv=21,color=:red)
 
     # Set x and y triangle vertices for 2D view, if applicable
@@ -2298,12 +2260,7 @@ function draw_generalized_displacement!(plt; axis,P2,L,x1Plane,x2Plane,x3Plane,v
 end
 
 
-"""
-plot_distributed_loads!(plt,problem::Problem,element::Element)
-
-Plots all distributed loads at the current time
-
-"""
+# Plots all distributed loads at the current time
 function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,tIndNow)
 
     @unpack timeNow,maxAeroForce,maxAeroMoment = problem
@@ -2505,12 +2462,7 @@ function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,
 end
 
 
-"""
-draw_distributed_forces!(element::Element)
-
-Draws distributed forces
-
-"""
+# Draws distributed forces
 function draw_distributed_forces!(plt; F,Fmax=maximum(abs.(F)),R,ai,P2,Ndiv,L,x1Plane,x2Plane,x3Plane,view,color=:purple,λ=1/10)
 
     # Normalized vector of distributed forces in current direction  
@@ -2536,12 +2488,7 @@ function draw_distributed_forces!(plt; F,Fmax=maximum(abs.(F)),R,ai,P2,Ndiv,L,x1
 end
 
 
-"""
-draw_distributed_moments!(element::Element)
-
-Draws distributed moments
-
-"""
+# Draws distributed moments
 function draw_distributed_moments!(plt; M,Mmax,R,axis,P2,Ndiv,L,x1Plane,x2Plane,x3Plane,view,color=:purple,λ=1/2)
 
     # Get normalized vector of distributed forces    
@@ -2557,12 +2504,7 @@ function draw_distributed_moments!(plt; M,Mmax,R,axis,P2,Ndiv,L,x1Plane,x2Plane,
 end
 
 
-"""
-draw_aero_loads!(element::Element)
-
-Draws aerodynamic loads
-
-"""
+# Draws aerodynamic loads
 function draw_aero_loads!(plt; ctNorm,cnNorm,cmNorm,R,P2,L,x1Plane,x2Plane,x3Plane,view,color=:green,λ=1/4)
         
     # Vectors for quiver
@@ -2595,12 +2537,7 @@ function draw_aero_loads!(plt; ctNorm,cnNorm,cmNorm,R,P2,L,x1Plane,x2Plane,x3Pla
 end
 
 
-"""
-draw_aero_loads!(element::Element)
-
-Draws aerodynamic loads
-
-"""
+# Draws aerodynamic loads
 function draw_circular_vector!(plt; origin,M,R,L,axis,x1Plane,x2Plane,x3Plane,view,color=:red,r=L*abs(M)/20,angle=9π/5,ah=0.3*r,divisions=30)
     
     # Circle definition

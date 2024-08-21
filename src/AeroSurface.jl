@@ -1,5 +1,4 @@
 """
-@with_kw mutable struct AeroSurface
 
     AeroSurface composite type
 
@@ -60,29 +59,29 @@ export AeroSurface
 
 
 """
-create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
+create_AeroSurface(; kwargs...)
 
-Creates and aerodynamic surface
+Creates an aerodynamic surface
 
 # Keyword arguments
--` solver::AeroSolver`
-- `flapLoadsSolver::FlapAeroSolver`
-- `gustLoadsSolver::GustAeroSolver`
-- `derivationMethod::DerivationMethod`
-- `airfoil::Airfoil`
-- `c::Union{<:Function,Number}`
-- `Λ::Union{<:Function,Number}`
-- `normSparPos::Union{<:Function,Float64}`
-- `normFlapSpan::Union{Nothing,Vector{<:Number}}`
-- `normFlapPos::Union{Nothing,Float64}`
-- `δIsTrimVariable::Bool`
-- `δ::Union{Nothing,<:Function,Number}`
-- `flapSiteID::Union{Nothing,Int64}`
-- `updateAirfoilParameters::Bool`
-- `hasTipCorrection::Bool`
-- `tipLossFunction::String`
-- `tipLossDecayFactor::Float64`
-- `smallAngles::Bool`
+- `solver::AeroSolver` = aerodynamic solver for pitch-plunge-induced loads
+- `flapLoadsSolver::FlapAeroSolver` = aerodynamic solver for flap-induced loads
+- `gustLoadsSolver::GustAeroSolver` = aerodynamic solver for gust-induced loads
+- `derivationMethod::DerivationMethod` = method for calculation of aerodynamic derivatives
+- `airfoil::Airfoil` = airfoil section
+- `c::Union{<:Function,Number}` = chord
+- `Λ::Union{<:Function,Number}` = sweep angle
+- `normSparPos::Union{<:Function,Float64}` = normalized position of the spar (beam reference line) on the chord
+- `normFlapSpan::Union{Nothing,Vector{<:Number}}` = normalized position of the trailing-edge flap along the span (beam arclength)
+- `normFlapPos::Union{Nothing,Float64}` = normalized position of the trailing-edge flap hinge on the chord
+- `δIsTrimVariable::Bool` = flag for trailing-edge deflection being a trim variable
+- `δ::Union{Nothing,<:Function,Number}` = trailing-edge deflection [rad]
+- `flapSiteID::Union{Nothing,Int64}` = trailing-edge flap site ID
+- `updateAirfoilParameters::Bool` = flag to update airfoil parameters with local airspeed
+- `hasTipCorrection::Bool` = flag to employ a tip correction on aerodynamic coefficients
+- `tipLossFunction::String` = respective tip loss function
+- `tipLossDecayFactor::Float64` = respective tip loss factor
+- `smallAngles::Bool` = flag to employ small angles approximation on the calculation of the angle of attack
 """
 function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
 

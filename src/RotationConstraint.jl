@@ -1,9 +1,9 @@
-"""
-@with_kw mutable struct RotationConstraint
+#
+# @with_kw mutable struct RotationConstraint
 
-    RotationConstraint composite type
+#     RotationConstraint composite type
 
-"""
+#
 @with_kw mutable struct RotationConstraint
 
     # Primary (inputs to rotation constraint creation)
@@ -22,7 +22,7 @@ end
 
 
 """
-create_RotationConstraint(; masterBeam::Beam,slaveBeam::Beam,masterElementLocalID::Int64,slaveElementLocalID::Int64,DOF::Int64,value::Number)
+    create_RotationConstraint(; kwargs...)
 
 Rotation constraint constructor
 

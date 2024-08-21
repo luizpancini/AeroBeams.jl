@@ -1,21 +1,21 @@
-"""
-@with_kw mutable struct AttachedFlowParameters
+#
+# @with_kw mutable struct AttachedFlowParameters
 
-    AttachedFlowParameters composite type
+#     AttachedFlowParameters composite type
 
 # Fields
-- `α₀N::Number`
-- `ϵₙ::Number`
-- `ϵₘ::Number`
-- `η::Number`
-- `cd₀::Number`
-- `cdδ::Number`
-- `cm₀::Number`
-- `cmα::Number`
-- `cmδ::Number`
-- `cnα::Number`
-- `cnδ::Number`
-"""
+# - `α₀N::Number`
+# - `ϵₙ::Number`
+# - `ϵₘ::Number`
+# - `η::Number`
+# - `cd₀::Number`
+# - `cdδ::Number`
+# - `cm₀::Number`
+# - `cmα::Number`
+# - `cmδ::Number`
+# - `cnα::Number`
+# - `cnδ::Number`
+#
 @with_kw mutable struct AttachedFlowParameters
 
     α₀N::Number
@@ -221,100 +221,100 @@
 end
 
 
-"""
-@with_kw mutable struct BLiParameters
+#
+# @with_kw mutable struct BLiParameters
 
-    BLiParameters composite type
+#     BLiParameters composite type
 
 # Fields
-- `α₀N::Number`
-- `αds₀::Number`
-- `αₛₛ::Number`
-- `α1₀N::Number`
-- `α1₀M::Number`
-- `α1₀T::Number`
-- `βσ1N::Number`
-- `βσ1T::Number`
-- `βσ2N::Number`
-- `βS2Nlpr::Number`
-- `βS2Tlpr::Number`
-- `βS1Nu::Number`
-- `βS1Mu::Number`
-- `βS1Tu::Number`
-- `βS1Nd::Number`
-- `βS1Md::Number`
-- `βS1Td::Number`
-- `βS2Nu::Number`
-- `βS2Mu::Number`
-- `βS2Tu::Number`
-- `βS2Nd::Number`
-- `βS2Md::Number`
-- `βS2Td::Number`
-- `γLS::Number`
-- `δα₀::Number`
-- `δα₁::Number`
-- `ϵₙ::Number`
-- `ϵₘ::Number`
-- `η::Number`
-- `κ₀::Number`
-- `κ₁::Number`
-- `κ₂::Number`
-- `κ₃::Number`
-- `λ₁::Number`
-- `λ₂::Number`
-- `μv₂::Number`
-- `ν₁::Number`
-- `ν₂::Number`
-- `ν₃::Number`
-- `ν₄::Number`
-- `ν₅::Number`
-- `χu::Number`
-- `χd::Number`
-- `ξ::Number`
-- `ζₐ::Number`
-- `cd₀::Number`
-- `cdδ::Number`
-- `cm₀::Number`
-- `cmδ::Number`
-- `cnα::Number`
-- `cnδ::Number`
-- `dt::Number`
-- `dm::Number`
-- `E₀::Number`
-- `E₁::Number`
-- `f₀N::Number`
-- `f₀M::Number`
-- `f₀T::Number`
-- `fbN::Number`
-- `fbM::Number`
-- `fbT::Number`
-- `gᵥ::Number`
-- `gᵥ₂::Number`
-- `K₀::Number`
-- `K₁::Number`
-- `K₂::Number`
-- `r₀::Number`
-- `S1N::Number`
-- `S1M::Number`
-- `S1T::Number`
-- `S2N::Number`
-- `S2M::Number`
-- `S2T::Number`
-- `Ta::Number`
-- `Tf::Number`
-- `Tg::Number`
-- `Tv::Number`
-- `Tv₂::Number`
-- `Vn₁::Number`
-- `Vn₂::Number`
-- `Vn₃::Number`
-- `Vm::Number`
-- `Vt::Number`
-- `ztd::Number`
-- `ztu::Number`
-- `zm::Number`
-- `λbWMat::Matrix{Float64}`
-"""
+# - `α₀N::Number`
+# - `αds₀::Number`
+# - `αₛₛ::Number`
+# - `α1₀N::Number`
+# - `α1₀M::Number`
+# - `α1₀T::Number`
+# - `βσ1N::Number`
+# - `βσ1T::Number`
+# - `βσ2N::Number`
+# - `βS2Nlpr::Number`
+# - `βS2Tlpr::Number`
+# - `βS1Nu::Number`
+# - `βS1Mu::Number`
+# - `βS1Tu::Number`
+# - `βS1Nd::Number`
+# - `βS1Md::Number`
+# - `βS1Td::Number`
+# - `βS2Nu::Number`
+# - `βS2Mu::Number`
+# - `βS2Tu::Number`
+# - `βS2Nd::Number`
+# - `βS2Md::Number`
+# - `βS2Td::Number`
+# - `γLS::Number`
+# - `δα₀::Number`
+# - `δα₁::Number`
+# - `ϵₙ::Number`
+# - `ϵₘ::Number`
+# - `η::Number`
+# - `κ₀::Number`
+# - `κ₁::Number`
+# - `κ₂::Number`
+# - `κ₃::Number`
+# - `λ₁::Number`
+# - `λ₂::Number`
+# - `μv₂::Number`
+# - `ν₁::Number`
+# - `ν₂::Number`
+# - `ν₃::Number`
+# - `ν₄::Number`
+# - `ν₅::Number`
+# - `χu::Number`
+# - `χd::Number`
+# - `ξ::Number`
+# - `ζₐ::Number`
+# - `cd₀::Number`
+# - `cdδ::Number`
+# - `cm₀::Number`
+# - `cmδ::Number`
+# - `cnα::Number`
+# - `cnδ::Number`
+# - `dt::Number`
+# - `dm::Number`
+# - `E₀::Number`
+# - `E₁::Number`
+# - `f₀N::Number`
+# - `f₀M::Number`
+# - `f₀T::Number`
+# - `fbN::Number`
+# - `fbM::Number`
+# - `fbT::Number`
+# - `gᵥ::Number`
+# - `gᵥ₂::Number`
+# - `K₀::Number`
+# - `K₁::Number`
+# - `K₂::Number`
+# - `r₀::Number`
+# - `S1N::Number`
+# - `S1M::Number`
+# - `S1T::Number`
+# - `S2N::Number`
+# - `S2M::Number`
+# - `S2T::Number`
+# - `Ta::Number`
+# - `Tf::Number`
+# - `Tg::Number`
+# - `Tv::Number`
+# - `Tv₂::Number`
+# - `Vn₁::Number`
+# - `Vn₂::Number`
+# - `Vn₃::Number`
+# - `Vm::Number`
+# - `Vt::Number`
+# - `ztd::Number`
+# - `ztu::Number`
+# - `zm::Number`
+# - `λbWMat::Matrix{Float64}`
+#
 @with_kw mutable struct BLiParameters
 
     α₀N::Number
@@ -1025,39 +1025,38 @@ end
 end
 
 
-"""
-@with_kw mutable struct BLoParameters
+# @with_kw mutable struct BLoParameters
 
-    BLoParameters composite type
+#     BLoParameters composite type
 
 # Fields
-- `α₀N::Number`
-- `α1₀::Number`
-- `δα::Number`
-- `ϵₙ::Number`
-- `ϵₘ::Number`
-- `η::Number`
-- `cd₀::Number`
-- `cdδ::Number`
-- `cm₀::Number`
-- `cmδ::Number`
-- `cn₁::Number`
-- `cnα::Number`
-- `cnδ::Number`
-- `Df::Number`
-- `E₀::Number`
-- `f₀::Number`
-- `fb::Number`
-- `K₀::Number`
-- `K₁::Number`
-- `K₂::Number`
-- `S1::Number`
-- `S2::Number`
-- `Tf₀::Number`
-- `Tp::Number`
-- `Tv₀::Number`
-- `TvL::Number`
-"""
+# - `α₀N::Number`
+# - `α1₀::Number`
+# - `δα::Number`
+# - `ϵₙ::Number`
+# - `ϵₘ::Number`
+# - `η::Number`
+# - `cd₀::Number`
+# - `cdδ::Number`
+# - `cm₀::Number`
+# - `cmδ::Number`
+# - `cn₁::Number`
+# - `cnα::Number`
+# - `cnδ::Number`
+# - `Df::Number`
+# - `E₀::Number`
+# - `f₀::Number`
+# - `fb::Number`
+# - `K₀::Number`
+# - `K₁::Number`
+# - `K₂::Number`
+# - `S1::Number`
+# - `S2::Number`
+# - `Tf₀::Number`
+# - `Tp::Number`
+# - `Tv₀::Number`
+# - `TvL::Number`
+#
 @with_kw mutable struct BLoParameters
 
     α₀N::Number
@@ -1216,12 +1215,7 @@ end
 end
 
 
-"""
-get_airfoil_coordinates(name::String)
-
-Gets the coordinates of the airfoil
-
-"""
+# Gets the coordinates of the airfoil
 function get_airfoil_coordinates(name::String)
 
     if name in ["flatPlate","NACA0002","NACA0006"]
@@ -1574,8 +1568,6 @@ end
 
 
 """
-@with_kw mutable struct Airfoil
-
     Airfoil composite type
 
 # Fields
@@ -1598,7 +1590,7 @@ export Airfoil
 
 
 """
-create_Airfoil(;name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+    create_Airfoil(;name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
 Initializes the airfoil with the predefined name 
 
@@ -1622,7 +1614,7 @@ export create_Airfoil
 
 
 """
-create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0)
+    create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0)
 
 Initializes the airfoil with the predefined name and flap site ID 
 
@@ -1644,6 +1636,7 @@ function create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma:
     return Airfoil(name,coordinates,attachedFlowParameters,parametersBLi,parametersBLo)
 end
 export create_flapped_Airfoil
+
 
 # Sample airfoils
 flatPlate = create_Airfoil(name="flatPlate")

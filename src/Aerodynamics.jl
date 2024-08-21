@@ -1,9 +1,4 @@
-"""
-aero_steady_kinematics!(element::Element,V,Ω)
-
-Computes the steady aerodynamic kinematic variables
-
-"""
+# Computes the steady aerodynamic kinematic variables
 function aero_steady_kinematics!(element::Element,V,Ω)
 
     @unpack RwT,c,normSparPos = element.aero
@@ -41,12 +36,7 @@ function aero_steady_kinematics!(element::Element,V,Ω)
 end
 
 
-"""
-aero_unsteady_kinematics!(element::Element,Vdot,Ωdot)
-
-Computes the unsteady aerodynamic kinematic variables
-
-"""
+# Computes the unsteady aerodynamic kinematic variables
 function aero_unsteady_kinematics!(element::Element,Vdot,Ωdot)
 
     @unpack RwT,c,normSparPos = element.aero
@@ -78,12 +68,7 @@ function aero_unsteady_kinematics!(element::Element,Vdot,Ωdot)
 end
 
 
-"""
-nondimensional_flow_parameters!(model::Model,element::Element)
-
-Computes the nondimensional flow parameters
-
-"""
+# Computes the nondimensional flow parameters
 function nondimensional_flow_parameters!(model::Model,element::Element)
 
     @unpack c = element.aero
@@ -113,12 +98,7 @@ function nondimensional_flow_parameters!(model::Model,element::Element)
 end
 
 
-"""
-local_gust_velocity!(problem::Problem,model::Model,element::Element)
-
-Computes the gust velocity in the local, deformed aerodynamic basis (basis W)
-
-"""
+# Computes the gust velocity in the local, deformed aerodynamic basis (basis W)
 function local_gust_velocity!(problem::Problem,model::Model,element::Element)
 
     @unpack timeNow = problem
@@ -154,12 +134,7 @@ function local_gust_velocity!(problem::Problem,model::Model,element::Element)
 end
 
 
-"""
-flap_deflection_rates!(problem,element::Element)
-
-Computes the current values of flap deflection rates
-
-"""
+# Computes the current values of flap deflection rates
 function flap_deflection_rates!(problem,element::Element)
 
     @unpack timeNow = problem
@@ -171,12 +146,7 @@ function flap_deflection_rates!(problem,element::Element)
 end
 
 
-"""
-aero_coefficients!(problem::Problem,element::Element,χ,δNow)
-
-Computes the aerodynamic coefficients
-
-"""
+# Computes the aerodynamic coefficients
 function aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
     @unpack solver = element.aero
@@ -192,12 +162,7 @@ function aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 end
 
 
-"""
-aero_state_matrices!(element::Element,δNow)
-
-Computes the aerodynamic state matrices
-
-"""
+# Computes the aerodynamic state matrices
 function aero_state_matrices!(element::Element,δNow)
 
     @unpack solver = element.aero
@@ -215,12 +180,7 @@ function aero_state_matrices!(element::Element,δNow)
 end
 
 
-"""
-aero_loads_resultants!(model::Model,element::Element)
-
-Computes the aerodynamic nodal loads resultants
-
-"""
+# Computes the aerodynamic nodal loads resultants
 function aero_loads_resultants!(model::Model,element::Element)
 
     @unpack ρ = model.atmosphere
@@ -263,12 +223,7 @@ function aero_loads_resultants!(model::Model,element::Element)
 end
 
 
-"""
-attached_flow_aero_coefficients!(element::Element,δNow)
-
-Computes the aerodynamic coefficients under attached flow conditions
-
-"""
+# Computes the aerodynamic coefficients under attached flow conditions
 function attached_flow_aero_coefficients!(element::Element,δNow)
 
     # Normal force coefficient
@@ -283,12 +238,7 @@ function attached_flow_aero_coefficients!(element::Element,δNow)
 end
 
 
-"""
-update_airfoil_parameters!(problem::Problem,element::Element)
-
-Updates the aerodynamic parameters of the airfoil according to current nondimensional flow parameters 
-
-"""
+# Updates the aerodynamic parameters of the airfoil according to current nondimensional flow parameters 
 function update_airfoil_parameters!(problem::Problem,element::Element)
 
     @unpack timeNow = problem
@@ -323,12 +273,7 @@ function update_airfoil_parameters!(problem::Problem,element::Element)
 end
 
 
-"""
-effective_angle_of_attack!(element::Element,χ,δNow)
-
-Computes the effective (unsteady) angle of attack
-
-"""
+# Computes the effective (unsteady) angle of attack
 function effective_angle_of_attack!(element::Element,χ,δNow)
 
     @unpack solver,airfoil = element.aero
@@ -354,12 +299,7 @@ function effective_angle_of_attack!(element::Element,χ,δNow)
 end
 
 
-"""
-attached_flow_cn!(element::Element,δNow)
-
-Computes the normal force aerodynamic coefficient for attached flow
-
-"""
+# Computes the normal force aerodynamic coefficient for attached flow
 function attached_flow_cn!(element::Element,δNow)
 
     @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid,smallAngles = element.aero
@@ -390,12 +330,7 @@ function attached_flow_cn!(element::Element,δNow)
 end
 
 
-"""
-attached_flow_cm!(element::Element,δNow)
-
-Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for attached flow
-
-"""
+# Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for attached flow
 function attached_flow_cm!(element::Element,δNow)
 
     @unpack flapLoadsSolver,flapped,b,normSparPos,normFlapPos,δdotNow,δddotNow,ϖMid = element.aero
@@ -431,12 +366,7 @@ function attached_flow_cm!(element::Element,δNow)
 end
 
 
-"""
-attached_flow_ct!(element::Element,δNow)
-
-Computes the tangential force aerodynamic coefficient for attached flow
-
-"""
+# Computes the tangential force aerodynamic coefficient for attached flow
 function attached_flow_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid,smallAngles = element.aero
@@ -457,12 +387,7 @@ function attached_flow_ct!(element::Element,δNow)
 end
 
 
-"""
-pitch_plunge_effective_normalwash(element::Element,χ)
-
-Computes the effective (unsteady) pitch-plunge-induced normalwash
-
-"""
+# Computes the effective (unsteady) pitch-plunge-induced normalwash
 function pitch_plunge_effective_normalwash(element::Element,χ)
 
     @unpack solver,linearPitchPlungeStatesRange,b = element.aero
@@ -493,12 +418,7 @@ function pitch_plunge_effective_normalwash(element::Element,χ)
 end
 
 
-"""
-flap_effective_normalwash(element::Element,χ,δNow)
-
-Computes the effective (unsteady) flap-induced normalwash
-
-"""
+# Computes the effective (unsteady) flap-induced normalwash
 function flap_effective_normalwash(element::Element,χ,δNow)
 
     @unpack flapStatesRange = element.aero
@@ -518,12 +438,7 @@ function flap_effective_normalwash(element::Element,χ,δNow)
 end
 
 
-"""
-flap_normalwash(element::Element,δNow)
-
-Computes the instantaneous (quasi-steady) flap-induced normalwash
-
-"""
+# Computes the instantaneous (quasi-steady) flap-induced normalwash
 function flap_normalwash(element::Element,δNow)
 
     @unpack b,δdotNow = element.aero
@@ -536,12 +451,7 @@ function flap_normalwash(element::Element,δNow)
 end
 
 
-"""
-gust_effective_normalwash(element::Element,χ)
-
-Computes the effective (unsteady) gust-induced normalwash
-
-"""
+# Computes the effective (unsteady) gust-induced normalwash
 function gust_effective_normalwash(element::Element,χ)
 
     @unpack linearGustStatesRange = element.aero
@@ -563,12 +473,7 @@ function gust_effective_normalwash(element::Element,χ)
 end
 
 
-"""
-flap_normalwash_rate(element::Element,δNow)
-
-Computes the time rate of the instantaneous flap-induced normalwash
-
-"""
+# Computes the time rate of the instantaneous flap-induced normalwash
 function flap_normalwash_rate(element::Element,δNow)
 
     @unpack b,δdotNow,δddotNow = element.aero
@@ -581,12 +486,7 @@ function flap_normalwash_rate(element::Element,δNow)
 end
 
 
-"""
-cnαUₙTQC_rate(element::Element)
-
-Computes the time rate of the product of cnα by UₙTQC
-
-"""
+# Computes the time rate of the product of cnα by UₙTQC
 function cnαUₙTQC_rate(element::Element)
 
     @unpack Ma,βₚ,βₚ² = element.aero.flowParameters
@@ -602,12 +502,7 @@ function cnαUₙTQC_rate(element::Element)
 end
 
 
-"""
-attached_flow_state_matrices!(element::Element,δNow)
-
-Computes the aerodynamic state matrices for the indicial and inflow solvers
-
-"""
+# Computes the aerodynamic state matrices for the indicial and inflow solvers
 function attached_flow_state_matrices!(element::Element,δNow)
 
     @unpack solver,nTotalAeroStates,pitchPlungeStatesRange,flapStatesRange,gustStatesRange,b = element.aero
@@ -664,12 +559,7 @@ function attached_flow_state_matrices!(element::Element,δNow)
 end
 
 
-"""
-BLi_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
-
-Computes the aerodynamic coefficients according to the modified incompressible flow Beddoes-Leishman model
-
-"""
+# Computes the aerodynamic coefficients according to the modified incompressible flow Beddoes-Leishman model
 function BLi_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
     # Name nonlinear states
@@ -712,12 +602,7 @@ function BLi_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 end
 
 
-"""
-BLi_kinematics!(element::Element)
-
-Computes additional kinematics associated with the Beddoes-Leishman model
-
-"""
+# Computes additional kinematics associated with the Beddoes-Leishman model
 function BLi_kinematics!(element::Element)
 
     @unpack c = element.aero
@@ -739,12 +624,7 @@ function BLi_kinematics!(element::Element)
 end
 
 
-"""
-BLi_nonlinear_states!(element::Element,χ)
-
-Sets the nonlinear states of the Beddoes-Leishman model
-
-"""
+# Sets the nonlinear states of the Beddoes-Leishman model
 function BLi_nonlinear_states!(element::Element,χ)
 
     @unpack nonlinearPitchPlungeStatesRange,nonlinearGustStatesRange = element.aero
@@ -767,12 +647,7 @@ function BLi_nonlinear_states!(element::Element,χ)
 end
 
 
-"""
-BLi_motion_qualifiers!(problem::Problem,element::Element)
-
-Computes motion qualifiers of the modified Beddoes-Leishman model
-
-"""
+# Computes motion qualifiers of the modified Beddoes-Leishman model
 function BLi_motion_qualifiers!(problem::Problem,element::Element)
 
     @unpack timeNow = problem
@@ -831,12 +706,7 @@ function BLi_motion_qualifiers!(problem::Problem,element::Element)
 end
 
 
-"""
-BLi_breakpoint_angles!(element::Element)
-
-Computes the breakpoint angles of the modified Beddoes-Leishman model
-
-"""
+# Computes the breakpoint angles of the modified Beddoes-Leishman model
 function BLi_breakpoint_angles!(element::Element)
 
     @unpack αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,δα₀,δα₁,dt,dm,zm,ztd = element.aero.airfoil.parametersBLi
@@ -868,12 +738,7 @@ function BLi_breakpoint_angles!(element::Element)
 end
 
 
-"""
-BLi_time_delays!(element::Element)
-
-Computes time delay variables for the modified Beddoes-Leishman model
-
-"""
+# Computes time delay variables for the modified Beddoes-Leishman model
 function BLi_time_delays!(element::Element)
 
     @unpack Ta,Tf,λ₁,λ₂ = element.aero.airfoil.parametersBLi
@@ -895,12 +760,7 @@ function BLi_time_delays!(element::Element)
 end
 
 
-"""
-BLi_separation_points!(element::Element)
-
-Computes the flow separation points of the modified Beddoes-Leishman model
-
-"""
+# Computes the flow separation points of the modified Beddoes-Leishman model
 function BLi_separation_points!(element::Element)
 
     @unpack α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,ξ,f₀N,f₀M,f₀T,fbN,fbM,fbT,S1N,S1M,S1T,S2N,S2M,S2T = element.aero.airfoil.parametersBLi
@@ -986,12 +846,7 @@ function BLi_separation_points!(element::Element)
 end
 
 
-"""
-BLi_quasi_steady_separation_points(element::Element,Uₜ,Uₙ)
-
-Computes the quasi-steady flow separation points of the modified Beddoes-Leishman model for an element
-
-"""
+# Computes the quasi-steady flow separation points of the modified Beddoes-Leishman model for an element
 function BLi_quasi_steady_separation_points(element::Element,Uₜ,Uₙ)
 
     # Check tangential velocity
@@ -1018,12 +873,7 @@ function BLi_quasi_steady_separation_points(element::Element,Uₜ,Uₙ)
 end
 
 
-"""
-BLi_stall_time!(problem::Problem,element::Element)
-
-Computes variables at the time of stall onset for the modified Beddoes-Leishman model
-
-"""
+# Computes variables at the time of stall onset for the modified Beddoes-Leishman model
 function BLi_stall_time!(problem::Problem,element::Element)
 
     @unpack timeNow,Δt = problem
@@ -1088,12 +938,7 @@ function BLi_stall_time!(problem::Problem,element::Element)
 end
 
 
-"""
-BLi_DSV_loads!(element::Element)
-
-Computes DSV loads for the modified Beddoes-Leishman model
-
-"""
+# Computes DSV loads for the modified Beddoes-Leishman model
 function BLi_DSV_loads!(element::Element)
 
     @unpack ϖMid = element.aero
@@ -1239,12 +1084,7 @@ function BLi_DSV_loads!(element::Element)
 end
 
 
-"""
-BLi_cn!(element::Element,δNow)
-
-Computes normal force coefficient for the modified incompressible Beddoes-Leishman model
-
-"""
+# Computes normal force coefficient for the modified incompressible Beddoes-Leishman model
 function BLi_cn!(element::Element,δNow)
 
     @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid = element.aero
@@ -1281,12 +1121,7 @@ function BLi_cn!(element::Element,δNow)
 end
 
 
-"""
-BLi_cm!(element::Element,δNow)
-
-Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the modified incompressible Beddoes-Leishman model
-
-"""
+# Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the modified incompressible Beddoes-Leishman model
 function BLi_cm!(element::Element,δNow)
 
     @unpack flapLoadsSolver,flapped,b,normSparPos,normFlapPos,δdotNow,δddotNow,ϖMid = element.aero
@@ -1333,12 +1168,7 @@ function BLi_cm!(element::Element,δNow)
 end
 
 
-"""
-BLi_ct!(element::Element,δNow)
-
-Computes the tangential force aerodynamic coefficient for the modified incompressible Beddoes-Leishman model
-
-"""
+# Computes the tangential force aerodynamic coefficient for the modified incompressible Beddoes-Leishman model
 function BLi_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid = element.aero
@@ -1373,12 +1203,7 @@ function BLi_ct!(element::Element,δNow)
 end
 
 
-"""
-BLi_state_matrices!(element::Element,δNow)
-
-Computes the aerodynamic state matrices for the modified incompressible Beddoes-Leishman model
-
-"""
+# Computes the aerodynamic state matrices for the modified incompressible Beddoes-Leishman model
 function BLi_state_matrices!(element::Element,δNow)
 
     @unpack nTotalAeroStates,linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange,flapStatesRange,linearGustStatesRange,nonlinearGustStatesRange,b = element.aero
@@ -1448,12 +1273,7 @@ function BLi_state_matrices!(element::Element,δNow)
 end
 
 
-"""
-BLo_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
-
-Computes the aerodynamic coefficients according to the original Beddoes-Leishman model
-
-"""
+# Computes the aerodynamic coefficients according to the original Beddoes-Leishman model
 function BLo_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 
     # Name nonlinear states
@@ -1495,12 +1315,7 @@ function BLo_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
 end
 
 
-"""
-BLo_nonlinear_states!(element::Element,χ)
-
-Sets the nonlinear states of the original Beddoes-Leishman model
-
-"""
+# Sets the nonlinear states of the original Beddoes-Leishman model
 function BLo_nonlinear_states!(element::Element,χ)
 
     cnPprime = χ[9]
@@ -1515,12 +1330,7 @@ function BLo_nonlinear_states!(element::Element,χ)
 end
 
 
-"""
-BLo_motion_qualifiers!(element::Element)
-
-Computes motion qualifiers of the original Beddoes-Leishman model
-
-"""
+# Computes motion qualifiers of the original Beddoes-Leishman model
 function BLo_motion_qualifiers!(element::Element)
 
     @unpack c = element.aero
@@ -1546,12 +1356,7 @@ function BLo_motion_qualifiers!(element::Element)
 end
 
 
-"""
-BLo_breakpoint_angle!(element::Element)
-
-Computes the breakpoint angle of the original Beddoes-Leishman model
-
-"""
+# Computes the breakpoint angle of the original Beddoes-Leishman model
 function BLo_breakpoint_angle!(element::Element)
 
     @unpack α1₀,δα = element.aero.airfoil.parametersBLo
@@ -1569,12 +1374,7 @@ function BLo_breakpoint_angle!(element::Element)
 end
 
 
-"""
-BLo_separation_points!(element::Element)
-
-Computes the flow separation point of the original Beddoes-Leishman model
-
-"""
+# Computes the flow separation point of the original Beddoes-Leishman model
 function BLo_separation_points!(element::Element)
 
     @unpack α1₀,cnα,f₀,fb,S1,S2 = element.aero.airfoil.parametersBLo
@@ -1597,12 +1397,7 @@ function BLo_separation_points!(element::Element)
 end
 
 
-"""
-BLo_stall_time!(problem::Problem,element::Element)
-
-Computes variables at the time of stall onset for the original Beddoes-Leishman model
-
-"""
+# Computes variables at the time of stall onset for the original Beddoes-Leishman model
 function BLo_stall_time!(problem::Problem,element::Element)
 
     @unpack timeNow,Δt = problem
@@ -1633,12 +1428,7 @@ function BLo_stall_time!(problem::Problem,element::Element)
 end
 
 
-"""
-BLo_time_delays!(element::Element)
-
-Computes time delay variables for the original Beddoes-Leishman model
-
-"""
+# Computes time delay variables for the original Beddoes-Leishman model
 function BLo_time_delays!(element::Element)
 
     @unpack Tf₀,Tv₀,TvL,fb = element.aero.airfoil.parametersBLo
@@ -1698,12 +1488,7 @@ function BLo_time_delays!(element::Element)
 end
 
 
-"""
-BLo_update_impulsive_parameters!(element::Element)
-
-Updates the impulsive parameters for the original Beddoes-Leishman model
-
-"""
+# Updates the impulsive parameters for the original Beddoes-Leishman model
 function BLo_update_impulsive_parameters!(element::Element)
 
     @unpack c = element.aero
@@ -1720,12 +1505,7 @@ function BLo_update_impulsive_parameters!(element::Element)
 end
 
 
-"""
-BLo_vortex_accumulation_rate!(element::Element,χ)
-
-Compute the dynamic stall vortex accumulation rate for the original Beddoes-Leishman model
-
-"""
+# Compute the dynamic stall vortex accumulation rate for the original Beddoes-Leishman model
 function BLo_vortex_accumulation_rate!(element::Element,χ)
 
     @unpack c,ϖMid = element.aero
@@ -1759,12 +1539,7 @@ function BLo_vortex_accumulation_rate!(element::Element,χ)
 end
 
 
-"""
-BLo_cn!(element::Element,χ,δNow)
-
-Computes normal force coefficient for the original Beddoes-Leishman model
-
-"""
+# Computes normal force coefficient for the original Beddoes-Leishman model
 function BLo_cn!(element::Element,χ,δNow)
 
     @unpack linearPitchPlungeStatesRange,flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid,normSparPos = element.aero
@@ -1810,12 +1585,7 @@ function BLo_cn!(element::Element,χ,δNow)
 end
 
 
-"""
-BLo_cm!(element::Element,χ,δNow)
-
-Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the original Beddoes-Leishman model
-
-"""
+# Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the original Beddoes-Leishman model
 function BLo_cm!(element::Element,χ,δNow)
 
     @unpack flapLoadsSolver,flapped,normSparPos,normFlapPos,δdotNow,δddotNow,ϖMid,c = element.aero
@@ -1869,12 +1639,7 @@ function BLo_cm!(element::Element,χ,δNow)
 end
 
 
-"""
-BLo_ct!(element::Element,δNow)
-
-Computes the tangential force aerodynamic coefficient for the original Beddoes-Leishman model
-
-"""
+# Computes the tangential force aerodynamic coefficient for the original Beddoes-Leishman model
 function BLo_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid = element.aero
@@ -1903,12 +1668,7 @@ function BLo_ct!(element::Element,δNow)
 end
 
 
-"""
-BLo_state_matrices!(element::Element,δNow)
-
-Computes the aerodynamic state matrices for the original Beddoes-Leishman model
-
-"""
+# Computes the aerodynamic state matrices for the original Beddoes-Leishman model
 function BLo_state_matrices!(element::Element,δNow)
 
     @unpack nTotalAeroStates,flapStatesRange,linearGustStatesRange,nonlinearGustStatesRange,c,ϖMid = element.aero
@@ -1978,12 +1738,7 @@ function BLo_state_matrices!(element::Element,δNow)
 end
 
 
-"""
-update_initial_aero_states!(problem::Problem)
-
-Updates the initial aerodynamic states assuming their rates are zero
-
-"""
+# Updates the initial aerodynamic states assuming their rates are zero
 function update_initial_aero_states!(problem::Problem;preInitialization::Bool=false)
 
     @unpack x = problem

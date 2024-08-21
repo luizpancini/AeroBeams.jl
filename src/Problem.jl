@@ -1,26 +1,9 @@
-
-"""
-abstract type Problem
-
-Defines a general Problem type
-
-"""
 abstract type Problem end
-
-
-"""
-abstract type SystemSolver
-
-Defines a general problem for the system of equations
-
-"""
 abstract type SystemSolver end
 
 
 """
-@with_kw mutable struct InitialVelocitiesUpdateOptions
-
-InitialVelocitiesUpdateOptions composite type
+    InitialVelocitiesUpdateOptions composite type
 
 Defines variables for the update of the initial velocities states
 
@@ -52,12 +35,12 @@ end
 export InitialVelocitiesUpdateOptions
 
 
-"""
-mutable struct ModeShape{T<:Union{Float64,ComplexF64}}
+#
+# mutable struct ModeShape{T<:Union{Float64,ComplexF64}}
 
-ModeShape composite type
+    # ModeShape composite type
 
-"""
+#
 mutable struct ModeShape{T<:Union{Float64,ComplexF64}}
     
     # Fields
@@ -96,7 +79,6 @@ end
 
 
 """
-@with_kw mutable struct SteadyProblem <: Problem
 
     SteadyProblem composite type
 
@@ -145,7 +127,7 @@ export SteadyProblem
 
 
 """
-create_SteadyProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,x0::Vector{Float64}=zeros(0))
+create_SteadyProblem(; kwargs...)
 
 Steady problem constructor
 
@@ -155,7 +137,7 @@ Steady problem constructor
 - `getLinearSolution::Bool` = flag to solve for linear structural solution
 - `x0::Vector{Float64}` = initial states
 """
-function create_SteadyProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,x0::Vector{Float64}=zeros(0))
+function create_SteadyProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = SteadyProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution)
@@ -182,7 +164,6 @@ export create_SteadyProblem
 
 
 """
-@with_kw mutable struct TrimProblem <: Problem
 
     TrimProblem composite type
 
@@ -234,7 +215,7 @@ export TrimProblem
 
 
 """
-create_TrimProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,getInertiaMatrix::Bool=true,x0::Vector{Float64}=zeros(0))
+create_TrimProblem(; kwargs...)
 
 Trim problem constructor
 
@@ -245,7 +226,7 @@ Trim problem constructor
 - `getInertiaMatrix::Bool` = flag to compute inertia matrix
 - `x0::Vector{Float64}` = initial states
 """
-function create_TrimProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,getInertiaMatrix::Bool=true,x0::Vector{Float64}=zeros(0))
+function create_TrimProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,getInertiaMatrix::Bool=true,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = TrimProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,getInertiaMatrix=getInertiaMatrix)
@@ -272,7 +253,6 @@ export create_TrimProblem
 
 
 """
-@with_kw mutable struct EigenProblem <: Problem
 
     EigenProblem composite type
 
@@ -344,7 +324,7 @@ export EigenProblem
 
 
 """
-create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0))
+create_EigenProblem(; kwargs...)
 
 Eigen problem constructor
 
@@ -359,7 +339,7 @@ Eigen problem constructor
 - `jacobian::SparseMatrixCSC{Float64,Int64}` = Jacobian matrix
 - `inertia::SparseMatrixCSC{Float64,Int64}` = inertia matrix
 """
-function create_EigenProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0))
+function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0))
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes)
@@ -393,7 +373,6 @@ export create_EigenProblem
 
 
 """
-@with_kw mutable struct DynamicProblem <: Problem
 
     DynamicProblem composite type
 
@@ -468,7 +447,7 @@ export DynamicProblem
 
 
 """
-create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Number}=nothing,maxΔt::Union{Nothing,Number}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
+    create_DynamicProblem(; kwargs...)
 
 Dynamic problem constructor
 
@@ -492,7 +471,7 @@ Dynamic problem constructor
 - `displayFrequency::Int64` = frequency of time steps in which to display progress
 - `x0::Vector{Float64}` = initial states
 """
-function create_DynamicProblem(;model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Number}=nothing,maxΔt::Union{Nothing,Number}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
+function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Number}=nothing,maxΔt::Union{Nothing,Number}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,adaptableΔt=adaptableΔt,minΔt=minΔt,maxΔt=maxΔt,δb=δb,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency)
@@ -546,12 +525,7 @@ end
 export create_DynamicProblem
 
 
-"""
-set_initial_states!(problem::Problem)
-
-Sets the initial elemental and nodal states into the states array
-
-"""
+# Sets the initial elemental and nodal states into the states array
 function set_initial_states!(problem::Problem)
 
     @unpack x,model,σ,initialStatesInput = problem
@@ -606,12 +580,7 @@ function set_initial_states!(problem::Problem)
 end
 
 
-"""
-initialize_system_arrays!(problem::Problem)
-
-Initializes the system arrays to the correct size
-
-"""
+# Initializes the system arrays to the correct size
 function initialize_system_arrays!(problem::Problem)
 
     @unpack model = problem
@@ -628,7 +597,7 @@ end
 
 
 """
-solve!(problem::Problem)
+    solve!(problem::Problem)
 
 Solves a problem 
 
@@ -654,12 +623,7 @@ end
 export solve!
 
 
-"""
-precompute_distributed_loads!(problem::Problem)
-
-Pre-computes the distributed loads over all elements' nodes, over every time step
-
-"""
+# Pre-computes the distributed loads over all elements' nodes, over every time step
 function precompute_distributed_loads!(problem::Problem)
 
 
@@ -763,12 +727,7 @@ function precompute_distributed_loads!(problem::Problem)
 end
 
 
-"""
-solve_steady!(problem::Problem)
-
-Solves a steady problem (includes trim and the steady part of eigen problems) 
-
-"""
+# Solves a steady problem (includes trim and the steady part of eigen problems) 
 function solve_steady!(problem::Problem)
 
     @unpack getLinearSolution,systemSolver = problem
@@ -794,10 +753,12 @@ end
 
 
 """
-solve_eigen!(problem::Problem)
+    solve_eigen!(problem::Problem)
 
 Solves an eigenproblem 
 
+# Arguments
+- `problem::Problem`
 """
 function solve_eigen!(problem::Problem)
 
@@ -898,12 +859,7 @@ end
 export solve_eigen!
 
 
-"""
-get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::Vector{Float64},dampings::Vector{Float64})
-
-Gets the mode shapes given by the eigenvectors
-
-"""
+# Gets the mode shapes given by the eigenvectors
 function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::Vector{Float64},dampings::Vector{Float64}) where T<:Union{Float64,ComplexF64}
 
     @unpack model,normalizeModeShapes = problem
@@ -988,12 +944,7 @@ function get_mode_shapes!(problem::Problem,eigenvectors::Matrix{T},frequencies::
 end
 
 
-"""
-fix_nodal_modal_states!(problem::Problem)
-
-Corrects the nodal modal states which may not coincide depending on which element is considered
-
-"""
+# Corrects the nodal modal states which may not coincide depending on which element is considered
 function fix_nodal_modal_states!(model,element,modeShape,u_n1,p_n1,u_n1_b,p_n1_b,F_n1,M_n1,θ_n1)
 
     @unpack elementNodes = model
@@ -1019,12 +970,7 @@ function fix_nodal_modal_states!(model,element,modeShape,u_n1,p_n1,u_n1_b,p_n1_b
 end
 
 
-"""
-solve_dynamic!(problem::Problem)
-
-Solves a dynamic problem 
-
-"""
+# Solves a dynamic problem 
 function solve_dynamic!(problem::Problem)
 
     # Solve the initial time step to get consistent initial states, if applicable
@@ -1043,12 +989,7 @@ function solve_dynamic!(problem::Problem)
 end
 
 
-"""
-initialize_time_variables!(problem::Problem)
-
-Validates and initializes the time variables
-
-"""
+# Validates and initializes the time variables
 function initialize_time_variables!(problem::Problem)
 
     @unpack initialTime,finalTime,Δt,timeVector,initialVelocitiesUpdateOptions = problem
@@ -1089,12 +1030,7 @@ function initialize_time_variables!(problem::Problem)
 end
 
 
-"""
-solve_initial_dynamic!(problem::Problem)
-
-Gets consistent initial conditions and solves the first time step
-
-"""
+# Gets consistent initial conditions and solves the first time step
 function solve_initial_dynamic!(problem::Problem)
 
     problemCopy = deepcopy(problem)
@@ -1136,7 +1072,7 @@ function solve_initial_dynamic!(problem::Problem)
     end
 
     # Update model as if all nodes were BC'ed to the specified initial displacements
-    set_BCs!(modelCopy,initialDisplacementsBCs)
+    AeroBeams.set_BCs!(modelCopy,initialDisplacementsBCs)
     modelCopy.skipValidationMotionBasisA = true
     update_model!(modelCopy)
     problemCopy.model = modelCopy
@@ -1169,12 +1105,7 @@ function solve_initial_dynamic!(problem::Problem)
 end
 
 
-"""
-copy_initial_states!(problem::Problem,problemCopy::Problem)
-
-Copies the initial states to the original problem
-
-"""
+# Copies the initial states to the original problem
 function copy_initial_states!(problem::Problem,problemCopy::Problem)
 
     # Unpack problem copy
@@ -1220,12 +1151,7 @@ function copy_initial_states!(problem::Problem,problemCopy::Problem)
 end
 
 
-"""
-update_initial_velocities!(problem::Problem)
-
-Updates the velocity states by running a very small time step
-
-"""
+# Updates the velocity states by running a very small time step
 function update_initial_velocities!(problem::Problem)
 
     @unpack timeVector,Δt,timeNow,indexBeginTimeStep,indexEndTimeStep,timeBeginTimeStep,timeEndTimeStep,initialVelocitiesUpdateOptions,model = problem
@@ -1344,12 +1270,7 @@ function update_initial_velocities!(problem::Problem)
 end
 
 
-"""
-time_march!(problem::Problem)
-
-Marches the dynamic problem in time
-
-"""
+# Marches the dynamic problem in time
 function time_march!(problem::Problem)
 
     @unpack model,sizeOfTime,trackingTimeSteps,trackingFrequency,displayProgress,displayFrequency = problem
@@ -1389,12 +1310,7 @@ function time_march!(problem::Problem)
 end
 
 
-"""
-adaptable_time_march!(problem::Problem)
-
-Marches the dynamic problem in time using an adaptable time step
-
-"""
+# Marches the dynamic problem in time using an adaptable time step
 function adaptable_time_march!(problem::Problem)
 
     @unpack model,trackingTimeSteps,trackingFrequency,displayProgress,displayFrequency,timeVector,timeNow,Δt,minΔt,maxΔt,δb = problem
@@ -1469,12 +1385,7 @@ function adaptable_time_march!(problem::Problem)
 end
 
 
-"""
-copy_state(problem::Problem)
-
-Copies the current state of the problem
-
-"""
+# Copies the current state of the problem
 function copy_state(problem::Problem)
 
     elementStates = [deepcopy(element.states) for element in problem.model.elements]
@@ -1493,12 +1404,7 @@ function copy_state(problem::Problem)
 end
 
 
-"""
-restore_state!(problem::Problem)
-
-Restores the state of the problem
-
-"""
+# Restores the state of the problem
 function restore_state!(problem::Problem,stepInitState)
 
     for (e,element) in enumerate(problem.model.elements)
@@ -1515,12 +1421,7 @@ function restore_state!(problem::Problem,stepInitState)
 end
 
 
-"""
-update_time_variables!(problem::Problem,timeIndex::Int64)
-
-Updates the time variables (time, time step, time indices)
-
-"""
+# Updates the time variables (time, time step, time indices)
 function update_time_variables!(problem::Problem,timeIndex::Int64)
 
     @unpack timeVector = problem
@@ -1537,12 +1438,7 @@ function update_time_variables!(problem::Problem,timeIndex::Int64)
 end
 
 
-"""
-update_basis_A_orientation!(problem::Problem,update_R_A_array::Bool=true)
-
-Updates the orientation of the basis A for the next time step
-
-"""
+# Updates the orientation of the basis A for the next time step
 function update_basis_A_orientation!(problem::Problem;update_R_A_array::Bool=true)
 
     @unpack model,timeNow,Δt = problem
@@ -1566,12 +1462,7 @@ function update_basis_A_orientation!(problem::Problem;update_R_A_array::Bool=tru
 end
 
 
-"""
-get_equivalent_states_rates!(problem::Problem)
-
-Gets the equivalent states' rates at the begin of the current time step 
-
-"""
+# Gets the equivalent states' rates at the begin of the current time step 
 function get_equivalent_states_rates!(problem::Problem)
 
     @unpack model,Δt = problem
@@ -1594,12 +1485,7 @@ function get_equivalent_states_rates!(problem::Problem)
 end
 
 
-"""
-update_BL_complementary_variables!(problem::Problem)
-
-Updates the complementary variables of previous time step for the dynamic stall models
-
-"""
+# Updates the complementary variables of previous time step for the dynamic stall models
 function update_BL_complementary_variables!(problem::Problem)
 
     # Loop elements
@@ -1625,12 +1511,7 @@ function update_BL_complementary_variables!(problem::Problem)
 end
 
 
-"""
-check_BL_stall_boundary!(problem::Problem)
-
-Computes the maximum stall boundary value over all beam elements in the Beddoes-Leishman model
-
-"""
+# Computes the maximum stall boundary value over all beam elements in the Beddoes-Leishman model
 function BL_stall_boundary(problem::Problem)
 
     # Initialize
@@ -1659,12 +1540,7 @@ function BL_stall_boundary(problem::Problem)
 end
 
 
-"""
-solve_time_step!(problem::Problem)
-
-Solves the current time step  
-
-"""
+# Solves the current time step
 function solve_time_step!(problem::Problem)
 
     if problem.getLinearSolution
@@ -1679,12 +1555,7 @@ function solve_time_step!(problem::Problem)
 end
 
 
-"""
-save_time_step_data!(problem::Problem,timeNow::Number)
-
-Saves the solution at the current time step
-
-"""
+# Saves the solution at the current time step
 function save_time_step_data!(problem::Problem,timeNow::Number)
 
     @unpack x,savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,aeroVariablesOverTime,model = problem

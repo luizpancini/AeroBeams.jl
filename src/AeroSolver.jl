@@ -4,7 +4,6 @@ abstract type GustAeroSolver end
 abstract type DerivationMethod end
 
 """
-struct AD <: DerivationMethod
 
     AD (Automatic Differentiation) DerivationMethod composite type
 
@@ -16,7 +15,6 @@ export AD
 
 
 """
-struct FD <: DerivationMethod
 
     FD (Finite Differences) DerivationMethod composite type
 
@@ -48,49 +46,6 @@ export FD
 
 
 """
-function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
-
-Computes Theodorsen's flap constants
-
-"""
-function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
-
-    # Semichord-normalized spar position after midchord
-    a = 2*normSparPos-1
-
-    # Semichord-normalized flap hinge position after midchord
-    d = 2*normFlapPos-1
-
-    # Theodorsen's constants
-    Th = zeros(18)
-    Th[1] = -1/3*sqrt(1-d^2)*(2+d^2)+d*acos(d)
-    Th[2] = d*(1-d^2)-sqrt(1-d^2)*(1+d^2)*acos(d)+d*acos(d)^2;
-    Th[3] = -(1/8+d^2)*acos(d)^2+1/4*d*sqrt(1-d^2)*acos(d)*(7+2*d^2)-1/8*(1-d^2)*(5*d^2+4)
-    Th[4] = -acos(d)+d*sqrt(1-d^2)
-    Th[5] = -(1-d^2)-acos(d)^2+2*d*sqrt(1-d^2)*acos(d)
-    Th[6] = Th[2]
-    Th[7] = -(1/8+d^2)*acos(d)+1/8*d*sqrt(1-d^2)*(7+2*d^2)
-    Th[8] = -1/3*sqrt(1-d^2)*(2*d^2+1)+d*acos(d)
-    Th[9] = 1/2*(1/3*sqrt(1-d^2)^3+a*Th[4])
-    Th[10] = sqrt(1-d^2)+acos(d)
-    Th[11] = acos(d)*(1-2*d)+sqrt(1-d^2)*(2-d)
-    Th[12] = sqrt(1-d^2)*(2+d)-acos(d)*(2*d+1)
-    Th[13] = 1/2*(-Th[7]-(d-a)*Th[1])
-
-    # Useful functions of the above
-    Th[14] = Th[4]+Th[10]
-    Th[15] = Th[1]-Th[8]-(normFlapPos-normSparPos)*Th[4]+Th[11]/2
-    Th[16] = Th[7]+Th[1]*(normFlapPos-normSparPos)
-    Th[17] = Th[11]/(2π)
-    Th[18] = Th[10]/π
-
-    return Th
-
-end
-
-
-"""
-struct QuasiSteady <: AeroSolver
 
     QuasiSteady AeroSolver composite type
 
@@ -111,7 +66,6 @@ export QuasiSteady
 
 
 """
-struct Indicial <: AeroSolver
 
     Indicial AeroSolver composite type
 
@@ -138,7 +92,6 @@ export Indicial
 
 
 """
-struct BLi <: AeroSolver
 
     Incompressible modified Beddoes-Leishman AeroSolver composite type
 
@@ -165,7 +118,6 @@ export BLi
 
 
 """
-struct BLo <: AeroSolver
 
     Original Beddoes-Leishman AeroSolver composite type
 
@@ -200,7 +152,6 @@ export BLo
 
 
 """
-struct Inflow <: AeroSolver
 
     Inflow AeroSolver composite type
 
@@ -225,12 +176,7 @@ end
 export Inflow
 
 
-"""
-inflow_arrays(N::Int64)
-
-Computes the fixed state arrays from Peters' inflow theory
-
-"""
+# Computes the fixed state arrays from Peters' inflow theory
 function inflow_arrays(N::Int64)
 
     # D matrix
@@ -269,7 +215,6 @@ end
 
 
 """
-struct TableLookup <: FlapAeroSolver
 
     TableLookup FlapAeroSolver composite type
 
@@ -288,7 +233,6 @@ export TableLookup
 
 
 """
-mutable struct ThinAirfoilTheory <: FlapAeroSolver
 
     ThinAirfoilTheory FlapAeroSolver composite type
 
@@ -314,8 +258,44 @@ end
 export ThinAirfoilTheory
 
 
+# Computes Theodorsen's flap constants
+function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
+
+    # Semichord-normalized spar position after midchord
+    a = 2*normSparPos-1
+
+    # Semichord-normalized flap hinge position after midchord
+    d = 2*normFlapPos-1
+
+    # Theodorsen's constants
+    Th = zeros(18)
+    Th[1] = -1/3*sqrt(1-d^2)*(2+d^2)+d*acos(d)
+    Th[2] = d*(1-d^2)-sqrt(1-d^2)*(1+d^2)*acos(d)+d*acos(d)^2;
+    Th[3] = -(1/8+d^2)*acos(d)^2+1/4*d*sqrt(1-d^2)*acos(d)*(7+2*d^2)-1/8*(1-d^2)*(5*d^2+4)
+    Th[4] = -acos(d)+d*sqrt(1-d^2)
+    Th[5] = -(1-d^2)-acos(d)^2+2*d*sqrt(1-d^2)*acos(d)
+    Th[6] = Th[2]
+    Th[7] = -(1/8+d^2)*acos(d)+1/8*d*sqrt(1-d^2)*(7+2*d^2)
+    Th[8] = -1/3*sqrt(1-d^2)*(2*d^2+1)+d*acos(d)
+    Th[9] = 1/2*(1/3*sqrt(1-d^2)^3+a*Th[4])
+    Th[10] = sqrt(1-d^2)+acos(d)
+    Th[11] = acos(d)*(1-2*d)+sqrt(1-d^2)*(2-d)
+    Th[12] = sqrt(1-d^2)*(2+d)-acos(d)*(2*d+1)
+    Th[13] = 1/2*(-Th[7]-(d-a)*Th[1])
+
+    # Useful functions of the above
+    Th[14] = Th[4]+Th[10]
+    Th[15] = Th[1]-Th[8]-(normFlapPos-normSparPos)*Th[4]+Th[11]/2
+    Th[16] = Th[7]+Th[1]*(normFlapPos-normSparPos)
+    Th[17] = Th[11]/(2π)
+    Th[18] = Th[10]/π
+
+    return Th
+
+end
+
+
 """
-struct IndicialGust <: GustAeroSolver
 
     IndicialGust GustAeroSolver composite type
 

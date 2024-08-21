@@ -1,11 +1,11 @@
 abstract type Gust end
 
-"""
-@with_kw mutable struct SharpEdgedGust <: Gust
+#
+# @with_kw mutable struct SharpEdgedGust <: Gust
 
-    SharpEdgedGust composite type
+#     SharpEdgedGust composite type
 
-"""
+#
 @with_kw mutable struct SharpEdgedGust <: Gust
 
     # Primary (necessary for gust creation)
@@ -24,7 +24,7 @@ end
 
 
 """
-create_SharpEdgedGust(; initialTime::Number=0,duration::Number=Inf,convectiveVelocity::Number=0,verticalVelocity::Number,p::Vector{<:Number}=zeros(3))
+    create_SharpEdgedGust(; kwargs...)
 
 Creates a sharp-edged gust
 
@@ -58,12 +58,12 @@ end
 export create_SharpEdgedGust
 
 
-"""
-@with_kw mutable struct OneMinusCosineGust <: Gust
+#
+# @with_kw mutable struct OneMinusCosineGust <: Gust
 
-    OneMinusCosineGust composite type
+#     OneMinusCosineGust composite type
 
-"""
+#
 @with_kw mutable struct OneMinusCosineGust <: Gust
 
     # Primary (necessary for gust creation)
@@ -82,7 +82,7 @@ end
 
 
 """
-create_OneMinusCosineGust(; initialTime::Number=0,duration::Number,convectiveVelocity::Number=0,verticalVelocity::Number,p::Vector{<:Number}=zeros(3))
+    create_OneMinusCosineGust(; kwargs...)
 
 Creates a one-minus-cosine gust
 
@@ -116,12 +116,12 @@ end
 export create_OneMinusCosineGust
 
 
-"""
-@with_kw mutable struct Continuous1DGust <: Gust
+#
+# @with_kw mutable struct Continuous1DGust <: Gust
 
-    Continuous1DGust composite type
+#     Continuous1DGust composite type
 
-"""
+#
 @with_kw mutable struct Continuous1DGust <: Gust
 
     # Primary (necessary for gust creation)
@@ -150,7 +150,7 @@ end
 
 
 """
-create_Continuous1DGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Number=0,duration::Number,generationDuration::Number=duration,L::Number=762,ωmin::Number=0,ωmax::Number=200π,Uref::Number,convectiveVelocity::Number=0,σ::Number,p::Vector{<:Number}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
+    create_Continuous1DGust(; kwargs...)
 
 Creates a continuous 1D gust
 
@@ -168,7 +168,7 @@ Creates a continuous 1D gust
 - `σ::Number` = turbulence intensity (RMS) of "vertical" gust velocity component
 - `p::Vector{<:Number}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 - `seed::Int64` = seed for random numbers generation (reproducibility)
-- `plotPSD::Bool` = TF to plot the PSD
+- `plotPSD::Bool` = flag to plot the PSD
 """
 function create_Continuous1DGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Number=0,duration::Number,generationDuration::Number=duration,L::Number=762,ωmin::Number=0,ωmax::Number=200π,Uref::Number,convectiveVelocity::Number=0,σ::Number,p::Vector{<:Number}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
 
@@ -258,12 +258,12 @@ end
 export create_Continuous1DGust
 
 
-"""
-@with_kw mutable struct DiscreteSpaceGust <: Gust
+#
+# @with_kw mutable struct DiscreteSpaceGust <: Gust
 
-    DiscreteSpaceGust composite type
+#     DiscreteSpaceGust composite type
 
-"""
+#
 @with_kw mutable struct DiscreteSpaceGust <: Gust
 
     # Primary (necessary for gust creation)
@@ -283,7 +283,7 @@ end
 
 
 """
-create_DiscreteSpaceGust(; type::String,length::Number,width::Number,convectiveVelocity::Number=0,verticalVelocity::Number,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3))
+    create_DiscreteSpaceGust(; kwargs...)
 
 Creates a discrete space gust
 
@@ -342,12 +342,12 @@ end
 export create_DiscreteSpaceGust
 
 
-"""
-@with_kw mutable struct Continuous1DSpaceGust <: Gust
+#
+# @with_kw mutable struct Continuous1DSpaceGust <: Gust
 
-    Continuous1DSpaceGust composite type
+#     Continuous1DSpaceGust composite type
 
-"""
+#
 @with_kw mutable struct Continuous1DSpaceGust <: Gust
 
     # Primary (necessary for gust creation)
@@ -371,7 +371,7 @@ end
 
 
 """
-create_Continuous1DSpaceGust(; spectrum::String,length::Number,N::Int64=1001,L::Number=762,σ::Number=1,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3),seed::Int64=123456)
+    create_Continuous1DSpaceGust(; kwargs...)
 
 Creates a continuous 1D space gust
 
@@ -467,12 +467,12 @@ end
 export create_Continuous1DSpaceGust
 
 
-"""
-@with_kw mutable struct Continuous2DSpaceGust <: Gust
+#
+# @with_kw mutable struct Continuous2DSpaceGust <: Gust
 
-    ContinuousSpaceGust composite type
+#     Continuous2DSpaceGust composite type
 
-"""
+#
 @with_kw mutable struct Continuous2DSpaceGust <: Gust
 
     # Primary (necessary for gust creation)
@@ -498,7 +498,7 @@ end
 
 
 """
-create_Continuous2DSpaceGust(; spectrum::String,length::Number,width::Number,Nx::Int64=101,Ny::Int64=101,L::Number=762,σ::Number=1,c0::Vector{<:Number}=zeros(3),p::Vector{<:Number}=zeros(3),seed::Int64=123456)
+    create_Continuous2DSpaceGust(; kwargs...)
 
 Creates a continuous 2D space gust
 
@@ -621,12 +621,7 @@ end
 export create_Continuous2DSpaceGust
 
 
-"""
-stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:Number},U::Number,L::Number=762,σ::Number=1)
-
-Computes a stochastic gust velocity array by coloring a white noise signal with the appropriate spectrum
-
-"""
+# Computes a stochastic gust velocity array by coloring a white noise signal with the appropriate spectrum
 function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:Number},U::Number,L::Number=762,σ::Number=1)
 
     @assert spectrum in ["vK"]

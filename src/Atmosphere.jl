@@ -1,5 +1,4 @@
 """
-@with_kw μtable struct Atmosphere
 
     Atmosphere composite type
 
@@ -18,12 +17,7 @@ end
 export Atmosphere
 
 
-"""
-air_properties_from_pressure_and_temperature(p::Number,T::Number,R::Number,γ::Number,β::Number,S::Number)
-
-Calculates air properties from given pressure and temperature
-
-"""
+# Calculates air properties from given pressure and temperature
 function air_properties_from_pressure_and_temperature(p::Number,T::Number,R::Number=287.05864074988347,γ::Number=1.4,β::Number=1.458e-6,S::Number=110.4)
 
     # Check inputs
@@ -49,11 +43,11 @@ end
 
 
 """
-standard_atmosphere(altitude::Number)
+    standard_atmosphere(altitude::Number)
 
 Calculates air properties from the International Standard Atmosphere (https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
 
-# Fields
+# Arguments
 - `altitude::Number`
 """
 function standard_atmosphere(altitude::Number)

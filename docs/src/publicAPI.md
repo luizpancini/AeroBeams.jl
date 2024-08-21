@@ -73,6 +73,7 @@ create_FlapLink
 
 ### Creating a model
 ```@docs
+Model
 create_Model
 update_model!
 set_motion_basis_A!
@@ -83,7 +84,7 @@ set_motion_basis_A!
 PointInertia
 ```
 
-### Creating a problem
+### Creating and solving a problem
 ```@docs
 InitialVelocitiesUpdateOptions
 SteadyProblem

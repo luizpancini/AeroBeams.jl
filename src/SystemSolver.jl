@@ -1,9 +1,9 @@
-"""
-@with_kw mutable struct NewtonRaphson <: SystemSolver
+#
+# @with_kw mutable struct NewtonRaphson <: SystemSolver
 
-    Newton-Raphson system solver composite type
+#     Newton-Raphson composite type
 
-"""
+#
 @with_kw mutable struct NewtonRaphson <: SystemSolver
 
     # User input variables
@@ -32,8 +32,9 @@
 
 end
 
+
 """
-create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Number=2.0,minConvRateJacUpdate::Number=2.0,alwaysUpdateJacobian::Bool=true)
+    create_NewtonRaphson(; kwargs...)
 
 Newton-Raphson nonlinear system solver constructor
 
@@ -67,12 +68,7 @@ end
 export create_NewtonRaphson
 
 
-"""
-solve_NewtonRaphson!(problem::Problem)
-
-Solves the nonlinear system of equations at current time step 
-
-"""
+# Solves the nonlinear system of equations at current time step
 function solve_NewtonRaphson!(problem::Problem)
 
     # Unpack system solver
@@ -203,12 +199,7 @@ function solve_NewtonRaphson!(problem::Problem)
 end
 
 
-"""
-assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
-
-Assembles the residual vector, Jacobian and inertia matrices of the system of equations
-
-"""
+# Assembles the residual vector and Jacobian matrix of the system of equations
 function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
 
     @unpack model = problem
@@ -245,12 +236,7 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
 end
 
 
-"""
-solve_linear_system!(problem::Problem)
-
-Solves the linear system of equations at current time step and load factor
-
-"""
+# Solves the linear system of equations at current time step and load factor
 function solve_linear_system!(problem::Problem)
 
     @unpack x,Δx,residual,jacobian = problem
@@ -306,12 +292,7 @@ function solve_linear_system!(problem::Problem)
 end
 
 
-"""
-line_search(x,residual,jacobian,λ=1e-8)
-
-Performs a line search to solve the current Newton step
-
-"""
+# Performs a line search to solve the current Newton step
 function line_search(x,residual,jacobian,λ=1e-8)
 
     # Regularize the inverse of the Jacobian
@@ -331,12 +312,7 @@ function line_search(x,residual,jacobian,λ=1e-8)
 end
 
 
-"""
-line_search_step_size(x,p,residual,jacobian,c1=1e-4,ρ=0.5)
-
-Updates the step size (α) of the line search
-
-"""
+# Updates the step size (α) of the line search
 function line_search_step_size(x,p,residual,jacobian,c1=1e-4,ρ=0.5)
 
     # Copy problem and update TF to skip Jacobian update
@@ -360,12 +336,7 @@ function line_search_step_size(x,p,residual,jacobian,c1=1e-4,ρ=0.5)
 end
 
 
-"""
-save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
-
-Saves the solution at the current load factor
-
-"""
+# Saves the solution at the current load factor
 function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
 
 
@@ -416,12 +387,7 @@ function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})
 end
 
 
-"""
-update_maximum_aero_loads!(problem::Problem)
-
-Updates the maximum absolute values of aerodynamic loads
-
-"""
+# Updates the maximum absolute values of aerodynamic loads
 function update_maximum_aero_loads!(problem::Problem)
 
     @unpack maxAeroForce,maxAeroMoment = problem

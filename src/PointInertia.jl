@@ -1,7 +1,7 @@
 """
 @with_kw mutable struct PointInertia
 
-PointInertia composite type
+    PointInertia composite type
 
 # Fields
 - `elementID::Int64` = local element ID to which the point inertia is attached

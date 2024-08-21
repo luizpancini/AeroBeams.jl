@@ -1,9 +1,9 @@
-"""
-@with_kw mutable struct Spring
+#
+# @with_kw mutable struct Spring
 
-    Spring composite type
+#     Spring composite type
 
-"""
+#
 @with_kw mutable struct Spring
 
     # Primary (inputs to spring creation)
@@ -28,7 +28,7 @@ end
 
 
 """
-create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Number}=zeros(3),kp::Vector{<:Number}=zeros(3),kTranslational::Number=0,kTwist::Number=0,kIPBending::Number=0,kOOPBending::Number=0)
+    create_Spring(; kwargs...)
 
 Creates a spring
 
