@@ -102,7 +102,7 @@ export mul3
 
 
 """
-    isotropic_stiffness_matrix(;EA::Number,GAy::Number,GAz::Number,GJ::Number,EIy::Number,EIz::Number)
+    isotropic_stiffness_matrix(; kwargs...)
 
 Creates a 6x6 sectional stiffness matrix
 
@@ -115,7 +115,7 @@ Creates a 6x6 sectional stiffness matrix
 - `EIy::Number` = bending stiffness about the x2 direction
 - `EIz::Number` = bending stiffness about the x3 direction
 """
-function isotropic_stiffness_matrix(;∞::Number=1e16,EA::Number=∞,GAy::Number=∞,GAz::Number=∞,GJ::Number=∞,EIy::Number=∞,EIz::Number=∞)
+function isotropic_stiffness_matrix(; ∞::Number=1e16,EA::Number=∞,GAy::Number=∞,GAz::Number=∞,GJ::Number=∞,EIy::Number=∞,EIz::Number=∞)
 
     @assert ∞ > 0
     @assert EA > 0
@@ -132,7 +132,7 @@ export isotropic_stiffness_matrix
 
 
 """
-    inertia_matrix(;ρA::Number,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
+    inertia_matrix(; kwargs...)
 
 Creates a 6x6 sectional inertia matrix
 
@@ -144,7 +144,7 @@ Creates a 6x6 sectional inertia matrix
 - `e2::Number` = offset of center of gravity in the x2 direction with respect to the local reference line
 - `e3::Number` = offset of center of gravity in the x3 direction with respect to the local reference line
 """
-function inertia_matrix(;ρA::Number=0,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
+function inertia_matrix(; ρA::Number=0,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
 
     @assert ρA >= 0
     @assert ρIy >= 0

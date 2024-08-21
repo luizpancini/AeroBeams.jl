@@ -17,7 +17,7 @@ end
 
 
 """
-create_UnitsSystem(; kwargs...)
+    create_UnitsSystem(; kwargs...)
 
 Creates a system composed of length, force, angle, frequency and mass units (this is only for plotting purposes and does not influence calculations)
 
@@ -28,7 +28,7 @@ Creates a system composed of length, force, angle, frequency and mass units (thi
 - `frequency::String` = frequency unit
 - `mass::String` = mass unit
 """
-function create_UnitsSystem(;length::String="m",force::String="N",angle::String="rad",frequency::String="rad/s",mass::String="kg")
+function create_UnitsSystem(; length::String="m",force::String="N",angle::String="rad",frequency::String="rad/s",mass::String="kg")
 
     # Initialize
     self = UnitsSystem(length=length,force=force,angle=angle,frequency=frequency,mass=mass)

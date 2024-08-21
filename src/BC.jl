@@ -35,7 +35,7 @@ export BC
 
 
 """
-    create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
+    create_BC(; kwargs...)
 
 BC constructor
 
@@ -47,7 +47,7 @@ BC constructor
 - `values` = corresponding values of the applied BCs (constants or functions of time)
 - `toBeTrimmed::Union{BitVector,Vector{Bool}}` = TF on whether the BC is to be trimmed
 """
-function create_BC(;name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
+function create_BC(; name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
 
     # Validate inputs
     @assert 1 <= node <= beam.nElements+1 "the BC'ed beam does not contain the BC'ed node"

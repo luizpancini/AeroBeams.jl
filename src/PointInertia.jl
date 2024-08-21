@@ -1,6 +1,4 @@
 """
-@with_kw mutable struct PointInertia
-
     PointInertia composite type
 
 # Fields

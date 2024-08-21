@@ -59,7 +59,7 @@ export AeroSurface
 
 
 """
-create_AeroSurface(; kwargs...)
+    create_AeroSurface(; kwargs...)
 
 Creates an aerodynamic surface
 

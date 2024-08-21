@@ -1,7 +1,7 @@
 using Plots, ColorSchemes
 
 """
-plot_undeformed_assembly(model::Model,view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true)
+    plot_undeformed_assembly(model::Model,view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true)
 
 Plots the nodal coordinates of the assembly of beams
 
@@ -61,7 +61,7 @@ export plot_undeformed_assembly
 
 
 """
-plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+    plot_steady_deformation(problem::Problem; kwargs...)
 
 Plots the initial and final deformed states for the model in the given problem
 
@@ -221,7 +221,7 @@ export plot_steady_deformation
 
 
 """
-plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,colorScheme=:rainbow,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
+    plot_steady_outputs(problem::Problem; kwargs...)
 
 Plots outputs of a steady problem
 
@@ -619,7 +619,7 @@ end
 
 
 """
-plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",lw::Number=1,colorSteady=:black,modalColorScheme=:jet1,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+    plot_mode_shapes(problem::Problem; kwargs...)
 
 Plots the mode shapes of the model in the given problem
 
@@ -834,7 +834,7 @@ export plot_mode_shapes
 
 
 """
-plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,fps::Number=30,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Number}=[0.1;0.05;0.05],timeStampPos::Vector{<:Number}=[0.5;0.05;0.05],displayProgress::Bool=false) where {T1<:Number,T2<:Number}
+    plot_dynamic_deformation(problem::Problem; kwargs...)
 
 Plots the animated deformation of the model in the given problem
 
@@ -1146,7 +1146,7 @@ export plot_dynamic_deformation
 
 
 """
-plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=Vector{Tuple{Int64,Int64}}(),elements::Vector{Int64}=Vector{Int64}(),nodalOutputs::Vector{String}=["u","p","F","M"],elementalOutputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],lw::Number=1,colorScheme=:rainbow,showLegend::Bool=true,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
+    plot_time_outputs(problem::Problem; kwargs...)
 
 Plots outputs of a dynamic problem
 

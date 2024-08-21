@@ -127,7 +127,7 @@ export SteadyProblem
 
 
 """
-create_SteadyProblem(; kwargs...)
+    create_SteadyProblem(; kwargs...)
 
 Steady problem constructor
 
@@ -215,7 +215,7 @@ export TrimProblem
 
 
 """
-create_TrimProblem(; kwargs...)
+    create_TrimProblem(; kwargs...)
 
 Trim problem constructor
 
@@ -324,7 +324,7 @@ export EigenProblem
 
 
 """
-create_EigenProblem(; kwargs...)
+    create_EigenProblem(; kwargs...)
 
 Eigen problem constructor
 
