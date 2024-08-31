@@ -5,8 +5,12 @@ SELFrtol = 1e-8
 
 @testset "Static analysis of an arch under a dead pressure load" begin
     include("examples/archUnderDeadPressure.jl")
+    println("Current directory: $(pwd())")
+    # Construct the absolute path
+    file_path = joinpath(@__DIR__, "newTestDataGenerators", "archUnderDeadPressure", "mid_u3.txt")
+    println("File path: ", file_path)
     # Self-comparison
-    mid_u3_ = readdlm(string(pwd(),"/test/newTestDataGenerators/archUnderDeadPressure/mid_u3.txt"))
+    mid_u3_ = readdlm(file_path)
     @test mid_u3 ≈ mid_u3_ rtol=SELFrtol
 end
 
