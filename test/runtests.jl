@@ -6,7 +6,7 @@ SELFrtol = 1e-8
 @testset "Static analysis of an arch under a dead pressure load" begin
     include("examples/archUnderDeadPressure.jl")
     # Self-comparison
-    mid_u3_ = readdlm("test/newTestDataGenerators/archUnderDeadPressure/mid_u3.txt")
+    mid_u3_ = readdlm(string(pwd(),"/test/newTestDataGenerators/archUnderDeadPressure/mid_u3.txt"))
     @test mid_u3 ≈ mid_u3_ rtol=SELFrtol
 end
 
