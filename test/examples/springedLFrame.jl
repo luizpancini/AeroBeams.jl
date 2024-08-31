@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra
 
 # Beam 1
 L1 = 2
@@ -10,7 +10,7 @@ beam1 = create_Beam(name="beam1",length=L1,nElements=nElem1,C=[isotropic_stiffne
 L2 = 1
 EIy2 = 1e4
 nElem2 = 20
-beam2 = create_Beam(name="beam2",length=L2,nElements=nElem2,C=[isotropic_stiffness_matrix(EIy=EIy2)],rotationParametrization="E321",p0=[0;π/4;0])
+beam2 = create_Beam(name="beam2",length=L2,nElements=nElem2,C=[isotropic_stiffness_matrix(EIy=EIy2)],rotationParametrization="E321",p0=[0;π/2;0])
 
 # Spring
 kTranslational = 1e4
@@ -39,14 +39,5 @@ u3_b = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1_b[3],problem.nodalState
 
 # Tip u3 displacement (in local basis)
 println("Tip disp = $(u3_b[end])")
-
-# Plots
-relPath = "/test/outputs/figures/springedLFrame"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-gr()
-plt1 = plot(x1/L2, u3_b/L2, lw=2, label=false, xlabel="\$x_1/L_2\$", ylabel="\$u_3^{+}/L_2\$")
-display(plt1)
-savefig(string(absPath,"/springedLFrame_disp.pdf"))
 
 println("Finished springedLFrame.jl")

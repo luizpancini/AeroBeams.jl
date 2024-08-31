@@ -81,10 +81,13 @@ Plots the initial and final deformed states for the model in the given problem
 - `plotAeroSurf` = flag to plot aerodynamic surfaces
 - `surfα::Float64` = transparency factor of aerodynamic surfaces 
 - `ΔuDef::Vector{<:Number}` = displacement vector for first node of deformed assembly relative to the undeformed one
+- `plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}` = plot axis limits    
+- `showScale::Bool` = flag to show scale on plot
+- `scalePos::Vector{<:Number}` = position of scale on plot
 - `save::Bool` = flag to save the figure
 - `savePath::String` = relative path on which to save the figure
 """
-function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Number}=[0.1;0.05;0.05],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -200,14 +203,37 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
         plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,1)
     end
 
-    # Initialize plot limits
-    plotMin = plotMax = 0
+    # Initialize TF for plane plot
+    isPlane = isnothing(view) && (x1Plane || x2Plane || x3Plane)
+
+    # Compute plot limits
+    plotMax = max(maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
+    plotMin = min(minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
 
     # Set the same plot extrema across all axis (equal aspect ratio), if applicable
-    if !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
-        plotMax = max(plotMax,maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
-        plotMin = min(plotMin,minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
+    if !isPlane
         plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+    end
+
+    # Plot scale, if applicable
+    if showScale
+        # Set positions
+        if isPlane
+            XPos = plotMin + scalePos[1]*(plotMax-plotMin)
+            YPos = plotMax + scalePos[2]*(plotMax-plotMin)
+            ZPos = plotMax + scalePos[3]*(plotMax-plotMin)
+        else
+            XPos = plotLimits[1][1] + scalePos[1]*(plotLimits[1][2]-plotLimits[1][1])
+            YPos = plotLimits[2][2] + scalePos[2]*(plotLimits[2][2]-plotLimits[2][1])
+            ZPos = plotLimits[3][2] + scalePos[3]*(plotLimits[3][2]-plotLimits[3][1])
+        end
+        # Display scale
+        scaleString = "Scale: $(string(scale))×"
+        if isPlane
+            annotate!(XPos, YPos, text(scaleString, 8))
+        else
+            plot!([NaN], [NaN], c=:white, lw=0, label=scaleString)
+        end
     end
 
     # Save, if applicable
@@ -1101,8 +1127,6 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
 
         # Plot scale, if applicable
         if showScale
-            # Set rounded scale value
-            roundedScale = round(Int,scale)
             # Set positions
             if isnothing(plotLimits)
                 XPos = plotMin + scalePos[1]*(plotMax-plotMin)
@@ -1114,10 +1138,11 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
                 ZPos = plotLimits[3][2] + scalePos[3]*(plotLimits[3][2]-plotLimits[3][1])
             end
             # Display scale
+            scaleString = "Scale: $(string(scale))×"
             if isPlane
-                annotate!(XPos, YPos, text("Scale: $(roundedScale)x", 8))
+                annotate!(XPos, YPos, text(scaleString, 8))
             else
-                plot!([NaN], [NaN], c=:white, lw=0, label="Scale: $(roundedScale)x")
+                plot!([NaN], [NaN], c=:white, lw=0, label=scaleString)
             end
         end
 

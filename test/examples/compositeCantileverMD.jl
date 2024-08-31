@@ -1,16 +1,22 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra
+
+# Problem defined by MINGUET & DUGUNDJI: "Experiments and Analysis for Composite Blades Under Large Deflections. Part I - Static Behavior" (1990). See Table 2 for the laminate properties
 
 # Properties common to all beams
 L = 0.55
-b = 0.03
 nElem = 22
 
 # Rotation angles
 θRange = π/4*[0, 1]
 
+# Gravity
+g = 9.80665
+
+# Tip load mass
+m = 0.5
+
 # Tip weight
-g = 9.807
-W = 0.5*g
+W = m*g
 
 # Beam 1
 stiffnessMatrix1 = diagm([3.7e6,2.6e5,2.9e5,0.183,0.707,276])
@@ -30,10 +36,8 @@ beam3 = create_Beam(name="beam3",length=L,nElements=nElem,C=[stiffnessMatrix3],r
 # BCs
 clamp1 = create_BC(name="clamp1",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 tipLoad1 = create_BC(name="tipLoad1",beam=beam1,node=nElem+1,types=["F3A"],values=[-W])
-
 clamp2 = create_BC(name="clamp2",beam=beam2,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 tipLoad2 = create_BC(name="tipLoad2",beam=beam2,node=nElem+1,types=["F3A"],values=[-W])
-
 clamp3 = create_BC(name="clamp3",beam=beam3,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 tipLoad3 = create_BC(name="tipLoad3",beam=beam3,node=nElem+1,types=["F3A"],values=[-W])
 
@@ -48,12 +52,12 @@ compositeCantilever3 = create_Model(name="compositeCantilever3",beams=[beam3],BC
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep,minimumLoadFactorStep=σstep)
 
 # Initialize outputs: displacements at x1 = 500 mm
-σVector = Matrix{Vector{Float64}}(undef,3,2)
-u1_500mm = Matrix{Vector{Float64}}(undef,3,2)
-u2_500mm = Matrix{Vector{Float64}}(undef,3,2)
-u3_500mm = Matrix{Vector{Float64}}(undef,3,2)
+σVector = Array{Vector{Float64}}(undef,3,2)
+u1_500mm = Array{Vector{Float64}}(undef,3,2)
+u2_500mm = Array{Vector{Float64}}(undef,3,2)
+u3_500mm = Array{Vector{Float64}}(undef,3,2)
 
-# Loop over sweep variables
+# Loop root angles
 for (j,θ) in enumerate(θRange)
     # Update beams' rotation
     beam1.p0[3] = beam2.p0[3] = beam3.p0[3] = θ
@@ -71,76 +75,35 @@ for (j,θ) in enumerate(θRange)
     σVector[1,j] = problem1.savedσ
     σVector[2,j] = problem2.savedσ
     σVector[3,j] = problem3.savedσ
-
     u1_500mm[1,j] = [problem1.nodalStatesOverσ[i][nElem-1].u_n1[1] for i in 1:length(σVector[1,j])]
     u1_500mm[2,j] = [problem2.nodalStatesOverσ[i][nElem-1].u_n1[1] for i in 1:length(σVector[2,j])]
     u1_500mm[3,j] = [problem3.nodalStatesOverσ[i][nElem-1].u_n1[1] for i in 1:length(σVector[3,j])]
-
     u2_500mm[1,j] = [problem1.nodalStatesOverσ[i][nElem-1].u_n1[2] for i in 1:length(σVector[1,j])]
     u2_500mm[2,j] = [problem2.nodalStatesOverσ[i][nElem-1].u_n1[2] for i in 1:length(σVector[2,j])]
     u2_500mm[3,j] = [problem3.nodalStatesOverσ[i][nElem-1].u_n1[2] for i in 1:length(σVector[3,j])]
-
     u3_500mm[1,j] = [problem1.nodalStatesOverσ[i][nElem-1].u_n1[3] for i in 1:length(σVector[1,j])]
     u3_500mm[2,j] = [problem2.nodalStatesOverσ[i][nElem-1].u_n1[3] for i in 1:length(σVector[2,j])]
     u3_500mm[3,j] = [problem3.nodalStatesOverσ[i][nElem-1].u_n1[3] for i in 1:length(σVector[3,j])]
 end
 
-# Plot displacements at x1 = 500 mm over load steps
-# ------------------------------------------------------------------------------
-labels = ["\$-u_1\$" "\$u_2\$" "\$-u_3\$"]
-xLabel = "\$-u_1, u_2, -u_3, @x_1=500\$ mm"
-yLabel = "Load [kg]"
-relPath = "/test/outputs/figures/compositeCantileverMD"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-gr()
-
-# Beam 1, θ=0⁰
-x = [-u1_500mm[1,1] u2_500mm[1,1] -u3_500mm[1,1]]
-y = σVector[1,1]*W/g
-plt11 = plot()
-plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 1, \$\\theta=0^{\\degree}\$")
-display(plt11)
-savefig(string(absPath,"/compositeCantileverMD_b1th0.pdf"))
-
-# Beam 1, θ=45⁰
-x = [-u1_500mm[1,2] u2_500mm[1,2] -u3_500mm[1,2]]
-y = σVector[1,2]*W/g
-plt12 = plot()
-plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 1, \$\\theta=45^{\\degree}\$")
-display(plt12)
-savefig(string(absPath,"/compositeCantileverMD_b1th45.pdf"))
-
-# Beam 2, θ=0⁰
-x = [-u1_500mm[2,1] u2_500mm[2,1] -u3_500mm[2,1]]
-y = σVector[2,1]*W/g
-plt21 = plot()
-plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 2, \$\\theta=0^{\\degree}\$")
-display(plt21)
-savefig(string(absPath,"/compositeCantileverMD_b2th0.pdf"))
-
-# Beam 2, θ=45⁰
-x = [-u1_500mm[2,2] u2_500mm[2,2] -u3_500mm[2,2]]
-y = σVector[2,2]*W/g
-plt22 = plot()
-plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 2, \$\\theta=45^{\\degree}\$")
-display(plt22)
-savefig(string(absPath,"/compositeCantileverMD_b2th45.pdf"))
-
-# Beam 3, θ=0⁰
-x = [-u1_500mm[3,1] u2_500mm[3,1] -u3_500mm[3,1]]
-y = σVector[3,1]*W/g
-plt31 = plot()
-plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 3, \$\\theta=0^{\\degree}\$")
-display(plt31)
-savefig(string(absPath,"/compositeCantileverMD_b3th0.pdf"))
-
-# Beam 3, θ=45⁰
-x = [-u1_500mm[3,2] u2_500mm[3,2] -u3_500mm[3,2]]
-y = σVector[3,2]*W/g
-plt32 = plot()
-plot!(x, y, linewidth=2, label=labels, ylabel=yLabel, xlabel=xLabel, title="Beam 3, \$\\theta=45^{\\degree}\$")
-display(plt32)
-savefig(string(absPath,"/compositeCantileverMD_b3th45.pdf"))
+# Load reference solution
+u1_b1_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b1_th0_u1.txt")
+u2_b1_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b1_th0_u2.txt")
+u3_b1_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b1_th0_u3.txt")
+u1_b1_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b1_th45_u1.txt")
+u2_b1_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b1_th45_u2.txt")
+u3_b1_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b1_th45_u3.txt")
+u1_b2_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b2_th0_u1.txt")
+u2_b2_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b2_th0_u2.txt")
+u3_b2_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b2_th0_u3.txt")
+u1_b2_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b2_th45_u1.txt")
+u2_b2_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b2_th45_u2.txt")
+u3_b2_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b2_th45_u3.txt")
+u1_b3_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b3_th0_u1.txt")
+u2_b3_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b3_th0_u2.txt")
+u3_b3_th0_ref = readdlm("test/referenceData/compositeCantileverMD/b3_th0_u3.txt")
+u1_b3_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b3_th45_u1.txt")
+u2_b3_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b3_th45_u2.txt")
+u3_b3_th45_ref = readdlm("test/referenceData/compositeCantileverMD/b3_th45_u3.txt")
 
 println("Finished compositeCantileverMD.jl")

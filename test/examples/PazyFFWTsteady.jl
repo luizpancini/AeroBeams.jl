@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams
 
 # Hinge node, hinge angle [rad] and flare angle [deg]
 hingeNode = 14
@@ -19,8 +19,6 @@ g = 9.80665
 
 # Pazy wing with flared folding tip
 pazyFFWT,_ = create_PazyFFWT(hingeNode=hingeNode,hingeAngle=hingeAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,p0=[0;0;θ],g=g)
-# plt = plot_undeformed_assembly(pazyFFWT)
-# display(plt)
 
 # System solver
 σ0 = 1.0
@@ -43,27 +41,5 @@ u1_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[1],problem.nodalSta
 u3_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[3],problem.nodalStatesOverσ[end][e].u_n2[3]) for e in 1:15]...)
 p2_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].p_n1[2],problem.nodalStatesOverσ[end][e].p_n2[2]) for e in 1:15]...)
 M2_of_x1 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOverσ[end][e].M_n2[2]) for e in 1:15]...)
-
-# Plots
-# ------------------------------------------------------------------------------
-relPath = "/test/outputs/figures/PazyFFWTsteady"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Deformed shape
-deformationPlot = plot_steady_deformation(problem,view=(30,30),legendPos=(0.3,0.5),save=true,savePath=string(relPath,"/PazyFFWTsteady_deformation.pdf"))
-display(deformationPlot)
-# OOP displacement
-gr()
-plt1 = plot((r_n1.+u1_of_x1)/x1[end], (r_n3.+u3_of_x1)/x1[end], aspect_ratio=:equal, lw=2, label=false, xlims=[0,1], xlabel="Normalized spanwise position", ylabel="Normalized out-of-plane position")
-display(plt1)
-savefig(string(absPath,"/PazyFFWTsteady_u3.pdf"))
-# Bending angle
-plt2 = plot(x1/x1[end], p2_of_x1, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$p_2\$")
-display(plt2)
-savefig(string(absPath,"/PazyFFWTsteady_p2.pdf"))
-# Bending moment
-plt3 = plot(x1/x1[end], M2_of_x1, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2\$ [N.m]")
-display(plt3)
-savefig(string(absPath,"/PazyFFWTsteady_M2.pdf"))
 
 println("Finished PazyFFWTsteady.jl")

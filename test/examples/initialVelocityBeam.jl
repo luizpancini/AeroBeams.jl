@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Select initial conditions as either "displacement", "rotation" or "both"
 initialConditions = "displacement"
@@ -6,29 +6,29 @@ initialConditions = "displacement"
 # Select boundary conditions as either "ss-ss" (simple support on both sides) or "ss-roller" (simple support on the left and roller on the right)
 BCType = "ss-roller"
 
-# Initial conditions: sinusoidal velocity V₃ and/or angular velocity Ω₂
+# Initial conditions: sinusoidal velocity V3 and/or angular velocity Ω2
 σ = 1e-1
-udot₃ = x1 -> σ*sin.(2*π*x1/L)
-θdot₂ = x1 -> -σ*2*π/L*cos.(2*π*x1/L)
-pdot₂ = x1 -> sec.(0/4).^2 .* θdot₂(x1)
+udot3 = x1 -> σ*sin.(2*π*x1/L)
+θdot2 = x1 -> -σ*2*π/L*cos.(2*π*x1/L)
+pdot2 = x1 -> sec.(0/4).^2 .* θdot2(x1)
 
 # Beam
 L = 1
 EIy = 1
 ρA = 1
 ρI = 0
-Φ = 1e4
+∞ = 1e4
 nElem = 48
-stiffnessMatrix = diagm([Φ,Φ,Φ,Φ,EIy,Φ])
+stiffnessMatrix = diagm([∞,∞,∞,∞,EIy,∞])
 inertiaMatrix = diagm([ρA,ρA,ρA,ρI,ρI,0])
 beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
 if initialConditions == "displacement"
-    beam.udot0_of_x1=x1->[0; 0; udot₃(x1)]
+    beam.udot0_of_x1=x1->[0; 0; udot3(x1)]
 elseif initialConditions == "rotation"
-    beam.pdot0_of_x1=x1->[0; pdot₂(x1); 0]
+    beam.pdot0_of_x1=x1->[0; pdot2(x1); 0]
 elseif initialConditions == "both"
-    beam.udot0_of_x1=x1->[0; 0; udot₃(x1)]
-    beam.pdot0_of_x1=x1->[0; pdot₂(x1); 0]
+    beam.udot0_of_x1=x1->[0; 0; udot3(x1)]
+    beam.pdot0_of_x1=x1->[0; pdot2(x1); 0]
 else
     error("Wrong initialConditions")
 end
@@ -48,8 +48,8 @@ end
 initialVelocityBeam = create_Model(name="initialVelocityBeam",beams=[beam],BCs=bcs)
 
 # Time and frequency variables
-ω₂ = (2*π/L)^2*sqrt(EIy/ρA)
-T = 2*π/ω₂
+ω2 = (2*π/L)^2*sqrt(EIy/ρA)
+T = 2*π/ω2
 cycles = 1
 tf = cycles*T
 Δt = T/100
@@ -66,72 +66,23 @@ end
 # Create and solve the problem
 problem = create_DynamicProblem(model=initialVelocityBeam,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
 tNorm = t/T
-u₃_quarter = [problem.nodalStatesOverTime[i][div(nElem,4)].u_n2[3] for i in 1:length(tNorm)]
-V₃_quarter = [(problem.elementalStatesOverTime[i][div(nElem,4)].V[3]+problem.elementalStatesOverTime[i][div(nElem,4)+1].V[3])/2.0 for i in 1:length(tNorm)]
-Vdot₃_quarter = [(problem.elementalStatesRatesOverTime[i][div(nElem,4)].Vdot[3]+problem.elementalStatesRatesOverTime[i][div(nElem,4)+1].Vdot[3])/2.0 for i in 1:length(tNorm)]
-θ₂_root = [problem.nodalStatesOverTime[i][1].θ_n1 for i in 1:length(tNorm)]
-Ω₂_mid = [(problem.elementalStatesOverTime[i][div(nElem,2)].Ω[2]+problem.elementalStatesOverTime[i][div(nElem,2)+1].Ω[2])/2.0 for i in 1:length(tNorm)]
-Ωdot₂_mid = [(problem.elementalStatesRatesOverTime[i][div(nElem,2)].Ωdot[2]+problem.elementalStatesRatesOverTime[i][div(nElem,2)+1].Ωdot[2])/2.0 for i in 1:length(tNorm)]
+u3_quarter = [problem.nodalStatesOverTime[i][div(nElem,4)].u_n2[3] for i in 1:length(tNorm)]
+V3_quarter = [(problem.elementalStatesOverTime[i][div(nElem,4)].V[3]+problem.elementalStatesOverTime[i][div(nElem,4)+1].V[3])/2.0 for i in 1:length(tNorm)]
+Vdot3_quarter = [(problem.elementalStatesRatesOverTime[i][div(nElem,4)].Vdot[3]+problem.elementalStatesRatesOverTime[i][div(nElem,4)+1].Vdot[3])/2.0 for i in 1:length(tNorm)]
+θ2_root = [problem.nodalStatesOverTime[i][1].θ_n1 for i in 1:length(tNorm)]
+Ω2_mid = [(problem.elementalStatesOverTime[i][div(nElem,2)].Ω[2]+problem.elementalStatesOverTime[i][div(nElem,2)+1].Ω[2])/2.0 for i in 1:length(tNorm)]
+Ωdot2_mid = [(problem.elementalStatesRatesOverTime[i][div(nElem,2)].Ωdot[2]+problem.elementalStatesRatesOverTime[i][div(nElem,2)+1].Ωdot[2])/2.0 for i in 1:length(tNorm)]
 
 # Compute analytical values
-u₃_quarter_analytic = σ/ω₂*sin.(ω₂*t)*sin(2*π*1/4)
-V₃_quarter_analytic = σ*cos.(ω₂*t)*sin(2*π*1/4)
-Vdot₃_quarter_analytic = -σ*ω₂*sin.(ω₂*t)*sin(2*π*1/4)
-θ₂_root_analytic = -σ*2*π/L/ω₂*sin.(ω₂*t)*cos(2*π*0)
-Ω₂_mid_analytic = -σ*2*π/L*cos.(ω₂*t)*cos(2*π*1/2)
-Ωdot₂_mid_analytic = σ*2*π/L*ω₂*sin.(ω₂*t)*cos(2*π*1/2)
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 5
-relPath = "/test/outputs/figures/initialVelocityBeam"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;0.05;0],timeStampPos=[0.5;0.05;0],plotFrequency=1,plotLimits=[(0,L),(-L/3,L/3),(-L,L)],save=true,savePath=string(relPath,"/initialVelocityBeam_deformation.gif"),displayProgress=true)
-# Normalized displacement at quarter-length
-gr()
-plt1 = plot(xlabel="\$t/T\$", ylabel="\$u_3/\\delta\$ at \$x_1=L/4\$")
-plot!(tNorm,u₃_quarter/σ, c=:black, lw=lw, label="Numerical")
-scatter!(tNorm[1:5:end],u₃_quarter_analytic[1:5:end]/σ, c=:blue, ms=ms, msw=0, label="Analytical")
-display(plt1)
-savefig(string(absPath,"/initialVelocityBeam_disp.pdf"))
-# Normalized velocity at quarter-length
-plt2 = plot(xlabel="\$t/T\$", ylabel="\$V_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/s]")
-plot!(tNorm,V₃_quarter/σ, c=:black, lw=lw, label="Numerical")
-scatter!(tNorm[1:5:end],V₃_quarter_analytic[1:5:end]/σ, c=:blue, ms=ms, msw=0, label="Analytical")
-display(plt2)
-savefig(string(absPath,"/initialVelocityBeam_vel.pdf"))
-# Normalized acceleration at quarter-length
-plt3 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{V}_3/\\delta\$ at \$x_1=L/4\$ [\$1\$/\$s^2\$]")
-plot!(tNorm,Vdot₃_quarter/σ, c=:black, lw=lw, label="Numerical")
-scatter!(tNorm[1:5:end],Vdot₃_quarter_analytic[1:5:end]/σ, c=:blue, ms=ms, msw=0, label="Analytical")
-display(plt3)
-savefig(string(absPath,"/initialVelocityBeam_acc.pdf"))
-# Normalized rotation at root
-plt4 = plot(xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi\\delta)\$ at \$x_1=0\$")
-plot!(tNorm,θ₂_root/(2*π)/σ, c=:black, lw=lw, label="Numerical")
-scatter!(tNorm[1:5:end],θ₂_root_analytic[1:5:end]/(2*π)/σ, c=:blue, ms=ms, msw=0, label="Analytical")
-display(plt4)
-savefig(string(absPath,"/initialVelocityBeam_rot.pdf"))
-# Angular velocity at mid-length
-plt5 = plot(xlabel="\$t/T\$", ylabel="\$\\Omega_2\$ at \$x_1=L/2\$ [rad/s]")
-plot!(tNorm,Ω₂_mid, c=:black, lw=lw, label="Numerical")
-scatter!(tNorm[1:5:end],Ω₂_mid_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
-display(plt5)
-savefig(string(absPath,"/initialVelocityBeam_angVel.pdf"))
-# Angular acceleration at mid-length
-plt6 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{\\Omega}_2\$ at \$x_1=L/2\$ [rad/\$s^2\$]")
-plot!(tNorm,Ωdot₂_mid, c=:black, lw=lw, label="Numerical")
-scatter!(tNorm[1:5:end],Ωdot₂_mid_analytic[1:5:end], c=:blue, ms=ms, msw=0, label="Analytical")
-display(plt6)
-savefig(string(absPath,"/initialVelocityBeam_angAcc.pdf"))
+u3_quarter_analytic = σ/ω2*sin.(ω2*t)*sin(2*π*1/4)
+V3_quarter_analytic = σ*cos.(ω2*t)*sin(2*π*1/4)
+Vdot3_quarter_analytic = -σ*ω2*sin.(ω2*t)*sin(2*π*1/4)
+θ2_root_analytic = -σ*2*π/L/ω2*sin.(ω2*t)*cos(2*π*0)
+Ω2_mid_analytic = -σ*2*π/L*cos.(ω2*t)*cos(2*π*1/2)
+Ωdot2_mid_analytic = σ*2*π/L*ω2*sin.(ω2*t)*cos(2*π*1/2)
 
 println("Finished initialVelocityBeam.jl")

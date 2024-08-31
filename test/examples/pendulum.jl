@@ -1,7 +1,7 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Gravity
-g = 9.81
+g = 9.80665
 
 # Initial angle of release
 θ₀ = 1/8 * π/2
@@ -32,8 +32,6 @@ tf = cycles*T
 # Create and solve the problem
 problem = create_DynamicProblem(model=pendulum,finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
@@ -44,32 +42,5 @@ u3_tip = [problem.nodalStatesOverTime[i][end].u_n2[3] for i in 1:length(t)]
 θ = θ₀*cos.(ω*t)
 u1_tip_analytical = -L*(sin(θ₀) .- sin.(θ))
 u3_tip_analytical = L*(cos(θ₀) .- cos.(θ))
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/pendulum"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,plotFrequency=1,plotLimits=[(-L,L),(-L,0),(0,L)],save=true,savePath=string(relPath,"/pendulum_deformation.gif"),displayProgress=true)
-# Normalized tip u1 displacement
-gr()
-plt1 = plot(xlabel="\$t/T\$", ylabel="Tip \$u_1/L\$")
-plot!(t/T,u1_tip/L, c=:black, lw=lw, label="Numerical")
-scatter!(t[1:2:end]/T,u1_tip_analytical[1:2:end]/L, c=:blue, markersize=3, label="Analytical")
-display(plt1)
-savefig(string(absPath,"/pendulum_u1.pdf"))
-# Normalized tip u3 displacement
-plt2 = plot(xlabel="\$t/T\$", ylabel="Tip \$u_3/L\$")
-plot!(t/T,u3_tip/L, c=:black, lw=lw, label="Numerical")
-scatter!(t[1:2:end]/T,u3_tip_analytical[1:2:end]/L, c=:blue, markersize=3, label="Analytical")
-display(plt2)
-savefig(string(absPath,"/pendulum_u3.pdf"))
-
-if abs(θ₀) > π/8
-    println("Initial angle of release is large, analytical comparison is not valid")
-end
 
 println("Finished pendulum.jl")

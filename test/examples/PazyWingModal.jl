@@ -1,40 +1,21 @@
-using AeroBeams, LinearAlgebra
-
-# Pazy wing
-wing,L,_ = create_Pazy()
-
-# BCs
-clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-
-# Model
-PazyWingModal = create_Model(name="PazyWingModal",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665],units=create_UnitsSystem(frequency="Hz"))
+using AeroBeams
 
 # Number of modes
 nModes = 5
 
-# Wing position range (horizontal and vertical configurations)
-θRange = [0,-π/2]
-
 # Initialize outputs
-problem = Array{EigenProblem}(undef,length(θRange))
-freqs = Array{Vector{Float64}}(undef,length(θRange))
+problem = Array{EigenProblem}(undef,2)
+freqs = Array{Vector{Float64}}(undef,2)
 
-# Loop configurations
-for (i,θ) in enumerate(θRange)
-    # Set rotation and update model
-    wing.p0 = [0; θ; 0]
-    update_beam!(wing)
-    update_model!(PazyWingModal)
+# Loop position configurations
+for (i,upright) in enumerate([false,true])
+    # Model
+    PazyWingModal,_ = create_Pazy(upright=upright)
     # Create and solve problem
     problem[i] = create_EigenProblem(model=PazyWingModal,nModes=nModes)
     solve!(problem[i])
     # Get frequencies in Hz
     freqs[i] = problem[i].frequenciesOscillatory/(2π)
-    # Plot mode shapes
-    mkpath(string(pwd(),"/test/outputs/figures/PazyWingModal"))
-    savePath = string("/test/outputs/figures/PazyWingModal/PazyWingModal_",i,".pdf")
-    modesPlot = plot_mode_shapes(problem[i],scale=0.5,modalColorScheme=:rainbow,view=(30,30),frequencyLabel="frequency",save=true,savePath=savePath)
-    display(modesPlot)
 end
 
 # Load reference data

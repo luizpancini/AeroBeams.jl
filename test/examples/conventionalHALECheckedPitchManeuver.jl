@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -54,8 +54,8 @@ tδfinal = 1+tδpeak
 conventionalHALEdynamic,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,airspeed=U,nElemWing=nElemWing,wingCd0=wingCd0,stabsCd0=stabsCd0,δElev=δ,thrust=trimThrust)
 
 # Time variables
-Δt = 1e-3
-tf = 2
+Δt = 1e-2
+tf = 10
 
 # Set NR system solver for trim problem
 maxit = 100
@@ -63,9 +63,7 @@ NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=false)
 
 # Create and solve dynamic problem
 dynamicProblem = create_DynamicProblem(model=conventionalHALEdynamic,x0=trimProblem.x[1:end-2],finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true,systemSolver=NR)
-# solve!(dynamicProblem)
-@time solve!(dynamicProblem)
-# @profview solve!(dynamicProblem)
+solve!(dynamicProblem)
 
 # Get wing root elements
 lRootElem = div(nElemWing,2)
@@ -75,26 +73,5 @@ rRootElem = lRootElem+1
 t = dynamicProblem.timeVector
 rootAoA = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowAnglesAndRates.αₑ+dynamicProblem.aeroVariablesOverTime[i][rRootElem].flowAnglesAndRates.αₑ)/2 for i in 1:length(t)]
 Δu3 = [dynamicProblem.nodalStatesOverTime[i][lRootElem].u_n2[3] for i in 1:length(t)] .- dynamicProblem.nodalStatesOverTime[1][lRootElem].u_n2[3]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/conventionalHALECheckedPitchManeuver"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(90,0),plotDistLoads=false,plotFrequency=20,plotLimits=[(-20,20),(-10,50),(-30,30)],save=true,savePath=string(relPath,"/conventionalHALECheckedPitchManeuver_deformation.gif"),displayProgress=true)
-# Altitude
-gr()
-plt1 = plot(xlabel="Time [s]", ylabel="Altitude [m]")
-plot!(t, Δu3, color=:black, lw=lw, label=false)
-display(plt1)
-savefig(string(absPath,"/conventionalHALECheckedPitchManeuver_altitude.pdf"))
-# Root AoA
-plt2 = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]")
-plot!(t, rootAoA*180/π, color=:black, lw=lw, label=false)
-display(plt2)
-savefig(string(absPath,"/conventionalHALECheckedPitchManeuver_rootAoA.pdf"))
 
 println("Finished conventionalHALECheckedPitchManeuver.jl")

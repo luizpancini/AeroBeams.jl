@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearAlgebra, DelimitedFiles
 
 # Beam frame
 L = 120
@@ -38,32 +38,7 @@ u1_atForce = [problem.nodalStatesOverσ[i][nElem+elemForce].u_n2[1] for i in 1:l
 u3_atForce = [problem.nodalStatesOverσ[i][nElem+elemForce].u_n2[3] for i in 1:length(σVector)]
 
 # Load reference solution
-u1Ref = readdlm(string(pwd(),"/test/referenceData/LeeFrameFollowerLoad/u1.txt"))
-u3Ref = readdlm(string(pwd(),"/test/referenceData/LeeFrameFollowerLoad/u3.txt"))
-
-# Plot deformed shape
-relPath = "/test/outputs/figures/LeeFrameFollowerLoad"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-deformationPlot = plot_steady_deformation(problem,legendPos=:bottomright,save=true,savePath=string(relPath,"/LeeFrameFollowerLoad_deformation.pdf"))
-display(deformationPlot)
-
-# Plot normalized displacements over load steps
-gr()
-lw = 2
-ms = 4
-x = [u1_atForce/L, -u3_atForce/L]
-labels = ["\$u_1/L\$" "\$-u_3/L\$"]
-colors = [:blue,:orange]
-plt1 = plot(xlabel="\$u_1/L, -u_3/L,\$", ylabel="\$F\$ [kip]", title="Displacements at point of force application")
-plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="Simo and Vu-Quoc (1986)")
-for i=1:2
-    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
-end
-plot!(x, σVector*F/(1e3), lw=lw,palette=colors,label=false)
-scatter!([u1Ref[1,:],u3Ref[1,:]]/L, [u1Ref[2,:],u3Ref[2,:]], palette=colors,ms=ms,msw=msw,label=false)
-display(plt1)
-savefig(string(absPath,"/LeeFrameFollowerLoad_disp.pdf"))
+u1Ref = readdlm("test/referenceData/LeeFrameFollowerLoad/u1.txt")
+u3Ref = readdlm("test/referenceData/LeeFrameFollowerLoad/u3.txt")
 
 println("Finished LeeFrameFollowerLoad.jl")

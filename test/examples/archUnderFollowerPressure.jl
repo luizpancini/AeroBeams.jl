@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra
 
 # Beam 
 R,θ = 2.54,120*π/180
@@ -33,18 +33,5 @@ solve!(problem)
 # Get solution at partial load steps
 σVector = problem.savedσ
 mid_u3 = [problem.nodalStatesOverσ[i][div(nElem,2)].u_n2[3] for i in 1:length(σVector)]
-
-# Plot deformed shape
-relPath = "/test/outputs/figures/archUnderFollowerPressure"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/archUnderFollowerPressure_deformation.pdf"))
-display(deformationPlot)
-
-# Plot normalized displacements over load steps
-gr()
-plt1 = plot(-mid_u3/R, σVector*λ, color=:black, lw=2, xlabel="Midpoint \$-u_3/R\$", ylabel="\$\\lambda\$", label=false)
-display(plt1)
-savefig(string(absPath,"/archUnderFollowerPressure_disp.pdf"))
 
 println("Finished archUnderFollowerPressure.jl")

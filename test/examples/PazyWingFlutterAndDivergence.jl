@@ -1,16 +1,22 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearInterpolations
 
 # Option for mode tracking
 modeTracking = true
 
-# Pazy wing
-wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(p0=[0;-π/2;0],airfoil=flatPlate)
+# Aerodynamic solver
+aeroSolver = Indicial()
 
-# BCs
-clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+# Derivation method
+derivationMethod = AD()
 
-# Model
-PazyWingFlutterAndDivergence = create_Model(name="PazyWingFlutterAndDivergence",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.807])
+# Airfoil section
+airfoil = deepcopy(flatPlate)
+
+# Flag for upright position
+upright = true
+
+# Pitch angle
+θ = 0*π/180
 
 # Set system solver options (limit initial load factor)
 σ0 = 0.5
@@ -34,11 +40,8 @@ tip_OOP = Array{Float64}(undef,length(URange))
 for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U = $U m/s")
-    # Set tip loss function at current airspeed and root angle
-    surf.tipLossDecayFactor = tip_loss_factor_Pazy(0,U)
-    update_beam!(wing)
-    # Update velocity of basis A (and update model)
-    set_motion_basis_A!(model=PazyWingFlutterAndDivergence,v_A=[0;U;0])
+    # Model
+    PazyWingFlutterAndDivergence,nElem,L,chord,normSparPos = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,upright=upright,θ=θ,airspeed=U)
     # Create and solve problem
     problem = create_EigenProblem(model=PazyWingFlutterAndDivergence,nModes=nModes,systemSolver=NR)
     solve!(problem)
@@ -119,27 +122,5 @@ indexDivergence = findfirst(!isnothing,indicesNonOscillatoryInstability[2:end])
 divergenceSpeed = !isnothing(indexDivergence) ? URange[indexDivergence] : NaN
 println("Divergence speed = $divergenceSpeed m/s")
 # Note: the first value of nonOscillatoryDampings[i] crosses zero at an airspeed between 96.0 and 96.5, but once it becomes positive, it disappears. So the divergence speed is between those values
-
-# Plots
-# ------------------------------------------------------------------------------
-modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/PazyWingFlutterAndDivergence"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# V-g-f
-gr()
-plt11 = plot(ylabel="Frequency [Hz]")
-for mode in 1:nModes
-    plot!(URange, modeFrequencies[mode]/(2*π), c=modeColors[mode], lw=lw,  label=false)
-end
-plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", ylims=[-0.15,0.05], legend=:bottomleft)
-for mode in 1:nModes
-    plot!(URange, modeDampingRatios[mode], c=modeColors[mode], lw=lw,  label="Mode $mode")
-end
-plt1 = plot(plt11,plt12, layout=(2,1))
-display(plt1)
-savefig(string(absPath,"/PazyWingFlutterAndDivergence_Vgf.pdf"))
 
 println("Finished PazyWingFlutterAndDivergence.jl")

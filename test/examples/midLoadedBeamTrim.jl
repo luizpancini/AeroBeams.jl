@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 1
@@ -37,22 +37,5 @@ roller_F3 = problem.nodalStatesOverσ[end][nElem].F_n2[3]
 roller_F3_analytical = F/2
 ϵ_rel = roller_F3/roller_F3_analytical - 1
 println("Relative errors:\nF3: $ϵ_rel")
-
-# Plots
-relPath = "/test/outputs/figures/midLoadedBeamTrim"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# u3
-plt1 = plot(x1/L, u3/(F*L/(48*EI)), lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$u_3 / (FL/48EI)\$")
-display(plt1)
-savefig(string(absPath,"/midLoadedBeamTrim_u3.pdf"))
-# F3
-plt2 = plot(x1/L, F3/(F/2), lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3/(F/2)\$ [N]")
-display(plt2)
-savefig(string(absPath,"/midLoadedBeamTrim_F3.pdf"))
-# M2
-plt3 = plot(x1/L, M2/(F*L/4), lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2/(FL/4)\$")
-display(plt3)
-savefig(string(absPath,"/midLoadedBeamTrim_M2.pdf"))
 
 println("Finished midLoadedBeamTrim.jl")

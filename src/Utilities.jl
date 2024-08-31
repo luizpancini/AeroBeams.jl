@@ -1,5 +1,3 @@
-using FFTW, FiniteDifferences, ForwardDiff, LinearAlgebra, LinearInterpolations, Parameters, QuadGK, Random, Revise, SparseArrays, Statistics
-
 # First vector of basis A, resolved in that basis
 const a1 = [1.0; 0.0; 0.0]
 

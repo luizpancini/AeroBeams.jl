@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 10
@@ -30,34 +30,12 @@ initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2, Δt=1
 # Create and solve the problem
 problem = create_DynamicProblem(model=rotationDrivenArticulatedRobotArm,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-u₁_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
-u₃_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
-u₁_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[1] for i in 1:length(t)]
-u₃_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[3] for i in 1:length(t)]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-relPath = "/test/outputs/figures/rotationDrivenArticulatedRobotArm"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,plotFrequency=1,plotLimits=[(-L,L),(-L/2,L),(0,L)],save=true,savePath=string(relPath,"/rotationDrivenArticulatedRobotArm_deformation.gif"),displayProgress=true)
-# Nomalized tip displacements
-gr()
-labels = ["Tip" "Hinge"]
-plt1 = plot(xlabel="\$t\$ [s]", ylabel="\$u_1/L\$")
-plot!(t,[u₁_tip/L, u₁_hinge/L], lw=lw, label=labels)
-display(plt1)
-savefig(string(absPath,"/figures/rotationDrivenArticulatedRobotArm_u1.pdf"))
-plt2 = plot(xlabel="\$t\$ [s]", ylabel="\$u_3/L\$")
-plot!(t,[u₃_tip/L, u₃_hinge/L], lw=lw, label=labels)
-display(plt2)
-savefig(string(absPath,"/rotationDrivenArticulatedRobotArm_u3.pdf"))
+u1_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
+u3_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
+u1_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[1] for i in 1:length(t)]
+u3_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[3] for i in 1:length(t)]
 
 println("Finished rotationDrivenArticulatedRobotArm.jl")

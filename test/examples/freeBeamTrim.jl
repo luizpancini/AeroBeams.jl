@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 1
@@ -39,20 +39,6 @@ trimForce = problem.x[end]*problem.model.forceScaling
 # Compare to analytical solution 
 trimForceAnalytical = F/2
 ϵ_rel = trimForce/trimForceAnalytical - 1
-
 println("Trim force relative error: $ϵ_rel")
-
-# Plots
-relPath = "/test/outputs/figures/freeBeamTrim"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-
-plt1 = plot(x1/L, F3/F, lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3/F\$")
-display(plt1)
-savefig(string(absPath,"/freeBeamTrim_F.pdf"))
-
-plt2 = plot(x1/L, M2/(F*L/4), lw=2, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2/(FL/4)\$")
-display(plt2)
-savefig(string(absPath,"/freeBeamTrim_M.pdf"))
 
 println("Finished freeBeamTrim.jl")

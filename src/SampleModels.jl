@@ -1,13 +1,13 @@
 using DelimitedFiles
 
 # Gets the normalized nodal positions of the Pazy wing
-function Pazy_nodal_positions()
+function nodal_positions_Pazy()
     return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
 end
 
 
 # Gets the sectional stiffness matrices of the Pazy wing
-function Pazy_stiffness_matrices(GAy::Number,GAz::Number)
+function stiffness_matrices_Pazy(GAy::Number,GAz::Number)
 
     @assert GAy > 0
     @assert GAz > 0
@@ -37,11 +37,11 @@ end
 
 
 # Gets the sectional inertia matrices of the Pazy wing
-function Pazy_inertia_matrices()
+function inertia_matrices_Pazy()
 
     # Length and nodal position
     L = 0.549843728 
-    nodalPositions = Pazy_nodal_positions()
+    nodalPositions = nodal_positions_Pazy()
 
     # Load nodal inertia values
     m = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m.txt")))
@@ -76,38 +76,47 @@ end
 
 
 """
-    create_Pazy(; kwargs...)
+    tip_loss_factor_Pazy(θ::Number,U::Number)
 
-Creates the Pazy wing
-
-Returns the beam and geometrical properties
+Computes the tip loss factor for the Pazy wing's tip correction function
 
 # Arguments
-- `p0::Vector{<:Number}` = initial rotation parameters
-- `airfoil::Airfoil=NACA0018` = airfoil section
-- `aeroSolver::AeroSolver=Indicial()` = aerodynamic solver
-- `gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner")` = indicial gust loads solver
-- `derivationMethod::DerivationMethod=AD()` = method for aerodynamic derivatives
-- `withTipCorrection::Bool=true` = flag for aerodynamic tip correction 
-- `GAy::Number` = shear stiffness in the x2 direction
-- `GAz::Number` = shear stiffness in the x3 direction
+- `θ::Number` = root pitch angle, in degrees
+- `U::Number` = airspeed
 """
-function create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy)
+function tip_loss_factor_Pazy(θ::Number,U::Number)
 
-    # Length
-    L = 0.549843728
+    # Bound inputs
+    θ = min(7,max(θ,0))
+    U = min(60,max(U,0))
+
+    # Coefficients as a function of root angle of attack
+    θRange = [0; 1; 2; 3; 4; 5; 6; 7]
+    τ₀Range = [6.58; 6.29; 6.00; 5.92; 5.91; 6.08; 6.43; 6.88]
+    τ₁Range = 1e-2*[0; 3.33; 5.19; 6.01; 6.49; 5.98; 4.43; 2.30]
+    τ₂Range = -1e-4*[0; 5.56; 8.59; 10.6; 12.3; 12.8; 11.9; 10.2]
+    τ₀ = interpolate(θRange,τ₀Range,θ)
+    τ₁ = interpolate(θRange,τ₁Range,θ)
+    τ₂ = interpolate(θRange,τ₂Range,θ)
+    
+    return τ₀ + τ₁*U + τ₂*U^2
+end
+export tip_loss_factor_Pazy
+
+
+"""
+    geometrical_properties_Pazy()
+
+Returns the fixed geometrical (and discretization) properties of the Pazy wing
+
+"""
+function geometrical_properties_Pazy()
 
     # Number of elements
     nElem = 15
 
-    # Normalized nodal positions
-    nodalPositions = Pazy_nodal_positions()
-
-    # Stiffness matrices
-    C = Pazy_stiffness_matrices(GAy,GAz)
-
-    # Inertia matrices
-    I = Pazy_inertia_matrices()
+    # Length
+    L = 0.549843728
 
     # Chord
     chord = 0.0989
@@ -115,13 +124,90 @@ function create_Pazy(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(N
     # Normalized spar position
     normSparPos = 0.44096
 
+    return nElem,L,chord,normSparPos
+end
+export geometrical_properties_Pazy
+
+
+"""
+    create_Pazy(; kwargs...)
+
+Creates the Pazy wing
+
+Returns the wing model and geometrical properties
+
+# Arguments
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
+- `updateAirfoilParameters::Bool` = flag to update airfoil parameters with airspeed
+- `upright::Bool` = flag to set the wing in the upright position
+- `airfoil::Airfoil` = airfoil section
+- `θ::Real` = pitch angle at the root [rad]
+- `Λ::Real` = sweep angle [rad]
+- `withTipCorrection::Bool` = flag for aerodynamic tip correction 
+- `GAy::Number` = shear stiffness in the x2 direction
+- `GAz::Number` = shear stiffness in the x3 direction
+- `altitude::Real` = altitude
+- `g::Real` = acceleration of gravity
+- `airspeed::Real` = airspeed
+- `tipMass::Real` = mass of a point inertia added to the tip of the wing
+- `ξtipMass::Vector{<:Real}` = position vector of the tip mass relative to the tip of the spar, resolved in the local basis
+- `tipMassInertia::Matrix{<:Real}` = mass moment of inertia matrix of the tip mass
+- `additionalBCs::Vector{BC}` = additional BCs (beyond the clamp)
+- `gust::Union{Nothing,Gust}` = gust
+"""
+function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),updateAirfoilParameters::Bool=true,upright::Bool=false,airfoil::Airfoil=deepcopy(NACA0018),θ::Real=0,Λ::Real=0,withTipCorrection::Bool=true,GAy::Number=1e16,GAz::Number=GAy,altitude::Real=0,g::Real=-9.80665,airspeed::Real=0,tipMass::Real=0,ξtipMass::Vector{<:Real}=zeros(3),tipMassInertia::Matrix{<:Real}=zeros(3,3),additionalBCs::Vector{BC}=Vector{BC}(),gust::Union{Nothing,Gust}=nothing)
+
+    # Validate
+    @assert altitude >= 0
+    @assert airspeed >= 0
+    @assert GAy >= 1e6
+    @assert GAz >= 1e6
+    @assert tipMass >= 0
+    @assert length(ξtipMass) == 3
+
+    # Fixed geometrical and discretization properties
+    nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+
+    # Normalized nodal positions
+    nodalPositions = nodal_positions_Pazy()
+
+    # Stiffness matrices
+    C = stiffness_matrices_Pazy(GAy,GAz)
+
+    # Inertia matrices
+    I = inertia_matrices_Pazy()
+
+    # Tip loss factor
+    τ = tip_loss_factor_Pazy(θ,airspeed)
+
+    # Rotation parameters from basis A to basis b
+    p0 = upright ? [-Λ; -π/2; θ] : [-Λ; 0; θ]
+
     # Aerodynamic surface
-    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection)
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=τ,updateAirfoilParameters=updateAirfoilParameters)
 
-    # Wing 
-    wing = create_Beam(name="pazy",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,C=C,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf)
+    # Tip mass
+    tipInertia = PointInertia(elementID=nElem,η=[L/nElem/2+ξtipMass[1];ξtipMass[2];ξtipMass[3]],mass=tipMass,inertiaMatrix=tipMassInertia)
 
-    return wing,L,nElem,chord,normSparPos,airfoil,surf
+    # Wing beam
+    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,C=C,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,pointInertias=[tipInertia])
+
+    # Update beam of additional BCs, if applicable
+    for BC in additionalBCs
+        BC.beam = beam
+    end
+    BCs = additionalBCs
+
+    # Add root clamp to BCs
+    clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+    push!(BCs,clamp)
+
+    # Model
+    pazy = create_Model(name="Pazy",beams=[beam],BCs=BCs,gravityVector=[0;0;g],v_A=[0;airspeed;0],gust=gust,units=create_UnitsSystem(frequency="Hz"))
+
+    return pazy,nElem,L,chord,normSparPos
 end
 export create_Pazy
 
@@ -133,11 +219,11 @@ Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 
 # Arguments
 - `p0::Vector{<:Number}` = initial rotation parameters
-- `airfoil::Airfoil=NACA0018` = airfoil section
-- `aeroSolver::AeroSolver=Indicial()` = aerodynamic solver
-- `gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner")` = indicial gust loads solver
-- `derivationMethod::DerivationMethod=AD()` = method for aerodynamic derivatives
-- `withTipCorrection::Bool=true` = flag for aerodynamic tip correction 
+- `airfoil::Airfoil` = airfoil section
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
+- `withTipCorrection::Bool` = flag for aerodynamic tip correction 
 - `GAy::Number` = shear stiffness in the x2 direction
 - `GAz::Number` = shear stiffness in the x3 direction
 - `hingeNode::Int64` = hinge node
@@ -165,7 +251,7 @@ function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepco
     nElem2 = nElem-nElem1
 
     # Normalized nodal positions in each part of the wing
-    nodalPositions = Pazy_nodal_positions()
+    nodalPositions = nodal_positions_Pazy()
     nodalPositions1 = nodalPositions[1:hingeNode]/nodalPositions[hingeNode]
     nodalPositions2 = (nodalPositions[hingeNode:end].-nodalPositions[hingeNode])./(nodalPositions[end]-nodalPositions[hingeNode])
 
@@ -174,12 +260,12 @@ function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepco
     L2 = L*(nodalPositions[end]-nodalPositions[hingeNode])
 
     # Stiffness matrices
-    C = Pazy_stiffness_matrices(GAy,GAz)
+    C = stiffness_matrices_Pazy(GAy,GAz)
     C1 = C[1:nElem1]
     C2 = C[nElem1+1:end]
 
     # Inertia matrices
-    I = Pazy_inertia_matrices()
+    I = inertia_matrices_Pazy()
     I1 = I[1:nElem1]
     I2 = I[nElem1+1:end]
 
@@ -221,32 +307,125 @@ export create_PazyFFWT
 
 
 """
-    tip_loss_factor_Pazy(αᵣ::Number,U::Number)
+    create_SMW(; kwargs...)
 
-Computes the tip loss factor for the Pazy wing's tip correction function
+Creates the 16 meters wing (SMW) of the conventional HALE aircraft described by Patil, Hodges and Cesnik in: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
+
+Returns the wing model and its span
 
 # Arguments
-- `αᵣ::Number` = root pitch angle, in degrees
-- `U::Number` = airspeed
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
+- `updateAirfoilParameters::Bool` = flag to update airfoil parameters with airspeed
+- `airfoil::Airfoil` = airfoil section
+- `θ::Real` = pitch angle
+- `k1::Real` = twisting curvature
+- `k2::Real` = flapwise bending curvature
+- `nElem::Int64` = number of elements for discretization
+- `altitude::Real` = altitude
+- `airspeed::Real` = airspeed
+- `g::Real` = acceleration of gravity
+- `stiffnessFactor::Real` = stiffness factor for beam structural properties
+- `∞::Real` = value of rigid structural properties
+- `tipF3::Real` = tip dead transverse force applied at the tip
 """
-function tip_loss_factor_Pazy(αᵣ::Number,U::Number)
+function create_SMW(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),updateAirfoilParameters::Bool=true,airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,k1::Real=0,k2::Real=0,nElem::Int64=32,altitude::Real=0,airspeed::Real=0,g::Real=9.80665,stiffnessFactor::Real=1,∞::Real=1e12,tipF3::Real=0)
 
-    # Bound inputs
-    αᵣ = min(7,max(αᵣ,0))
-    U = min(60,max(U,0))
+    # Validate
+    @assert -π/2 < θ < π/2
+    @assert nElem > 1
+    @assert altitude >= 0
+    @assert airspeed >= 0
 
-    # Coefficients as a function of root angle of attack
-    αᵣRange = [0; 1; 2; 3; 4; 5; 6; 7]
-    τ₀Range = [6.58; 6.29; 6.00; 5.92; 5.91; 6.08; 6.43; 6.88]
-    τ₁Range = 1e-2*[0; 3.33; 5.19; 6.01; 6.49; 5.98; 4.43; 2.30]
-    τ₂Range = -1e-4*[0; 5.56; 8.59; 10.6; 12.3; 12.8; 11.9; 10.2]
-    τ₀ = interpolate(αᵣRange,τ₀Range,αᵣ)
-    τ₁ = interpolate(αᵣRange,τ₁Range,αᵣ)
-    τ₂ = interpolate(αᵣRange,τ₂Range,αᵣ)
-    
-    return τ₀ + τ₁*U + τ₂*U^2
+    # Wing surface
+    chord = 1
+    normSparPos = 0.5
+    wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=updateAirfoilParameters)
+
+    # Wing properties
+    L = 16
+    GJ,EIy,EIz = 1e4,2e4,4e6
+    GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, GJ,EIy,EIz)
+    ρA,ρIs = 0.75,0.1
+    ρIy,ρIz = (EIy/EIz)*ρIs,(1-EIy/EIz)*ρIs
+    C = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)
+
+    # Wing beam
+    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,C=[C],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ],k=[k1;k2;0])
+
+    # BCs
+    clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+    tipLoad = create_BC(name="tipLoad",beam=beam,node=nElem+1,types=["F3A"],values=[tipF3])
+
+    # Wing model
+    wing = create_Model(name="SMW",beams=[beam],BCs=[clamp,tipLoad],altitude=altitude,gravityVector=[0;0;-g],v_A=[0;airspeed;0])
+
+    return wing,L
 end
-export tip_loss_factor_Pazy
+export create_SMW
+
+
+"""
+    create_TDWing(; kwargs...)
+
+Creates the wing described by Tang and Dowell in: Experimental and Theoretical Study on Aeroelastic Response of High-Aspect-Ratio Wings (2001)
+
+Returns the wing model
+
+# Arguments
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
+- `updateAirfoilParameters::Bool` = flag to update airfoil parameters with airspeed
+- `airfoil::Airfoil` = airfoil section
+- `θ::Real` = pitch angle
+- `nElem::Int64` = number of elements for discretization
+- `airspeed::Real` = airspeed
+- `g::Real` = acceleration of gravity
+- `∞::Real` = value of rigid structural properties
+"""
+function create_TDWing(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),updateAirfoilParameters::Bool=true,airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,nElem::Int64=20,airspeed::Real=0,g::Real=9.80665,∞::Real=1e6)
+
+    # Validate
+    @assert -π/2 <= θ <= π/2
+    @assert nElem > 1
+    @assert airspeed >= 0
+
+    # Wing surface
+    chord = 0.0508
+    normSparPos = 0.5
+    wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=updateAirfoilParameters)
+
+    # Wing properties
+    L = 0.4508
+    GJ,EIy,EIz = 0.9539,0.4186,18.44
+    ρA,ρIs,ρIy = 0.2351,0.2056e-4,1e-6
+    ρIz = ρIy*EIz/EIy
+    e3 = 1e-2*chord
+    C = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs,e3=e3)
+
+    # Wing beam
+    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,C=[C],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ])
+
+    # Wing's tip store
+    tipMass = 0.0417
+    tipIyy = 0.3783e-5
+    tipIzz = 0.9753e-4
+    tipStore = PointInertia(elementID=nElem,η=[L/nElem/2;0;0],mass=tipMass,Iyy=tipIyy,Izz=tipIzz)
+    add_point_inertias_to_beam!(beam,inertias=[tipStore])
+
+    # BCs
+    clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+
+    # Wing model
+    wing = create_Model(name="TDWing",beams=[beam],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0])
+
+    return wing
+end
+export create_TDWing
 
 
 """

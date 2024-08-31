@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearAlgebra, DelimitedFiles
 
 # Beam
 L = 1
@@ -31,5 +31,10 @@ solve!(problem)
 tip_u1 = [problem.nodalStatesOverσ[i][nElem].u_n2[1] for i in 1:length(σVector)]
 tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][nElem].θ_n2 for i in 1:length(σVector)]
+
+# Load reference solution
+u1Ref = readdlm("test/referenceData/distributedLoadCantilever/u1.txt")
+u3Ref = readdlm("test/referenceData/distributedLoadCantilever/u3.txt")
+θRef = readdlm("test/referenceData/distributedLoadCantilever/theta.txt")
 
 println("Finished distributedLoadCantilever.jl")

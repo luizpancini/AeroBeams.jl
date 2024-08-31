@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, DelimitedFiles
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -34,8 +34,6 @@ trim_u3 = Array{Vector{Float64}}(undef,length(λRange),length(URange))
 for (i,λ) in enumerate(λRange)
     # Model
     conventionalHALE,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,k2=k2)
-    # plt = plot_undeformed_assembly(conventionalHALE,(0,0))
-    # display(plt)
     # Get element ranges and nodal arclength positions of right wing
     global x1_0 = vcat([vcat(rightWing.elements[e].r_n1[1],rightWing.elements[e].r_n2[1]) for e in 1:rightWing.nElements]...)
     global x3_0 = vcat([vcat(rightWing.elements[e].r_n1[3],rightWing.elements[e].r_n2[3]) for e in 1:rightWing.nElements]...)
@@ -60,54 +58,8 @@ for (i,λ) in enumerate(λRange)
 end
 
 # Load reference solutions
-trimAoAERef = readdlm(string(pwd(),"/test/referenceData/conventionalHALE/trimAoAVsAirspeedElastic.txt"))
-trimAoARRef = readdlm(string(pwd(),"/test/referenceData/conventionalHALE/trimAoAVsAirspeedRigid.txt"))
-trimDispRef = readdlm(string(pwd(),"/test/referenceData/conventionalHALE/trimDispAtU25.txt"))
-
-# Plots
-# ------------------------------------------------------------------------------
-colorsU = get(colorschemes[:rainbow], LinRange(0, 1, length(URange)))
-colors = get(colorschemes[:rainbow], LinRange(0, 1, 2))
-labels = ["Elastic" "Rigid"]
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/conventionalHALEtrim"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Deformation plot
-deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/conventionalHALEtrim_deformation.pdf"))
-display(deformationPlot)
-# Trim root angle of attack vs airspeed
-gr()
-plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root angle of attack [deg]", xlims=[URange[1],URange[end]], ylims=[0,20])
-plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], c=:black, ms=ms, msw=0, label="Patil et al. (2001)")
-for (i,λ) in enumerate(λRange)
-    plot!(URange, trimAoA[i,:], c=colors[i], lw=lw, label=labels[i])
-    if i==1
-        scatter!(trimAoAERef[1,:], trimAoAERef[2,:], c=colors[i], ms=ms, msw=0, label=false)
-    else
-        scatter!(trimAoARRef[1,:], trimAoARRef[2,:], c=colors[i], ms=ms, msw=0, label=false)
-    end
-end
-savefig(string(absPath,"/conventionalHALEtrim_AoA.pdf"))
-display(plt1)
-# Trim deflected wingspan at U = 25 m/s
-U2plot = 25.0
-indU = findfirst(x->x==U2plot,URange)
-if !isnothing(indU)
-    plt2 = plot(xlabel="Spanwise length [m]", ylabel="Vertical displacement [m]", xlims=[0,16], ylims=[0,16], xticks=collect(0:4:16), yticks=collect(0:4:16))
-    plot!(x1_0.+(trim_u1[1,indU].-trim_u1[1,indU][1]), x3_0.+trim_u3[1,indU].-trim_u3[1,indU][1], c=:black, lw=lw, label="AeroBeams")
-    scatter!(trimDispRef[1,:], trimDispRef[2,:], c=:black, ms=ms, msw=0, label="Patil et al. (2001)")
-    display(plt2)
-    savefig(string(absPath,"/conventionalHALEtrim_disp.pdf"))
-end
-# Trim deflected wingspan over airspeed
-plt3 = plot(xlabel="Normalized spanwise length", ylabel="Vertical displacement [% semispan]", xlims=[0,1], ylims=[0,100])
-for (i,U) in enumerate(URange)
-    plot!((x1_0.+(trim_u1[1,i].-trim_u1[1,i][1]))/16, (x3_0.+(trim_u3[1,i].-trim_u3[1,i][1]))/16*100, lz=U, c=:rainbow, lw=lw, label=false, colorbar_title="Airspeed [m/s]")
-end
-display(plt3)
-savefig(string(absPath,"/conventionalHALEtrim_u3OverU.pdf"))
+trimAoAERef = readdlm("test/referenceData/conventionalHALE/trimAoAVsAirspeedElastic.txt")
+trimAoARRef = readdlm("test/referenceData/conventionalHALE/trimAoAVsAirspeedRigid.txt")
+trimDispRef = readdlm("test/referenceData/conventionalHALE/trimDispAtU25.txt")
 
 println("Finished conventionalHALEtrim.jl")

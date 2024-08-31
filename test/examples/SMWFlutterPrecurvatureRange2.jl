@@ -1,30 +1,17 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearAlgebra, LinearInterpolations, DelimitedFiles
 
-# Wing surface
-airfoil = deepcopy(flatPlate)
-chord = 1.0
-normSparPos = 0.5
+# Aerodynamic solver and derivatives method
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
-# Wing beam
-L = 16
-GJ,EIy,EIz = 1e4,2e4,4e6
-ρA,ρIs = 0.75,0.1
-ρIy = ρIs*EIy/EIz
-ρIz = ρIs-ρIy
-nElem = 16
-∞ = 1e12
-wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)],I=[inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)],rotationParametrization="E321",aeroSurface=surf)
-
-# BCs
-clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-
-# Model
-g = 9.80665
+# Altitude
 h = 20e3
-SMWFlutterPrecurvatureRange2 = create_Model(name="SMWFlutterPrecurvatureRange2",beams=[wing],BCs=[clamp],gravityVector=[0;0;-g],altitude=h)
+
+# Gravity
+g = 9.80665
+
+# Discretization
+nElem = 16
 
 # Set system solver options (limit initial load factor)
 σ0 = 0.5
@@ -53,13 +40,10 @@ flutterOffsetTipDisp = [[[Float64[] for _ in 1:nModes] for _ in θRange] for _ i
 
 # Sweep wing precurvature
 for (ki,k) in enumerate(kRange)
-    # Update precurvature on beam
-    wing.k[2] = k
     # Sweep root angle
     for (i,θ) in enumerate(θRange)
-        # Update tip force on model
-        wing.p0[3] = θ*π/180
-        update_beam!(wing)
+        # Update model
+        SMWFlutterPrecurvatureRange2,_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ*π/180,k2=k,nElem=nElem,altitude=h,g=g)
         # Sweep airspeed
         for (j,U) in enumerate(URange)
             # Display progress
@@ -116,31 +100,5 @@ for (ki,k) in enumerate(kRange)
         end
     end
 end
-
-# Plots
-# ------------------------------------------------------------------------------
-colors = get(colorschemes[:rainbow], LinRange(0, 1, length(kRange)))
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/SMWFlutterPrecurvatureRange2"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-gr()
-# Flutter speed vs. tip load
-plt1 = plot(xlabel="Root angle [deg]", ylabel="Flutter speed [m/s]", xlims=[0,5], ylims=[0,40])
-for (ki,k) in enumerate(kRange)
-    plot!([NaN], [NaN], c=colors[ki], ls=:solid, lw=lw, label="k=$k - onset")
-    plot!([NaN], [NaN], c=colors[ki], ls=:dash, lw=lw, label="k=$k - offset")
-end
-for m in 1:nModes
-    for (ki,k) in enumerate(kRange)
-        fSpeedOnsetMode = vcat([flutterOnsetSpeed[ki][j][m][1] for j in eachindex(θRange)]...)
-        fSpeedOffsetMode = vcat([flutterOffsetSpeed[ki][j][m][1] for j in eachindex(θRange)]...)
-        plot!(θRange, fSpeedOnsetMode, c=colors[ki], ls=:solid, lw=lw, label=false)
-        plot!(θRange, fSpeedOffsetMode, c=colors[ki], ls=:dash, lw=lw, label=false)
-    end
-end
-display(plt1)
-savefig(string(absPath,"/SMWFlutterPrecurvatureRange2_flutter.pdf"))
 
 println("Finished SMWFlutterPrecurvatureRange2.jl")

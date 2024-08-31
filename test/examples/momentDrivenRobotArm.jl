@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 10
@@ -13,11 +13,11 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[i
 M₀ = -80
 τ = 2.5-0.1
 M = t -> ifelse.(t.<=τ, M₀, 0)
-hinge = create_BC(name="hinge",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
+pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
 moment = create_BC(name="moment",beam=beam,node=1,types=["M2A"],values=[t->M(t)])
 
 # Model
-momentDrivenRobotArm = create_Model(name="momentDrivenRobotArm",beams=[beam],BCs=[hinge,moment])
+momentDrivenRobotArm = create_Model(name="momentDrivenRobotArm",beams=[beam],BCs=[pin,moment])
 
 # Time variables
 tf = 15
@@ -26,29 +26,10 @@ tf = 15
 # Create and solve the problem
 problem = create_DynamicProblem(model=momentDrivenRobotArm,finalTime=tf,Δt=Δt)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-u₁_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
-u₃_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 5
-relPath = "/test/outputs/figures/momentDrivenRobotArm"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,plotFrequency=1,showScale=false,timeStampPos=[0.15;-0.05;0],plotLimits=[(-L,L),(-L,L),(0,L)],save=true,savePath=string(relPath,"/momentDrivenRobotArm_deformation.gif"),displayProgress=true)
-# Nomalized tip displacements
-gr()
-plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip normalized displacements")
-plot!(t,u₁_tip/L, lw=lw, label="\$u_1/L\$")
-plot!(t,u₃_tip/L, lw=lw, label="\$u_3/L\$")
-display(plt1)
-savefig(string(absPath,"/momentDrivenRobotArm_disp.pdf"))
+u1_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
+u3_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 
 println("Finished momentDrivenRobotArm.jl")

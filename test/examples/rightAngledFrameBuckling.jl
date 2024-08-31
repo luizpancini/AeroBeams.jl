@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra
 
 # This problem was defined by Argyris et al. - Finite Element Method: the natural approach (1979)
 
@@ -37,19 +37,5 @@ solve!(problem)
 # Get solution at partial load steps
 σVector = problem.savedσ
 tip_u2 = [problem.nodalStatesOverσ[i][end].u_n2[2] for i in 1:length(σVector)]
-
-# Plot deformed shape
-relPath = "/test/outputs/figures/rightAngledFrameBuckling"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-deformationPlot = plot_steady_deformation(problem,save=true,view=(45,20),savePath=string(relPath,"/rightAngledFrameBuckling_deformation.pdf"))
-display(deformationPlot)
-
-# Plot normalized tip out-of-plane displacement over load steps
-gr()
-plt1 = plot(ylabel="\$F\$ [N]", xlabel="Tip \$u_2/L\$", title="Tip out-of-plane displacement")
-plot!(tip_u2/L, σVector*F, lw=2, label=false)
-display(plt1)
-savefig(string(absPath,"/rightAngledFrameBuckling_disp.pdf"))
 
 println("Finished rightAngledFrameBuckling.jl")

@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams
 
 # Hinge node, hinge angle [rad] and flare angle [deg]
 hingeNode = 14
@@ -34,16 +34,6 @@ solve!(problem)
 
 # Get outputs
 freqs = problem.frequenciesOscillatory
-damps = round_off!(problem.dampingsOscillatory,1e-12)
-
-# Print roots
-for (i,mode) in enumerate(1:nModes)
-    println("Mode $(mode): $(damps[i]) +/- $(freqs[i])i")
-end
-
-# Mode shapes
-mkpath(string(pwd(),"/test/outputs/figures/PazyFFWTeigen"))
-modesPlot = plot_mode_shapes(problem,scale=0.1,view=(30,30),frequencyLabel="frequency",save=true,savePath="/test/outputs/figures/PazyFFWTeigen/PazyFFWTeigen_modeShapes.pdf")
-display(modesPlot)
+damps = round_off!(problem.dampingsOscillatory,1e-8)
 
 println("Finished PazyFFWTeigen.jl")

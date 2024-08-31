@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 1
@@ -32,8 +32,8 @@ balanceHorizontalForce = problem.x[end-1]*problem.model.forceScaling
 balanceVerticalForce = problem.x[end]*problem.model.forceScaling 
 
 # Compare to analytical solution 
-balanceVerticalForceAnalytical = -(F*L/2+F*L)/L
 balanceHorizontalForceAnalytical = -F
+balanceVerticalForceAnalytical = -(F*L/2+F*L)/L
 
 ϵ_rel_F1 = balanceHorizontalForce/balanceHorizontalForceAnalytical - 1
 ϵ_rel_F3 = balanceVerticalForce/balanceVerticalForceAnalytical - 1

@@ -1,6 +1,6 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
-# Select whether to promote rotation through basis A
+# Select to promote rotation through basis A (does not work as expected otherwise)
 rotateBasisA = true
 
 # Rotation variables
@@ -41,48 +41,15 @@ time = unique(vcat(collect(0:Δt/2:tf/2),collect(tf/2:Δt:tf)))
 # Create and solve the problem
 problem = create_DynamicProblem(model=spinupRobotArm,timeVector=time)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-u₁_tip = [problem.nodalStatesOverTime[i][nElements].u_n2[1] for i in 1:length(t)]
-u₂_tip = [problem.nodalStatesOverTime[i][nElements].u_n2[2] for i in 1:length(t)]
-θ₃_root = [problem.nodalStatesOverTime[i][1].θ_n1 for i in 1:length(t)]
+u1_tip = [problem.nodalStatesOverTime[i][nElements].u_n2[1] for i in 1:length(t)]
+u2_tip = [problem.nodalStatesOverTime[i][nElements].u_n2[2] for i in 1:length(t)]
+θ3_root = [problem.nodalStatesOverTime[i][1].θ_n1 for i in 1:length(t)]
 
 # Rigid beam's tip displacements
-u₁_tip_rigid = L*(cos.(θ(t)).-1)
-u₂_tip_rigid = L*sin.(θ(t))
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 5
-relPath = "/test/outputs/figures/spinupRobotArm"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=5,showScale=false,timeStampPos=[0.1;-0.05;0],plotLimits=[(-L,L),(-L,L),(0,L)],save=true,savePath=string(relPath,"/spinupRobotArm_deformation.gif"),displayProgress=true)
-# Normalized tip u₁
-gr()
-plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip \$u_1/L\$")
-plot!(t,u₁_tip/L, c=:black, lw=lw, label="Flexible")
-scatter!(t[1:5:end],u₁_tip_rigid[1:5:end]/L, c=:blue, ms=ms, msw=0, label="Rigid")
-display(plt1)
-savefig(string(absPath,"/spinupRobotArm_u1.pdf"))
-# Normalized tip u₂
-plt2 = plot(xlabel="\$t\$ [s]", ylabel="Tip \$u_2/L\$")
-plot!(t,u₂_tip/L, c=:black, lw=lw, label="Flexible")
-scatter!(t[1:5:end],u₂_tip_rigid[1:5:end]/L, c=:blue, ms=ms, msw=0, label="Rigid")
-display(plt2)
-savefig(string(absPath,"/spinupRobotArm_u2.pdf"))
-# Root rotation
-plt3 = plot(xlabel="\$t\$ [s]", ylabel="Root \$\\theta/\\pi\$")
-plot!(t,θ₃_root/π, c=:black, lw=lw, label="Numerical")
-scatter!(t[1:20:end],θ(t[1:20:end])/π, c=:blue, ms=ms, msw=0, label="Analytical")
-display(plt3)
-savefig(string(absPath,"/spinupRobotArm_theta.pdf"))
-# Axial force
-plot_time_outputs(problem,nodes=[(1,1)],elements=[1,nElements],nodalOutputs=["F1"],elementalOutputs=["F1"],save=true,saveFolder=string(relPath,"/"))
+u1_tip_rigid = L*(cos.(θ(t)).-1)
+u2_tip_rigid = L*sin.(θ(t))
 
 println("Finished spinupRobotArm.jl")

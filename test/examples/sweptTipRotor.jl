@@ -1,7 +1,5 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra
 
-## User inputs (problem definition)
-#-------------------------------------------------------------------------------
 # Geometric properties
 L1,L2 = 31.5,6.0
 b,H = 1,0.063
@@ -28,8 +26,6 @@ tipAngleRange = π/180*collect(0:2.5:45)
 # Number of modes
 nModes = 8
 
-## Problem setup
-#-------------------------------------------------------------------------------
 # Beams
 stiffnessMatrix = diagm([E*A,G*A*Ksy,G*A*Ksz,G*J*Kt,E*Iy,E*Iz])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
@@ -70,103 +66,11 @@ for (i,ω) in enumerate(ωRange)
     end
 end
 
-## Plots
-#-------------------------------------------------------------------------------
 # Load experimental values
 expTipAngles = [0, 15, 30, 45]
 expFreqs1 = [1.4 1.8 1.7 1.6; 10.2 10.1 10.2 10.2; 14.8 14.4 14.9 14.7]
 expFreqs2 = [10.3 10.2 10.4 10.4; 25.2 25.2 23.7 21.6; 36.1 34.8 30.7 26.1]
 expFreqs3 = [27.7 27.2 26.6 24.8; 47.0 44.4 39.3 35.1; 62.9 55.9 48.6 44.8]
 expFreqs4 = [95.4 87.5 83.7 78.8; 106.6 120.1 122.6 117.7; 132.7 147.3 166.2 162.0]
-
-# Set colormap and legend title
-colors = get(colorschemes[:darkrainbow], LinRange(0, 1, length(ωRange)))
-lgdtitle = "Lines: Numerical\nMarkers: Exp. - Epps & Chandra (1996)"
-
-# Plot mode shapes
-relPath = "/test/outputs/figures/sweptTipRotor"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-modesPlot = plot_mode_shapes(problem,scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath=string(relPath,"/sweptTipRotor_modeShapes.pdf"))
-display(modesPlot)
-
-# Plot 1st bending mode frequency over tip angle for several angular velocities
-gr()
-plt1 = plot()
-for (i,ω) in enumerate(ωRange) 
-    mode = 1
-    ωRPM = round(Int,ω/(2*π/60)) 
-    numFreqs1 = [numFreqs[i,j][mode]/(2*π) for j in 1:size(numFreqs, 2)]
-    plot!(tipAngleRange*180/π,numFreqs1, lc=colors[i], lw=2, xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", label=false)
-    scatter!(expTipAngles,expFreqs1[i,:], mc=colors[i], ms=5, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=5, msw=0, label="\$\\omega\$ = $ωRPM rpm")
-end
-plot!(title="1st bending")
-# plot!(legendtitle=lgdtitle)
-display(plt1)
-savefig(string(absPath,"/sweptTipRotor_1B.pdf"))
-
-# Plot 2nd bending mode frequency over tip angle for several angular velocities
-plt2 = plot()
-for (i,ω) in enumerate(ωRange) 
-    if i < 3
-        mode = 2
-    else
-        mode = 3
-    end
-    ωRPM = round(Int,ω/(2*π/60)) 
-    numFreqs2 = [numFreqs[i,j][mode]/(2*π) for j in 1:size(numFreqs, 2)]
-    plot!(tipAngleRange*180/π,numFreqs2, lc=colors[i], lw=2, xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", label=false)
-    scatter!(expTipAngles,expFreqs2[i,:], mc=colors[i], ms=5, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=5, msw=0, label="\$\\omega\$ = $ωRPM rpm")
-end
-plot!(title="2nd bending")
-# plot!(legendtitle=lgdtitle)
-display(plt2)
-savefig(string(absPath,"/sweptTipRotor_2B.pdf"))
-
-# Plot 3rd bending mode frequency over tip angle for several angular velocities
-plt3 = plot()
-for (i,ω) in enumerate(ωRange) 
-    mode = 4
-    ωRPM = round(Int,ω/(2*π/60)) 
-    numFreqs3 = [numFreqs[i,j][mode]/(2*π) for j in 1:size(numFreqs, 2)]
-    plot!(tipAngleRange*180/π,numFreqs3, lc=colors[i], lw=2, xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", label=false)
-    scatter!(expTipAngles,expFreqs3[i,:], mc=colors[i], ms=5, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=5, msw=0, label="\$\\omega\$ = $ωRPM rpm")
-end
-plot!(title="3rd bending")
-# plot!(legendtitle=lgdtitle)
-display(plt3)
-savefig(string(absPath,"/sweptTipRotor_3B.pdf"))
-
-# Plot coupled bending-torsion modes frequency over tip angle for ω = 750 rpm
-plt4 = plot()
-modes = [5,6,7]
-modeLabels = ["1T/5B","5B/1T","4B/1T"]
-for (i,ω) in enumerate(ωRange) 
-    ωRPM = round(Int,ω/(2*π/60)) 
-    if i == 3
-        numFreqsCoupled = zeros(length(tipAngleRange))
-        for j in 1:size(numFreqs, 2)
-            if tipAngleRange[j]*180/π >= 20 
-                mode = 8
-            else
-                mode = 7
-            end
-            numFreqsCoupled[j] = numFreqs[end,j][mode]/(2*π)
-        end
-    else
-        mode = modes[i]
-        numFreqsCoupled = [numFreqs[end,j][mode]/(2*π) for j in 1:size(numFreqs, 2)]
-    end
-    plot!(tipAngleRange*180/π,numFreqsCoupled, lc=colors[i], lw=2, xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", label=false)
-    scatter!(expTipAngles,expFreqs4[i,:], mc=colors[i], ms=5, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=5, msw=0, label=modeLabels[i])
-end
-plot!(title="Coupled bending-torsion at \$\\omega\$ = 750 rpm")
-# plot!(legendtitle=lgdtitle)
-display(plt4)
-savefig(string(absPath,"/sweptTipRotor_TB.pdf"))
 
 println("Finished sweptTipRotor.jl")

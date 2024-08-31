@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, DelimitedFiles
 
 # Wing airfoil
 # wingAirfoil = NACA23012A
@@ -40,8 +40,6 @@ for (i,λ) in enumerate(λRange)
         println("Trimming for λ = $λ payload = $P lb")
         # Model and its beams
         helios,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
-        # plt = plot_undeformed_assembly(helios)
-        # display(plt)
         # Set initial guess solution as previous known solution
         x0 = (j==1) ? zeros(0) : problem[i,j-1].x
         # Create and solve trim problem[i,j]
@@ -56,58 +54,9 @@ for (i,λ) in enumerate(λRange)
 end
 
 # Load reference data
-αFlexibleRef = readdlm(string(pwd(),"/test/referenceData/Helios/trim_AoA_flexible.txt"))
-αRigidRef = readdlm(string(pwd(),"/test/referenceData/Helios/trim_AoA_rigid.txt"))
-δFlexibleRef = readdlm(string(pwd(),"/test/referenceData/Helios/trim_delta_flexible.txt"))
-δRigidRef = readdlm(string(pwd(),"/test/referenceData/Helios/trim_delta_rigid.txt"))
-
-# Plots
-# ------------------------------------------------------------------------------
-colors = get(colorschemes[:rainbow], LinRange(0, 1, length(λRange)))
-lw = 2
-ms = 3
-labels = ["Flexible" "Rigid"]
-relPath = "/test/outputs/figures/heliosTrim"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Deformed shape of flexible aircraft at highest payload
-deformationPlot = plot_steady_deformation(problem[1,end],view=(30,30),save=true,savePath=string(relPath,"/heliosTrim_deformation.pdf"))
-display(deformationPlot)
-# Trim root angle of attack vs airspeed
-gr()
-plt1 = plot(xlabel="Payload [lb]", ylabel="Trim root AoA [deg]", xlims=[0,500], ylims=[0,5])
-plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")
-for (i,λ) in enumerate(λRange)
-    plot!(PRange, trimAoA[i,:], c=colors[i], lw=lw, label=labels[i])
-    if i==1
-        scatter!(αFlexibleRef[1,:], αFlexibleRef[2,:], c=colors[i], ms=ms, msw=0, label=false)
-    else
-        scatter!(αRigidRef[1,:], αRigidRef[2,:], c=colors[i], ms=ms, msw=0, label=false)
-    end
-end
-display(plt1)
-savefig(string(absPath,"/heliosTrim_AoA.pdf"))
-# Trim propeller force vs airspeed
-plt2 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500])
-for (i,λ) in enumerate(λRange)
-    plot!(PRange, trimThrust[i,:], c=colors[i], lw=lw, label=labels[i])
-end
-display(plt2)
-savefig(string(absPath,"/heliosTrim_thrust.pdf"))
-# Trim elevator deflection vs airspeed
-plt3 = plot(xlabel="Payload [lb]", ylabel="Trim elevator deflection [deg]", xlims=[0,500], ylims=[0,10])
-plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")
-for (i,λ) in enumerate(λRange)
-    plot!(PRange, trimδ[i,:], c=colors[i], lw=lw, label=labels[i])
-    if i==1
-        scatter!(δFlexibleRef[1,:], δFlexibleRef[2,:], c=colors[i], ms=ms, msw=0, label=false)
-    else
-        scatter!(δRigidRef[1,:], δRigidRef[2,:], c=colors[i], ms=ms, msw=0, label=false)
-    end
-end
-display(plt3)
-savefig(string(absPath,"/heliosTrim_delta.pdf"))
+αFlexibleRef = readdlm("test/referenceData/Helios/trim_AoA_flexible.txt")
+αRigidRef = readdlm("test/referenceData/Helios/trim_AoA_rigid.txt")
+δFlexibleRef = readdlm("test/referenceData/Helios/trim_delta_flexible.txt")
+δRigidRef = readdlm("test/referenceData/Helios/trim_delta_rigid.txt")
 
 println("Finished heliosTrim.jl")

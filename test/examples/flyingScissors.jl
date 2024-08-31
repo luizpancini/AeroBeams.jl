@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 10
@@ -32,36 +32,14 @@ initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2, Δt=�
 # Create and solve the problem
 problem = create_DynamicProblem(model=flyingScissors,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-u₁_tipA = [problem.nodalStatesOverTime[i][1].u_n2[1] for i in 1:length(t)]
-u₃_tipA = [problem.nodalStatesOverTime[i][1].u_n2[3] for i in 1:length(t)]
-u₁_tipB = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
-u₃_tipB = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
-u₁_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[1] for i in 1:length(t)]
-u₃_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[3] for i in 1:length(t)]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-relPath = "/test/outputs/figures/flyingScissors"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=2,plotLimits=[(0,2*L),(-L,0),(-L/2,L/2)],save=true,savePath=string(relPath,"/flyingScissors_deformation.gif"),displayProgress=true)
-# Nomalized tip displacements
-gr()
-labels = ["Tip A" "Hinge" "Tip B"]
-plt1 = plot(xlabel="\$t\$ [s]", ylabel="\$u_1/L\$")
-plot!(t,[u₁_tipA/L, u₁_hinge/L, u₁_tipB/L], lw=lw, label=labels)
-display(plt1)
-savefig(string(absPath,"/flyingScissors_u1.pdf"))
-plt2 = plot(xlabel="\$t\$ [s]", ylabel="\$u_3/L\$")
-plot!(t,[u₃_tipA/L, u₃_hinge/L, u₃_tipB/L], lw=lw, label=labels)
-display(plt2)
-savefig(string(absPath,"/flyingScissors_u3.pdf"))
+u1_tipA = [problem.nodalStatesOverTime[i][1].u_n2[1] for i in 1:length(t)]
+u3_tipA = [problem.nodalStatesOverTime[i][1].u_n2[3] for i in 1:length(t)]
+u1_tipB = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
+u3_tipB = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
+u1_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[1] for i in 1:length(t)]
+u3_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[3] for i in 1:length(t)]
 
 println("Finished flyingScissors.jl")

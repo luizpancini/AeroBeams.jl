@@ -55,4 +55,11 @@ for (i,ω) in enumerate(ωRange)
     numFreqs[i] = problem.frequenciesOscillatory
 end
 
+# Load experimental values from Epps & Chandra (1996)
+ωRPMExp = [0,250,500,750]
+expFreqs = [5.2374e+00   7.4239e+00   1.1018e+01   1.5820e+01;
+            3.2999e+01   3.4582e+01   4.0188e+01   4.7001e+01;
+            9.0439e+01   9.1112e+01   9.7733e+01   1.0558e+02;
+            1.7237e+02   1.7532e+02   1.7967e+02   1.8874e+02]
+            
 println("Finished straightRotor.jl")

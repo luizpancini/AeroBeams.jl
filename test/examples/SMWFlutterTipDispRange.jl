@@ -1,31 +1,23 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearAlgebra, LinearInterpolations, DelimitedFiles
 
-# Wing surface
-airfoil = deepcopy(flatPlate)
-chord = 1.0
-normSparPos = 0.5
+# Aerodynamic solver and derivatives method
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
-# Wing beam
-θ = π/180*0
-L = 16
-GJ,EIy,EIz = 1e4,2e4,4e6
-ρA,ρIs = 0.75,0.1
-ρIy = ρIs*EIy/EIz
-ρIz = ρIs-ρIy
-nElem = 16
-∞ = 1e12
-wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)],I=[inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
-
-# BCs
-clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-
-# Model
-g = 0
+# Altitude
 h = 20e3
-SMWFlutterTipDispRange = create_Model(name="SMWFlutterTipDispRange",beams=[wing],BCs=[clamp],gravityVector=[0;0;-g],altitude=h)
+
+# Gravity
+g = 0
+
+# Pitch angle
+θ = 0
+
+# Discretization
+nElem = 16
+
+# Initialize model
+SMWFlutterTipDispRange,L = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ,nElem=nElem,altitude=h,g=g)
 
 # Set system solver options
 σ0 = 1
@@ -51,9 +43,8 @@ nModes = 5
 
 # Sweep tip force
 for (i,F3) in enumerate(F3Range)
-    # Update tip force on model
-    tipForce = create_BC(name="tipForce",beam=wing,node=nElem+1,types=["F3A"],values=[F3])
-    SMWFlutterTipDispRange.BCs = [clamp,tipForce]
+    # Update model with tip force
+    SMWFlutterTipDispRange,_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ,nElem=nElem,altitude=h,g=g,tipF3=F3)
     # Sweep airspeed
     for (j,U) in enumerate(URange)
         # Display progress
@@ -100,33 +91,8 @@ for (i,F3) in enumerate(F3Range)
 end
 
 # Load reference data
-flutterSpeedRef = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpeedVsTipDisp.txt"))
-flutterFreqRef = readdlm(string(pwd(),"/test/referenceData/SMW/flutterFreqVsTipDisp.txt"))
-flutterSpeedVsDispRef = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpeedVsTipDispFull.txt"))
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/SMWFlutterTipDispRange"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-gr()
-# Flutter speed and frequency vs. tip displacement
-plt11 = plot(ylabel="Flutter speed [m/s]", xlims=[0,3], ylims=[0,35], legend=:bottomleft)
-plot!(flutterTipDisp, flutterSpeed, c=:black,  lw=lw, label="AeroBeams")
-plot!(flutterSpeedRef[1,:], flutterSpeedRef[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
-plt12 = plot(xlabel="Tip displacement [m]", ylabel="Flutter frequency [rad/s]", xlims=[0,3], ylims=[0,35])
-plot!(flutterTipDisp, flutterFreq, c=:black, lw=lw, label=false)
-plot!(flutterFreqRef[1,:], flutterFreqRef[2,:], c=:black, ls=:dash, lw=lw, label=false)
-plt1 = plot(plt11,plt12, layout=(2,1))
-display(plt1)
-savefig(string(absPath,"/SMWFlutterTipDispRange_flutterVsDisp.pdf"))
-# Complete flutter speed curve
-plt2 = plot(xlabel="Tip displacement [m]", ylabel="Flutter speed [m/s]", xlims=[-3,3], ylims=[0,35], legend=:bottomleft)
-plot!(flutterTipDisp, flutterSpeed, c=:black, lw=lw, label="AeroBeams")
-plot!(flutterSpeedVsDispRef[1,:], flutterSpeedVsDispRef[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
-display(plt2)
-savefig(string(absPath,"/SMWFlutterTipDispRange_flutterCurve.pdf"))
+flutterSpeedRef = readdlm("test/referenceData/SMW/flutterSpeedVsTipDisp.txt")
+flutterFreqRef = readdlm("test/referenceData/SMW/flutterFreqVsTipDisp.txt")
+flutterSpeedVsDispRef = readdlm("test/referenceData/SMW/flutterSpeedVsTipDispFull.txt")
 
 println("Finished SMWFlutterTipDispRange.jl")

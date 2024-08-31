@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams
 
 # Beam
 L = 1
@@ -36,22 +36,7 @@ end
 
 # Analytical solution
 c = sqrt(G*J/(ρ*Is))
-freqsAnalytical = Vector{Float64}(undef,nModes)
-for m in 1:nModes
-    freqsAnalytical[m] = π*c/L*m
-end
-
-# Plot
-relPath = "/test/outputs/figures/beamTorsionalVibrationCC"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
-plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$p_1\$")
-for m in 1:nModes
-    plot!(x1/L, p1_modeShapes[m], lw=2, c=colors[m], label=string("Mode ",string(m)))
-end
-display(plt1)
-savefig(string(absPath,"/beamTorsionalVibrationCC_p1.pdf"))
+freqsAnalytical = [π*c/L*m for m in 1:nModes]
 
 # Show frequency comparison
 ϵ_rel = freqs./freqsAnalytical .- 1.0

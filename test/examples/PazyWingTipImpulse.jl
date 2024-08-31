@@ -1,8 +1,4 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
-
-# Atmosphere 
-altitude = 0
-atmosphere = standard_atmosphere(altitude)
+using AeroBeams, LinearAlgebra
 
 # Aerodynamic solver
 aeroSolver = BLi()
@@ -16,26 +12,24 @@ derivationMethod = AD()
 # Airspeed
 U = 50
 
-# Airfoil
-airfoil = create_Airfoil(name="NACA0018",Ma=U/atmosphere.a)
+# Flag for upright position
+upright = true
 
-# Pazy wing
-wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,derivationMethod=derivationMethod,p0=[0;-π/2;θ])
+# Fixed geometrical properties
+nElem,L,chord,normSparPos = geometrical_properties_Pazy()
 
-# BCs
+# Dummy beam for tip impulse
+dummyBeam = create_Beam(length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=1)])
+
+# Set tip impulse (on dummy beam, updated later on model creation)
 F₀ = 10
 ω = 4*2π
 τ = 2π/ω
 F = t -> ifelse.(t.<=τ,0.0,ifelse.(t.<=2*τ,F₀*sin.(ω*(t.-τ)),0.0))
-force = create_BC(name="force",beam=wing,node=nElem+1,types=["F1A"],values=[t->F(t)])
-clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-
-# Set tip loss function at specified airspeed and root angle
-surf.tipLossDecayFactor = tip_loss_factor_Pazy(θ*180/π,U)
-update_beam!(wing)
+impulse = create_BC(name="impulse",beam=dummyBeam,node=nElem+1,types=["F1A"],values=[t->F(t)])
 
 # Model
-PazyWingTipImpulse = create_Model(name="PazyWingTipImpulse",beams=[wing],BCs=[clamp,force],gravityVector=[0;0;-9.80665],v_A=[0;U;0])
+PazyWingTipImpulse,_ = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,upright=upright,θ=θ,airspeed=U,additionalBCs=[impulse])
 
 # Set system solver options
 σ0 = 1.0
@@ -47,13 +41,11 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displa
 tf = 5*τ
 
 # Initial velocities update options
-initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=true, relaxFactor=0.5, Δt=Δt)
+initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt)
 
 # Create and solve dynamic problem
 problem = create_DynamicProblem(model=PazyWingTipImpulse,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,skipInitialStatesUpdate=false)
 solve!(problem)
-# @profview solve!(problem)
-# @time solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
@@ -64,67 +56,5 @@ tqSpan_cm = [problem.aeroVariablesOverTime[i][12].aeroCoefficients.cm for i in 1
 tqSpan_ct = [problem.aeroVariablesOverTime[i][12].aeroCoefficients.ct for i in 1:length(t)]
 tqsχ = [problem.elementalStatesOverTime[i][12].χ for i in 1:length(t)]
 tqsχdot = [problem.elementalStatesRatesOverTime[i][12].χdot for i in 1:length(t)]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/PazyWingTipImpulse"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=50,plotLimits=[(-L/2,L/2),(-L/2,L/2),(0,L)],save=true,savePath=string(relPath,"/PazyWingTipImpulse_deformation.gif"),displayProgress=true)
-# Tip displacement
-gr()
-plt1 = plot(xlabel="Time [s]", ylabel="Tip OOP disp. [% semispan]")
-plot!(t, tipOOP/L*100, color=:black, lw=lw, label=false)
-display(plt1)
-savefig(string(absPath,"/PazyWingTipImpulse_disp.pdf"))
-# Tip AoA
-plt2 = plot(xlabel="Time [s]", ylabel="Tip angle of attack [deg]")
-plot!(t, tipAoA*180/π, color=:black, lw=lw, label=false)
-display(plt2)
-savefig(string(absPath,"/PazyWingTipImpulse_AoA.pdf"))
-# 3/4-span cn
-plt3 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_n\$")
-plot!(t, tqSpan_cn, color=:black, lw=lw, label=false)
-display(plt3)
-savefig(string(absPath,"/PazyWingTipImpulse_cn.pdf"))
-# 3/4-span cm
-plt4 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_m\$")
-plot!(t, tqSpan_cm, color=:black, lw=lw, label=false)
-display(plt4)
-savefig(string(absPath,"/PazyWingTipImpulse_cm.pdf"))
-# 3/4-span ct
-plt5 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_t\$")
-plot!(t, tqSpan_ct, color=:black, lw=lw, label=false)
-display(plt5)
-savefig(string(absPath,"/PazyWingTipImpulse_ct.pdf"))
-# Aero states at 3/4-span
-nAeroStates = problem.model.elements[1].aero.solver.nStates
-colors = get(colorschemes[:rainbow], LinRange(0, 1, 8))
-tqsχ_ = Array{Vector{Float64}}(undef,nAeroStates)
-for i in 1:nAeroStates
-    tqsχ_[i] = [tqsχ[tt][i] for tt in 1:length(t)]
-end
-plt6 = plot(xlabel="Time [s]", ylabel="")
-for i in 1:nAeroStates
-    plot!(t, tqsχ_[i], c=colors[i], lw=lw, label="\$\\chi $(i)\$")
-end
-display(plt6)
-savefig(string(absPath,"/PazyWingTipImpulse_states.pdf"))
-# Aero states' rates at 3/4-span
-tqsχdot_ = Array{Vector{Float64}}(undef,nAeroStates)
-for i in 1:nAeroStates
-    tqsχdot_[i] = [tqsχdot[tt][i] for tt in 1:length(t)]
-end
-plt7 = plot(xlabel="Time [s]", ylabel="")
-for i in 1:nAeroStates
-    plot!(t, tqsχdot_[i], c=colors[i], lw=lw, label="\$\\dot{\\chi} $(i)\$")
-end
-display(plt7)
-savefig(string(absPath,"/PazyWingTipImpulse_statesRates.pdf"))
-# Root, 3/4-span and tip lift and drag coefficients over time
-plot_time_outputs(problem,elements=[1,12,nElem],elementalOutputs=["cl","cd"],save=true,saveFolder=string(relPath,"/"))
 
 println("Finished PazyWingTipImpulse.jl")

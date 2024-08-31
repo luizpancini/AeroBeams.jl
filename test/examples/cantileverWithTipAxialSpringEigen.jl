@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams
 
 # Beam
 L = 1
@@ -37,18 +37,6 @@ u1_modeShapes = Vector{Vector{Float64}}(undef,nModes)
 for m in 1:nModes
     u1_modeShapes[m] = vcat([vcat(modeShapesAbs[m].nodalStates[e].u_n1[1],modeShapesAbs[m].nodalStates[e].u_n2[1]) for e in 1:nElem]...)
 end
-
-# Plot mode shapes
-relPath = "/test/outputs/figures/cantileverWithTipAxialSpringEigen"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
-plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$u_1\$")
-for m in 1:nModes
-    plot!(x1/L, u1_modeShapes[m], lw=2, c=colors[m], label=string("Mode ",string(m)))
-end
-display(plt1)
-savefig(string(absPath,"/cantileverWithTipAxialSpringEigen_u1.pdf"))
 
 # Analytical solution for normalized frequencies (solutions of μ*tan(x)+x = 0 for μ=1)
 freqsNormAnalytical = [2.0288; 4.9132; 7.9787; 11.086]

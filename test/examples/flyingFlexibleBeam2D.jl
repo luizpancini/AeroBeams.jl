@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 10
@@ -15,10 +15,10 @@ M₀ = 80
 τ = 2.5
 M2 = t -> ifelse.(t.<=τ, M₀, 0)
 F1 = t -> M2(t)/10
-forces = create_BC(name="forces",beam=beam,node=nElem+1,types=["F1A","M2A"],values=[t->F1(t),t->M2(t)])
+loads = create_BC(name="loads",beam=beam,node=nElem+1,types=["F1A","M2A"],values=[t->F1(t),t->M2(t)])
 
 # Model
-flyingFlexibleBeam2D = create_Model(name="flyingFlexibleBeam2D",beams=[beam],BCs=[forces])
+flyingFlexibleBeam2D = create_Model(name="flyingFlexibleBeam2D",beams=[beam],BCs=[loads])
 
 # Time variables
 tf = 13
@@ -27,28 +27,10 @@ tf = 13
 # Create and solve the problem
 problem = create_DynamicProblem(model=flyingFlexibleBeam2D,finalTime=tf,Δt=Δt)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-u₁_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
-u₃_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-relPath = "/test/outputs/figures/flyingFlexibleBeam2D"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=10,plotLimits=[(0,3*L),(-L,0),(-L/2,L/2)],save=true,savePath=string(relPath,"/flyingFlexibleBeam2D_deformation.gif"),displayProgress=true)
-# Nomalized tip displacements
-gr()
-labels = ["\$u_1/L\$" "\$u_3/L\$"]
-plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip normalized displacements")
-plot!(t,[u₁_tip/L, u₃_tip/L], lw=lw, label=labels)
-display(plt1)
-savefig(string(absPath,"/flyingFlexibleBeam2D_disp.pdf"))
+u1_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
+u3_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 
 println("Finished flyingFlexibleBeam2D.jl")

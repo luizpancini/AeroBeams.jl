@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 10
@@ -27,28 +27,10 @@ tf = 9
 # Create and solve the problem
 problem = create_DynamicProblem(model=rotationDrivenRobotArm,finalTime=tf,Δt=Δt)
 solve!(problem)
-# @time solve!(problem)
-# @profview solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
-u₁_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
-u₃_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-relPath = "/test/outputs/figures/rotationDrivenRobotArm"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,plotFrequency=1,plotLimits=[(-L,L),(0,L),(0,L)],save=true,savePath=string(relPath,"/rotationDrivenRobotArm_deformation.gif"),displayProgress=true)
-# Nomalized tip displacements
-gr()
-plt1 = plot(xlabel="\$t\$ [s]", ylabel="Tip normalized displacements")
-plot!(t,u₁_tip/L, lw=lw, label="\$u_1/L\$")
-plot!(t,u₃_tip/L, lw=lw, label="\$u_3/L\$")
-display(plt1)
-savefig(string(absPath,"/rotationDrivenRobotArm_disp.pdf"))
+u1_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
+u3_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 
 println("Finished rotationDrivenRobotArm.jl")

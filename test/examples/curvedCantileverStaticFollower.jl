@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearAlgebra, DelimitedFiles
 
 # Beam
 R,θ = 100,π/4
@@ -32,35 +32,9 @@ tip_u1 = [problem.nodalStatesOverσ[i][nElem].u_n2[1] for i in 1:length(σVector
 tip_u2 = [problem.nodalStatesOverσ[i][nElem].u_n2[2] for i in 1:length(σVector)]
 tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector)]
 
-# Reference solution digitalized from Simo and Vu-Quoc (1986)
-u1_ref = readdlm(string(pwd(),"/test/referenceData/curvedCantileverStaticFollower/u1.txt"))
-u2_ref = readdlm(string(pwd(),"/test/referenceData/curvedCantileverStaticFollower/u2.txt"))
-u3_ref = readdlm(string(pwd(),"/test/referenceData/curvedCantileverStaticFollower/u3.txt"))
-
-# Plots
-# ------------------------------------------------------------------------------
-colors = [:blue,:green,:orange]
-labels = ["\$-u_1\$" "\$u_2\$" "\$u_3\$"]
-lw = 2
-ms = 3
-msw = 0
-relPath = "/test/outputs/figures/curvedCantileverStaticFollower"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/curvedCantileverStaticFollower_deformation.pdf"))
-display(deformationPlot)
-# Plot normalized tip displacements over load steps
-gr()
-plt1 = plot(xlabel="\$F\$ [lb]", ylabel="\$-u_1, u_2, u_3\$ [in]", title="Tip displacements", xticks=collect(0:500:F), yticks=collect(-60:20:80))
-plot!([NaN], [NaN], lc=:black,  lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="Simo & Vu-Quoc (1986)")
-for i=1:3
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i],  lw=lw, ms=ms, msw=msw, label=labels[i])
-end
-scatter!([u1_ref[1,:],u2_ref[1,:],u3_ref[1,:]], [u1_ref[2,:],u2_ref[2,:],u3_ref[2,:]], palette=colors, ms=ms, msw=msw, label=false)
-plot!(σVector*F, [-tip_u1, tip_u2, tip_u3], palette=colors, lw=lw, label=false)
-display(plt1)
-savefig(string(absPath,"/curvedCantileverStaticFollower_disp.pdf"))
+# Reference solution by Simo and Vu-Quoc (1986)
+u1_ref = readdlm("test/referenceData/curvedCantileverStaticFollower/u1.txt")
+u2_ref = readdlm("test/referenceData/curvedCantileverStaticFollower/u2.txt")
+u3_ref = readdlm("test/referenceData/curvedCantileverStaticFollower/u3.txt")
 
 println("Finished curvedCantileverStaticFollower.jl")

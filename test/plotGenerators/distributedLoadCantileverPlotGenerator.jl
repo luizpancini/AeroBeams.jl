@@ -1,26 +1,26 @@
+using Plots
+
 # Run the script
 include("../examples/distributedLoadCantilever.jl")
 
-# Load reference solution
-u1Ref = readdlm("test/referenceData/distributedLoadCantilever/u1.txt")
-u3Ref = readdlm("test/referenceData/distributedLoadCantilever/u3.txt")
-θRef = readdlm("test/referenceData/distributedLoadCantilever/theta.txt")
-
-# Plot deformed state
+# Set paths
 relPath = "/test/outputs/figures/distributedLoadCantilever"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
+
+# Plot deformed state
 deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/distributedLoadCantilever_deformation.pdf"))
 display(deformationPlot)
 
-# Plot normalized displacements over load steps
+# Plot configurations
 lw = 2
 ms = 4
 msw = 0
-x = [-tip_u1/L, tip_u3/L, -tip_angle/π]
 labels = ["\$-u_1/L\$" "\$u_3/L\$" "\$-\\theta/\\pi\$"]
 colors = [:blue,:orange,:green]
 gr()
+
+# Plot normalized displacements over load steps
 plt1 = plot(xlabel="\$-u_1/L, u_3/L, -\\theta/L\$", ylabel="\$q\$ [kN]", title="Tip generalized displacements",legend=:bottomright)
 plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], mc=:black, ms=ms, label="Argyris & Symeonidis (1981)")

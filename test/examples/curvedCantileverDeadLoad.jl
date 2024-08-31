@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Beam
 R,θ = 100,π/4
@@ -44,12 +44,5 @@ u3Ref = 53.4
 ϵu2 = 1 - tip_u2/u2Ref
 ϵu3 = 1 - tip_u3/u3Ref
 println("Relative errors: u1 = $ϵu1, u2 = $ϵu2, u3 = $ϵu3")
-
-# Plot deformed shape
-relPath = "/test/outputs/figures/curvedCantileverDeadLoad"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/curvedCantileverDeadLoad_deformation.pdf"))
-display(deformationPlot)
 
 println("Finished curvedCantileverDeadLoad.jl")

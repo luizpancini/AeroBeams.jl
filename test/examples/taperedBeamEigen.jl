@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra
 
 # Beam
 L = 1
@@ -24,19 +24,11 @@ solve!(problem)
 # Get frequencies 
 freqs = problem.frequenciesOscillatory
 
-# Reference solution for frequencies (values of Tables 3.14)
+# Reference solution for frequencies (values of Table 3.14)
 freqsRef = [4.31517; 23.5193; 63.1992]*sqrt(ρA0*L^4/EIy0)
 
 # Show frequency comparison
 ϵ_rel = freqs./freqsRef .- 1.0
 println("Relative frequency errors: $ϵ_rel")
-
-# Plot mode shapes
-relPath = "/test/outputs/figures/taperedBeamEigen"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-
-modesPlot = plot_mode_shapes(problem,scale=0.5,legendPos=:topleft,frequencyLabel="frequency",save=true,savePath=string(relPath,"/taperedBeamEigen_modeShapes.pdf"))
-display(modesPlot)
 
 println("Finished taperedBeamEigen.jl")

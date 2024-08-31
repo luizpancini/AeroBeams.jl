@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearAlgebra, LinearInterpolations, DelimitedFiles
 
 # Wing surface
 airfoil = deepcopy(flatPlate)
@@ -98,34 +98,8 @@ for (i,Ψ) in enumerate(ΨRange)
 end
 
 # Load reference data
-flutterSpeedVsTipLoadΨ0 = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpeedVsTipLoadPsi0_0.txt"))
-flutterSpeedVsTipLoadΨp02 = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpeedVsTipLoadPsi0_2.txt"))
-flutterSpeedVsTipLoadΨm02 = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpeedVsTipLoadPsi-0_2.txt"))
-
-# Plots
-# ------------------------------------------------------------------------------
-colors = get(colorschemes[:rainbow], LinRange(0, 1, length(ΨRange)))
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/SMWFlutterStructuralCouplingRange"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-gr()
-# Flutter speed vs tip load for several structural couplings
-plt1 = plot(xlabel="Tip Load [N]", ylabel="Flutter speed [m/s]", xlims=[0,35], ylims=[0,35])
-plot!([NaN], [NaN], c=:black, lw=lw, legend=:bottomleft, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="Patil et al. (2001)")
-for (i,Ψ) in enumerate(ΨRange)
-    plot!(F3Range, flutterSpeed[i,:], c=colors[i], lw = lw, label="\\Psi=$Ψ")
-    if Ψ == -0.2
-        scatter!(flutterSpeedVsTipLoadΨm02[1,:], flutterSpeedVsTipLoadΨm02[2,:], mc=colors[i], ms=ms, msw=0, label=false)
-    elseif Ψ == 0.0
-        scatter!(flutterSpeedVsTipLoadΨ0[1,:], flutterSpeedVsTipLoadΨ0[2,:], mc=colors[i], ms=ms, msw=0, label=false)
-    elseif Ψ == +0.2
-        scatter!(flutterSpeedVsTipLoadΨp02[1,:], flutterSpeedVsTipLoadΨp02[2,:], mc=colors[i], ms=ms, msw=0, label=false)
-    end
-end
-display(plt1)
-savefig(string(absPath,"/SMWFlutterStructuralCouplingRange.pdf"))
+flutterSpeedVsTipLoadΨ0 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadPsi0_0.txt")
+flutterSpeedVsTipLoadΨp02 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadPsi0_2.txt")
+flutterSpeedVsTipLoadΨm02 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadPsi-0_2.txt")
 
 println("Finished SMWFlutterStructuralCouplingRange.jl")

@@ -1,13 +1,16 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearInterpolations
 
 # Aerodynamic solver
 aeroSolver = BLi()
 
-# Airfoil
-airfoil = deepcopy(NACA0018)
-
 # Derivation method
 derivationMethod = AD()
+
+# Airfoil section
+airfoil = deepcopy(NACA0018)
+
+# Flag for upright position
+upright = true
 
 # Root pitch angle [rad]
 θ = 5*π/180
@@ -15,14 +18,8 @@ derivationMethod = AD()
 # Option for mode tracking
 modeTracking = true
 
-# Pazy wing
-wing,L,nElem,chord,normSparPos,airfoil,surf = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,derivationMethod=derivationMethod,p0=[0;-π/2;θ])
-
-# BCs
-clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-
-# Model
-PazyWingFlutter = create_Model(name="PazyWingFlutter",beams=[wing],BCs=[clamp],gravityVector=[0;0;-9.80665],units=create_UnitsSystem(frequency="Hz"))
+# Initialize model
+PazyWingFlutter,nElem,L,chord,normSparPos = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,upright=upright,θ=θ)
 
 # Set system solver options (limit initial load factor)
 σ0 = 0.5
@@ -54,9 +51,6 @@ x3_0 = -vcat([vcat(PazyWingFlutter.beams[1].elements[e].r_n1[1],PazyWingFlutter.
 for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U = $U m/s")
-    # Set tip loss function at current airspeed and root angle
-    surf.tipLossDecayFactor = tip_loss_factor_Pazy(θ,U)
-    update_beam!(wing)
     # Update velocity of basis A (and update model)
     set_motion_basis_A!(model=PazyWingFlutter,v_A=[0;U;0])
     # Create and solve problem
@@ -143,49 +137,5 @@ for mode in 1:nModes
     flutterOffsetFreqsOfMode[mode] = flutterOffsetFreqs
     flutterOffsetDispOfMode[mode] = flutterOffsetDisp
 end
-
-# Plots
-# ------------------------------------------------------------------------------
-modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/PazyWingFlutter"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Mode shapes
-modesPlot = plot_mode_shapes(problem[end],scale=0.5,legendPos=(0.25,0.2),view=(30,30),save=true,savePath=string(relPath,"/PazyWingFlutter_modeShapes.pdf"))
-display(modesPlot)
-# Normalized deformed wingspan
-gr()
-plt0 = plot(xlabel="\$x_1/L\$", ylabel="\$x_3/L\$", xlims=[0,1])
-for (i,U) in enumerate(URange)
-    plot!(x1_def[i]/L, x3_def[i]/L, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
-end
-display(plt0)
-savefig(string(absPath,"/PazyWingFlutter_disp.pdf"))
-# V-g-f
-plt11 = plot(ylabel="Frequency [Hz]")
-for mode in 1:nModes
-    plot!(URange, modeFrequencies[mode]/(2*π), c=modeColors[mode], lw=lw,  label=false)
-end
-plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", ylims=[-0.15,0.05], legend=:bottomleft)
-for mode in 1:nModes
-    plot!(URange, modeDampingRatios[mode], c=modeColors[mode], lw=lw,  label="Mode $mode")
-end
-plt1 = plot(plt11,plt12, layout=(2,1))
-display(plt1)
-savefig(string(absPath,"/PazyWingFlutter_Vgf.pdf"))
-# Frequencies and dampings vs tip OOP displacement
-plt21 = plot(ylabel="Frequency [Hz]")
-for mode in 1:nModes
-    plot!(tip_OOP/L*100, modeFrequencies[mode]/(2*π), c=modeColors[mode], lw=lw,  label=false)
-end
-plt22 = plot(xlabel="Tip OOP displacement [% semispan]", ylabel="Damping Ratio", ylims=[-0.15,0.05], legend=:bottomleft)
-for mode in 1:nModes
-    plot!(tip_OOP/L*100, modeDampingRatios[mode], c=modeColors[mode], lw=lw,  label="Mode $mode")
-end
-plt2 = plot(plt21,plt22, layout=(2,1))
-display(plt2)
-savefig(string(absPath,"/PazyWingFlutter_OOPgf.pdf"))
 
 println("Finished PazyWingFlutter.jl")

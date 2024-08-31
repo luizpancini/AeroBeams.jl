@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams
 
 # Beam
 L = 1
@@ -17,11 +17,11 @@ add_springs_to_beam!(beam=beam,springs=[spring])
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-cantileverWithTipAxialSpringEigen = create_Model(name="cantileverWithTipAxialSpringEigen",beams=[beam],BCs=[clamp])
+cantileverWithTipTorsionalSpringEigen = create_Model(name="cantileverWithTipTorsionalSpringEigen",beams=[beam],BCs=[clamp])
 
 # Create and solve the problem
 nModes = 4
-problem = create_EigenProblem(model=cantileverWithTipAxialSpringEigen,nModes=nModes,normalizeModeShapes=true)
+problem = create_EigenProblem(model=cantileverWithTipTorsionalSpringEigen,nModes=nModes,normalizeModeShapes=true)
 solve!(problem)
 
 # Get frequencies and mode shapes
@@ -38,18 +38,6 @@ for m in 1:nModes
     p1_modeShapes[m] = vcat([vcat(modeShapesAbs[m].nodalStates[e].p_n1[1],modeShapesAbs[m].nodalStates[e].p_n2[1]) for e in 1:nElem]...)
 end
 
-# Plot mode shapes
-relPath = "/test/outputs/figures/cantileverWithTipAxialSpringEigen"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-colors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
-plt1 = plot(xlabel="\$x_1/L\$", ylabel="\$u_1\$")
-for m in 1:nModes
-    plot!(x1/L, p1_modeShapes[m], lw=2, c=colors[m], label=string("Mode ",string(m)))
-end
-display(plt1)
-savefig(string(absPath,"/cantileverWithTipAxialSpringEigen_p1.pdf"))
-
 # Analytical solution for normalized frequencies (solutions of μ*tan(x)+x = 0 for μ=1)
 freqsNormAnalytical = [2.0288; 4.9132; 7.9787; 11.086]
 
@@ -57,4 +45,4 @@ freqsNormAnalytical = [2.0288; 4.9132; 7.9787; 11.086]
 ϵ_rel = freqsNorm./freqsNormAnalytical .- 1.0
 println("Relative frequency errors: $ϵ_rel")
 
-println("Finished cantileverWithTipAxialSpringEigen.jl")
+println("Finished cantileverWithTipTorsionalSpringEigen.jl")

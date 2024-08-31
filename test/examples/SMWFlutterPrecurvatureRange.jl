@@ -1,31 +1,20 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, LinearAlgebra, LinearInterpolations, DelimitedFiles
 
-# Wing surface
-airfoil = deepcopy(flatPlate)
-chord = 1.0
-normSparPos = 0.5
+# Aerodynamic solver and derivatives method
 aeroSolver = Indicial()
 derivationMethod = AD()
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos)
 
-# Wing beam
-θ = π/180*0
-L = 16
-GJ,EIy,EIz = 1e4,2e4,4e6
-ρA,ρIs = 0.75,0.1
-ρIy = ρIs*EIy/EIz
-ρIz = ρIs-ρIy
-nElem = 16
-∞ = 1e12
-wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)],I=[inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
-
-# BCs
-clamp = create_BC(name="clamp",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-
-# Model
-g = 0
+# Altitude
 h = 20e3
-SMWFlutterPrecurvatureRange = create_Model(name="SMWFlutterPrecurvatureRange",beams=[wing],BCs=[clamp],gravityVector=[0;0;-g],altitude=h)
+
+# Gravity
+g = 0
+
+# Discretization
+nElem = 16
+
+# Pitch angle
+θ = 0
 
 # Set system solver options (limit initial load factor)
 σ0 = 1
@@ -47,20 +36,15 @@ flutterFreq = Array{Float64}(undef,length(kRange),length(F3Range))
 flutterMode = Array{Int64}(undef,length(kRange),length(F3Range))
 flutterTipDisp = Array{Float64}(undef,length(kRange),length(F3Range))
 
-
 # Set number of vibration modes
 nModes = 5
 
 # Sweep wing precurvature
 for (ki,k) in enumerate(kRange)
-    # Update precurvature on beam
-    wing.k[2] = k
-    update_beam!(wing)
     # Sweep tip force
     for (i,F3) in enumerate(F3Range)
-        # Update tip force on model
-        tipForce = create_BC(name="tipForce",beam=wing,node=nElem+1,types=["F3A"],values=[F3])
-        SMWFlutterPrecurvatureRange.BCs = [clamp,tipForce]
+        # Update model
+        SMWFlutterPrecurvatureRange,_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ*π/180,k2=k,nElem=nElem,altitude=h,g=g,tipF3=F3)
         # Sweep airspeed
         for (j,U) in enumerate(URange)
             # Display progress
@@ -108,26 +92,7 @@ for (ki,k) in enumerate(kRange)
 end
 
 # Load reference data
-flutterSpeedVsTipLoadk0 = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpeedVsTipLoadk0.txt"))
-flutterSpeedVsTipLoadk2 = readdlm(string(pwd(),"/test/referenceData/SMW/flutterSpeedVsTipLoadk2.txt"))
-
-# Plots
-# ------------------------------------------------------------------------------
-colors = get(colorschemes[:rainbow], LinRange(0, 1, length(kRange)))
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/SMWFlutterPrecurvatureRange"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-gr()
-# Flutter speed vs. tip load
-plt1 = plot(xlabel="Tip load [N]", ylabel="Flutter speed [m/s]", xlims=[0,40], ylims=[0,40])
-for (ki,k) in enumerate(kRange)
-    plot!(F3Range, flutterSpeed[ki,:], c=colors[ki], lw=lw, label="AeroBeams - \$k\$=$k")
-end
-plot!(flutterSpeedVsTipLoadk0[1,:], flutterSpeedVsTipLoadk0[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
-plot!(flutterSpeedVsTipLoadk2[1,:], flutterSpeedVsTipLoadk2[2,:], c=:black, ls=:dash, lw=lw, label=false)
-display(plt1)
-savefig(string(absPath,"/SMWFlutterPrecurvatureRange_flutter.pdf"))
+flutterSpeedVsTipLoadk0 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadk0.txt")
+flutterSpeedVsTipLoadk2 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadk2.txt")
 
 println("Finished SMWFlutterPrecurvatureRange.jl")

@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, ForwardDiff, Plots, ColorSchemes, DelimitedFiles, BenchmarkTools
+using AeroBeams, ForwardDiff, DelimitedFiles
 
 # Aerodynamic solver
 aeroSolver = BLi()
@@ -49,13 +49,11 @@ nCycles = 2
 tf = nCycles*τ
 
 # Initial velocities update options
-initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=true, relaxFactor=0.5, Δt=Δt/1e3)
+initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/1e3)
 
 # Create and solve dynamic problem
 problem = create_DynamicProblem(model=DSModelTest,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false,minΔt=Δt/2^2)
-# solve!(problem)
-@time solve!(problem)
-# @profview solve!(problem)
+solve!(problem)
 
 # Unpack numerical solution
 t = problem.timeVector
@@ -65,91 +63,13 @@ cm = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cm for i in 1:length(
 ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
 cl = @. cn*cos(α) + ct*sin(α)
 cd = @. cn*sin(α) - ct*cos(α)
-Vdot₃ = [problem.elementalStatesRatesOverTime[i][1].Vdot[3] for i in 1:length(t)]
+Vdot3 = [problem.elementalStatesRatesOverTime[i][1].Vdot[3] for i in 1:length(t)]
 χ = [problem.elementalStatesOverTime[i][1].χ for i in 1:length(t)]
 χdot = [problem.elementalStatesRatesOverTime[i][1].χdot for i in 1:length(t)]
 
 # Load reference data from McAlister et al (frame 10022)
-clRef = readdlm(string(pwd(),"/test/referenceData/DSModelTest/cl.txt"))
-cmRef = readdlm(string(pwd(),"/test/referenceData/DSModelTest/cm.txt"))
-cdRef = readdlm(string(pwd(),"/test/referenceData/DSModelTest/cd.txt"))
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-ms = 3
-relPath = "/test/outputs/figures/DSModelTest"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,view=(30,30),plotLimits=[(0,L),(-L/2,L/2),(-L/2,L/2)],save=true,savePath=string(relPath,"/DSModelTest_deformation.gif"),displayProgress=true)
-# Pitch angle
-gr()
-plt1 = plot(xlabel="Time [s]", ylabel="Pitch angle [deg]")
-plot!(t, α*180/π, color=:black, lw=lw, label=false)
-display(plt1)
-savefig(string(absPath,"/DSModelTest_alpha.pdf"))
-# Normal relative wind acceleration
-plt2 = plot(xlabel="Time [s]", ylabel="\$\\dot{V}_3\$ [m/s^2]")
-plot!(t, Vdot₃, color=:black, lw=lw, label=false)
-display(plt2)
-savefig(string(absPath,"/DSModelTest_Vdot3.pdf"))
-# cn vs time
-plt3 = plot(xlabel="Time [s]", ylabel="\$c_n\$")
-plot!(t, cn, color=:black, lw=lw, label=false)
-display(plt3)
-savefig(string(absPath,"/DSModelTest_cnt.pdf"))
-# cm vs time
-plt4 = plot(xlabel="Time [s]", ylabel="\$c_m\$")
-plot!(t, cm, color=:black, lw=lw, label=false)
-display(plt4)
-savefig(string(absPath,"/DSModelTest_cmt.pdf"))
-# ct vs time
-plt5 = plot(xlabel="Time [s]", ylabel="\$c_t\$")
-plot!(t, ct, color=:black, lw=lw, label=false)
-display(plt5)
-savefig(string(absPath,"/DSModelTest_ctt.pdf"))
-# cl vs α
-plt6 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_l\$")
-plot!(α*180/π, cl, color=:black, lw=lw, label="AeroBeams")
-scatter!(clRef[1,:], clRef[2,:], color=:black, ms=ms, label="Exp. McAlister et al (1982)")
-display(plt6)
-savefig(string(absPath,"/DSModelTest_cla.pdf"))
-# cm vs α
-plt7 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_m\$")
-plot!(α*180/π, cm, color=:black, lw=lw, label="AeroBeams")
-scatter!(cmRef[1,:], cmRef[2,:], color=:black, ms=ms, label="Exp. McAlister et al (1982)")
-display(plt7)
-savefig(string(absPath,"/DSModelTest_cma.pdf"))
-# cd vs α
-plt8 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_d\$")
-plot!(α*180/π, cd, color=:black, lw=lw, label="AeroBeams")
-scatter!(cdRef[1,:], cdRef[2,:], color=:black, ms=ms, label="Exp. McAlister et al (1982)")
-display(plt8)
-savefig(string(absPath,"/DSModelTest_cda.pdf"))
-# Aero states at 3/4-span
-nTotalAeroStates = problem.model.elements[1].aero.nTotalAeroStates
-colors = get(colorschemes[:rainbow], LinRange(0, 1, nTotalAeroStates))
-χ_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
-for i in 1:nTotalAeroStates
-    χ_[i] = [χ[tt][i] for tt in 1:length(t)]
-end
-plt9 = plot(xlabel="Time [s]", ylabel="")
-for i in 1:nTotalAeroStates
-    plot!(t, χ_[i], c=colors[i], lw=lw, label="\$\\chi $(i)\$")
-end
-display(plt9)
-savefig(string(absPath,"/DSModelTest_states.pdf"))
-# Aero states' rates at 3/4-span
-χdot_ = Array{Vector{Float64}}(undef,nTotalAeroStates)
-for i in 1:nTotalAeroStates
-    χdot_[i] = [χdot[tt][i] for tt in 1:length(t)]
-end
-plt10 = plot(xlabel="Time [s]", ylabel="")
-for i in 1:nTotalAeroStates
-    plot!(t, χdot_[i], c=colors[i], lw=lw, label="\$\\dot{\\chi} $(i)\$")
-end
-display(plt10)
-savefig(string(absPath,"/DSModelTest_statesRates.pdf"))
+clRef = readdlm("test/referenceData/DSModelTest/cl.txt")
+cmRef = readdlm("test/referenceData/DSModelTest/cm.txt")
+cdRef = readdlm("test/referenceData/DSModelTest/cd.txt")
 
 println("Finished DSModelTest.jl")

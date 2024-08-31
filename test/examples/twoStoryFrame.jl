@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes
+using AeroBeams, LinearAlgebra
 
 # Geometric properties
 L = 1
@@ -76,5 +76,12 @@ solve!(problem)
 
 # Get frequencies
 freqs = problem.frequenciesOscillatory
+
+# Reference frequencies (in Hz) by PETYT - Introduction to Finite Element Vibration Analysis - [2nd Ed.] (2010)
+refFreqs = [11.8; 34.1]
+
+# Display relative errors
+ϵ_rel = freqs[[1,4]]/(2π)./refFreqs .- 1.0
+println("Relative errors: $ϵ_rel")
 
 println("Finished twoStoryFrame.jl")

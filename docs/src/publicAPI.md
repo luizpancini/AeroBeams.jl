@@ -96,9 +96,10 @@ create_RotationConstraint
 
 ### Creating a sample model
 ```@docs
+tip_loss_factor_Pazy
+geometrical_properties_Pazy
 create_Pazy
 create_PazyFFWT
-tip_loss_factor_Pazy
 create_Helios
 create_conventional_HALE
 create_BWB

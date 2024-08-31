@@ -1,7 +1,7 @@
-using AeroBeams, LinearAlgebra, Plots
+using AeroBeams, LinearAlgebra
 
 # Gravity
-g = 9.81
+g = 9.80665
 
 # Initial angles of release
 θ₀ = π/2
@@ -36,27 +36,5 @@ u1_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[1] for i in 1:leng
 u3_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[3] for i in 1:length(t)]
 u1_tip = [problem.nodalStatesOverTime[i][end].u_n2[1] for i in 1:length(t)]
 u3_tip = [problem.nodalStatesOverTime[i][end].u_n2[3] for i in 1:length(t)]
-
-# Plots
-# ------------------------------------------------------------------------------
-lw = 2
-labels = ["Hinge" "Tip"]
-colors = [:black,:blue]
-relPath = "/test/outputs/figures/doublePendulum"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-# Animation
-plot_dynamic_deformation(problem,plotFrequency=10,fps=60,scale=1,plotUndeformed=false,plotLimits=[(-L,L),(-L,0),(-L,L)],save=true,savePath=string(relPath,"/doublePendulum_deformation.gif"),displayProgress=true)
-# Normalized tip u1 displacement
-gr()
-plt1 = plot(palette=colors, xlabel="\$t\$ [s]", ylabel="\$u_1/L\$ ")
-plot!(t,[u1_hinge,u1_tip]/L, lw=lw, label=labels)
-display(plt1)
-savefig(string(absPath,"/doublePendulum_u1.pdf"))
-# Normalized tip u3 displacement
-plt2 = plot(palette=colors, xlabel="\$t\$ [s]", ylabel="\$u_3/L\$ ")
-plot!(t,[u3_hinge,u3_tip]/L, lw=lw, label=labels)
-display(plt2)
-savefig(string(absPath,"/doublePendulum_u3.pdf"))
 
 println("Finished doublePendulum.jl")
