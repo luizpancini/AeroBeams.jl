@@ -100,6 +100,8 @@ tip_loss_factor_Pazy
 geometrical_properties_Pazy
 create_Pazy
 create_PazyFFWT
+create_SMW
+create_TDWing
 create_Helios
 create_conventional_HALE
 create_BWB
