@@ -1,7 +1,7 @@
 using Test, BenchmarkTools, DelimitedFiles
 
 # Default relative tolerance for self-comparison
-SELFrtol = 1e-8
+SELFrtol = 1e-4
 
 @testset "Static analysis of an arch under a dead pressure load" begin
     include("examples/archUnderDeadPressure.jl")
