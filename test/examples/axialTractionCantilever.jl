@@ -37,7 +37,7 @@ insert!(u1_10, 1, 0)
 
 # Load reference solution (by Reddy)
 x1_ref = collect(LinRange(0,L,21))
-u1_08_ref = vec(readdlm("test/referenceData/axialTractionCantilever/t08.txt"))
-u1_10_ref = vec(readdlm("test/referenceData/axialTractionCantilever/t10.txt"))
+u1_08_ref = vec(readdlm(joinpath(dirname(@__DIR__), "referenceData", "axialTractionCantilever", "t08.txt")))
+u1_10_ref = vec(readdlm(joinpath(dirname(@__DIR__), "referenceData", "axialTractionCantilever", "t08.txt")))
 
 println("Finished axialTractionCantilever.jl")

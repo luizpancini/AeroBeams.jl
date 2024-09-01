@@ -52,8 +52,8 @@ for (i,U) in enumerate(URange)
 end
 
 # Load reference solution
-trimAoARef = readdlm("test/referenceData/BWB/trimAoA.txt")
-trimThrustRef = readdlm("test/referenceData/BWB/trimThrust.txt")
-trimδRef = readdlm("test/referenceData/BWB/trimDelta.txt")
+trimAoARef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "BWB", "trimAoA.txt"))
+trimThrustRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "BWB", "trimThrust.txt"))
+trimδRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "BWB", "trimDelta.txt"))
 
 println("Finished BWBtrim.jl")

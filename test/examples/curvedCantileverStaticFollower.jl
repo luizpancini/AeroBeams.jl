@@ -33,8 +33,8 @@ tip_u2 = [problem.nodalStatesOverσ[i][nElem].u_n2[2] for i in 1:length(σVector
 tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector)]
 
 # Reference solution by Simo and Vu-Quoc (1986)
-u1_ref = readdlm("test/referenceData/curvedCantileverStaticFollower/u1.txt")
-u2_ref = readdlm("test/referenceData/curvedCantileverStaticFollower/u2.txt")
-u3_ref = readdlm("test/referenceData/curvedCantileverStaticFollower/u3.txt")
+u1_ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "curvedCantileverStaticFollower", "u1.txt"))
+u2_ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "curvedCantileverStaticFollower", "u2.txt"))
+u3_ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "curvedCantileverStaticFollower", "u3.txt"))
 
 println("Finished curvedCantileverStaticFollower.jl")

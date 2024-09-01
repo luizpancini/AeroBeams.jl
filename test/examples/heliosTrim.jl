@@ -54,9 +54,9 @@ for (i,λ) in enumerate(λRange)
 end
 
 # Load reference data
-αFlexibleRef = readdlm("test/referenceData/Helios/trim_AoA_flexible.txt")
-αRigidRef = readdlm("test/referenceData/Helios/trim_AoA_rigid.txt")
-δFlexibleRef = readdlm("test/referenceData/Helios/trim_delta_flexible.txt")
-δRigidRef = readdlm("test/referenceData/Helios/trim_delta_rigid.txt")
+αFlexibleRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Helios", "trim_AoA_flexible.txt"))
+αRigidRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Helios", "trim_AoA_rigid.txt"))
+δFlexibleRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Helios", "trim_delta_flexible.txt"))
+δRigidRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Helios", "trim_delta_rigid.txt"))
 
 println("Finished heliosTrim.jl")

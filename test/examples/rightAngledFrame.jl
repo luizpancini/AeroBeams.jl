@@ -37,8 +37,8 @@ tip_u3 = [problem.nodalStatesOverσ[i][end].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][end].θ_n2 for i in 1:length(σVector)]
 
 # Load reference solution
-u1Ref = readdlm("test/referenceData/rightAngledFrame/u1.txt")
-u3Ref = readdlm("test/referenceData/rightAngledFrame/u3.txt")
-θRef = readdlm("test/referenceData/rightAngledFrame/theta.txt")
+u1Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "rightAngledFrame", "u1.txt"))
+u3Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "rightAngledFrame", "u3.txt"))
+θRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "rightAngledFrame", "theta.txt"))
 
 println("Finished rightAngledFrame.jl")

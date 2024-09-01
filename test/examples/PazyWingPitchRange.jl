@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, Plots, ColorSchemes, DelimitedFiles
+using AeroBeams, DelimitedFiles
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -26,7 +26,7 @@ for (i,θ) in enumerate(θRange)
         # Update model
         PazyWingPitchRange,nElem,L,chord,normSparPos = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,upright=upright,θ=θ*π/180,airspeed=U)
         # Create and solve problem
-        global problem = create_SteadyProblem(model=PazyWingPitchRange,systemSolver=NR)
+        global problem = create_SteadyProblem(model=PazyWingPitchRange)
         solve!(problem)
         # Get tip twist, AoA and OOP displacement at midchord
         tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
@@ -40,7 +40,7 @@ for (i,θ) in enumerate(θRange)
 end
 
 # Load reference data
-tip_u3VsU_rootPitch5 = readdlm("test/referenceData/Pazy/tip_u3VsU_rootPitch5.txt")
-tip_u3VsU_rootPitch7 = readdlm("test/referenceData/Pazy/tip_u3VsU_rootPitch7.txt")
+tip_u3VsU_rootPitch5 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Pazy", "tip_u3VsU_rootPitch5.txt"))
+tip_u3VsU_rootPitch7 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Pazy", "tip_u3VsU_rootPitch7.txt"))
 
 println("Finished PazyWingPitchRange.jl")

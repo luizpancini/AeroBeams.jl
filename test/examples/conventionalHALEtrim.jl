@@ -58,8 +58,8 @@ for (i,λ) in enumerate(λRange)
 end
 
 # Load reference solutions
-trimAoAERef = readdlm("test/referenceData/conventionalHALE/trimAoAVsAirspeedElastic.txt")
-trimAoARRef = readdlm("test/referenceData/conventionalHALE/trimAoAVsAirspeedRigid.txt")
-trimDispRef = readdlm("test/referenceData/conventionalHALE/trimDispAtU25.txt")
+trimAoAERef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "conventionalHALE", "trimAoAVsAirspeedElastic.txt"))
+trimAoARRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "conventionalHALE", "trimAoAVsAirspeedRigid.txt"))
+trimDispRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "conventionalHALE", "trimDispAtU25.txt"))
 
 println("Finished conventionalHALEtrim.jl")

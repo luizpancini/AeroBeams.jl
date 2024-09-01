@@ -98,8 +98,8 @@ for (i,Ψ) in enumerate(ΨRange)
 end
 
 # Load reference data
-flutterSpeedVsTipLoadΨ0 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadPsi0_0.txt")
-flutterSpeedVsTipLoadΨp02 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadPsi0_2.txt")
-flutterSpeedVsTipLoadΨm02 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadPsi-0_2.txt")
+flutterSpeedVsTipLoadΨ0 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsTipLoadPsi0_0.txt"))
+flutterSpeedVsTipLoadΨp02 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsTipLoadPsi0_2.txt"))
+flutterSpeedVsTipLoadΨm02 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsTipLoadPsi-0_2.txt"))
 
 println("Finished SMWFlutterStructuralCouplingRange.jl")

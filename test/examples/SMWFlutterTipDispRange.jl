@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, DelimitedFiles
+using AeroBeams, LinearInterpolations, DelimitedFiles
 
 # Aerodynamic solver and derivatives method
 aeroSolver = Indicial()
@@ -91,8 +91,8 @@ for (i,F3) in enumerate(F3Range)
 end
 
 # Load reference data
-flutterSpeedRef = readdlm("test/referenceData/SMW/flutterSpeedVsTipDisp.txt")
-flutterFreqRef = readdlm("test/referenceData/SMW/flutterFreqVsTipDisp.txt")
-flutterSpeedVsDispRef = readdlm("test/referenceData/SMW/flutterSpeedVsTipDispFull.txt")
+flutterSpeedRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsTipDisp.txt"))
+flutterFreqRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterFreqVsTipDisp.txt"))
+flutterSpeedVsDispRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsTipDispFull.txt"))
 
 println("Finished SMWFlutterTipDispRange.jl")

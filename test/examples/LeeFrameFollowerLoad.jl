@@ -38,7 +38,7 @@ u1_atForce = [problem.nodalStatesOverσ[i][nElem+elemForce].u_n2[1] for i in 1:l
 u3_atForce = [problem.nodalStatesOverσ[i][nElem+elemForce].u_n2[3] for i in 1:length(σVector)]
 
 # Load reference solution
-u1Ref = readdlm("test/referenceData/LeeFrameFollowerLoad/u1.txt")
-u3Ref = readdlm("test/referenceData/LeeFrameFollowerLoad/u3.txt")
+u1Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "LeeFrameFollowerLoad", "u1.txt"))
+u3Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "LeeFrameFollowerLoad", "u3.txt"))
 
 println("Finished LeeFrameFollowerLoad.jl")

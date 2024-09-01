@@ -92,7 +92,7 @@ for (ki,k) in enumerate(kRange)
 end
 
 # Load reference data
-flutterSpeedVsTipLoadk0 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadk0.txt")
-flutterSpeedVsTipLoadk2 = readdlm("test/referenceData/SMW/flutterSpeedVsTipLoadk2.txt")
+flutterSpeedVsTipLoadk0 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsTipLoadk0.txt"))
+flutterSpeedVsTipLoadk2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsTipLoadk2.txt"))
 
 println("Finished SMWFlutterPrecurvatureRange.jl")

@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations
+using AeroBeams, LinearInterpolations
 
 # Aerodynamic solver and derivatives method
 aeroSolver = Indicial()

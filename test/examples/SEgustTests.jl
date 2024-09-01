@@ -81,11 +81,11 @@ function SEgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
 
     # Load reference data
     if testCase == 1
-        ΔclRef = readdlm("test/referenceData/gustTests/SE_A0.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "SE_A0.txt"))
     elseif testCase == 2
-        ΔclRef = readdlm("test/referenceData/gustTests/SE_A10.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "SE_A10.txt"))
     elseif testCase == 3
-        ΔclRef = readdlm("test/referenceData/gustTests/SE_A15.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "SE_A15.txt"))
     end
 
     # Time index of gust encounter

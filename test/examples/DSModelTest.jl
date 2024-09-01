@@ -68,8 +68,8 @@ Vdot3 = [problem.elementalStatesRatesOverTime[i][1].Vdot[3] for i in 1:length(t)
 χdot = [problem.elementalStatesRatesOverTime[i][1].χdot for i in 1:length(t)]
 
 # Load reference data from McAlister et al (frame 10022)
-clRef = readdlm("test/referenceData/DSModelTest/cl.txt")
-cmRef = readdlm("test/referenceData/DSModelTest/cm.txt")
-cdRef = readdlm("test/referenceData/DSModelTest/cd.txt")
+clRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "DSModelTest", "cl.txt"))
+cmRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "DSModelTest", "cm.txt"))
+cdRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "DSModelTest", "cd.txt"))
 
 println("Finished DSModelTest.jl")

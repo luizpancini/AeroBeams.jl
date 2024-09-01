@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra, ForwardDiff, DelimitedFiles
+using AeroBeams, ForwardDiff, DelimitedFiles
 
 # Atmosphere 
 altitude = 0
@@ -88,14 +88,14 @@ HT_p1,HT_p2,HT_p3 = t -> HT_p(t)[1], t -> HT_p(t)[2], t -> HT_p(t)[3]
 cn_qs = t -> 2π*θ₀
 
 # Load reference data
-cnCFDLambda0_2 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cnCFDLambda0_2.txt")
-cmCFDLambda0_2 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cmCFDLambda0_2.txt")
-cnCFDLambda0_4 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cnCFDLambda0_4.txt")
-cmCFDLambda0_4 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cmCFDLambda0_4.txt")
-cnCFDLambda0_6 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cnCFDLambda0_6.txt")
-cmCFDLambda0_6 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cmCFDLambda0_6.txt")
-cnCFDLambda0_8 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cnCFDLambda0_8.txt")
-cmCFDLambda0_8 = readdlm("test/referenceData/timeVaryingFreestreamAndPitch/cmCFDLambda0_8.txt")
+cnCFDLambda0_2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_2.txt"))
+cmCFDLambda0_2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_2.txt"))
+cnCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_4.txt"))
+cmCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_4.txt"))
+cnCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_6.txt"))
+cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_2.txt"))
+cnCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_8.txt"))
+cmCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_8.txt"))
 
 cnCFD = Array{Matrix{Float64}}(undef,4)
 cmCFD = Array{Matrix{Float64}}(undef,4)

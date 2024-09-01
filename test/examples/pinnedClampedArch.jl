@@ -36,7 +36,7 @@ u1_atForce = [problem.nodalStatesOverσ[i][elemForce].u_n2[1] for i in 1:length(
 u3_atForce = [problem.nodalStatesOverσ[i][elemForce].u_n2[3] for i in 1:length(σVector)]
 
 # Load reference solution
-u1Ref = readdlm("test/referenceData/pinnedClampedArch/u1.txt")
-u3Ref = readdlm("test/referenceData/pinnedClampedArch/u3.txt")
+u1Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "pinnedClampedArch", "u1.txt"))
+u3Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "pinnedClampedArch", "u3.txt"))
 
 println("Finished pinnedClampedArch.jl")

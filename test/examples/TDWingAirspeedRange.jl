@@ -31,14 +31,14 @@ for (i,θ) in enumerate(θRange)
 end
 
 # Load reference solutions
-u3_1deg_exp = readdlm("test/referenceData/TDWingAirspeedRange/u3_1deg_exp.txt")
-u3_1deg_num = readdlm("test/referenceData/TDWingAirspeedRange/u3_1deg_num.txt")
-u3_2_2deg_exp = readdlm("test/referenceData/TDWingAirspeedRange/u3_2_2deg_exp.txt")
-u3_2_2deg_num = readdlm("test/referenceData/TDWingAirspeedRange/u3_2_2deg_num.txt")
-th_1deg_exp = readdlm("test/referenceData/TDWingAirspeedRange/th_1deg_exp.txt")
-th_1deg_num = readdlm("test/referenceData/TDWingAirspeedRange/th_1deg_num.txt")
-th_2_2deg_exp = readdlm("test/referenceData/TDWingAirspeedRange/th_2_2deg_exp.txt")
-th_2_2deg_num = readdlm("test/referenceData/TDWingAirspeedRange/th_2_2deg_num.txt")
-freqs_ref = readdlm("test/referenceData/TDWingAirspeedRange/freqs.txt")
+u3_1deg_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u3_1deg_exp.txt"))
+u3_1deg_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u3_1deg_num.txt"))
+u3_2_2deg_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u3_2_2deg_exp.txt"))
+u3_2_2deg_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u3_2_2deg_num.txt"))
+th_1deg_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "th_1deg_exp.txt"))
+th_1deg_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "th_1deg_num.txt"))
+th_2_2deg_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "th_2_2deg_exp.txt"))
+th_2_2deg_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "th_2_2deg_num.txt"))
+freqs_ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "freqs.txt"))
 
 println("Finished TDWingAirspeedRange.jl")

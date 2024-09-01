@@ -35,8 +35,8 @@ tip_u3 = [problem.nodalStatesOverσ[i][end].u_n2[3] for i in 1:length(σVector)]
 tip_angle = [problem.nodalStatesOverσ[i][end].θ_n2 for i in 1:length(σVector)]
 
 # Load reference solution
-u1Ref = readdlm("test/referenceData/tangentiallyForcedArch/u1.txt")
-u3Ref = readdlm("test/referenceData/tangentiallyForcedArch/u3.txt")
-θRef = readdlm("test/referenceData/tangentiallyForcedArch/theta.txt")
+u1Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "tangentiallyForcedArch", "u1.txt"))
+u3Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "tangentiallyForcedArch", "u3.txt"))
+θRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "tangentiallyForcedArch", "theta.txt"))
 
 println("Finished tangentiallyForcedArch.jl")

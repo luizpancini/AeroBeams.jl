@@ -25,7 +25,7 @@ for (i,m) in enumerate(mRange)
 end
 
 # Load reference data
-u3Exp = readdlm("test/referenceData/Pazy/bending_u3VsMass_Exp.txt")
-u3UMNAST = readdlm("test/referenceData/Pazy/bending_u3VsMass_UMNAST.txt")
+u3Exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Pazy", "bending_u3VsMass_Exp.txt"))
+u3UMNAST = readdlm(joinpath(dirname(@__DIR__), "referenceData", "Pazy", "bending_u3VsMass_UMNAST.txt"))
 
 println("Finished PazyWingBendingTest.jl")

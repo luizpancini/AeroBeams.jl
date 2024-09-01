@@ -33,7 +33,7 @@ u3_elbow = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
 u3_tip = [problem.nodalStatesOverTime[i][end].u_n2[3] for i in 1:length(t)]
 
 # Load reference solution
-u3ElbowRef = readdlm("test/referenceData/elbowFrame/u3_elbow.txt")
-u3TipRef = readdlm("test/referenceData/elbowFrame/u3_tip.txt")
+u3ElbowRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "elbowFrame", "u3_elbow.txt"))
+u3TipRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "elbowFrame", "u3_tip.txt"))
 
 println("Finished elbowFrame.jl")

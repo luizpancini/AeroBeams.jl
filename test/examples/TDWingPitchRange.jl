@@ -27,16 +27,16 @@ for (i,θ) in enumerate(θRange)
 end
 
 # Load reference solutions
-u2_exp = readdlm("test/referenceData/TDWingPitchRange/u2_exp.txt")
-u3_exp = readdlm("test/referenceData/TDWingPitchRange/u3_exp.txt")
-th_exp = readdlm("test/referenceData/TDWingPitchRange/th_exp.txt")
-u2_num = readdlm("test/referenceData/TDWingPitchRange/u2_num.txt")
-u3_num = readdlm("test/referenceData/TDWingPitchRange/u3_num.txt")
-th_num = readdlm("test/referenceData/TDWingPitchRange/th_num.txt")
-freqs_exp = readdlm("test/referenceData/TDWingPitchRange/freqs_exp.txt")
-freq1_num = readdlm("test/referenceData/TDWingPitchRange/freq1_num.txt")
-freq2_num = readdlm("test/referenceData/TDWingPitchRange/freq2_num.txt")
-freq4_num = readdlm("test/referenceData/TDWingPitchRange/freq4_num.txt")
+u2_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u2_exp.txt"))
+u3_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u3_exp.txt"))
+th_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "th_exp.txt"))
+u2_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u2_num.txt"))
+u3_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "u3_num.txt"))
+th_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "th_num.txt"))
+freqs_exp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "freqs_exp.txt"))
+freq1_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "freq1_num.txt"))
+freq2_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "freq2_num.txt"))
+freq4_num = readdlm(joinpath(dirname(@__DIR__), "referenceData", "TDWing", "freq4_num.txt"))
 freqs_num = Array{Matrix{Float64}}(undef,3)
 freqs_num[1] = freq1_num
 freqs_num[2] = freq2_num

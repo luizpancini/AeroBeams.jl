@@ -115,17 +115,17 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
 
     # Load reference data
     if testCase == 1
-        ΔclRef = readdlm("test/referenceData/gustTests/Hpi_A0.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "Hpi_A0.txt"))
     elseif testCase == 2
-        ΔclRef = readdlm("test/referenceData/gustTests/Hpi_A10.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "Hpi_A10.txt"))
     elseif testCase == 3
-        ΔclRef = readdlm("test/referenceData/gustTests/Hpi_A15.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "Hpi_A15.txt"))
     elseif testCase == 4
-        ΔclRef = readdlm("test/referenceData/gustTests/H8pi_A0.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "H8pi_A0.txt"))
     elseif testCase == 5
-        ΔclRef = readdlm("test/referenceData/gustTests/H8pi_A10.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "H8pi_A10.txt"))
     elseif testCase == 6
-        ΔclRef = readdlm("test/referenceData/gustTests/H8pi_A15.txt")
+        ΔclRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "gustTests", "H8pi_A15.txt"))
     end
 
     # Time index of gust encounter

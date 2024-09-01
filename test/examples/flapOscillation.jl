@@ -55,9 +55,9 @@ cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(
 cm = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cm for i in 1:length(t)]
 
 # Load reference data by TIJDEMAN & SCHIPPERS (1973) and LEISHMAN (2006)
-cnExp = readdlm("test/referenceData/flapOscillation/cnVsDeltaExp.txt")
-cmExp = readdlm("test/referenceData/flapOscillation/cmVsDeltaExp.txt")
-cnRefMod = readdlm("test/referenceData/flapOscillation/cnVsDeltaRefMod.txt")
-cmRefMod = readdlm("test/referenceData/flapOscillation/cmVsDeltaRefMod.txt")
+cnExp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "flapOscillation", "cnVsDeltaExp.txt"))
+cmExp = readdlm(joinpath(dirname(@__DIR__), "referenceData", "flapOscillation", "cmVsDeltaExp.txt"))
+cnRefMod = readdlm(joinpath(dirname(@__DIR__), "referenceData", "flapOscillation", "cnVsDeltaRefMod.txt"))
+cmRefMod = readdlm(joinpath(dirname(@__DIR__), "referenceData", "flapOscillation", "cmVsDeltaRefMod.txt"))
 
 println("Finished flapOscillation.jl")

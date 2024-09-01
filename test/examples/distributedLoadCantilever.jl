@@ -33,8 +33,8 @@ tip_u3 = [problem.nodalStatesOverσ[i][nElem].u_n2[3] for i in 1:length(σVector
 tip_angle = [problem.nodalStatesOverσ[i][nElem].θ_n2 for i in 1:length(σVector)]
 
 # Load reference solution
-u1Ref = readdlm("test/referenceData/distributedLoadCantilever/u1.txt")
-u3Ref = readdlm("test/referenceData/distributedLoadCantilever/u3.txt")
-θRef = readdlm("test/referenceData/distributedLoadCantilever/theta.txt")
+u1Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "distributedLoadCantilever", "u1.txt"))
+u3Ref = readdlm(joinpath(dirname(@__DIR__), "referenceData", "distributedLoadCantilever", "u3.txt"))
+θRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "distributedLoadCantilever", "theta.txt"))
 
 println("Finished distributedLoadCantilever.jl")

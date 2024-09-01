@@ -96,20 +96,18 @@ for (i,θ) in enumerate(θRange)
 end
 
 # Load reference data
-flutterSpeedRef = readdlm("test/referenceData/SMW/flutterSpeedVsRootAoA.txt")
-flutterFreqRef = readdlm("test/referenceData/SMW/flutterFreqVsRootAoA.txt")
-flutterTipDispRef = readdlm("test/referenceData/SMW/flutterTipDispVsRootAoA.txt")
-
-speedVsDispRootAoA0 = readdlm("test/referenceData/SMW/speedVsDispRootAoA0_0.txt")
-speedVsDispRootAoA05 = readdlm("test/referenceData/SMW/speedVsDispRootAoA0_5.txt")
-speedVsDispRootAoA1 = readdlm("test/referenceData/SMW/speedVsDispRootAoA1_0.txt")
-speedVsDispRootAoA2 = readdlm("test/referenceData/SMW/speedVsDispRootAoA2_0.txt")
-
-freqVsSpeedRootAoA2 = readdlm("test/referenceData/SMW/V-f-RootAoA2.txt")
-dampVsSpeedRootAoA2 = readdlm("test/referenceData/SMW/V-g-RootAoA2.txt")
-freqVsSpeedRootAoA3 = readdlm("test/referenceData/SMW/V-f-RootAoA3.txt")
-dampVsSpeedRootAoA3 = readdlm("test/referenceData/SMW/V-g-RootAoA3.txt")
-freqVsSpeedRootAoA5 = readdlm("test/referenceData/SMW/V-f-RootAoA5.txt")
-dampVsSpeedRootAoA5 = readdlm("test/referenceData/SMW/V-g-RootAoA5.txt")
+flutterSpeedRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterSpeedVsRootAoA.txt"))
+flutterFreqRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterFreqVsRootAoA.txt"))
+flutterTipDispRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "flutterTipDispVsRootAoA.txt"))
+speedVsDispRootAoA0 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "speedVsDispRootAoA0_0.txt"))
+speedVsDispRootAoA05 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "speedVsDispRootAoA0_5.txt"))
+speedVsDispRootAoA1 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "speedVsDispRootAoA1_0.txt"))
+speedVsDispRootAoA2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "speedVsDispRootAoA2_0.txt"))
+freqVsSpeedRootAoA2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "V-f-RootAoA2.txt"))
+dampVsSpeedRootAoA2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "V-g-RootAoA2.txt"))
+freqVsSpeedRootAoA3 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "V-f-RootAoA3.txt"))
+dampVsSpeedRootAoA3 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "V-g-RootAoA3.txt"))
+freqVsSpeedRootAoA5 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "V-f-RootAoA5.txt"))
+dampVsSpeedRootAoA5 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "SMW", "V-g-RootAoA5.txt"))
 
 println("Finished SMWFlutterPitchRange.jl")
