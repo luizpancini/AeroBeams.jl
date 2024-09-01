@@ -36,6 +36,7 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationCC", "freqs.txt"))
     u1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationCC", "u1_modeShapes.txt"))
+    show(hcat(u1_modeShapes...)' .- u1_modeShapes_)
     @test freqs ≈ freqs_ atol=SELFatol
     @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol
 end
