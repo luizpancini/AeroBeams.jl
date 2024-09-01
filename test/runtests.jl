@@ -175,6 +175,7 @@ end
     θ2_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedBeam", "theta2_quarter.txt"))
     Ω2_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedBeam", "Omega2_quarter.txt"))
     Ωdot2_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedBeam", "Omegadot2_quarter.txt"))
+    println("Maximum abs delta = ", maximum(abs.(Ωdot2_quarter .- Ωdot2_quarter_)))
     @test u3_mid ≈ u3_mid_ atol=SELFatol
     @test V3_mid ≈ V3_mid_ atol=SELFatol
     @test Vdot3_mid ≈ Vdot3_mid_ atol=SELFatol
