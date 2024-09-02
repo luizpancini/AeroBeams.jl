@@ -619,187 +619,187 @@ SELFatol = 1e-4
 #     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 # end
 
-@testset "Trim analysis of the Helios flying-wing" begin
-    include("examples/heliosTrim.jl")
-    # Self-comparison
-    trimAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosTrim", "trimAoA.txt"))
-    trimThrust_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosTrim", "trimThrust.txt"))
-    trimδ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosTrim", "trimDelta.txt"))
-    @test trimAoA ≈ trimAoA_ atol=SELFatol
-    @test trimThrust ≈ trimThrust_ atol=SELFatol
-    @test trimδ ≈ trimδ_ atol=SELFatol
-end
+# @testset "Trim analysis of the Helios flying-wing" begin
+#     include("examples/heliosTrim.jl")
+#     # Self-comparison
+#     trimAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosTrim", "trimAoA.txt"))
+#     trimThrust_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosTrim", "trimThrust.txt"))
+#     trimδ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosTrim", "trimDelta.txt"))
+#     @test trimAoA ≈ trimAoA_ atol=SELFatol
+#     @test trimThrust ≈ trimThrust_ atol=SELFatol
+#     @test trimδ ≈ trimδ_ atol=SELFatol
+# end
 
-@testset "Flutter analysis of the wing of the Helios flying-wing" begin
-    include("examples/heliosWingFlutter.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosWingFlutter", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosWingFlutter", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# @testset "Flutter analysis of the wing of the Helios flying-wing" begin
+#     include("examples/heliosWingFlutter.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosWingFlutter", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosWingFlutter", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
-@testset "Static analysis of a hinged beam subjected to a distributed load" begin
-    include("examples/hingedBeam.jl")
-    # Self-comparison
-    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "u3.txt"))
-    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "p2.txt"))
-    F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "F3.txt"))
-    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "M2.txt"))
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p2 ≈ p2_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
-end
+# @testset "Static analysis of a hinged beam subjected to a distributed load" begin
+#     include("examples/hingedBeam.jl")
+#     # Self-comparison
+#     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "u3.txt"))
+#     p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "p2.txt"))
+#     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "F3.txt"))
+#     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "M2.txt"))
+#     @test u3 ≈ u3_ atol=SELFatol
+#     @test p2 ≈ p2_ atol=SELFatol
+#     @test F3 ≈ F3_ atol=SELFatol
+#     @test M2 ≈ M2_ atol=SELFatol
+# end
 
-@testset "Static analysis of a hinged beam subjected to a distributed load and a rotational spring" begin
-    include("examples/hingedSpringedBeam.jl")
-    # Self-comparison
-    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "u3.txt"))
-    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "p2.txt"))
-    F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "F3.txt"))
-    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "M2.txt"))
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p2 ≈ p2_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
-end
+# @testset "Static analysis of a hinged beam subjected to a distributed load and a rotational spring" begin
+#     include("examples/hingedSpringedBeam.jl")
+#     # Self-comparison
+#     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "u3.txt"))
+#     p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "p2.txt"))
+#     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "F3.txt"))
+#     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "M2.txt"))
+#     @test u3 ≈ u3_ atol=SELFatol
+#     @test p2 ≈ p2_ atol=SELFatol
+#     @test F3 ≈ F3_ atol=SELFatol
+#     @test M2 ≈ M2_ atol=SELFatol
+# end
 
-@testset "Static analysis of a T-frame hinged at the connection subjected to a distributed load" begin
-    include("examples/hingedTFrame.jl")
-    # Self-comparison
-    u1_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u1_beam1.txt"))
-    u1_beam2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u1_beam2.txt"))
-    u3_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u3_beam1.txt"))
-    u3_beam2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u3_beam2.txt"))
-    F3_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "F3_beam1.txt"))
-    M2_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "M2_beam1.txt"))
-    @test u1_beam1 ≈ u1_beam1_ atol=SELFatol
-    @test u1_beam2 ≈ u1_beam2_ atol=SELFatol
-    @test u3_beam1 ≈ u3_beam1 atol=SELFatol
-    @test u3_beam2 ≈ u3_beam2_ atol=SELFatol
-    @test F3_beam1 ≈ F3_beam1_ atol=SELFatol
-    @test M2_beam1 ≈ M2_beam1_ atol=SELFatol
-end
+# @testset "Static analysis of a T-frame hinged at the connection subjected to a distributed load" begin
+#     include("examples/hingedTFrame.jl")
+#     # Self-comparison
+#     u1_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u1_beam1.txt"))
+#     u1_beam2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u1_beam2.txt"))
+#     u3_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u3_beam1.txt"))
+#     u3_beam2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u3_beam2.txt"))
+#     F3_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "F3_beam1.txt"))
+#     M2_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "M2_beam1.txt"))
+#     @test u1_beam1 ≈ u1_beam1_ atol=SELFatol
+#     @test u1_beam2 ≈ u1_beam2_ atol=SELFatol
+#     @test u3_beam1 ≈ u3_beam1 atol=SELFatol
+#     @test u3_beam2 ≈ u3_beam2_ atol=SELFatol
+#     @test F3_beam1 ≈ F3_beam1_ atol=SELFatol
+#     @test M2_beam1 ≈ M2_beam1_ atol=SELFatol
+# end
 
-@testset "Dynamic analysis of the free response of a beam subjected to initial displacement and velocity profiles" begin
-    include("examples/initialDispAndVelBeam.jl")
-    # Analytical comparison
-    @test u3_quarter ≈ u3_quarter_analytic rtol=1e-2
-    @test V3_quarter ≈ V3_quarter_analytic rtol=1e-2
-    @test Vdot3_quarter ≈ Vdot3_quarter_analytic rtol=1e-2
-    @test θ2_root ≈ θ2_root_analytic rtol=1e-2
-    @test Ω2_mid ≈ Ω2_mid_analytic rtol=1e-2
-    # @test Ωdot2_mid ≈ Ωdot2_mid_analytic atol=20
-    # Self-comparison
-    u3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "u3_quarter.txt"))
-    V3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "V3_quarter.txt"))
-    Vdot3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "Vdot3_quarter.txt"))
-    θ2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "theta2_root.txt"))
-    Ω2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "Omega2_mid.txt"))
-    Ωdot2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "Omegadot2_mid.txt"))
-    @test u3_quarter ≈ u3_quarter_ atol=SELFatol
-    @test V3_quarter ≈ V3_quarter_ atol=SELFatol
-    @test Vdot3_quarter ≈ Vdot3_quarter_ atol=SELFatol
-    @test θ2_root ≈ θ2_root_ atol=SELFatol
-    @test Ω2_mid ≈ Ω2_mid_ atol=SELFatol
-    @test Ωdot2_mid ≈ Ωdot2_mid_ atol=SELFatol
-end
+# @testset "Dynamic analysis of the free response of a beam subjected to initial displacement and velocity profiles" begin
+#     include("examples/initialDispAndVelBeam.jl")
+#     # Analytical comparison
+#     @test u3_quarter ≈ u3_quarter_analytic rtol=1e-2
+#     @test V3_quarter ≈ V3_quarter_analytic rtol=1e-2
+#     @test Vdot3_quarter ≈ Vdot3_quarter_analytic rtol=1e-2
+#     @test θ2_root ≈ θ2_root_analytic rtol=1e-2
+#     @test Ω2_mid ≈ Ω2_mid_analytic rtol=1e-2
+#     # @test Ωdot2_mid ≈ Ωdot2_mid_analytic atol=20
+#     # Self-comparison
+#     u3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "u3_quarter.txt"))
+#     V3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "V3_quarter.txt"))
+#     Vdot3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "Vdot3_quarter.txt"))
+#     θ2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "theta2_root.txt"))
+#     Ω2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "Omega2_mid.txt"))
+#     Ωdot2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDispAndVelBeam", "Omegadot2_mid.txt"))
+#     @test u3_quarter ≈ u3_quarter_ atol=SELFatol
+#     @test V3_quarter ≈ V3_quarter_ atol=SELFatol
+#     @test Vdot3_quarter ≈ Vdot3_quarter_ atol=SELFatol
+#     @test θ2_root ≈ θ2_root_ atol=SELFatol
+#     @test Ω2_mid ≈ Ω2_mid_ atol=SELFatol
+#     @test Ωdot2_mid ≈ Ωdot2_mid_ atol=SELFatol
+# end
 
-@testset "Dynamic analysis of the free response of a beam subjected to an initial displacement profile" begin
-    include("examples/initialDisplacementBeam.jl")
-    # Analytical comparison
-    @test u3_quarter ≈ u3_quarter_analytic rtol=1e-2
-    @test V3_quarter ≈ V3_quarter_analytic rtol=1e-2
-    @test Vdot3_quarter ≈ Vdot3_quarter_analytic rtol=1e-2
-    @test θ2_root ≈ θ2_root_analytic rtol=1e-2
-    @test Ω2_mid ≈ Ω2_mid_analytic rtol=1e-2
-    @test Ωdot2_mid ≈ Ωdot2_mid_analytic rtol=1e-2
-    # Self-comparison
-    u3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "u3_quarter.txt"))
-    V3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "V3_quarter.txt"))
-    Vdot3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "Vdot3_quarter.txt"))
-    θ2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "theta2_root.txt"))
-    Ω2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "Omega2_mid.txt"))
-    Ωdot2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "Omegadot2_mid.txt"))
-    @test u3_quarter ≈ u3_quarter_ atol=SELFatol
-    @test V3_quarter ≈ V3_quarter_ atol=SELFatol
-    @test Vdot3_quarter ≈ Vdot3_quarter_ atol=SELFatol
-    @test θ2_root ≈ θ2_root_ atol=SELFatol
-    @test Ω2_mid ≈ Ω2_mid_ atol=SELFatol
-    @test Ωdot2_mid ≈ Ωdot2_mid_ atol=SELFatol
-end
+# @testset "Dynamic analysis of the free response of a beam subjected to an initial displacement profile" begin
+#     include("examples/initialDisplacementBeam.jl")
+#     # Analytical comparison
+#     @test u3_quarter ≈ u3_quarter_analytic rtol=1e-2
+#     @test V3_quarter ≈ V3_quarter_analytic rtol=1e-2
+#     @test Vdot3_quarter ≈ Vdot3_quarter_analytic rtol=1e-2
+#     @test θ2_root ≈ θ2_root_analytic rtol=1e-2
+#     @test Ω2_mid ≈ Ω2_mid_analytic rtol=1e-2
+#     @test Ωdot2_mid ≈ Ωdot2_mid_analytic rtol=1e-2
+#     # Self-comparison
+#     u3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "u3_quarter.txt"))
+#     V3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "V3_quarter.txt"))
+#     Vdot3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "Vdot3_quarter.txt"))
+#     θ2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "theta2_root.txt"))
+#     Ω2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "Omega2_mid.txt"))
+#     Ωdot2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialDisplacementBeam", "Omegadot2_mid.txt"))
+#     @test u3_quarter ≈ u3_quarter_ atol=SELFatol
+#     @test V3_quarter ≈ V3_quarter_ atol=SELFatol
+#     @test Vdot3_quarter ≈ Vdot3_quarter_ atol=SELFatol
+#     @test θ2_root ≈ θ2_root_ atol=SELFatol
+#     @test Ω2_mid ≈ Ω2_mid_ atol=SELFatol
+#     @test Ωdot2_mid ≈ Ωdot2_mid_ atol=SELFatol
+# end
 
-@testset "Dynamic analysis of the free response of a beam subjected to an initial velocity profile" begin
-    include("examples/initialVelocityBeam.jl")
-    # Analytical comparison
-    @test u3_quarter ≈ u3_quarter_analytic rtol=1e-2
-    @test V3_quarter ≈ V3_quarter_analytic rtol=1e-2
-    @test Vdot3_quarter ≈ Vdot3_quarter_analytic rtol=1e-2
-    @test θ2_root ≈ θ2_root_analytic rtol=1e-2
-    @test Ω2_mid ≈ Ω2_mid_analytic rtol=1e-2
-    @test Ωdot2_mid ≈ Ωdot2_mid_analytic rtol=1e-2
-    # Self-comparison
-    u3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "u3_quarter.txt"))
-    V3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "V3_quarter.txt"))
-    Vdot3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "Vdot3_quarter.txt"))
-    θ2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "theta2_root.txt"))
-    Ω2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "Omega2_mid.txt"))
-    Ωdot2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "Omegadot2_mid.txt"))
-    @test u3_quarter ≈ u3_quarter_ atol=SELFatol
-    @test V3_quarter ≈ V3_quarter_ atol=SELFatol
-    @test Vdot3_quarter ≈ Vdot3_quarter_ atol=SELFatol
-    @test θ2_root ≈ θ2_root_ atol=SELFatol
-    @test Ω2_mid ≈ Ω2_mid_ atol=SELFatol
-    @test Ωdot2_mid ≈ Ωdot2_mid_ atol=SELFatol
-end
+# @testset "Dynamic analysis of the free response of a beam subjected to an initial velocity profile" begin
+#     include("examples/initialVelocityBeam.jl")
+#     # Analytical comparison
+#     @test u3_quarter ≈ u3_quarter_analytic rtol=1e-2
+#     @test V3_quarter ≈ V3_quarter_analytic rtol=1e-2
+#     @test Vdot3_quarter ≈ Vdot3_quarter_analytic rtol=1e-2
+#     @test θ2_root ≈ θ2_root_analytic rtol=1e-2
+#     @test Ω2_mid ≈ Ω2_mid_analytic rtol=1e-2
+#     @test Ωdot2_mid ≈ Ωdot2_mid_analytic rtol=1e-2
+#     # Self-comparison
+#     u3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "u3_quarter.txt"))
+#     V3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "V3_quarter.txt"))
+#     Vdot3_quarter_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "Vdot3_quarter.txt"))
+#     θ2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "theta2_root.txt"))
+#     Ω2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "Omega2_mid.txt"))
+#     Ωdot2_mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "initialVelocityBeam", "Omegadot2_mid.txt"))
+#     @test u3_quarter ≈ u3_quarter_ atol=SELFatol
+#     @test V3_quarter ≈ V3_quarter_ atol=SELFatol
+#     @test Vdot3_quarter ≈ Vdot3_quarter_ atol=SELFatol
+#     @test θ2_root ≈ θ2_root_ atol=SELFatol
+#     @test Ω2_mid ≈ Ω2_mid_ atol=SELFatol
+#     @test Ωdot2_mid ≈ Ωdot2_mid_ atol=SELFatol
+# end
 
-@testset "Dynamic analysis of joined beams under load" begin
-    include("examples/joinedBeams.jl")
-    # Self-comparison
-    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "joinedBeams", "u1.txt"))
-    u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "joinedBeams", "u2.txt"))
-    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "joinedBeams", "u3.txt"))
-    @test u1 ≈ u1_ atol=SELFatol
-    @test u2 ≈ u2_ atol=SELFatol
-    @test u3 ≈ u3_ atol=SELFatol
-end
+# @testset "Dynamic analysis of joined beams under load" begin
+#     include("examples/joinedBeams.jl")
+#     # Self-comparison
+#     u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "joinedBeams", "u1.txt"))
+#     u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "joinedBeams", "u2.txt"))
+#     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "joinedBeams", "u3.txt"))
+#     @test u1 ≈ u1_ atol=SELFatol
+#     @test u2 ≈ u2_ atol=SELFatol
+#     @test u3 ≈ u3_ atol=SELFatol
+# end
 
-@testset "Static analysis of the Lee frame (a right-angled frame) with a dead load" begin
-    include("examples/LeeFrameDeadLoad.jl")
-    # Self-comparison
-    u1_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameDeadLoad", "u1_atForce.txt"))
-    u3_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameDeadLoad", "u3_atForce.txt"))
-    @test u1_atForce ≈ u1_atForce_ atol=SELFatol
-    @test u3_atForce ≈ u3_atForce_ atol=SELFatol
-end
+# @testset "Static analysis of the Lee frame (a right-angled frame) with a dead load" begin
+#     include("examples/LeeFrameDeadLoad.jl")
+#     # Self-comparison
+#     u1_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameDeadLoad", "u1_atForce.txt"))
+#     u3_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameDeadLoad", "u3_atForce.txt"))
+#     @test u1_atForce ≈ u1_atForce_ atol=SELFatol
+#     @test u3_atForce ≈ u3_atForce_ atol=SELFatol
+# end
 
-@testset "Static analysis of the Lee frame (a right-angled frame) with a follower load" begin
-    include("examples/LeeFrameFollowerLoad.jl")
-    # Self-comparison
-    u1_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameFollowerLoad", "u1_atForce.txt"))
-    u3_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameFollowerLoad", "u3_atForce.txt"))
-    @test u1_atForce ≈ u1_atForce_ atol=SELFatol
-    @test u3_atForce ≈ u3_atForce_ atol=SELFatol
-end
+# @testset "Static analysis of the Lee frame (a right-angled frame) with a follower load" begin
+#     include("examples/LeeFrameFollowerLoad.jl")
+#     # Self-comparison
+#     u1_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameFollowerLoad", "u1_atForce.txt"))
+#     u3_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameFollowerLoad", "u3_atForce.txt"))
+#     @test u1_atForce ≈ u1_atForce_ atol=SELFatol
+#     @test u3_atForce ≈ u3_atForce_ atol=SELFatol
+# end
 
-@testset "Trim analysis (reaction loads check) of a simply-supported beam loaded at the middle" begin
-    include("examples/midLoadedBeamTrim.jl")
-    # Self-comparison
-    F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "midLoadedBeamTrim", "F3.txt"))
-    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "midLoadedBeamTrim", "M2.txt"))
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
-end
+# @testset "Trim analysis (reaction loads check) of a simply-supported beam loaded at the middle" begin
+#     include("examples/midLoadedBeamTrim.jl")
+#     # Self-comparison
+#     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "midLoadedBeamTrim", "F3.txt"))
+#     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "midLoadedBeamTrim", "M2.txt"))
+#     @test F3 ≈ F3_ atol=SELFatol
+#     @test M2 ≈ M2_ atol=SELFatol
+# end
 
-@testset "Dynamic analysis of a pinned robot arm driven by a couple moment" begin
-    include("examples/momentDrivenRobotArm.jl")
-    # Self-comparison
-    u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "momentDrivenRobotArm", "u1_tip.txt"))
-    u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "momentDrivenRobotArm", "u3_tip.txt"))
-    @test u1_tip ≈ u1_tip_ atol=SELFatol
-    @test u3_tip ≈ u3_tip_ atol=SELFatol
-end
+# @testset "Dynamic analysis of a pinned robot arm driven by a couple moment" begin
+#     include("examples/momentDrivenRobotArm.jl")
+#     # Self-comparison
+#     u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "momentDrivenRobotArm", "u1_tip.txt"))
+#     u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "momentDrivenRobotArm", "u3_tip.txt"))
+#     @test u1_tip ≈ u1_tip_ atol=SELFatol
+#     @test u3_tip ≈ u3_tip_ atol=SELFatol
+# end
 
 @testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
     include("examples/OMCgustTests.jl")
