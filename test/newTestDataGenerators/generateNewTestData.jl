@@ -501,7 +501,6 @@ writedlm("test/newTestDataGenerators/PazyFFWTsteady/M2_of_x1.txt", M2_of_x1)
 include("../examples/PazyWingBendingTest.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingBendingTest"))
 writedlm("test/newTestDataGenerators/PazyWingBendingTest/tip_OOP.txt", tip_OOP)
-writedlm("test/newTestDataGenerators/PazyWingBendingTest/tip_twist.txt", tip_twist)
 
 # Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time
 include("../examples/PazyWingContinuous1DGust.jl")

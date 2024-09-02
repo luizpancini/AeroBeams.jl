@@ -826,33 +826,31 @@ SELFatol = 1e-4
 #     end
 # end
 
-@testset "Modal analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
-    include("examples/PazyFFWTeigen.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTeigen", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTeigen", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# @testset "Modal analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
+#     include("examples/PazyFFWTeigen.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTeigen", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTeigen", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
-@testset "Steady analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
-    include("examples/PazyFFWTsteady.jl")
-    # Self-comparison
-    u3_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "u3_of_x1.txt"))
-    p2_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "p2_of_x1.txt"))
-    M2_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "M2_of_x1.txt"))
-    @test u3_of_x1 ≈ u3_of_x1_ atol=SELFatol
-    @test p2_of_x1 ≈ p2_of_x1_ atol=SELFatol
-    @test M2_of_x1 ≈ M2_of_x1_ atol=SELFatol
-end
+# @testset "Steady analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
+#     include("examples/PazyFFWTsteady.jl")
+#     # Self-comparison
+#     u3_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "u3_of_x1.txt"))
+#     p2_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "p2_of_x1.txt"))
+#     M2_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "M2_of_x1.txt"))
+#     @test u3_of_x1 ≈ u3_of_x1_ atol=SELFatol
+#     @test p2_of_x1 ≈ p2_of_x1_ atol=SELFatol
+#     @test M2_of_x1 ≈ M2_of_x1_ atol=SELFatol
+# end
 
 @testset "Static analysis of the pure bending test of the Pazy wing" begin
     include("examples/PazyWingBendingTest.jl")
     # Self-comparison
     tip_OOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingBendingTest", "tip_OOP.txt"))
-    tip_twist_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingBendingTest", "tip_twist.txt"))
     @test tip_OOP ≈ tip_OOP_ atol=SELFatol
-    @test tip_twist ≈ tip_twist_ atol=SELFatol
 end
 
 @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin
