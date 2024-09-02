@@ -1,4 +1,4 @@
-using AeroBeams
+using AeroBeams, LinearAlgebra
 
 # Beam
 L,b,H = 1,1e-2,1e-3
