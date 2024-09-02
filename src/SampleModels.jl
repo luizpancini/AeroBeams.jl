@@ -1,28 +1,38 @@
 using DelimitedFiles
 
-# Gets the normalized nodal positions of the Pazy wing
+# Returns the normalized nodal positions of the Pazy wing
 function nodal_positions_Pazy()
     return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
 end
 
 
-# Gets the sectional stiffness matrices of the Pazy wing
+# Returns the sectional stiffness matrices of the Pazy wing
 function stiffness_matrices_Pazy(GAy::Number,GAz::Number)
 
     @assert GAy > 0
     @assert GAz > 0
 
     # Load elemental sectional stiffness values
-    EA = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/EA.txt")))
-    GJ = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/GJ.txt")))
-    EIy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/EIy.txt")))
-    EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/EIz.txt")))
-    c_EA_GJ = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EA_GJ.txt")))
-    c_EA_EIy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EA_EIy.txt")))
-    c_EA_EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EA_EIz.txt")))
-    c_GJ_EIy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_GJ_EIy.txt")))
-    c_GJ_EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_GJ_EIz.txt")))
-    c_EIy_EIz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/c_EIy_EIz.txt")))
+    # Axial stiffness
+    EA = [9.79449259e06 9.66669055e06 9.64764696e06 9.64877085e06 9.64996612e06 9.65062048e06 9.65094702e06 9.65092085e06 9.65060878e06 9.64997519e06 9.64887183e06 9.64715800e06 9.65344706e06 9.69921416e06 1.00196328e07]
+    # Torsional stiffness
+    GJ = [7.58259714e00 7.58259714e00 7.58259714e00 7.58259714e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51583594e00 6.51583594e00 6.51583594e00 6.51583594e00 7.11892627e00 7.11892627e00 1.73730728e01]
+    # Out-of-plane bending stiffness
+    EIy = [5.24743501e00 4.50448461e00 4.47822861e00 4.47438433e00 4.47481272e00 4.47492882e00 4.47492903e00 4.47492905e00 4.47492889e00 4.47488638e00 4.47471764e00 4.47618354e00 4.48916524e00 4.54819972e00 4.77037999e00]
+    # In-plane bending stiffness
+    EIz = [3.31757932e03 3.27862894e03 3.28287728e03 3.28653821e03 3.28881887e03 3.29012279e03 3.29071820e03 3.29071311e03 3.29015111e03 3.28892576e03 3.28685980e03 3.28351136e03 3.27904566e03 3.27164430e03 3.37372291e03]
+    # Axial-torsion coupling stiffness
+    c_EA_GJ = [-5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 1.14679646e00 1.14679646e00 6.11339950e00]
+    # Axial-OOP bending coupling stiffness
+    c_EA_EIy = [-1.37141817e00 -1.85955625e00 -2.03745676e00 -2.36861943e00 -2.34621942e00 -2.33093397e00 -2.32194657e00 -2.31978268e00 -2.32431249e00 -2.33594699e00 -2.35794054e00 -2.42282990e00 -2.63402308e00 -2.79279201e00 -2.28331802e00]
+    # Axial-IP bending coupling stiffness
+    c_EA_EIz = [5.44855583e04 5.35354102e04 5.32071297e04 5.31204588e04 5.30688769e04 5.30373657e04 5.30224268e04 5.30209363e04 5.30331840e04 5.30603697e04 5.31061305e04 5.31755122e04 5.33603082e04 5.41016226e04 5.44519115e04]
+    # Torsion-OOP bending coupling stiffness
+    c_GJ_EIy = [9.33080027e-02 9.33080027e-02 9.33080027e-02 9.33080027e-02 4.22659591e-05 4.22659591e-05 4.22659591e-05 4.22659591e-05 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -8.09780725e-02 -8.09780725e-02 -1.39455813e00]
+    # Torsion-IP bending coupling stiffness
+    c_GJ_EIz = [1.52918906e-02 1.52918906e-02 1.52918906e-02 1.52918906e-02 3.94787982e-03 3.94787982e-03 3.94787982e-03 3.94787982e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 1.01277971e-02 1.01277971e-02 4.24981724e-01]
+    # OOP-IP bending coupling stiffness
+    c_EIy_EIz = [-1.17141160e-01 -1.12442858e-01 -1.15192612e-01 -1.18950224e-01 -1.20649484e-01 -1.21389557e-01 -1.21682056e-01 -1.21652571e-01 -1.21317479e-01 -1.20584487e-01 -1.19291993e-01 -1.17184960e-01 -1.14807975e-01 -1.16130851e-01 -1.14249441e-01]
 
     # Set matrices
     C = [[    EA[i]  0    0  c_EA_GJ[i]  c_EA_EIy[i]  c_EA_EIz[i];
@@ -36,7 +46,7 @@ function stiffness_matrices_Pazy(GAy::Number,GAz::Number)
 end
 
 
-# Gets the sectional inertia matrices of the Pazy wing
+# Returns the sectional inertia matrices of the Pazy wing
 function inertia_matrices_Pazy()
 
     # Length and nodal position
@@ -44,16 +54,26 @@ function inertia_matrices_Pazy()
     nodalPositions = nodal_positions_Pazy()
 
     # Load nodal inertia values
-    m = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m.txt")))
-    m_x1 = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m_x1.txt")))
-    m_x2 = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m_x2.txt")))
-    m_x3 = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/m_x3.txt")))
-    Ixx = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Ixx.txt")))
-    Ixy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Ixy.txt")))
-    Ixz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Ixz.txt")))
-    Iyy = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Iyy.txt")))
-    Iyz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Iyz.txt")))
-    Izz = vec(readdlm(string(pwd(),"/test/referenceData/Pazy/Izz.txt")))
+    # Point mass
+    m = [1.91186108e-02 2.06788141e-02 2.06828340e-02 2.06828274e-02 2.06828571e-02 2.06828792e-02 2.06828498e-02 2.06828527e-02 2.06828616e-02 2.06828621e-02 2.06828626e-02 2.06828630e-02 2.06828635e-02 2.06828635e-02 2.54479524e-02 4.31558925e-02]
+    # Center of mass offset from reference axis in x1 axis direction
+    m_x1 = [6.44284658e-03 -1.87501083e-03 -1.88019018e-03 -1.88021112e-03 -1.88022963e-03 -1.88021127e-03 -1.88020545e-03 -1.88022219e-03 -1.88022845e-03 -1.88022769e-03 -1.88022693e-03 -1.88022617e-03 -1.88022541e-03 -1.88022469e-03 1.34295741e-03 3.28782957e-03]
+    # Center of mass offset from reference axis in x2 axis direction
+    m_x2 = [6.09115952e-06 -9.03114429e-04 -9.13241152e-04 -9.13181107e-04 -9.13136269e-04 -9.13139373e-04 -9.13148460e-04 -9.13133755e-04 -9.13138940e-04 -9.13138146e-04 -9.13137351e-04 -9.13136557e-04 -9.13135762e-04 -9.13135762e-04 8.11101073e-04 -5.09272488e-03]
+    # Center of mass offset  from reference axis in x3 axis direction
+    m_x3 = [-2.71488305e-05 -1.48960084e-05 -1.49441628e-05 -1.50172024e-05 -1.50375210e-05 -1.50375096e-05 -1.50376952e-05 -1.50378716e-05 -1.50380388e-05 -1.50382121e-05 -1.50383854e-05 -1.50385588e-05 -1.50387321e-05 -1.50387321e-05 -3.00392326e-05 -1.43641715e-04]
+    # x1 axis mass moment of inertia
+    Ixx = [1.21416697e-05 1.09721424e-05 1.09788396e-05 1.09788493e-05 1.09788664e-05 1.09788786e-05 1.09788644e-05 1.09788687e-05 1.09788717e-05 1.09788723e-05 1.09788729e-05 1.09788735e-05 1.09788741e-05 1.09788741e-05 1.45515348e-05 1.22200220e-04]
+    # x1-x3 axes mass product of inertia
+    Ixy = [1.29099112e-08 -4.29590762e-08 -4.66241072e-08 -4.66239396e-08 -4.66186558e-08 -4.66208462e-08 -4.66181019e-08 -4.66178877e-08 -4.66200515e-08 -4.66200824e-08 -4.66201133e-08 -4.66201442e-08 -4.66201750e-08 -4.66201750e-08 -2.55761995e-07 3.06994479e-07]
+    # x1-x3 axes mass product of inertia
+    Ixz = [2.61326836e-10 -4.05020470e-10 -4.09113627e-10 -4.09779617e-10 -4.05575499e-10 -4.05572069e-10 -4.05576866e-10 -4.05587362e-10 -4.05596285e-10 -4.05603025e-10 -4.05609766e-10 -4.05616506e-10 -4.05623247e-10 -4.05623246e-10 -2.22503423e-09 -7.38220857e-09]
+    # x2 axis mass moment of inertia
+    Iyy = [6.63182204e-07 2.08434944e-06 2.08700528e-06 2.08700318e-06 2.08700972e-06 2.08701867e-06 2.08700826e-06 2.08700778e-06 2.08701031e-06 2.08701035e-06 2.08701038e-06 2.08701041e-06 2.08701047e-06 2.08701047e-06 1.68654882e-06 8.76965373e-07]
+    # x2-x3 axes mass product of inertia
+    Iyz = [9.44646195e-09 2.45046373e-09 2.45271020e-09 2.45762425e-09 2.45962684e-09 2.45962929e-09 2.45978322e-09 2.45991134e-09 2.46005086e-09 2.46019166e-09 2.46033249e-09 2.46047329e-09 2.46061128e-09 2.46061778e-09 1.47231285e-08 1.29956112e-07]
+    # x3-axis mass moment of inertia
+    Izz = [1.20937988e-05 1.28286585e-05 1.28380090e-05 1.28380097e-05 1.28380332e-05 1.28380544e-05 1.28380298e-05 1.28380335e-05 1.28380389e-05 1.28380395e-05 1.28380401e-05 1.28380406e-05 1.28380412e-05 1.28380412e-05 1.55828514e-05 1.22614163e-04]
 
     # Set matrices
     I = Vector{Matrix{Float64}}(undef,15)

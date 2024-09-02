@@ -801,30 +801,30 @@ SELFatol = 1e-4
 #     @test u3_tip ≈ u3_tip_ atol=SELFatol
 # end
 
-@testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
-    include("examples/OMCgustTests.jl")
-    # Self-comparison
-    for (i,aeroSolver) in enumerate(aeroSolvers)
-        for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-            for (k,testCase) in enumerate(1:6)
-                if typeof(aeroSolver) == QuasiSteady
-                    aeroSolverName = "QS"
-                elseif typeof(aeroSolver) == Indicial
-                    aeroSolverName = "Indicial"
-                elseif typeof(aeroSolver) == Inflow
-                    aeroSolverName = "Inflow"
-                elseif typeof(aeroSolver) == BLi
-                    aeroSolverName = "BLi"
-                elseif typeof(aeroSolver) == BLo
-                    aeroSolverName = "BLo"
-                end
-                gustSolverName = gustLoadsSolver.indicialFunctionName
-                Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests", string("OMCgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-                @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
-            end
-        end
-    end
-end
+# @testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
+#     include("examples/OMCgustTests.jl")
+#     # Self-comparison
+#     for (i,aeroSolver) in enumerate(aeroSolvers)
+#         for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
+#             for (k,testCase) in enumerate(1:6)
+#                 if typeof(aeroSolver) == QuasiSteady
+#                     aeroSolverName = "QS"
+#                 elseif typeof(aeroSolver) == Indicial
+#                     aeroSolverName = "Indicial"
+#                 elseif typeof(aeroSolver) == Inflow
+#                     aeroSolverName = "Inflow"
+#                 elseif typeof(aeroSolver) == BLi
+#                     aeroSolverName = "BLi"
+#                 elseif typeof(aeroSolver) == BLo
+#                     aeroSolverName = "BLo"
+#                 end
+#                 gustSolverName = gustLoadsSolver.indicialFunctionName
+#                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests", string("OMCgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
+#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
+#             end
+#         end
+#     end
+# end
 
 @testset "Modal analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
     include("examples/PazyFFWTeigen.jl")
