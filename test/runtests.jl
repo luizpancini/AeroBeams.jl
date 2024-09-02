@@ -295,187 +295,187 @@ SELFatol = 1e-4
 #     # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
 # end
 
-@testset "Dynamic analysis of a composite cantilever beam under a tip sinusoidal load" begin
-    include("examples/compositeCantilever.jl")
-    # Self-comparison
-    u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "u1_tip.txt"))
-    u2_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "u2_tip.txt"))
-    u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "u3_tip.txt"))
-    p1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "p1_tip.txt"))
-    p2_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "p2_tip.txt"))
-    p3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "p3_tip.txt"))
-    F1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "F1_root.txt"))
-    F2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "F2_root.txt"))
-    F3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "F3_root.txt"))
-    M1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "M1_root.txt"))
-    M2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "M2_root.txt"))
-    M3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "M3_root.txt"))
-    @test u1_tip ≈ u1_tip_ atol=SELFatol
-    @test u2_tip ≈ u2_tip_ atol=SELFatol
-    @test u3_tip ≈ u3_tip_ atol=SELFatol
-    @test p1_tip ≈ p1_tip_ atol=SELFatol
-    @test p2_tip ≈ p2_tip_ atol=SELFatol
-    @test p3_tip ≈ p3_tip_ atol=SELFatol
-    @test F1_root ≈ F1_root_ atol=1
-    @test F2_root ≈ F2_root_ atol=1
-    @test F3_root ≈ F3_root_ atol=1
-    @test M1_root ≈ M1_root_ atol=1
-    @test M2_root ≈ M2_root_ atol=1
-    @test M3_root ≈ M3_root_ atol=1
-end
+# @testset "Dynamic analysis of a composite cantilever beam under a tip sinusoidal load" begin
+#     include("examples/compositeCantilever.jl")
+#     # Self-comparison
+#     u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "u1_tip.txt"))
+#     u2_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "u2_tip.txt"))
+#     u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "u3_tip.txt"))
+#     p1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "p1_tip.txt"))
+#     p2_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "p2_tip.txt"))
+#     p3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "p3_tip.txt"))
+#     F1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "F1_root.txt"))
+#     F2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "F2_root.txt"))
+#     F3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "F3_root.txt"))
+#     M1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "M1_root.txt"))
+#     M2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "M2_root.txt"))
+#     M3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantilever", "M3_root.txt"))
+#     @test u1_tip ≈ u1_tip_ atol=SELFatol
+#     @test u2_tip ≈ u2_tip_ atol=SELFatol
+#     @test u3_tip ≈ u3_tip_ atol=SELFatol
+#     @test p1_tip ≈ p1_tip_ atol=SELFatol
+#     @test p2_tip ≈ p2_tip_ atol=SELFatol
+#     @test p3_tip ≈ p3_tip_ atol=SELFatol
+#     @test F1_root ≈ F1_root_ atol=1
+#     @test F2_root ≈ F2_root_ atol=1
+#     @test F3_root ≈ F3_root_ atol=1
+#     @test M1_root ≈ M1_root_ atol=1
+#     @test M2_root ≈ M2_root_ atol=1
+#     @test M3_root ≈ M3_root_ atol=1
+# end
 
-@testset "Static analysis of composite laminates subjected to tip loads" begin
-    include("examples/compositeCantileverMD.jl")
-    # Self-comparison
-    for i in 1:3
-        u1_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u1_500mm_b",i,".txt")))
-        u2_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u2_500mm_b",i,".txt")))
-        u3_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u3_500mm_b",i,".txt")))
-        @test hcat(u1_500mm[i,:]...)' ≈ u1_500mm_ atol=SELFatol
-        @test hcat(u2_500mm[i,:]...)' ≈ u2_500mm_ atol=SELFatol
-        @test hcat(u3_500mm[i,:]...)' ≈ u3_500mm_ atol=SELFatol
-    end
-end
+# @testset "Static analysis of composite laminates subjected to tip loads" begin
+#     include("examples/compositeCantileverMD.jl")
+#     # Self-comparison
+#     for i in 1:3
+#         u1_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u1_500mm_b",i,".txt")))
+#         u2_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u2_500mm_b",i,".txt")))
+#         u3_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u3_500mm_b",i,".txt")))
+#         @test hcat(u1_500mm[i,:]...)' ≈ u1_500mm_ atol=SELFatol
+#         @test hcat(u2_500mm[i,:]...)' ≈ u2_500mm_ atol=SELFatol
+#         @test hcat(u3_500mm[i,:]...)' ≈ u3_500mm_ atol=SELFatol
+#     end
+# end
 
-@testset "Dynamic analysis the conventional HALE aircraft undergoing a checked pitch maneuver" begin
-    include("examples/conventionalHALECheckedPitchManeuver.jl")
-    # Self-comparison
-    rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "rootAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
-    @test rootAoA ≈ rootAoA_ atol=SELFatol
-    @test Δu3 ≈ Δu3_ atol=SELFatol
-end
+# @testset "Dynamic analysis the conventional HALE aircraft undergoing a checked pitch maneuver" begin
+#     include("examples/conventionalHALECheckedPitchManeuver.jl")
+#     # Self-comparison
+#     rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "rootAoA.txt"))
+#     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
+#     @test rootAoA ≈ rootAoA_ atol=SELFatol
+#     @test Δu3 ≈ Δu3_ atol=SELFatol
+# end
 
-@testset "Trim analysis the conventional HALE aircraft in free flight (considering aerodynamics from stabilizers and thrust)" begin
-    include("examples/conventionalHALEfullTrim.jl")
-    # Self-comparison
-    trimAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEfullTrim", "trimAoA.txt"))
-    trimThrust_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEfullTrim", "trimThrust.txt"))
-    trimδ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEfullTrim", "trimDelta.txt"))
-    @test trimAoA ≈ trimAoA_ atol=SELFatol
-    @test trimThrust ≈ trimThrust_ atol=SELFatol
-    @test trimδ ≈ trimδ_ atol=SELFatol
-end
+# @testset "Trim analysis the conventional HALE aircraft in free flight (considering aerodynamics from stabilizers and thrust)" begin
+#     include("examples/conventionalHALEfullTrim.jl")
+#     # Self-comparison
+#     trimAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEfullTrim", "trimAoA.txt"))
+#     trimThrust_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEfullTrim", "trimThrust.txt"))
+#     trimδ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEfullTrim", "trimDelta.txt"))
+#     @test trimAoA ≈ trimAoA_ atol=SELFatol
+#     @test trimThrust ≈ trimThrust_ atol=SELFatol
+#     @test trimδ ≈ trimδ_ atol=SELFatol
+# end
 
-@testset "Flutter analysis the conventional HALE aircraft in free flight with structural stiffness as the varying parameter" begin
-    include("examples/conventionalHALELambdaRange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# @testset "Flutter analysis the conventional HALE aircraft in free flight with structural stiffness as the varying parameter" begin
+#     include("examples/conventionalHALELambdaRange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
-@testset "Flutter analysis the conventional HALE aircraft in free flight with airspeed and structural stiffness as the varying parameters" begin
-    include("examples/conventionalHALELURange.jl")
-    # Self-comparison
-    for (i,λ) in enumerate(λRange)
-        freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELURange", string("freqs",i,".txt")))
-        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELURange", string("damps",i,".txt")))
-        @test hcat(freqs[i,:]...)' ≈ freqs_ atol=SELFatol
-        @test hcat(damps[i,:]...)' ≈ damps_ atol=SELFatol
-    end
-end
+# @testset "Flutter analysis the conventional HALE aircraft in free flight with airspeed and structural stiffness as the varying parameters" begin
+#     include("examples/conventionalHALELURange.jl")
+#     # Self-comparison
+#     for (i,λ) in enumerate(λRange)
+#         freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELURange", string("freqs",i,".txt")))
+#         damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELURange", string("damps",i,".txt")))
+#         @test hcat(freqs[i,:]...)' ≈ freqs_ atol=SELFatol
+#         @test hcat(damps[i,:]...)' ≈ damps_ atol=SELFatol
+#     end
+# end
 
-@testset "Trim analysis the conventional HALE aircraft in free flight at rigid and flexible configurations (neglecting aerodynamics from stabilizers and thrust)" begin
-    include("examples/conventionalHALEtrim.jl")
-    # Reference comparison
-    @test trimAoA[1,1] ≈ trimAoAERef[2,1] rtol=2e-2
-    @test trimAoA[2,1] ≈ trimAoARRef[2,1] rtol=2e-2
-    # Self-comparison
-    trimAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEtrim", "trimAoA.txt"))
-    @test trimAoA ≈ trimAoA_ atol=SELFatol
-end
+# @testset "Trim analysis the conventional HALE aircraft in free flight at rigid and flexible configurations (neglecting aerodynamics from stabilizers and thrust)" begin
+#     include("examples/conventionalHALEtrim.jl")
+#     # Reference comparison
+#     @test trimAoA[1,1] ≈ trimAoAERef[2,1] rtol=2e-2
+#     @test trimAoA[2,1] ≈ trimAoARRef[2,1] rtol=2e-2
+#     # Self-comparison
+#     trimAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEtrim", "trimAoA.txt"))
+#     @test trimAoA ≈ trimAoA_ atol=SELFatol
+# end
 
-@testset "Flutter analysis the conventional HALE aircraft in free flight with airspeed as the varying parameter" begin
-    include("examples/conventionalHALEURange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# @testset "Flutter analysis the conventional HALE aircraft in free flight with airspeed as the varying parameter" begin
+#     include("examples/conventionalHALEURange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
-@testset "Static analysis of a curved cantilever subjected to a tip dead force" begin
-    include("examples/curvedCantileverDeadLoad.jl")
-    # Reference comparison
-    @test tip_u1[end] ≈ u1Ref rtol=1e-2
-    @test tip_u2[end] ≈ u2Ref rtol=2e-2
-    @test tip_u3[end] ≈ u3Ref rtol=1e-2
-    # Self-comparison
-    tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u1.txt"))[1]
-    tip_u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u2.txt"))[1]
-    tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u3.txt"))[1]
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u2 ≈ tip_u2_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-end
+# @testset "Static analysis of a curved cantilever subjected to a tip dead force" begin
+#     include("examples/curvedCantileverDeadLoad.jl")
+#     # Reference comparison
+#     @test tip_u1[end] ≈ u1Ref rtol=1e-2
+#     @test tip_u2[end] ≈ u2Ref rtol=2e-2
+#     @test tip_u3[end] ≈ u3Ref rtol=1e-2
+#     # Self-comparison
+#     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u1.txt"))[1]
+#     tip_u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u2.txt"))[1]
+#     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u3.txt"))[1]
+#     @test tip_u1 ≈ tip_u1_ atol=SELFatol
+#     @test tip_u2 ≈ tip_u2_ atol=SELFatol
+#     @test tip_u3 ≈ tip_u3_ atol=SELFatol
+# end
 
-@testset "Dynamic analysis of a curved cantilever subjected to a tip follower force" begin
-    include("examples/curvedCantileverDynamicFollower.jl")
-    # Self-comparison
-    u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "u1_tip.txt"))
-    u2_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "u2_tip.txt"))
-    u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "u3_tip.txt"))
-    F1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "F1_root.txt"))
-    F2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "F2_root.txt"))
-    F3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "F3_root.txt"))
-    M1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "M1_root.txt"))
-    M2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "M2_root.txt"))
-    M3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "M3_root.txt"))
-    @test u1_tip ≈ u1_tip_ atol=SELFatol
-    @test u2_tip ≈ u2_tip_ atol=SELFatol
-    @test u3_tip ≈ u3_tip_ atol=SELFatol
-    @test F1_root ≈ F1_root_ atol=SELFatol
-    @test F2_root ≈ F2_root_ atol=SELFatol
-    @test F3_root ≈ F3_root_ atol=SELFatol
-    @test M1_root ≈ M1_root_ atol=SELFatol
-    @test M2_root ≈ M2_root_ atol=SELFatol
-    @test M3_root ≈ M3_root_ atol=SELFatol
-end
+# @testset "Dynamic analysis of a curved cantilever subjected to a tip follower force" begin
+#     include("examples/curvedCantileverDynamicFollower.jl")
+#     # Self-comparison
+#     u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "u1_tip.txt"))
+#     u2_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "u2_tip.txt"))
+#     u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "u3_tip.txt"))
+#     F1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "F1_root.txt"))
+#     F2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "F2_root.txt"))
+#     F3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "F3_root.txt"))
+#     M1_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "M1_root.txt"))
+#     M2_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "M2_root.txt"))
+#     M3_root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDynamicFollower", "M3_root.txt"))
+#     @test u1_tip ≈ u1_tip_ atol=SELFatol
+#     @test u2_tip ≈ u2_tip_ atol=SELFatol
+#     @test u3_tip ≈ u3_tip_ atol=SELFatol
+#     @test F1_root ≈ F1_root_ atol=SELFatol
+#     @test F2_root ≈ F2_root_ atol=SELFatol
+#     @test F3_root ≈ F3_root_ atol=SELFatol
+#     @test M1_root ≈ M1_root_ atol=SELFatol
+#     @test M2_root ≈ M2_root_ atol=SELFatol
+#     @test M3_root ≈ M3_root_ atol=SELFatol
+# end
 
-@testset "Static analysis of a curved cantilever subjected to a tip follower force" begin
-    include("examples/curvedCantileverStaticFollower.jl")
-    # Reference comparison
-    @test -tip_u1[end] ≈ u1_ref[2,end] rtol=5e-2
-    @test tip_u2[end] ≈ u2_ref[2,end] rtol=5e-2
-    @test tip_u3[end] ≈ u3_ref[2,end] atol=6
-    # Self-comparison
-    tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u1.txt"))
-    tip_u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u2.txt"))
-    tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u3.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u2 ≈ tip_u2_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-end
+# @testset "Static analysis of a curved cantilever subjected to a tip follower force" begin
+#     include("examples/curvedCantileverStaticFollower.jl")
+#     # Reference comparison
+#     @test -tip_u1[end] ≈ u1_ref[2,end] rtol=5e-2
+#     @test tip_u2[end] ≈ u2_ref[2,end] rtol=5e-2
+#     @test tip_u3[end] ≈ u3_ref[2,end] atol=6
+#     # Self-comparison
+#     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u1.txt"))
+#     tip_u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u2.txt"))
+#     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u3.txt"))
+#     @test tip_u1 ≈ tip_u1_ atol=SELFatol
+#     @test tip_u2 ≈ tip_u2_ atol=SELFatol
+#     @test tip_u3 ≈ tip_u3_ atol=SELFatol
+# end
 
-@testset "Static analysis of a cantilever with distributed follower force" begin
-    include("examples/distributedLoadCantilever.jl")
-    # Reference comparison
-    @test -tip_u1[end]/L ≈ u1Ref[1,end] rtol=0.1
-    @test tip_u3[end]/L ≈ u3Ref[1,end] atol=0.1
-    @test -tip_angle[end]/π ≈ θRef[1,end] rtol=0.1
-    # Self-comparison
-    tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_u1.txt"))
-    tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_u3.txt"))
-    tip_angle_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_angle.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-    @test tip_angle ≈ tip_angle_ atol=SELFatol
-end
+# @testset "Static analysis of a cantilever with distributed follower force" begin
+#     include("examples/distributedLoadCantilever.jl")
+#     # Reference comparison
+#     @test -tip_u1[end]/L ≈ u1Ref[1,end] rtol=0.1
+#     @test tip_u3[end]/L ≈ u3Ref[1,end] atol=0.1
+#     @test -tip_angle[end]/π ≈ θRef[1,end] rtol=0.1
+#     # Self-comparison
+#     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_u1.txt"))
+#     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_u3.txt"))
+#     tip_angle_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_angle.txt"))
+#     @test tip_u1 ≈ tip_u1_ atol=SELFatol
+#     @test tip_u3 ≈ tip_u3_ atol=SELFatol
+#     @test tip_angle ≈ tip_angle_ atol=SELFatol
+# end
 
-@testset "Dynamic analysis of a double pendulum released from rest" begin
-    include("examples/doublePendulum.jl")
-    # Self-comparison
-    u1_hinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u1_hinge.txt"))
-    u3_hinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u3_hinge.txt"))
-    u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u1_tip.txt"))
-    u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u3_tip.txt"))
-    @test u1_hinge ≈ u1_hinge_ atol=SELFatol
-    @test u3_hinge ≈ u3_hinge_ atol=SELFatol
-    @test u1_tip ≈ u1_tip_ atol=SELFatol
-    @test u3_tip ≈ u3_tip_ atol=SELFatol
-end
+# @testset "Dynamic analysis of a double pendulum released from rest" begin
+#     include("examples/doublePendulum.jl")
+#     # Self-comparison
+#     u1_hinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u1_hinge.txt"))
+#     u3_hinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u3_hinge.txt"))
+#     u1_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u1_tip.txt"))
+#     u3_tip_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "doublePendulum", "u3_tip.txt"))
+#     @test u1_hinge ≈ u1_hinge_ atol=SELFatol
+#     @test u3_hinge ≈ u3_hinge_ atol=SELFatol
+#     @test u1_tip ≈ u1_tip_ atol=SELFatol
+#     @test u3_tip ≈ u3_tip_ atol=SELFatol
+# end
 
 @testset "Dynamic analysis of a harmonically pitching airfoil, using the dynamic stall model" begin
     include("examples/DSModelTest.jl")

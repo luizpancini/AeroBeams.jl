@@ -64,7 +64,7 @@ savefig(string(absPath,"/DSModelTest_cma.pdf"))
 
 # cd vs α
 plt8 = plot(xlabel="\$\\alpha\$ [deg]", ylabel="\$c_d\$")
-plot!(α*180/π, cd, color=:black, lw=lw, label="AeroBeams")
+plot!(α*180/π, cdrag, color=:black, lw=lw, label="AeroBeams")
 scatter!(cdRef[1,:], cdRef[2,:], color=:black, ms=ms, label="Exp. McAlister et al (1982)")
 display(plt8)
 savefig(string(absPath,"/DSModelTest_cda.pdf"))
