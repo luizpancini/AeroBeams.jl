@@ -101,8 +101,10 @@ writedlm("test/newTestDataGenerators/biclampedBeam/Omegadot2_quarter.txt", Ωdot
 # Flutter analysis of the Blended-Wing-Body flying wing
 include("../examples/BWBflutter.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/BWBflutter"))
-writedlm("test/newTestDataGenerators/BWBflutter/freqs.txt", freqs)
-writedlm("test/newTestDataGenerators/BWBflutter/damps.txt", damps)
+for i in eachindex(URange)
+    writedlm(string("test/newTestDataGenerators/BWBflutter/freqs",i,".txt"), freqs[i])
+    writedlm(string("test/newTestDataGenerators/BWBflutter/damps",i,".txt"), damps[i])
+end
 
 # Trim analysis of the Blended-Wing-Body flying wing in free flight
 include("../examples/BWBtrim.jl")

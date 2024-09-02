@@ -186,13 +186,12 @@ SELFatol = 1e-4
 @testset "Flutter analysis of the Blended-Wing-Body flying wing" begin
     include("examples/BWBflutter.jl")
     # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", "damps.txt"))
-    println("Difference: ", hcat(freqs...)' - freqs_)
-    println("Maximum difference: ", maximum(abs.(hcat(freqs...)' - freqs_)))
-    println("hcat(freqs...)': ", hcat(freqs...)')
-    @test isapprox(hcat(freqs...)', freqs_, atol=SELFatol)
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
+    for i in eachindex(URange)
+        freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", string("freqs",i,".txt")))
+        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", string("damps",i,".txt")))
+        @test freqs[i] ≈ freqs_ atol=SELFatol
+        @test damps[i] ≈ damps_ atol=SELFatol
+    end
 end
 
 @testset "Trim analysis of the Blended-Wing-Body flying wing in free flight" begin
