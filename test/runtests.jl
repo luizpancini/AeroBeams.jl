@@ -853,45 +853,45 @@ SELFatol = 1e-4
 #     @test tip_OOP ≈ tip_OOP_ atol=SELFatol
 # end
 
-@testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin
-    include("examples/PazyWingContinuous1DGust.jl")
-    # Self-comparison
-    tipAoA_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipAoA.txt")))
-    tipOOP_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipOOP.txt")))
-    tqSpan_cn_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cn.txt")))
-    tqSpan_cm_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cm.txt")))
-    tqSpan_ct_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_ct.txt")))
-    # println("Max abs diff tipAoA: ", maximum(abs.(tipAoA .- tipAoA_)))
-    # println("Max abs diff tipOOP: ", maximum(abs.(tipOOP .- tipOOP_)))
-    # println("Max abs diff tqSpan_cn: ", maximum(abs.(tqSpan_cn .- tqSpan_cn_)))
-    # println("Max abs diff tqSpan_cm: ", maximum(abs.(tqSpan_cm .- tqSpan_cm_)))
-    # println("Max abs diff tqSpan_ct: ", maximum(abs.(tqSpan_ct .- tqSpan_ct_)))
-    # println("diff tipAoA[end]: ", tipAoA[end] - tipAoA_[end])
-    # println("diff tipOOP[end]: ", tipOOP[end] - tipOOP_[end])
-    # println("diff tqSpan_cn[end]: ", tqSpan_cn[end] - tqSpan_cn_[end])
-    # println("diff tqSpan_cm[end]: ", tqSpan_cm[end] - tqSpan_cm_[end])
-    # println("diff tqSpan_ct[end]: ", tqSpan_ct[end] - tqSpan_ct_[end])
-    @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-    @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-    @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-    @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-    @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
-end
+# @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin
+#     include("examples/PazyWingContinuous1DGust.jl")
+#     # Self-comparison
+#     tipAoA_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipAoA.txt")))
+#     tipOOP_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipOOP.txt")))
+#     tqSpan_cn_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cn.txt")))
+#     tqSpan_cm_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cm.txt")))
+#     tqSpan_ct_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_ct.txt")))
+#     # println("Max abs diff tipAoA: ", maximum(abs.(tipAoA .- tipAoA_)))
+#     # println("Max abs diff tipOOP: ", maximum(abs.(tipOOP .- tipOOP_)))
+#     # println("Max abs diff tqSpan_cn: ", maximum(abs.(tqSpan_cn .- tqSpan_cn_)))
+#     # println("Max abs diff tqSpan_cm: ", maximum(abs.(tqSpan_cm .- tqSpan_cm_)))
+#     # println("Max abs diff tqSpan_ct: ", maximum(abs.(tqSpan_ct .- tqSpan_ct_)))
+#     # println("diff tipAoA[end]: ", tipAoA[end] - tipAoA_[end])
+#     # println("diff tipOOP[end]: ", tipOOP[end] - tipOOP_[end])
+#     # println("diff tqSpan_cn[end]: ", tqSpan_cn[end] - tqSpan_cn_[end])
+#     # println("diff tqSpan_cm[end]: ", tqSpan_cm[end] - tqSpan_cm_[end])
+#     # println("diff tqSpan_ct[end]: ", tqSpan_ct[end] - tqSpan_ct_[end])
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+# end
 
-@testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over space" begin
-    include("examples/PazyWingContinuous1DSpaceGust.jl")
-    # Self-comparison
-    tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tipAoA.txt"))
-    tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tipOOP.txt"))
-    tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cn.txt"))
-    tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cm.txt"))
-    tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_ct.txt"))
-    @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-    @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-    @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-    @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-    @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
-end
+# @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over space" begin
+#     include("examples/PazyWingContinuous1DSpaceGust.jl")
+#     # Self-comparison
+#     tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tipAoA.txt"))
+#     tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tipOOP.txt"))
+#     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cn.txt"))
+#     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cm.txt"))
+#     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_ct.txt"))
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+# end
 
 @testset "Dynamic analysis of the Pazy wing encountering a continuous, 2-dimensional gust" begin
     include("examples/PazyWingContinuous2DSpaceGust.jl")

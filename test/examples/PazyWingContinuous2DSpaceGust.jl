@@ -16,6 +16,9 @@ upright = true
 # Airspeed
 U = 50
 
+# Fixed geometrical properties
+nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+
 # Gust (defined such that it begins at time t0 and lasts for τ seconds)
 spectrum = "vK"
 t0 = 0.5
