@@ -856,16 +856,26 @@ SELFatol = 1e-4
 @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin
     include("examples/PazyWingContinuous1DGust.jl")
     # Self-comparison
-    tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipAoA.txt"))
-    tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipOOP.txt"))
-    tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cn.txt"))
-    tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cm.txt"))
-    tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_ct.txt"))
-    @test tipAoA ≈ tipAoA_ atol=1e-2
-    @test tipOOP ≈ tipOOP_ atol=1e-2
-    @test tqSpan_cn ≈ tqSpan_cn_ atol=1e-2
-    @test tqSpan_cm ≈ tqSpan_cm_ atol=1e-2
-    @test tqSpan_ct ≈ tqSpan_ct_ atol=1e-2
+    tipAoA_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipAoA.txt")))
+    tipOOP_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipOOP.txt")))
+    tqSpan_cn_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cn.txt")))
+    tqSpan_cm_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cm.txt")))
+    tqSpan_ct_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_ct.txt")))
+    println("Max abs diff tipAoA: ", maximum(abs.(tipAoA .- tipAoA_)))
+    println("Max abs diff tipOOP: ", maximum(abs.(tipOOP .- tipOOP_)))
+    println("Max abs diff tqSpan_cn: ", maximum(abs.(tqSpan_cn .- tqSpan_cn_)))
+    println("Max abs diff tqSpan_cm: ", maximum(abs.(tqSpan_cm .- tqSpan_cm_)))
+    println("Max abs diff tqSpan_ct: ", maximum(abs.(tqSpan_ct .- tqSpan_ct_)))
+    println("diff tipAoA[end]: ", tipAoA[end] - tipAoA_[end])
+    println("diff tipOOP[end]: ", tipOOP[end] - tipOOP_[end])
+    println("diff tqSpan_cn[end]: ", tqSpan_cn[end] - tqSpan_cn_[end])
+    println("diff tqSpan_cm[end]: ", tqSpan_cm[end] - tqSpan_cm_[end])
+    println("diff tqSpan_ct[end]: ", tqSpan_ct[end] - tqSpan_ct_[end])
+    @test tipAoA ≈ tipAoA_ atol=SELFatol
+    @test tipOOP ≈ tipOOP_ atol=SELFatol
+    @test tqSpan_cn ≈ tqSpan_cn_ atol=SELFatol
+    @test tqSpan_cm ≈ tqSpan_cm_ atol=SELFatol
+    @test tqSpan_ct ≈ tqSpan_ct_ atol=SELFatol
 end
 
 @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over space" begin
