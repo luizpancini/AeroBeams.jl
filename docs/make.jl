@@ -1,4 +1,4 @@
-using AeroBeams, Documenter, Literate
+using AeroBeams, Documenter, Literate, Plots, PyPlot, GR
 
 DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
 
@@ -10,7 +10,7 @@ for ex in included
     inputPath = pkgdir(AeroBeams)*"/test/examples/"*ex
     outputPath = "src/"
     exName = splitext(ex)[1]
-    Literate.markdown(inputPath, outputPath; name=exName, mdstrings=true, code=false)
+    Literate.markdown(inputPath, outputPath; name=exName, mdstrings=true)
 end
 
 # Make documentation

@@ -52,18 +52,18 @@ mid_u3 = [problem.nodalStatesOverσ[i][div(nElem,2)].u_n2[3] for i in 1:length(�
 
 #md # The following plot shows the midpoint displacement as a function of the load.
 #md using Plots
-#md gr()
+#md pyplot()
 #md plot(-mid_u3/R, σVector*λ, color=:black, lw=2, xlabel="Midpoint \$-u_3/R\$", ylabel="\$\\lambda\$", label=false)
-#md savefig("assets/archUnderFollowerPressure-disp.svg") #hide
+#md savefig("archUnderFollowerPressure-disp.svg") #hide
 #md nothing #hide
-#md # ![](assets/archUnderFollowerPressure-disp.svg)
+#md # ![](archUnderFollowerPressure-disp.svg)
 #md nothing #hide
 
 #md # Let's also plot the initial and final deformed shape of the arch (scale ten-fold), along with the boundary conditions. To do that, we simply call the `plot_steady_deformation()` function accordingly.
 #md deformationPlot = plot_steady_deformation(problem,scale=10,showScale=true,scalePos=[0.5,2.2])
-#md savefig("assets/archUnderFollowerPressure-deformed.svg") #hide
+#md savefig("archUnderFollowerPressure-deformed.svg") #hide
 #md nothing #hide
-#md # ![](assets/archUnderFollowerPressure-deformed.svg)
+#md # ![](archUnderFollowerPressure-deformed.svg)
 #md nothing #hide
 
 println("Finished archUnderFollowerPressure.jl") #src

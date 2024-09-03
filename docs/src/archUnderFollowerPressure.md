@@ -78,13 +78,13 @@ The following plot shows the midpoint displacement as a function of the load.
 
 ````@example archUnderFollowerPressure
 using Plots
-gr()
+pyplot()
 plot(-mid_u3/R, σVector*λ, color=:black, lw=2, xlabel="Midpoint \$-u_3/R\$", ylabel="\$\\lambda\$", label=false)
-savefig("assets/archUnderFollowerPressure-disp.svg") #hide
+savefig("archUnderFollowerPressure-disp.svg") #hide
 nothing #hide
 ````
 
-![](assets/archUnderFollowerPressure-disp.svg)
+![](archUnderFollowerPressure-disp.svg)
 
 ````@example archUnderFollowerPressure
 nothing #hide
@@ -94,11 +94,11 @@ Let's also plot the initial and final deformed shape of the arch (scale ten-fold
 
 ````@example archUnderFollowerPressure
 deformationPlot = plot_steady_deformation(problem,scale=10,showScale=true,scalePos=[0.5,2.2])
-savefig("assets/archUnderFollowerPressure-deformed.svg") #hide
+savefig("archUnderFollowerPressure-deformed.svg") #hide
 nothing #hide
 ````
 
-![](assets/archUnderFollowerPressure-deformed.svg)
+![](archUnderFollowerPressure-deformed.svg)
 
 ````@example archUnderFollowerPressure
 nothing #hide
