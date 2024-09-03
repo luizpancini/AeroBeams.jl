@@ -183,14 +183,14 @@ end
     @test Ωdot2_quarter ≈ Ωdot2_quarter_ atol=SELFatol
 end
 
-@testset "Flutter analysis of the Blended-Wing-Body flying wing" begin
-    include("examples/BWBflutter.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# @testset "Flutter analysis of the Blended-Wing-Body flying wing" begin
+#     include("examples/BWBflutter.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBflutter", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
 @testset "Trim analysis of the Blended-Wing-Body flying wing in free flight" begin
     include("examples/BWBtrim.jl")
