@@ -50,6 +50,11 @@ jobs:
         with:
           version: '1'
       - uses: julia-actions/cache@v1
+      - name: Install Python dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install python3-pip
+          pip3 install matplotlib
       - name: Configure doc environment
         shell: julia --project=docs --color=yes {0}
         run: |
