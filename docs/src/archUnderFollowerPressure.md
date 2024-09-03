@@ -39,7 +39,7 @@ nothing #hide
 ````
 
 ### Model
-We are now ready to create the model itself. It is composed of the beam and the boundary conditions
+We are now ready to create the model itself. It is composed of the beam and the boundary conditions.
 
 ````@example archUnderFollowerPressure
 archUnderFollowerPressure = create_Model(name="archUnderFollowerPressure",beams=[beam],BCs=[clamp1,clamp2])
@@ -66,7 +66,7 @@ nothing #hide
 ````
 
 ### Post-processing
-We are interested in the behavior of the arch's midpoint transverse displacement (in the x3 direction) as a function of the load. So we can get solution at all partial load steps. The array of the partial load factors is `σVector`, and the corresponding midpoint displacements are `mid_u3`
+We are interested in the behavior of the arch's midpoint transverse displacement (in the x3 direction) as a function of the load. So we can get solution at all partial load steps. The array of the partial load factors is `σVector`, and the corresponding midpoint displacements are `mid_u3`.
 
 ````@example archUnderFollowerPressure
 σVector = problem.savedσ
@@ -74,7 +74,7 @@ mid_u3 = [problem.nodalStatesOverσ[i][div(nElem,2)].u_n2[3] for i in 1:length(�
 nothing #hide
 ````
 
-The following plot shows the midpoint displacement as a function of the load
+The following plot shows the midpoint displacement as a function of the load.
 
 ````@example archUnderFollowerPressure
 using Plots
@@ -90,7 +90,7 @@ nothing #hide
 nothing #hide
 ````
 
-Let's also plot the initial and final deformed shape of the arch, scale ten-fold, along with the boundary conditions. To do that, we simply call the `plot_steady_deformation()` function accordingly
+Let's also plot the initial and final deformed shape of the arch (scale ten-fold), along with the boundary conditions. To do that, we simply call the `plot_steady_deformation()` function accordingly.
 
 ````@example archUnderFollowerPressure
 deformationPlot = plot_steady_deformation(problem,scale=10,showScale=true,scalePos=[0.5,2.2])
