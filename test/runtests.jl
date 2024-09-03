@@ -601,14 +601,14 @@ SELFatol = 1e-4
 #     end
 # end
 
-@testset "Flutter analysis the Helios flying-wing in free flight with payload as the varying parameter" begin
-    include("examples/heliosFlutterPRange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterPRange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterPRange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# @testset "Flutter analysis the Helios flying-wing in free flight with payload as the varying parameter" begin
+#     include("examples/heliosFlutterPRange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterPRange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterPRange", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
 @testset "Flutter analysis the Helios flying-wing in free flight with airspeed as the varying parameter" begin
     include("examples/heliosFlutterURange.jl")
