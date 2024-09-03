@@ -1,8 +1,30 @@
-using AeroBeams
-using Documenter
+using AeroBeams, Documenter, Literate
 
 DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
 
+# Examples to be included in the documentation
+const included = ["archUnderDeadPressure.jl","archUnderFollowerPressure.jl"]
+
+# Preprocess function for Literate
+function replace_includes(str)
+
+    path = pkgdir(AeroBeams)*"/test/examples/"
+
+    for ex in included
+        content = read(path*ex, String)
+        str = replace(str, "include(\"$(ex)\")" => content)
+    end
+    return str
+end
+# Literate output md files
+for ex in included
+    inputPath = pkgdir(AeroBeams)*"/test/examples/"*ex
+    outputPath = "src/"
+    exName = splitext(ex)[1]
+    Literate.markdown(inputPath, outputPath; name=exName)
+end
+
+# Make documentation
 push!(LOAD_PATH,"../src/")
 makedocs(;
     modules=[AeroBeams],
@@ -15,10 +37,13 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Examples" => ["Arch under dead pressure" => "archUnderDeadPressure.md",
+        "Arch under follower pressure" => "archUnderFollowerPressure.md"],
         "Public API" => "publicAPI.md"
     ],
 )
 
+# CI
 deploydocs(;
     repo="github.com/luizpancini/AeroBeams.jl.git",
     devbranch="main",

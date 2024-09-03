@@ -1,15 +1,18 @@
-using AeroBeams, LinearAlgebra
+# # Arch under follower pressure
+# This example simulates the static response of an arch subjected to a normal (follower) pressure. Let's begin by loading the package.
 
-# Beam 
+using AeroBeams
+
+# ### Beam 
+# The first step is to create a beam. The arch has radius `R` and spans over and angle `θ`. The curvature of the beam is thus `1/R`, and the total length is `L=Rθ`. We define the beam orientation such that the arch spans from an angle `-θ/2` to `θ/2` about a vertical line. This is done by specifying the rotation parameters from basis `A` to basis `b`, `p0`, with the Euler parameters sequence 3-2-1: the angle of rotation about the second axis is `-θ/2`. The cross-section has area `A` and bending moment of inertia `Iy`. The elastic modulus of the material is `E`. We discretize the beam into `nElem` finite elements.
 R,θ = 2.54,120*π/180
+k2 = 1/R
 L = R*θ
 A,Iy = 4.05e-4,13.1e-8
 E = 70.4e9
-∞ = 1e12
-EA,GAy,GAz,GJ,EIy,EIz = E*A,∞,∞,∞,E*Iy,∞
-stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
+EA,EIy = E*A,E*Iy
 nElem = 80
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;1/R;0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=1e12,EA=EA,EIy=EIy)],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;k2;0]);
 
 # BCs
 λ = 11
