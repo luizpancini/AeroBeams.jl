@@ -87,7 +87,7 @@ Plots the initial and final deformed states for the model in the given problem
 - `save::Bool` = flag to save the figure
 - `savePath::String` = relative path on which to save the figure
 """
-function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Number}=[0.1;0.05;0.05],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
+function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -217,20 +217,10 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
 
     # Plot scale, if applicable
     if showScale
-        # Set positions
-        if isPlane
-            XPos = plotMin + scalePos[1]*(plotMax-plotMin)
-            YPos = plotMax + scalePos[2]*(plotMax-plotMin)
-            ZPos = plotMax + scalePos[3]*(plotMax-plotMin)
-        else
-            XPos = plotLimits[1][1] + scalePos[1]*(plotLimits[1][2]-plotLimits[1][1])
-            YPos = plotLimits[2][2] + scalePos[2]*(plotLimits[2][2]-plotLimits[2][1])
-            ZPos = plotLimits[3][2] + scalePos[3]*(plotLimits[3][2]-plotLimits[3][1])
-        end
         # Display scale
-        scaleString = "Scale: $(string(scale))×"
+        scaleString = "Deformation scale: $(string(scale))×"
         if isPlane
-            annotate!(XPos, YPos, text(scaleString, 8))
+            annotate!(scalePos[1], scalePos[2], text(scaleString, 8))
         else
             plot!([NaN], [NaN], c=:white, lw=0, label=scaleString)
         end

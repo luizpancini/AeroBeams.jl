@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot deformed state
-deformationPlot = plot_steady_deformation(problem,scale=1e2,scalePos=[0.1;-0.7;0.05],showScale=true,save=true,savePath=string(relPath,"/midLoadedBeamTrim_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,scale=1e2,scalePos=[0.2;0.2],showScale=true,save=true,savePath=string(relPath,"/midLoadedBeamTrim_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations

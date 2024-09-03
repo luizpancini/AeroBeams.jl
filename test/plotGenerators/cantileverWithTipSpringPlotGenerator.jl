@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot deformed state
-deformationPlot = plot_steady_deformation(problem,scale=1e2,showScale=true,scalePos=[0.4,-0.9,0],save=true,savePath=string(relPath,"/distributedLoadCantilever_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,scale=1e2,showScale=true,scalePos=[0.25,-0.45],save=true,savePath=string(relPath,"/distributedLoadCantilever_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations

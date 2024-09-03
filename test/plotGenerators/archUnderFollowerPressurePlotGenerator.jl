@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/archUnderFollowerPressure_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,scale=10,showScale=true,scalePos=[0.5,2.2],save=true,savePath=string(relPath,"/archUnderFollowerPressure_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations

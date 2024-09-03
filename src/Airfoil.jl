@@ -1609,7 +1609,7 @@ export create_Airfoil
 
 
 """
-    create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0)
+    create_flapped_Airfoil(; kwargs...)
 
 Airfoil constructor (with a trailing-edge flap) 
 
@@ -1621,7 +1621,7 @@ Airfoil constructor (with a trailing-edge flap)
 - `U::Number` = relative airspeed
 - `b::Number` = semichord
 """
-function create_flapped_Airfoil(;name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+function create_flapped_Airfoil(; name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
     coordinates = get_airfoil_coordinates(name)
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)

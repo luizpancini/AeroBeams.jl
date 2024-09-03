@@ -753,14 +753,14 @@ end
 
 
 """
-    solve_eigen!(problem::Problem)
+    solve_eigen!(problem::EigenProblem)
 
 Solves an eigenproblem 
 
 # Arguments
-- `problem::Problem`
+- `problem::EigenProblem`
 """
-function solve_eigen!(problem::Problem)
+function solve_eigen!(problem::EigenProblem)
 
     @unpack jacobian,inertia,frequencyFilterLimits,nModes = problem
        

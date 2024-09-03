@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,scale=1e2,showScale=true,scalePos=[0.1,-0.8,0],save=true,savePath=string(relPath,"/hingedSpringedBeam_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,scale=1e2,showScale=true,scalePos=[0.3,0.5],save=true,savePath=string(relPath,"/hingedSpringedBeam_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations
