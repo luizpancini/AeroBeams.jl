@@ -1,4 +1,7 @@
-using AeroBeams, Documenter, Literate, Plots, PyPlot, GR
+using AeroBeams, Documenter, Literate
+
+# Pre-install matplotlib
+import Plots; Plots.pyplot()
 
 DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
 
