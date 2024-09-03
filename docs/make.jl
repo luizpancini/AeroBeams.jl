@@ -5,23 +5,12 @@ DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true
 # Examples to be included in the documentation
 const included = ["archUnderDeadPressure.jl","archUnderFollowerPressure.jl"]
 
-# Preprocess function for Literate
-function replace_includes(str)
-
-    path = pkgdir(AeroBeams)*"/test/examples/"
-
-    for ex in included
-        content = read(path*ex, String)
-        str = replace(str, "include(\"$(ex)\")" => content)
-    end
-    return str
-end
-# Literate output md files
+# Literate .md files output
 for ex in included
     inputPath = pkgdir(AeroBeams)*"/test/examples/"*ex
     outputPath = "src/"
     exName = splitext(ex)[1]
-    Literate.markdown(inputPath, outputPath; name=exName)
+    Literate.markdown(inputPath, outputPath; name=exName, mdstrings=true, code=false)
 end
 
 # Make documentation
