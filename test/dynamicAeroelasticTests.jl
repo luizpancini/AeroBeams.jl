@@ -18,6 +18,7 @@ end
     @test Δu3 ≈ Δu3_ atol=SELFatol
 end
 
+## Reduce CI time
 # @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin
 #     include("examples/PazyWingContinuous1DGust.jl")
 #     # Self-comparison
@@ -33,6 +34,7 @@ end
 #     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
 # end
 
+## Reduce CI time
 # @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over space" begin
 #     include("examples/PazyWingContinuous1DSpaceGust.jl")
 #     # Self-comparison
@@ -63,6 +65,7 @@ end
     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
 end
 
+## Reduce CI time
 # @testset "Dynamic analysis of the Pazy wing encountering a DARPA gust" begin
 #     include("examples/PazyWingDARPAGust.jl")
 #     # Self-comparison
@@ -78,6 +81,7 @@ end
 #     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
 # end
 
+## Reduce CI time
 # @testset "Dynamic analysis of the Pazy wing encountering a one-minus-cosine gust" begin
 #     include("examples/PazyWingOMCGust.jl")
 #     # Self-comparison
@@ -93,6 +97,7 @@ end
 #     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
 # end
 
+## Reduce CI time
 # @testset "Dynamic analysis of the Pazy wing with a tip impulse force" begin
 #     include("examples/PazyWingTipImpulse.jl")
 #     # Self-comparison

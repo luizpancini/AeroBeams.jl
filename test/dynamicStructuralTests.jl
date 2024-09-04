@@ -276,6 +276,7 @@ end
     @test V3_tip ≈ V3_tip_ atol=SELFatol
 end
 
+# Reduce CI time
 # @testset "Dynamic analysis of a clamped beam with root sinusoidal oscillation (ω = 32 Hz ≈ 3rd bending mode)" begin
 #     include("examples/rootExcitationBeam2.jl")
 #     # Self-comparison
