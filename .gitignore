@@ -4,8 +4,8 @@
 /Manifest.toml
 /docs/Manifest.toml
 /docs/build/
-/test/newTestDataGenerators
+/test/newTestDataGenerators/
 /test/outputs/
-/test/plotGenerators
+/test/plotGenerators/
 /gr-temp
 /.vscode
