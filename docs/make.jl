@@ -1,6 +1,6 @@
 using AeroBeams, Documenter, Literate
 
-# Pre-install matplotlib
+# Set plot backend for documentation
 import Plots; Plots.pyplot()
 
 DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
