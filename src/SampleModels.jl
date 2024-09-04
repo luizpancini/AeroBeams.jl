@@ -898,7 +898,7 @@ function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustL
     # Concentrated fuselage inertias
     fConMass = 40
     fConMassOffset = 0.891968
-    fLeftConInertia = PointInertia(elementID=3,η=[fusLength/nElemFus/2;fConMassOffset;0],mass=fConMass)
+    fLeftConInertia = PointInertia(elementID=nElemFus,η=[fusLength/nElemFus/2;fConMassOffset;0],mass=fConMass)
     fRightConInertia = PointInertia(elementID=1,η=[-fusLength/nElemFus/2;fConMassOffset;0],mass=fConMass)
 
     # Fuselage beams

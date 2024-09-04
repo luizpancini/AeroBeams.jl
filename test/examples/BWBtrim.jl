@@ -1,16 +1,13 @@
 using AeroBeams, DelimitedFiles
 
-# Stiffness factor
-λ = 1e0
-
 # Aerodynamic solver
 aeroSolver = Indicial()
 
-# Tip loss option
-hasTipCorrection = true
+# Altitude
+h = 0e3*0.3048
 
 # Model 
-BWB = create_BWB(aeroSolver=aeroSolver,stiffnessFactor=λ,δElevIsTrimVariable=true,thrustIsTrimVariable=true,hasTipCorrection=hasTipCorrection)
+BWB = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h)
 
 # Set NR system solver 
 relaxFactor = 0.5
@@ -28,7 +25,7 @@ add_springs_to_beam!(beam=BWB.beams[2],springs=[spring1])
 add_springs_to_beam!(beam=BWB.beams[3],springs=[spring2])
 
 # Set airspeed range and initialize outputs
-URange = collect(30:5:160)
+URange = collect(90:2:140)
 trimAoA = Array{Float64}(undef,length(URange))
 trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))

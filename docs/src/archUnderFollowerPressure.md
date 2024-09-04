@@ -3,7 +3,7 @@ EditURL = "../../test/examples/archUnderFollowerPressure.jl"
 ```
 
 # Arch under follower pressure
-This example simulates the static response of an arch subjected to a normal (follower) pressure. It illustrates how to set up a steady structural problem for an initially curved beam subjected to follower distributed loads. The problem was defined by: ARGYRIS & SYMEONIDIS. "Nonlinear finite element analysis of elastic systems under nonconservative loading-natural formulation. Part I. Quasistatic problems" (1981)
+This example simulates the static response of a clamped arch subjected to a normal (follower) pressure. It illustrates how to set up a steady structural problem for an initially curved beam subjected to follower distributed loads. The problem was defined by: ARGYRIS & SYMEONIDIS. "Nonlinear finite element analysis of elastic systems under nonconservative loading-natural formulation. Part I. Quasistatic problems" (1981)
 
 Let's begin by loading the necessary packages.
 
@@ -90,7 +90,7 @@ nothing #hide
 nothing #hide
 ````
 
-Let's also plot the initial and final deformed shape of the arch (scale ten-fold), along with the boundary conditions. To do that, we simply call the `plot_steady_deformation()` function accordingly.
+Let's also plot the initial and final deformed shape of the arch (scaled ten-fold), along with the boundary conditions. To do that, we exploit AeroBeams' built-in visualization capabilities, by simply calling the `plot_steady_deformation()` function accordingly.
 
 ````@example archUnderFollowerPressure
 deformationPlot = plot_steady_deformation(problem,scale=10,showScale=true,scalePos=[0.5,2.2])

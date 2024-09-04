@@ -13,10 +13,10 @@ modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerr
 display(modesPlot)
 
 # Plot configurations
-colors = get(colorschemes[:rainbow], LinRange(0, 1, length(URange)))
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 lw = 2
 ms = 3
+msw = 0
 gr()
 
 # Trim root angle of attack vs airspeed
@@ -40,7 +40,7 @@ savefig(string(absPath,"/BWBflutter_delta.pdf"))
 # Root locus
 plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-20,5],ylims=[0,120])
 for mode in 1:nModes
-    scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
+    scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=msw, label=false)
 end
 display(plt4)
 savefig(string(absPath,"/BWBflutter_rootlocus.pdf"))
@@ -48,11 +48,11 @@ savefig(string(absPath,"/BWBflutter_rootlocus.pdf"))
 # V-g-f
 plt51 = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=[0,120])
 for mode in 1:nModes
-    scatter!(URange, modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=0,  label=false)
+    scatter!(URange, modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=msw,  label=false)
 end
 plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[URange[1],URange[end]], ylims=[-10,5])
 for mode in 1:nModes
-    scatter!(URange, modeDampings[mode], c=modeColors[mode], ms=ms, msw=0, label=false)
+    scatter!(URange, modeDampings[mode], c=modeColors[mode], ms=ms, msw=msw, label=false)
 end
 plt5 = plot(plt51,plt52, layout=(2,1))
 display(plt5)
