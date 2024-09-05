@@ -697,7 +697,7 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
         if frequencyLabel == "frequency"
             label = string("Mode $(m): ω = $(round(γ*freqs[m],sigdigits=3)) ", units.frequency)
         elseif frequencyLabel == "frequency&damping"
-            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],sigdigits=3)) ", units.frequency)
+            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],sigdigits=3))i", units.frequency)
         end
         plot!([NaN],[NaN], c=modeColors[m], lw=lw, label=label)
     end
