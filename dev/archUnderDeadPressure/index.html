@@ -102,22 +102,22 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)</c
 solve!(problem)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(true, true, 0.02)</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>We are interested in the behavior of the arch&#39;s midpoint transverse displacement (in the x3 direction) as a function of the load. So we can get solution at all partial load steps. The array of the partial load factors is <code>σVector</code>, and the corresponding midpoint displacements are <code>mid_u3</code></p><pre><code class="language-julia hljs">σVector = problem.savedσ
 mid_u3 = [problem.nodalStatesOverσ[i][div(nElem,2)].u_n2[3] for i in 1:length(σVector)]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">51-element Vector{Float64}:
   0.0
- -0.0007155464212285897
- -0.0014498445279344796
- -0.0022037875338596293
- -0.002978327624096221
- -0.0037744810105011482
- -0.004593333527638044
- -0.0054360468393469565
- -0.006303865336800168
- -0.0071981238216524595
+ -0.0007155464212285834
+ -0.0014498445279344733
+ -0.002203787533859622
+ -0.0029783276240962176
+ -0.003774481010501153
+ -0.004593333527638074
+ -0.005436046839346952
+ -0.006303865336800167
+ -0.007198123821652472
   ⋮
- -0.07611467574546738
- -0.08174886847069268
- -0.08809393123634339
- -0.09533396628339771
- -0.10373824841998222
- -0.11372721804307778
- -0.12602285563972493
- -0.14207016743427034
- -0.16577368187033645</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Saturday 7 September 2024 17:28">Saturday 7 September 2024</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ -0.07611467574546735
+ -0.08174886847069274
+ -0.08809393123634338
+ -0.09533396628339767
+ -0.10373824841998214
+ -0.11372721804307798
+ -0.12602285563972507
+ -0.14207016743427037
+ -0.1657736818703367</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Saturday 7 September 2024 17:30">Saturday 7 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
