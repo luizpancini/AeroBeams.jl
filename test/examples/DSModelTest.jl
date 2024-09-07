@@ -6,12 +6,18 @@ aeroSolver = BLi()
 # Derivation method
 derivationMethod = AD()
 
+# Atmosphere 
+altitude = 0
+atmosphere = standard_atmosphere(altitude)
+
 # Frame data
+airfoil = deepcopy(NACA0012)
 a₀ = 0.20944
 a₁ = 0.17279
 b = 0.305
 k = 0.098
-U = 102.34
+Ma = 0.301
+U = Ma*atmosphere.a
 
 # Pitch profile
 ω = k*U/b
@@ -21,8 +27,11 @@ t₀ = -τ/4
 p = t -> 4*tan(θ(t)/4)
 pdot = t -> ForwardDiff.derivative(p,t)
 
+# Update airfoil parameters
+update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=b)
+
 # Aerodynamic surface
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=deepcopy(NACA0012),c=2*b,normSparPos=0.25,updateAirfoilParameters=false)
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=2*b,normSparPos=0.25,updateAirfoilParameters=false)
 
 # Wing
 L = 1.0

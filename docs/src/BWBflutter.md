@@ -3,9 +3,10 @@ EditURL = "../../test/examples/BWBflutter.jl"
 ```
 
 # Flutter of a Blended-Wing-Body
-This example illustrates how to set up a flutter analysis of an aircraft in free flight. For that we take the Blended-Wing-Body vehicle, a swept flying-wing with trailing-edge control surfaces. This aircraft model was described in [Weihua Su's PhD thesis](https://www.proquest.com/docview/304572531?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses):
+This example illustrates how to set up a flutter analysis of an aircraft in free flight. For that we take a Blended-Wing-Body (BWB) vehicle, a swept flying-wing with trailing-edge control surfaces. This aircraft model was described in [Weihua Su's PhD thesis](https://www.proquest.com/docview/304572531?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses):
 
-![BWB Image](assets/BWB.png)
+![](assets/BWB.png)
+*BWB model geometry*
 
 ### Problem setup
 Let's begin by setting up the variables of our problem.

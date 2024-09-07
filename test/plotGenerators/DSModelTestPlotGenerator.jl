@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,view=(30,30),plotLimits=[(0,L),(-L/2,L/2),(-L/2,L/2)],save=true,savePath=string(relPath,"/DSModelTest_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,refBasis="A",plotFrequency=50,view=(30,30),plotLimits=[(0,L),(-L/2,L/2),(-L/2,L/2)],save=true,savePath=string(relPath,"/DSModelTest_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 nTotalAeroStates = problem.model.elements[1].aero.nTotalAeroStates

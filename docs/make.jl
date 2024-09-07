@@ -6,7 +6,7 @@ import Plots; Plots.pyplot()
 DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
 
 # Examples to be included in the documentation
-const included = ["archUnderFollowerPressure.jl","BWBflutter.jl"]
+global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","conventionalHALECheckedPitchManeuver.jl"]
 
 # Literate .md files output
 for ex in included
@@ -31,7 +31,8 @@ makedocs(;
         "Home" => "index.md",
         "Examples" => [
         "Arch under follower pressure" => "archUnderFollowerPressure.md",
-        "Flutter of a Blended-Wing-Body" => "BWBflutter.md"
+        "Flutter of a Blended-Wing-Body" => "BWBflutter.md",
+        "Pitch maneuver of a HALE aircraft" => "conventionalHALECheckedPitchManeuver.md"
         ],
         "Public API" => "publicAPI.md"
     ],

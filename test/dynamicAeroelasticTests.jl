@@ -1,15 +1,24 @@
 # Dynamic aeroelastic problems
 
-@testset "Dynamic analysis the conventional HALE aircraft undergoing a checked pitch maneuver" begin
-    include("examples/conventionalHALECheckedPitchManeuver.jl")
+@testset "Dynamic analysis of the Blended-Wing-Body vehicle undergoing a checked pitch maneuver" begin
+    include("examples/BWBcheckedPitchManeuver.jl")
     # Self-comparison
-    rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "rootAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
+    rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "rootAoA.txt"))
+    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "Deltau3.txt"))
     @test rootAoA ≈ rootAoA_ atol=SELFatol
     @test Δu3 ≈ Δu3_ atol=SELFatol
 end
 
-@testset "Dynamic analysis the Helios flying-wing undergoing a checked pitch maneuver" begin
+@testset "Dynamic analysis of the conventional HALE aircraft undergoing a checked pitch maneuver" begin
+    include("examples/conventionalHALECheckedPitchManeuver.jl")
+    # Self-comparison
+    wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "wingAoA.txt"))
+    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
+    @test wingAoA ≈ wingAoA_ atol=SELFatol
+    @test Δu3 ≈ Δu3_ atol=SELFatol
+end
+
+@testset "Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver" begin
     include("examples/heliosCheckedPitchManeuver.jl")
     # Self-comparison
     rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosCheckedPitchManeuver", "rootAoA.txt"))

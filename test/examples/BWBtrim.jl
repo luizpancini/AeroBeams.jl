@@ -25,7 +25,7 @@ add_springs_to_beam!(beam=BWB.beams[2],springs=[spring1])
 add_springs_to_beam!(beam=BWB.beams[3],springs=[spring2])
 
 # Set airspeed range and initialize outputs
-URange = collect(90:2:140)
+URange = collect(30:5:160)
 trimAoA = Array{Float64}(undef,length(URange))
 trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))

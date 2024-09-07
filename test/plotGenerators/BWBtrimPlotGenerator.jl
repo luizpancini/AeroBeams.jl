@@ -1,7 +1,7 @@
 using Plots
 
 # Run the script
-include("../examples/BWBtrim.jl")
+# include("../examples/BWBtrim.jl")
 
 # Set paths
 relPath = "/test/outputs/figures/BWBtrim"
@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,ΔuDef=[0;0;-167],view=(45,30),save=true,savePath=string(relPath,"/BWBtrim_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,ΔuDef=[0;0;-218],view=(45,30),save=true,savePath=string(relPath,"/BWBtrim_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations

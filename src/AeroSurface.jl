@@ -83,7 +83,7 @@ Aerodynamic surface constructor
 - `tipLossDecayFactor::Float64` = respective tip loss factor
 - `smallAngles::Bool` = flag to employ small angles approximation on the calculation of the angle of attack
 """
-function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
+function create_AeroSurface(; solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
 
     # Validate
     if c isa Number
@@ -116,9 +116,9 @@ function create_AeroSurface(;solver::AeroSolver=Indicial(),flapLoadsSolver::Flap
         flapSiteID = round(Int,100*normFlapPos)
     end
 
-    # Update airfoil and Theodorsen parameters with known flap position
+    # Update airfoil flap parameters and Theodorsen parameters with known flap position
     if !isnothing(flapSiteID)
-        airfoil = create_flapped_Airfoil(name=airfoil.name,flapSiteID=flapSiteID)
+        airfoil.flapParameters = FlapParameters(airfoil.name; flapSiteID=flapSiteID)
         if typeof(flapLoadsSolver) == ThinAirfoilTheory
             flapLoadsSolver.Th = theodorsen_flap_constants(normSparPos,normFlapPos)
         end

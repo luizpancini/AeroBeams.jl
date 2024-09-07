@@ -9,12 +9,9 @@
 # - `ϵₘ::Number`
 # - `η::Number`
 # - `cd₀::Number`
-# - `cdδ::Number`
 # - `cm₀::Number`
 # - `cmα::Number`
-# - `cmδ::Number`
 # - `cnα::Number`
-# - `cnδ::Number`
 #
 @with_kw mutable struct AttachedFlowParameters
 
@@ -23,14 +20,11 @@
     ϵₘ::Number
     η::Number
     cd₀::Number
-    cdδ::Number
     cm₀::Number
     cmα::Number
-    cmδ::Number
     cnα::Number
-    cnδ::Number
 
-    function AttachedFlowParameters(name::String; Re::Number=0,Ma::Number=0,flapSiteID::Int64=100)
+    function AttachedFlowParameters(name::String; Re::Number=0,Ma::Number=0)
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["flatPlate","NACA0002","NACA0006"]
@@ -47,17 +41,6 @@
             cm₀Rng =  1e-3*[  0.0;   0.0]
             cmαRng =       [  0.0;   0.0]
             cnαRng =  2π/β*[  1.0;   1.0]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =  0.25*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =  1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
         elseif name in ["NACA0012"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.035,min(0.3,Ma))
@@ -72,13 +55,6 @@
             cm₀Rng =  1e-3*[    0;   -14;    -5;    -5;    -5;   -5;   -5;   -5]
             cmαRng =       [  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
             cnαRng =  2π/β*[1.049; 0.972; 0.998; 0.995; 0.980; 1.00; 1.00; 1.00]
-            if flapSiteID == 100
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
         elseif name in ["NACA0015","NACA0018"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.062,min(0.15,Ma))
@@ -93,17 +69,6 @@
             cm₀Rng =  1e-3*[ -1.0;   2.0;   2.0;   1.0]
             cmαRng =       [  0.0;   0.0;   0.0;   0.0]
             cnαRng =  2π/β*[  1.0;   1.0;   1.0;   1.0]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -118,17 +83,6 @@
             cm₀Rng =  1e-2*[    5.0;     5.0]
             cmαRng =       [-0.0573; -0.0573]
             cnαRng =    2π*[   1.08;    1.08]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
         elseif name in ["HeliosWingAirfoil"]
             # Bound Mach 
             Ma = max(0.001,min(0.3,Ma))
@@ -141,18 +95,7 @@
             cd₀Rng =  1e-2*[  1.0; 1.0]  
             cm₀Rng =  1e-2*[  2.5; 2.5]
             cmαRng =       [  0.0; 0.0]
-            cnαRng =    2π*[  1.0; 1.0] 
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end     
+            cnαRng =    2π*[  1.0; 1.0]     
         elseif name in ["HeliosPodAirfoil"]
             # Bound Mach 
             Ma = max(0.001,min(0.3,Ma))
@@ -166,13 +109,6 @@
             cm₀Rng =  1e-3*[  0.0; 0.0]
             cmαRng =       [  0.0; 0.0]
             cnαRng =       [  5.0; 5.0] 
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
         elseif name in ["BWBAirfoil"] 
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.01,min(0.3,Ma))
@@ -187,17 +123,6 @@
             cm₀Rng =  1e-1*[ 1.0; 1.0]
             cmαRng =       [ 0.0; 0.0]
             cnαRng =  2π/β*[ 1.0; 1.0]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =  0.0123*ones(length(MaRng))
-                cmδRng = -0.4610*ones(length(MaRng))
-                cnδRng =  3.5180*ones(length(MaRng))  
-            else
-                error("Unavailable flap site ID")
-            end
         else
             error("Airfoil not listed")
         end
@@ -208,14 +133,11 @@
         ϵₘ  = interpolate(MaRng,ϵₘRng,Ma)
         η   = interpolate(MaRng,ηRng,Ma)
         cd₀ = interpolate(MaRng,cd₀Rng,Ma)
-        cdδ = interpolate(MaRng,cdδRng,Ma)
         cm₀ = interpolate(MaRng,cm₀Rng,Ma)
         cmα = interpolate(MaRng,cmαRng,Ma)
-        cmδ = interpolate(MaRng,cmδRng,Ma)
         cnα = interpolate(MaRng,cnαRng,Ma)
-        cnδ = interpolate(MaRng,cnδRng,Ma)
 
-        return new(α₀N,ϵₙ,ϵₘ,η,cd₀,cdδ,cm₀,cmα,cmδ,cnα,cnδ)
+        return new(α₀N,ϵₙ,ϵₘ,η,cd₀,cm₀,cmα,cnα)
     end
 
 end
@@ -273,11 +195,8 @@ end
 # - `ξ::Number`
 # - `ζₐ::Number`
 # - `cd₀::Number`
-# - `cdδ::Number`
 # - `cm₀::Number`
-# - `cmδ::Number`
 # - `cnα::Number`
-# - `cnδ::Number`
 # - `dt::Number`
 # - `dm::Number`
 # - `E₀::Number`
@@ -363,11 +282,8 @@ end
     ξ::Number
     ζₐ::Number
     cd₀::Number
-    cdδ::Number
     cm₀::Number
-    cmδ::Number
     cnα::Number
-    cnδ::Number
     dt::Number
     dm::Number
     E₀::Number
@@ -405,7 +321,7 @@ end
     zm::Number
     λbWMat::Matrix{Float64}
     
-    function BLiParameters(name::String; Re::Number=0,Ma::Number=0,flapSiteID::Int64=100,U::Number=0,b::Number=0)
+    function BLiParameters(name::String; Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["NACA0012"]
@@ -497,17 +413,6 @@ end
             ztdRng =        [0.79;  1.18;  1.25;  1.13;  1.26; 1.23; 1.00; 1.00]
             ztuRng =        [1.00;  1.00;  1.00;  1.00;  1.00; 1.00; 1.00; 1.00]
             zmRng =         [2.31;  2.02;  2.50;  1.68;  1.47; 1.49; 1.48; 1.25]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
             # Fixed parameters
             λbWMat = Diagonal([2.5; 0.8])
         elseif name in ["NACA0012-GU","NACA0015","NACA0015-s"]
@@ -599,17 +504,6 @@ end
             ztdRng =               [1.00;    0.55;    1.35]
             ztuRng =               [0.00;    0.00;    0.00]
             zmRng =                [1.59;    1.65;    1.84]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
             # Fixed parameters
             λbWMat = Diagonal([2.5; 0.8])
         elseif name in ["NACA0018"]
@@ -701,17 +595,6 @@ end
             ztdRng =               [0.35;   0.50;    0.30;    0.30]
             ztuRng =               [0.00;   0.00;    0.00;    0.00]
             zmRng =                [2.30;   3.84;    2.83;    2.97]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
             # Fixed parameters
             λbWMat = Diagonal([1.0; 1.0])
         elseif name in ["NACA23012A"]
@@ -803,17 +686,6 @@ end
             ztdRng =               [1.38;     1.38]
             ztuRng =               [0.10;     0.10]
             zmRng =                [1.72;     1.72]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
             # Fixed parameters
             λbWMat = Diagonal([1.0; 1.0])
         elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
@@ -905,17 +777,6 @@ end
             ztdRng =               [1.0;     1.0]
             ztuRng =               [0.0;     0.0]
             zmRng =                [1.0;     1.0]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))    
-            else
-                error("Unavailable flap site ID")
-            end
             # Fixed parameters
             λbWMat = Diagonal([1.0; 1.0])
         else
@@ -969,11 +830,8 @@ end
         ξ = interpolate(MaRng,ξRng,Ma)
         ζₐ = interpolate(MaRng,ζₐRng,Ma)
         cd₀ = interpolate(MaRng,cd₀Rng,Ma)
-        cdδ = interpolate(MaRng,cdδRng,Ma)
         cm₀ = interpolate(MaRng,cm₀Rng,Ma)
-        cmδ = interpolate(MaRng,cmδRng,Ma)
         cnα = interpolate(MaRng,cnαRng,Ma)
-        cnδ = interpolate(MaRng,cnδRng,Ma)
         dt = interpolate(MaRng,dtRng,Ma)
         dm = interpolate(MaRng,dmRng,Ma)
         E₀ = interpolate(MaRng,E₀Rng,Ma)
@@ -1019,7 +877,7 @@ end
             Tv₂ *= b/U
         end
 
-        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cdδ,cm₀,cmδ,cnα,cnδ,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tg,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,λbWMat)
+        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cm₀,cnα,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tg,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,λbWMat)
     end
 
 end
@@ -1037,12 +895,9 @@ end
 # - `ϵₘ::Number`
 # - `η::Number`
 # - `cd₀::Number`
-# - `cdδ::Number`
 # - `cm₀::Number`
-# - `cmδ::Number`
 # - `cn₁::Number`
 # - `cnα::Number`
-# - `cnδ::Number`
 # - `Df::Number`
 # - `E₀::Number`
 # - `f₀::Number`
@@ -1066,12 +921,9 @@ end
     ϵₘ::Number
     η::Number
     cd₀::Number
-    cdδ::Number
     cm₀::Number
-    cmδ::Number
     cn₁::Number
     cnα::Number
-    cnδ::Number
     Df::Number
     E₀::Number
     f₀::Number
@@ -1086,7 +938,7 @@ end
     Tv₀::Number
     TvL::Number
     
-    function BLoParameters(name::String; Re::Number=0,Ma::Number=0,flapSiteID::Int64=100,U::Number=0,b::Number=0)
+    function BLoParameters(name::String; Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["NACA0012"]
@@ -1118,17 +970,6 @@ end
             TpRng = [1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.8; 2.0; 2.5; 3.0; 3.3; 4.3]
             Tv₀Rng = [6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 4.0]
             TvLRng = [4.0; 5.0; 5.0; 5.0; 5.0; 5.0; 5.0; 9.0; 9.0; 9.0; 9.0; 9.0; 9.0]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))
-            else
-                error("Unavailable flap site ID")
-            end
         elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","NACA23012A","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -1158,17 +999,6 @@ end
             TpRng = [1.7; 1.7]
             Tv₀Rng = [6.0; 6.0]
             TvLRng = [5.0; 5.0]
-            if flapSiteID == 100
-                cdδRng = 0.0*ones(length(MaRng))
-                cmδRng = 0.0*ones(length(MaRng))
-                cnδRng = 0.0*ones(length(MaRng))
-            elseif flapSiteID == 75
-                cdδRng =   0.0*ones(length(MaRng))
-                cmδRng = -0.25*ones(length(MaRng))
-                cnδRng =   1.0*ones(length(MaRng))    
-            else
-                error("Unavailable flap site ID")
-            end
         else
             error("Airfoil not listed")
         end
@@ -1181,12 +1011,9 @@ end
         ϵₘ = interpolate(MaRng,ϵₘRng,Ma)
         η = interpolate(MaRng,ηRng,Ma)
         cd₀ = interpolate(MaRng,cd₀Rng,Ma)
-        cdδ = interpolate(MaRng,cdδRng,Ma)
         cm₀ = interpolate(MaRng,cm₀Rng,Ma)
-        cmδ = interpolate(MaRng,cmδRng,Ma)
         cn₁ = interpolate(MaRng,cn₁Rng,Ma)
         cnα = interpolate(MaRng,cnαRng,Ma)
-        cnδ = interpolate(MaRng,cnδRng,Ma)
         Df = interpolate(MaRng,DfRng,Ma)
         E₀ = interpolate(MaRng,E₀Rng,Ma)
         f₀ = interpolate(MaRng,f₀Rng,Ma)
@@ -1209,9 +1036,120 @@ end
             TvL *= b/U
         end
 
-        return new(α₀N,α1₀,δα,ϵₙ,ϵₘ,η,cd₀,cdδ,cm₀,cmδ,cn₁,cnα,cnδ,Df,E₀,f₀,fb,K₀,K₁,K₂,S1,S2,Tf₀,Tp,Tv₀,TvL)
+        return new(α₀N,α1₀,δα,ϵₙ,ϵₘ,η,cd₀,cm₀,cn₁,cnα,Df,E₀,f₀,fb,K₀,K₁,K₂,S1,S2,Tf₀,Tp,Tv₀,TvL)
     end
 
+end
+
+
+# @with_kw mutable struct FlapParameters
+
+#     FlapParameters composite type
+
+# Fields
+# - `cdδ::Number`
+# - `cmδ::Number`
+# - `cnδ::Number`
+# 
+@with_kw mutable struct FlapParameters
+
+    cdδ::Number
+    cmδ::Number
+    cnδ::Number
+
+    function FlapParameters(name::String; flapSiteID::Int64)
+
+        # Airfoil flap parameters
+        if name in ["flatPlate","NACA0002","NACA0006"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.25
+                cmδ = -0.25
+                cnδ =  1.0
+            else
+                error("Unavailable flap site ID")
+            end
+        elseif name in ["NACA0012"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.25
+                cmδ = -0.25
+                cnδ =  1.0
+            else
+                error("Unavailable flap site ID")
+            end
+        elseif name in ["NACA0015","NACA0018"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.25
+                cmδ = -0.25
+                cnδ =  1.0
+            else
+                error("Unavailable flap site ID")
+            end
+        elseif name in ["NACA23012A"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.0
+                cmδ = -0.25
+                cnδ =  1.0
+            else
+                error("Unavailable flap site ID")
+            end
+        elseif name in ["HeliosWingAirfoil"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.0
+                cmδ = -0.25
+                cnδ =  1.0
+            else
+                error("Unavailable flap site ID")
+            end    
+        elseif name in ["HeliosPodAirfoil"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.0
+                cmδ = -0.25
+                cnδ =  1.0
+            else
+                error("Unavailable flap site ID")
+            end
+        elseif name in ["BWBAirfoil"] 
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.0123
+                cmδ = -0.4610
+                cnδ =  3.5180
+            else
+                error("Unavailable flap site ID")
+            end
+        else
+            error("Airfoil not listed")
+        end
+
+        return new(cdδ,cmδ,cnδ)
+    end
 end
 
 
@@ -1579,6 +1517,7 @@ end
     attachedFlowParameters::AttachedFlowParameters
     parametersBLi::BLiParameters
     parametersBLo::BLoParameters
+    flapParameters::FlapParameters
 
 end
 export Airfoil
@@ -1602,8 +1541,9 @@ function create_Airfoil(; name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
     parametersBLi = BLiParameters(name,Re=Re,Ma=Ma,U=U,b=b)
     parametersBLo = BLoParameters(name,Re=Re,Ma=Ma,U=U,b=b)
+    flapParameters = FlapParameters(name,flapSiteID=100)
 
-    return Airfoil(name,coordinates,attachedFlowParameters,parametersBLi,parametersBLo)
+    return Airfoil(name,coordinates,attachedFlowParameters,parametersBLi,parametersBLo,flapParameters)
 end
 export create_Airfoil
 
@@ -1624,13 +1564,38 @@ Airfoil constructor (with a trailing-edge flap)
 function create_flapped_Airfoil(; name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
 
     coordinates = get_airfoil_coordinates(name)
-    attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)
-    parametersBLi = BLiParameters(name,Re=Re,Ma=Ma,U=U,b=b,flapSiteID=flapSiteID)
-    parametersBLo = BLoParameters(name,Re=Re,Ma=Ma,U=U,b=b,flapSiteID=flapSiteID)
+    attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
+    parametersBLi = BLiParameters(name,Re=Re,Ma=Ma,U=U,b=b)
+    parametersBLo = BLoParameters(name,Re=Re,Ma=Ma,U=U,b=b)
+    flapParameters = FlapParameters(name,flapSiteID=flapSiteID)
     
-    return Airfoil(name,coordinates,attachedFlowParameters,parametersBLi,parametersBLo)
+    return Airfoil(name,coordinates,attachedFlowParameters,parametersBLi,parametersBLo,flapParameters)
 end
 export create_flapped_Airfoil
+
+
+"""
+    update_Airfoil_params!(airfoil::Airfoil; kwargs...)
+
+Updates the airfoil parameters
+
+# Arguments
+- `airfoil::Airfoil`
+
+# Keyword arguments
+- `Re::Number` = Reynolds number
+- `Ma::Number` = Mach number
+- `U::Number` = reference relative airspeed
+- `b::Number` = reference semichord
+"""
+function update_Airfoil_params!(airfoil::Airfoil; Re::Number=0,Ma::Number=0,U::Number,b::Number)
+
+    airfoil.attachedFlowParameters = AttachedFlowParameters(airfoil.name,Re=Re,Ma=Ma)
+    airfoil.parametersBLi = BLiParameters(airfoil.name,Re=Re,Ma=Ma,U=U,b=b)
+    airfoil.parametersBLo = BLoParameters(airfoil.name,Re=Re,Ma=Ma,U=U,b=b)
+
+end
+export update_Airfoil_params!
 
 
 # Sample airfoils

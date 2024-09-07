@@ -187,6 +187,9 @@ function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAe
     @assert tipMass >= 0
     @assert length(ξtipMass) == 3
 
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
+
     # Fixed geometrical and discretization properties
     nElem,L,chord,normSparPos = geometrical_properties_Pazy()
 
@@ -204,6 +207,9 @@ function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAe
 
     # Rotation parameters from basis A to basis b
     p0 = upright ? [-Λ; -π/2; θ] : [-Λ; 0; θ]
+
+    # Update airfoil parameters
+    update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
 
     # Aerodynamic surface
     surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=τ,updateAirfoilParameters=updateAirfoilParameters)
@@ -250,10 +256,11 @@ Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 - `hingeAngle::Number` = hinge (fold) angle
 - `flareAngle::Number` = flare angle
 - `kSpring::Number` = stiffness of the hinge
-- `g::Number=0` = local acceleration of gravity
+- `g::Number` = local acceleration of gravity
+- `altitude::Real` = altitude
 - `airspeed::Number` = local airspeed
 """
-function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=0,airspeed::Number)
+function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,GAy::Number=1e16,GAz::Number=GAy,hingeNode::Int64=14,hingeAngle::Number=0,flareAngle::Number=10,kSpring::Number=1e6,g::Number=-9.80665,altitude::Real=0,airspeed::Number)
 
     @assert 2 <= hingeNode <= 15 "hingeNode must be between 2 and 15"
     @assert -3π/4 <= hingeAngle <= 3π/4 "set hingeAngle between -3π/4 and 3π/4 "
@@ -261,6 +268,9 @@ function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepco
     @assert kSpring >= 0
     @assert g >= 0
     @assert airspeed >= 0
+
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
 
     # Total length 
     L = 0.549843728
@@ -297,6 +307,9 @@ function create_PazyFFWT(; p0::Vector{<:Number}=zeros(3),airfoil::Airfoil=deepco
     normSparPos1 = normSparPos
     normSparPos2 = x1 -> normSparPos + x1*tand(flareAngle)/chord
     @assert 0 < normSparPos2(L2) < 1 "flareAngle is too large for the specified hingeNode"
+
+    # Update airfoil parameters
+    update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
 
     # Aerodynamic surfaces
     surf1 = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos1,hasTipCorrection=withTipCorrection)
@@ -358,9 +371,13 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAer
     @assert altitude >= 0
     @assert airspeed >= 0
 
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
+
     # Wing surface
     chord = 1
     normSparPos = 0.5
+    update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
     wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=updateAirfoilParameters)
 
     # Wing properties
@@ -402,20 +419,26 @@ Returns the wing model
 - `airfoil::Airfoil` = airfoil section
 - `θ::Real` = pitch angle
 - `nElem::Int64` = number of elements for discretization
+- `altitude::Real` = altitude
 - `airspeed::Real` = airspeed
 - `g::Real` = acceleration of gravity
 - `∞::Real` = value of rigid structural properties
 """
-function create_TDWing(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),updateAirfoilParameters::Bool=true,airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,nElem::Int64=20,airspeed::Real=0,g::Real=9.80665,∞::Real=1e6)
+function create_TDWing(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),updateAirfoilParameters::Bool=true,airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,nElem::Int64=20,altitude::Real=0,airspeed::Real=0,g::Real=9.80665,∞::Real=1e6)
 
     # Validate
     @assert -π/2 <= θ <= π/2
     @assert nElem > 1
+    @assert altitude >= 0
     @assert airspeed >= 0
+
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
 
     # Wing surface
     chord = 0.0508
     normSparPos = 0.5
+    update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
     wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=updateAirfoilParameters)
 
     # Wing properties
@@ -497,11 +520,15 @@ function create_Helios(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),de
         thrust = t -> thrustConst
     end
 
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
+
     # Wing surface
     wChord = reducedChord ? 7*0.3048 : 8*0.3048
     wNormSparPos = 0.25
     wNormFlapPos = 0.75
     wNormFlapSpan = [0,1]
+    update_Airfoil_params!(wingAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=wChord/2)
     wingSurf = δIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=wingAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,δ=δ,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=wingAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,δIsTrimVariable=δIsTrimVariable,updateAirfoilParameters=false)
 
     # Wing properties
@@ -543,6 +570,7 @@ function create_Helios(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),de
     add_point_inertias_to_beam!(rightWingStraight,inertias=[rightSidePod])
 
     # Pod surface
+    update_Airfoil_params!(podAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=wChord/2)
     podSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=podAirfoil,c=wChord,normSparPos=wNormSparPos,updateAirfoilParameters=false)
 
     # Pod properties
@@ -666,6 +694,9 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
         thrust = t -> thrustConst
     end
 
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
+
     # Wing airfoil
     wAirfoil = deepcopy(flatPlate)
 
@@ -674,11 +705,16 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     wNormSparPos = 0.5
     wNormFlapPos = 0.75
     wNormFlapSpan = [0.75,1]
+    update_Airfoil_params!(wAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=wChord/2)
     wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,updateAirfoilParameters=false)
+
+    # Override wing airfoil parameters
     wingSurf.airfoil.attachedFlowParameters.cd₀ = wingCd0
-    wingSurf.airfoil.attachedFlowParameters.cnδ = wingcnδ
-    wingSurf.airfoil.attachedFlowParameters.cmδ = wingcmδ
-    wingSurf.airfoil.attachedFlowParameters.cdδ = wingcdδ
+    wingSurf.airfoil.parametersBLi.cd₀ = wingCd0
+    wingSurf.airfoil.parametersBLo.cd₀ = wingCd0
+    wingSurf.airfoil.flapParameters.cnδ = wingcnδ
+    wingSurf.airfoil.flapParameters.cmδ = wingcmδ
+    wingSurf.airfoil.flapParameters.cdδ = wingcdδ
 
     # Wing properties
     Lw = 16
@@ -727,11 +763,16 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     hNormSparPos = 0.5
     hNormFlapPos = 0.75
     hNormFlapSpan = [0,1]
+    update_Airfoil_params!(sAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=hChord/2)
     hsSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δ=δElev,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=false)
+
+    # Override horizontal stabilizer airfoil parameters
     hsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
-    hsSurf.airfoil.attachedFlowParameters.cnδ = stabscnδ
-    hsSurf.airfoil.attachedFlowParameters.cmδ = stabscmδ
-    hsSurf.airfoil.attachedFlowParameters.cdδ = stabscdδ
+    hsSurf.airfoil.parametersBLi.cd₀ = stabsCd0
+    hsSurf.airfoil.parametersBLo.cd₀ = stabsCd0
+    hsSurf.airfoil.flapParameters.cnδ = stabscnδ
+    hsSurf.airfoil.flapParameters.cmδ = stabscmδ
+    hsSurf.airfoil.flapParameters.cdδ = stabscdδ
 
     # Horizontal stabilizer beam
     Lh = 5
@@ -747,11 +788,16 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     vNormSparPos = 0.5
     vNormFlapPos = 0.75
     vNormFlapSpan = [0,1]
+    update_Airfoil_params!(sAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=vChord/2)
     vsSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,updateAirfoilParameters=false)
+
+    # Override vertical stabilizer airfoil parameters
     vsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
-    vsSurf.airfoil.attachedFlowParameters.cnδ = stabscnδ
-    vsSurf.airfoil.attachedFlowParameters.cmδ = stabscmδ
-    vsSurf.airfoil.attachedFlowParameters.cdδ = stabscdδ
+    vsSurf.airfoil.parametersBLi.cd₀ = stabsCd0
+    vsSurf.airfoil.parametersBLo.cd₀ = stabsCd0
+    vsSurf.airfoil.flapParameters.cnδ = stabscnδ
+    vsSurf.airfoil.flapParameters.cmδ = stabscmδ
+    vsSurf.airfoil.flapParameters.cdδ = stabscdδ
 
     # Vertical stabilizer beam
     Lv = 2.5
@@ -819,6 +865,9 @@ function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustL
         thrust = t -> thrustConst
     end
 
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
+
     # Keypoints
     kp1 = [0; -1.126236+1.126236; 0]
     kp2 = [0.889; -0.997712+1.126236; 0]
@@ -842,14 +891,18 @@ function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustL
     rootSparPos = 0.6438
     tipSparPos = 0.4560
 
+    # Airfoil
+    airfoil = deepcopy(BWBAirfoil)
+    update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=tipChord/2)
+
     # Wing surfaces
     wChord = tipChord
     wNormSparPos = tipSparPos
     wNormFlapPos = 0.75
 
-    leftWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor)
+    leftWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor)
 
-    rightWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor)
+    rightWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor)
 
     # Wing properties
     nElemWing = 8
@@ -884,9 +937,9 @@ function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustL
     leftFusSparPos = x1 -> tipSparPos + (rootSparPos-tipSparPos)*x1/fusLength
     rightFusSparPos = x1 -> rootSparPos + (tipSparPos-rootSparPos)*x1/fusLength
 
-    leftFusSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=-fΛ,c=leftFusChord,normSparPos=leftFusSparPos,updateAirfoilParameters=updateAirfoilParameters)
+    leftFusSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-fΛ,c=leftFusChord,normSparPos=leftFusSparPos,updateAirfoilParameters=updateAirfoilParameters)
 
-    rightFusSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=deepcopy(BWBAirfoil),Λ=fΛ,c=rightFusChord,normSparPos=rightFusSparPos,updateAirfoilParameters=updateAirfoilParameters)
+    rightFusSurf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=fΛ,c=rightFusChord,normSparPos=rightFusSparPos,updateAirfoilParameters=updateAirfoilParameters)
 
     # Fuselage properties
     nElemFus = 3

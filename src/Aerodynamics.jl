@@ -241,30 +241,25 @@ end
 # Updates the aerodynamic parameters of the airfoil according to current nondimensional flow parameters 
 function update_airfoil_parameters!(problem::Problem,element::Element)
 
-    @unpack timeNow = problem
     @unpack solver,airfoil,updateAirfoilParameters,flapSiteID,b = element.aero
     @unpack name = airfoil
     @unpack Re,Ma = element.aero.flowParameters
     @unpack Uᵢ = element.aero.flowVelocitiesAndRates
 
-    if problem isa DynamicProblem
-        @unpack Δt,initialTime = problem
-    end
-
     # Skip if parameters are not to be updated
-    if (!(problem isa DynamicProblem) && !updateAirfoilParameters) || (problem isa DynamicProblem && !updateAirfoilParameters && timeNow > initialTime + Δt)
+    if !updateAirfoilParameters
         return
     end
     
     # Get airfoil parameters
     if typeof(solver) in [QuasiSteady,Indicial,Inflow]
-        attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID)
+        attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
         @pack! airfoil = attachedFlowParameters
     elseif typeof(solver) == BLi
-        parametersBLi = BLiParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID,U=Uᵢ,b=b)
+        parametersBLi = BLiParameters(name,Re=Re,Ma=Ma,U=Uᵢ,b=b)
         @pack! airfoil = parametersBLi
     elseif typeof(solver) == BLo
-        parametersBLo = BLoParameters(name,Re=Re,Ma=Ma,flapSiteID=flapSiteID,U=Uᵢ,b=b)
+        parametersBLo = BLoParameters(name,Re=Re,Ma=Ma,U=Uᵢ,b=b)
         @pack! airfoil = parametersBLo  
     end
 
@@ -305,7 +300,8 @@ function attached_flow_cn!(element::Element,δNow)
     @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid,smallAngles = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙdotMid = element.aero.flowVelocitiesAndRates
-    @unpack ϵₙ,cnα,cnδ = element.aero.airfoil.attachedFlowParameters
+    @unpack ϵₙ,cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack cnδ = element.aero.airfoil.flapParameters
 
     # Circulatory component
     cnC = smallAngles ? cnα * αₑ : cnα * sin(αₑ) * cos(αₑ)
@@ -337,7 +333,8 @@ function attached_flow_cm!(element::Element,δNow)
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack cnC = element.aero.aeroCoefficients
     @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
-    @unpack ϵₘ,cm₀,cmα,cmδ,cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack ϵₘ,cm₀,cmα,cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack cmδ = element.aero.airfoil.flapParameters
 
     # Circulatory component
     cmC = cm₀ + cmα * αₑ + cnC/ϖMid*(normSparPos-1/4)
@@ -371,7 +368,8 @@ function attached_flow_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid,smallAngles = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack η,cd₀,cdδ,cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack η,cd₀,cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack cdδ = element.aero.airfoil.flapParameters
 
     # Circulatory component
     ct = smallAngles ? -cd₀ + cnα * αₑ^2 : -cd₀/cos(αₑ) + η * cnα * sin(αₑ)^2
@@ -1090,7 +1088,8 @@ function BLi_cn!(element::Element,δNow)
     @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙdotMid = element.aero.flowVelocitiesAndRates
-    @unpack ϵₙ,cnα,cnδ = element.aero.airfoil.parametersBLi
+    @unpack ϵₙ,cnα = element.aero.airfoil.parametersBLi
+    @unpack cnδ = element.aero.airfoil.flapParameters
     @unpack f2primeN = element.aero.BLiStates
     @unpack cnV = element.aero.aeroCoefficients
 
@@ -1128,7 +1127,8 @@ function BLi_cm!(element::Element,δNow)
     @unpack αₑ = element.aero.flowAnglesAndRates
     @unpack cnF = element.aero.aeroCoefficients
     @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
-    @unpack ϵₘ,κ₀,κ₁,κ₂,κ₃,cm₀,cmδ,cnα,K₀,K₁,K₂ = element.aero.airfoil.parametersBLi
+    @unpack ϵₘ,κ₀,κ₁,κ₂,κ₃,cm₀,cnα,K₀,K₁,K₂ = element.aero.airfoil.parametersBLi
+    @unpack cmδ = element.aero.airfoil.flapParameters
     @unpack R = element.aero.BLiKin
     @unpack stallOnsetRatio,upstroke,S,P = element.aero.BLiFlow
     @unpack f2primeM,RD = element.aero.BLiStates
@@ -1173,7 +1173,8 @@ function BLi_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack α1₀T,η,cd₀,cdδ,cnα,E₀,E₁ = element.aero.airfoil.parametersBLi
+    @unpack α1₀T,η,cd₀,cnα,E₀,E₁ = element.aero.airfoil.parametersBLi
+    @unpack cdδ = element.aero.airfoil.flapParameters
     @unpack R = element.aero.BLiKin
     @unpack stallOnsetRatio,upstroke,S = element.aero.BLiFlow
     @unpack αlag,f2primeT,RD = element.aero.BLiStates
@@ -1546,7 +1547,8 @@ function BLo_cn!(element::Element,χ,δNow)
     @unpack α,αₑ = element.aero.flowAnglesAndRates
     @unpack Uᵢ = element.aero.flowVelocitiesAndRates
     @unpack Ma = element.aero.flowParameters
-    @unpack ϵₙ,cnα,cnδ = element.aero.airfoil.parametersBLo
+    @unpack ϵₙ,cnα = element.aero.airfoil.parametersBLo
+    @unpack cnδ = element.aero.airfoil.flapParameters
     @unpack f2Prime,cnV = element.aero.BLoStates
     @unpack q,Ka,Kq,Tᵢ,fPrime,Tf = element.aero.BLoFlow
 
@@ -1593,7 +1595,8 @@ function BLo_cm!(element::Element,χ,δNow)
     @unpack α,αₑ = element.aero.flowAnglesAndRates
     @unpack Uᵢ = element.aero.flowVelocitiesAndRates
     @unpack cnC,cnF = element.aero.aeroCoefficients
-    @unpack ϵₘ,cm₀,cmδ,K₀,K₁,K₂,TvL = element.aero.airfoil.parametersBLo
+    @unpack ϵₘ,cm₀,K₀,K₁,K₂,TvL = element.aero.airfoil.parametersBLo
+    @unpack cmδ = element.aero.airfoil.flapParameters
     @unpack Ma,Θ = element.aero.flowParameters
     @unpack f2Prime,fPrimeM,cnVP,cnVN = element.aero.BLoStates
     @unpack q,KaM,KqM,Tᵢ = element.aero.BLoFlow
@@ -1644,7 +1647,8 @@ function BLo_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid = element.aero
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack η,cd₀,cdδ,cn₁,cnα,Df,E₀ = element.aero.airfoil.parametersBLo
+    @unpack η,cd₀,cn₁,cnα,Df,E₀ = element.aero.airfoil.parametersBLo
+    @unpack cdδ = element.aero.airfoil.flapParameters
     @unpack stallOnsetRatio = element.aero.BLoFlow
     @unpack cnPprime,f2Prime = element.aero.BLoStates
 

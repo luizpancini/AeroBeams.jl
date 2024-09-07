@@ -697,7 +697,7 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
         if frequencyLabel == "frequency"
             label = string("Mode $(m): ω = $(round(γ*freqs[m],sigdigits=3)) ", units.frequency)
         elseif frequencyLabel == "frequency&damping"
-            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],sigdigits=3))i", units.frequency)
+            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],sigdigits=3))i ", units.frequency)
         end
         plot!([NaN],[NaN], c=modeColors[m], lw=lw, label=label)
     end
@@ -1152,7 +1152,7 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
 
     # Save, if applicable
     if save
-        gif(anim, string(pwd(),savePath), fps=fps)
+        gif(anim, pkgdir(AeroBeams)*savePath, fps=fps)
     end
 
     return plt

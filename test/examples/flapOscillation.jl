@@ -23,6 +23,9 @@ A = 2.5*π/180
 ω = k*U/(chord/2)
 δ = t -> A*sin(ω*t)
 
+# Update airfoil parameters
+update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=chord/2)
+
 # Create wing surface
 surf = create_AeroSurface(solver=aeroSolver,flapLoadsSolver=flapLoadsSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan,δ=δ)
 

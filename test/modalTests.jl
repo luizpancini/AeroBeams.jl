@@ -237,7 +237,7 @@ end
     @test freqs ≈ freqs_ atol=SELFatol
 end
 
-@testset "Modal analysis of a straight rotor" begin
+@testset "Modal analysis of a straight rotor under varying angular velocities" begin
     include("examples/straightRotor.jl")
     # Reference comparison
     @test numFreqs[end][[1,2,5,6]]/(2π) ≈ expFreqs[:,end] rtol=5e-2
@@ -246,7 +246,7 @@ end
     @test hcat(numFreqs...)' ≈ freqs_ atol=SELFatol
 end
 
-@testset "Modal analysis of a swept-tip rotor" begin
+@testset "Modal analysis of a swept-tip rotor under varying angular velocities" begin
     include("examples/sweptTipRotor.jl")
     # Reference comparison (3 first bending frequencies @ ω = 750 rpm and tipAngle = 45 deg)
     @test numFreqs[end,end][[1,3,4]]/(2π) ≈ [expFreqs1[end]; expFreqs2[end]; expFreqs3[end]] rtol=5e-2

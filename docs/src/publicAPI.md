@@ -22,6 +22,7 @@ IndicialGust
 ```@docs
 create_Airfoil
 create_flapped_Airfoil
+update_Airfoil_params!
 ```
 
 ### Creating an aerodynamic surface

@@ -10,7 +10,7 @@
 #     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 # end
 
-@testset "Flutter analysis the conventional HALE aircraft in free flight with structural stiffness as the varying parameter" begin
+@testset "Flutter analysis of the conventional HALE aircraft in free flight with structural stiffness as the varying parameter" begin
     include("examples/conventionalHALELambdaRange.jl")
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "freqs.txt"))
@@ -20,7 +20,7 @@
 end
 
 ## Fails in CI
-# @testset "Flutter analysis the conventional HALE aircraft in free flight with airspeed and structural stiffness as the varying parameters" begin
+# @testset "Flutter analysis of the conventional HALE aircraft in free flight with airspeed and structural stiffness as the varying parameters" begin
 #     include("examples/conventionalHALELURange.jl")
 #     # Self-comparison
 #     for (i,λ) in enumerate(λRange)
@@ -31,7 +31,7 @@ end
 #     end
 # end
 
-@testset "Flutter analysis the conventional HALE aircraft in free flight with airspeed as the varying parameter" begin
+@testset "Flutter analysis of the conventional HALE aircraft in free flight with airspeed as the varying parameter" begin
     include("examples/conventionalHALEURange.jl")
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "freqs.txt"))
@@ -41,7 +41,7 @@ end
 end
 
 ## Fails in CI
-# @testset "Flutter analysis the Helios flying-wing in free flight with payload and structural stiffness as the varying parameters" begin
+# @testset "Flutter analysis of the Helios flying-wing in free flight with payload and structural stiffness as the varying parameters" begin
 #     include("examples/heliosFlutterPLambdaRange.jl")
 #     # Self-comparison
 #     for (i,λ) in enumerate(λRange)
@@ -53,7 +53,7 @@ end
 # end
 
 ## Fails in CI
-# @testset "Flutter analysis the Helios flying-wing in free flight with payload as the varying parameter" begin
+# @testset "Flutter analysis of the Helios flying-wing in free flight with payload as the varying parameter" begin
 #     include("examples/heliosFlutterPRange.jl")
 #     # Self-comparison
 #     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterPRange", "freqs.txt"))
@@ -62,7 +62,7 @@ end
 #     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 # end
 
-@testset "Flutter analysis the Helios flying-wing in free flight with airspeed as the varying parameter" begin
+@testset "Flutter analysis of the Helios flying-wing in free flight with airspeed as the varying parameter" begin
     include("examples/heliosFlutterURange.jl")
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterURange", "freqs.txt"))
