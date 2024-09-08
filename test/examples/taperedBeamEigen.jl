@@ -24,7 +24,7 @@ solve!(problem)
 # Get frequencies 
 freqs = problem.frequenciesOscillatory
 
-# Reference solution for frequencies (values of Table 3.14)
+# Reference solution for frequencies (values of Hodges & Pierce Table 3.14)
 freqsRef = [4.31517; 23.5193; 63.1992]*sqrt(ρA0*L^4/EIy0)
 
 # Show frequency comparison

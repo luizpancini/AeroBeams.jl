@@ -1,22 +1,27 @@
 using Plots, ColorSchemes
 
 """
-    plot_undeformed_assembly(model::Model,view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true)
+    plot_undeformed_assembly(model::Model; kwars...)
 
-Plots the nodal coordinates of the assembly of beams
+Plots the undeformed assembly of beams in the model
 
 # Arguments
 - `model::Model`
+
+# Keyword arguments
 - `view::Tuple{<:Number,<:Number}` = view angles
 - `equalAspectRatio::Bool` = flag to set equal aspect ratio plot
+- `plotNodes::Bool` = flag to plot nodes
+- `nodesColor=:black` = color of nodes
+- `linesColor=:black` = color of lines (beams)
 """
-function plot_undeformed_assembly(model::Model,view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true)
+function plot_undeformed_assembly(model::Model; view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true,plotNodes::Bool=true,nodesColor=:black,linesColor=:black)
 
-    # Initialize backend
-    pyplot()
+    # Set backend
+    gr()
 
     # Initialize plot
-    plt = plot(;xlabel="\$x_1\$",ylabel="\$x_2\$",zlabel="\$x_3\$",title="Undeformed assembly",camera=view,aspect_ratio=:equal,grid=:true)
+    plt = plot(xlabel="\$x_1\$",ylabel="\$x_2\$",zlabel="\$x_3\$",title="Undeformed assembly",camera=view,aspect_ratio=:equal,grid=:true)
 
     # Initialize plot limits
     x1min,x1max,x2min,x2max,x3min,x3max=0,0,0,0,0,0
@@ -31,29 +36,29 @@ function plot_undeformed_assembly(model::Model,view::Tuple{Int64,Int64}=(45,45),
         x1 = [point[1] for point in r_n]
         x2 = [point[2] for point in r_n]
         x3 = [point[3] for point in r_n]
+        
+        # Plot nodes
+        if plotNodes
+            scatter!(x1, x2, x3, c=nodesColor, ms=3, label=false)
+        end
+        
+        # Plot lines 
+        for i in 1:length(r_n)-1
+            plot!([r_n[i][1], r_n[i+1][1]], [r_n[i][2], r_n[i+1][2]], [r_n[i][3], r_n[i+1][3]], c=linesColor, lw=2, label=false)
+        end
 
-        # Update plot limits
-        x1ext, x2ext, x3ext = extrema(x1), extrema(x2), extrema(x3)
-        x1min,x1max = min(x1min,x1ext[1]),max(x1max,x1ext[2])
-        x2min,x2max = min(x2min,x2ext[1]),max(x2max,x2ext[2])
-        x3min,x3max = min(x3min,x3ext[1]),max(x3max,x3ext[2])
+        # Update plot limits, if applicable
         if equalAspectRatio
+            x1ext, x2ext, x3ext = extrema(x1), extrema(x2), extrema(x3)
+            x1min,x1max = min(x1min,x1ext[1]),max(x1max,x1ext[2])
+            x2min,x2max = min(x2min,x2ext[1]),max(x2max,x2ext[2])
+            x3min,x3max = min(x3min,x3ext[1]),max(x3max,x3ext[2])
             lowerLim = min(x1min,x2min,x3min)
             upperLim = max(x1max,x2max,x3max)
             plot!(xlims=(lowerLim,upperLim), ylims=(lowerLim,upperLim), zlims=(lowerLim,upperLim))
         end
-        
-        # Plot nodes
-        scatter!(x1, x2, x3, c=:black, ms=3, label=false)
-        
-        # Plot lines 
-        for i in 1:length(r_n)-1
-            plot!([r_n[i][1], r_n[i+1][1]], [r_n[i][2], r_n[i+1][2]], [r_n[i][3], r_n[i+1][3]], c=:black, lw=2, label=false)
-        end
 
     end
-
-    display(plt)
 
     return plt
 end
@@ -858,7 +863,7 @@ Plots the animated deformation of the model in the given problem
 - `problem::Problem` = problem
 
 # Keyword arguments
-- `refBasis::String` = reference basis for plot
+- `refBasis::String` = reference observer basis for plot
 - `plotFrequency::Int64` = frequency of time steps to plot
 - `plotUndeformed::Bool` = flag to plot undeformed assembly
 - `plotBCs::Bool` = flag to plot BCs

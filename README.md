@@ -46,7 +46,7 @@ Purely structural problems (in the abscence of aerodynamic loads) can analyzed a
 ## Limitations
 A few limitations of the theory to keep in mind when using this package:
 
-- The strain measures considered yield a "Timoshenko" beam theory, which is valid for beams of solid or thin-walled, but closed cross-sections, and beams of strip-like cross-sections. It is not accurate for beams of thin-walled, open cross-section (like "I", "T", "C", "Z", etc) for which the warping of the cross-section caused by torsion is important. For these, a "Vlasov" beam theory would be required.
+- The strain measures considered yield a "Timoshenko" beam theory, which is valid for beams of solid or thin-walled, but closed cross-sections, and beams of strip-like cross-sections. It is not accurate for beams of thin-walled, open cross-section (like "C", "I", "L", "T", "Z", etc) for which the warping of the cross-section caused by torsion is important. For these, a "Vlasov" beam theory would be required.
 - The force-strain relationship of the material is assumed to be linear, *i.e.*, the strains are assumed to be small.
 - Structural damping is not modeled.
 - The formulation does not account for the *trapeze effect*, which is the tendency of a twisted beam to untwist (twist) as a traction (compression) force is applied. This effect can be important for beams of open cross-section (whose torsional compliance is high) under axial loads.
@@ -80,7 +80,7 @@ The University of Michigan's Nonlinear Aeroelastic Simulation Toolbox (UM/NAST) 
 
 <a id="8">[8]</a> J. C. Simo and L. Vu-Quoc. "On the Dynamics of Flexible Beams Under Large Overall Motions—The Plane Case: Part II". 1986. Journal of Applied Mechanics. [10.1115/1.3171871](https://doi.org/10.1115/1.3171871)
 
-<a id="9">[1]</a> Su, W and Cesnik, C. E. S. "Strain-based geometrically nonlinear beam formulation for modeling very flexible aircraft". 2011. International Journal of Solids and Structures [10.1016/j.ijsolstr.2011.04.012](https://doi.org/10.1016/j.ijsolstr.2011.04.012)
+<a id="9">[1]</a> Su, W and Cesnik, C. E. S. "Strain-based geometrically nonlinear beam formulation for modeling very flexible aircraft". 2011. International Journal of Solids and Structures. [10.1016/j.ijsolstr.2011.04.012](https://doi.org/10.1016/j.ijsolstr.2011.04.012)
 
 
 [docs-img]: https://img.shields.io/badge/docs-dev-blue.svg

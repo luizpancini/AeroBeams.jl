@@ -31,7 +31,7 @@ nElemWing = 20
 #md nothing #hide
 
 # ### Trim problem
-# We have to first trim the aircraft at the specified flight condition. For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxiter = 50`, the default is 20). We use the built-in function `create_conventional_HALE()` to streamline the model creation process.
+# We have to first trim the aircraft at the specified flight condition. Our trim variables are the engine's thrust (modeled as a follower force at the root of the wing), and the elevator deflection. For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxiter = 50`, the default is 20). We use the built-in function [`create_conventional_HALE`](@ref create_conventional_HALE) to streamline the model creation process.
 ## System solver
 relaxFactor = 0.5
 maxiter = 50
@@ -44,12 +44,12 @@ conventionalHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnes
 trimProblem = create_TrimProblem(model=conventionalHALEtrim,systemSolver=NR)
 solve!(trimProblem)
 
-## Extract trim variables
+## Extract trim variables and outputs
 trimAoA = (trimProblem.aeroVariablesOverσ[end][conventionalHALEtrim.beams[1].elementRange[end]].flowAnglesAndRates.αₑ + trimProblem.aeroVariablesOverσ[end][conventionalHALEtrim.beams[2].elementRange[1]].flowAnglesAndRates.αₑ)/2
 trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
 trimδ = trimProblem.x[end]
 trimHTAoA = (trimProblem.aeroVariablesOverσ[end][35].flowAnglesAndRates.αₑ + trimProblem.aeroVariablesOverσ[end][36].flowAnglesAndRates.αₑ)/2
-println("Trim variables: AoA = $(trimAoA*180/π), T = $(trimThrust), δ = $(trimδ*180/π)") #src
+println("Trim variables/outputs: AoA = $(trimAoA*180/π), T = $(trimThrust), δ = $(trimδ*180/π)") #src
 #md nothing #hide
 
 # ### Dynamic problem
@@ -156,7 +156,7 @@ airspeed = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowVelocitiesAn
 #md # ![](conventionalHALECheckedPitchManeuver_airspeed.svg)
 #md nothing #hide
 
-#md # Let's also visualize the complete motion of the aircraft (rigid + elastic) through the view of an inertial observer. For that, we use the `plot_dynamic_deformation()` function with the appropriate arguments.
+#md # Let's also visualize the complete motion of the aircraft (rigid + elastic) through the view of an inertial observer. For that, we use the [`plot_dynamic_deformation`](@ref plot_dynamic_deformation) function with the appropriate arguments.
 #md @suppress begin #hide
 #md plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotBCs=false,plotDistLoads=false,plotFrequency=10,plotLimits=[(-20,20),(-10,250),(-20,20)],save=true,savePath="/docs/build/conventionalHALECheckedPitchManeuver_motion.gif")
 #md nothing #hide

@@ -94,7 +94,7 @@ end
 #md nothing #hide
 
 # ### Post-processing
-# We can use the built-in mode tracking function to enhance the chances of correctly tracking the frequencies and dampings of each mode
+# We can use the built-in [`mode_tracking`](@ref mode_tracking) function  to enhance the chances of correctly tracking the frequencies and dampings of each mode
 ## Mode tracking
 freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
@@ -187,7 +187,7 @@ trimδRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimDelta.txt")
 #md # ![](BWBflutter_Vgf.svg)
 #md nothing #hide
 
-#md # Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the `plot_mode_shapes()` function with the appropriate inputs. Modes 1 and 2 seem to be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.
+#md # Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the [`plot_mode_shapes`](@ref plot_mode_shapes) function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.
 #md modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)
 #md savefig("BWBflutter_modeShapes.svg") #hide
 #md nothing #hide

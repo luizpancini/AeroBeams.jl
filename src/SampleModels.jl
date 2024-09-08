@@ -647,7 +647,9 @@ Creates a model based on the conventional HALE aircraft described by Patil, Hodg
 - `flapLoadsSolver::FlapAeroSolver` = aerodynamic solver for flap loads
 - `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
 - `stabilizersAero::Bool` = flag for stabilizers with aerodynamic surfaces
-- `includeVS::Bool` = flag to include a vertical stabilizer in the model   
+- `includeVS::Bool` = flag to include a vertical stabilizer in the model
+- `wAirfoil::Airfoil` = wing airfoil section
+- `sAirfoil::Airfoil` = stabilizers airfoil section
 - `nElemWing::Int64` = number of elements of the full wing
 - `nElemHorzStabilizer::Int64` = number of elements of the horizontal stabilizer
 - `nElemTailBoom::Int64` = number of elements of the tail boom
@@ -671,7 +673,7 @@ Creates a model based on the conventional HALE aircraft described by Patil, Hodg
 - `stabscmδ::Number` = cm vs δ slope for the stabilizers
 - `stabscdδ::Number` = cd vs δ slope for the stabilizers
 """
-function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
+function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,wAirfoil::Airfoil=deepcopy(flatPlate),sAirfoil::Airfoil=deepcopy(flatPlate),nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
 
     # Validate
     @assert iseven(nElemWing)
@@ -696,9 +698,6 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
 
     # Atmosphere
     atmosphere = standard_atmosphere(altitude)
-
-    # Wing airfoil
-    wAirfoil = deepcopy(flatPlate)
 
     # Wing surface
     wChord = 1
@@ -729,8 +728,8 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     ρ = 1/k2
     θ = Lw/ρ
     x = ρ*sin(θ)
-    y = ρ*(1-cos(θ))
-    initialPosition = k2 == 0 ? [-Lw; 0; 0] : [-x; 0; -y]
+    z = ρ*(1-cos(θ))
+    initialPosition = k2 == 0 ? [-Lw; 0; 0] : [-x; 0; -z]
 
     # Initial angle of twist
     r = 1/k1
@@ -744,19 +743,16 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     # Link wing ailerons
     aileronLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[-1])
 
-    # Tail boom
-    Lt = 10
-    tρA,tρIy,tρIz = 0.08,wρIy/10,wρIz/10
-    tailBoom = create_Beam(name="tailBoom",length=Lt,nElements=nElemTailBoom,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIy=tρIy,ρIz=tρIz)],rotationParametrization="E321",p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])
-
-    # Payload (at wing's spar position)
+    # Payload
     payloadMass = 50
     payloadInertia = 200
     payload = PointInertia(elementID=1,η=[-Lw/div(nElemWing,2)/2;0;0],mass=payloadMass,Iyy=payloadInertia,Izz=payloadInertia,Ixx=payloadInertia)
     add_point_inertias_to_beam!(rightWing,inertias=[payload])
 
-    # Stabilizers airfoil
-    sAirfoil = deepcopy(flatPlate)
+    # Tail boom
+    Lt = 10
+    tρA,tρIy,tρIz = 0.08,wρIy/10,wρIz/10
+    tailBoom = create_Beam(name="tailBoom",length=Lt,nElements=nElemTailBoom,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIy=tρIy,ρIz=tρIz)],rotationParametrization="E321",p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])
 
     # Horizontal stabilizer surface
     hChord = 0.5
@@ -816,7 +812,7 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     # Beams of the model
     beams = includeVS ? [leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer] : [leftWing,rightWing,tailBoom,horzStabilizer]
 
-    # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
+    # Aircraft model
     conventional_HALE = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[aileronLink])
 
     return conventional_HALE,leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer

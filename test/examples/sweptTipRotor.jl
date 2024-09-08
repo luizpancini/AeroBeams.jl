@@ -57,7 +57,6 @@ for (i,ω) in enumerate(ωRange)
         # Update model
         sweptTipRotor.beams = [beam1,beam2]
         update_model!(sweptTipRotor)
-        # plot_undeformed_assembly(sweptTipRotor)
         # Create and solve eigenproblem
         global problem = create_EigenProblem(model=sweptTipRotor,nModes=nModes)
         solve!(problem)
