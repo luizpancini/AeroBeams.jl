@@ -7,6 +7,13 @@
 ## Overview
 AeroBeams is a finite-element implementation of the geometrically exact beam theory of [Hodges](#1), augmented with aerodynamic formulations in order to solve aeroelastic problems. The structural part of the code was developed based on the works of [[2]](#2), [[3]](#3) and [[4]](#4), whereas the aerodynamic part follows [[5]](#5), [[6]](#6) and [[7]](#7). This package is written in [Julia](https://julialang.org/).
 
+## Installation
+
+To install AeroBeams, simply go to the package manager mode in the Julia REPL by typing ], and then
+```julia-repl
+pkg> add AeroBeams
+```
+
 ## Features
 The software is a general-purpose aeroelastic solver for flexible aircraft structures that can be modeled as an assembly of anisotropic, initially curved and twisted beams undergoing arbitrarily large displacements and rotations. Multibody dynamics capabilities include only simple hinges.
 

@@ -889,7 +889,9 @@ function create_BWB(; altitude::Number=0,aeroSolver::AeroSolver=Indicial(),gustL
 
     # Airfoil
     airfoil = deepcopy(BWBAirfoil)
-    update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=tipChord/2)
+    if updateAirfoilParameters
+        update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=tipChord/2)
+    end
 
     # Wing surfaces
     wChord = tipChord

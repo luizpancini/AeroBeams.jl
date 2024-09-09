@@ -75,6 +75,7 @@ Plots the initial and final deformed states for the model in the given problem
 
 # Keyword arguments
 - `plotBCs::Bool` = flag to plot BCs
+- `plotDistLoads::Bool` = flag to plot distributed loads (includes gravitational and aerodynamic loads)
 - `view::Union{Nothing,Tuple{Int64,Int64}}` = view angles
 - `scale::Number` = displacements and rotations scale
 - `lw::Number` = linewidth
@@ -92,7 +93,7 @@ Plots the initial and final deformed states for the model in the given problem
 - `save::Bool` = flag to save the figure
 - `savePath::String` = relative path on which to save the figure
 """
-function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
+function plot_steady_deformation(problem::Problem; plotBCs::Bool=true, plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -200,11 +201,13 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,view::Unio
         surface!(Xd,Yd,Zd, color=palette([colorDef,colorDef],2), colorbar=false, alpha=surfα)
     end
 
-    # Plot BCs and distributed loads, if applicable
+    # Plot generalized displacements and concentrated loads, if applicable
     if plotBCs
-        # Plot generalized displacements and concentrated loads
         plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,0,1)
-        # Plot distributed loads (including aerodynamic)
+    end
+
+    # Plot distributed loads (including aerodynamic and gravitational), if applicable
+    if plotDistLoads
         plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,1)
     end
 

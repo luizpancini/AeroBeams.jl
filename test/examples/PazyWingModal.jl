@@ -18,7 +18,7 @@ for (i,upright) in enumerate([false,true])
     freqs[i] = problem[i].frequenciesOscillatory/(2π)
 end
 
-# Load reference data
+# Load reference data (https://github.com/UM-A2SRL/AePW3-LDWG and https://doi.org/10.2514/1.J060621)
 modalFreqsGVT = [4.39 29.80 41.00 82.50 NaN; 4.26 28.50 42.00 81.50 60.70]
 modalFreqsUMNAST = [4.19 28.49 41.58 83.03 100.07; 4.19 28.49 41.88 83.06 105.89]
 

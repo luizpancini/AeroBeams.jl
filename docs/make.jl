@@ -1,12 +1,7 @@
 using AeroBeams, Documenter, Literate
 
-# Set plot backend for documentation
-import Plots; Plots.pyplot()
-
-DocMeta.setdocmeta!(AeroBeams, :DocTestSetup, :(using AeroBeams); recursive=true)
-
 # Examples to be included in the documentation
-global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALEmodel.jl","initialDispAndVelBeam.jl","twoStoryFrame.jl"]
+global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALEmodel.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingTorsionTest.jl","twoStoryFrame.jl"]
 
 # Literate .md files output
 for ex in included
@@ -30,12 +25,15 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Examples" => [
-        "Arch under follower pressure" => "archUnderFollowerPressure.md",
         "Creating a HALE aircraft model" => "conventionalHALEmodel.md",
+        "Gust response of an airfoil section" => "OMCgustTests.md",
+        "Arch under follower pressure" => "archUnderFollowerPressure.md",
+        "Static structural analysis of the Pazy wing" => "PazyWingTorsionTest.md",
+        "Steady aeroelastic analysis of the Pazy Wing" => "PazyWingPitchRange.md",
+        "Modal analysis of a two-story frame" => "twoStoryFrame.md",
         "Motion of a simply supported beam under initial conditions" => "initialDispAndVelBeam.md",
         "Flutter of a Blended-Wing-Body" => "BWBflutter.md",
-        "Pitch maneuver of a HALE aircraft" => "conventionalHALECheckedPitchManeuver.md",
-        "Two-story frame" => "twoStoryFrame.md"
+        "Pitch maneuver of a HALE aircraft" => "conventionalHALECheckedPitchManeuver.md"
         ],
         "Public API" => "publicAPI.md"
     ],

@@ -1,11 +1,10 @@
 # # Arch under follower pressure
 # This example simulates the static response of a clamped arch subjected to a normal (follower) pressure. It illustrates how to set up a steady structural problem for an initially curved beam subjected to follower distributed loads. The problem was defined by [Argyris and Symeonidis](https://doi.org/10.1016/0045-7825(81)90131-6).
 
-# Let's begin by loading the necessary packages.
-using AeroBeams
-
 # ### Beam 
 # The first step is to create a beam. The arch has radius `R` and spans over and angle `θ`. The curvature of the beam is thus `1/R`, and the total length is `L=Rθ`. We define the beam orientation such that the arch spans from an angle `-θ/2` to `θ/2` about a vertical line. This is done by specifying the rotation parameters from basis `A` to basis `b`, `p0`, with the Euler parameters sequence 3-2-1: the angle of rotation about the second axis is `-θ/2`. The cross-section has area `A` and bending moment of inertia `Iy`. The elastic modulus of the material is `E`. We discretize the beam into `nElem` finite elements. In this case the properties of the beam are constant over its length, to see a case where those properties vary, check this [example](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/taperedBeamEigen.jl).
+using AeroBeams
+
 R,θ = 2.54,120*π/180
 k2 = 1/R
 L = R*θ
@@ -53,9 +52,9 @@ mid_u3 = [problem.nodalStatesOverσ[i][div(nElem,2)].u_n2[3] for i in 1:length(�
 #md using Plots
 #md pyplot()
 #md plot(-mid_u3/R, σVector*λ, color=:black, lw=2, xlabel="Midpoint \$-u_3/R\$", ylabel="\$\\lambda\$", label=false)
-#md savefig("archUnderFollowerPressure-disp.svg") #hide
+#md savefig("archUnderFollowerPressure_disp.svg") #hide
 #md nothing #hide
-#md # ![](archUnderFollowerPressure-disp.svg)
+#md # ![](archUnderFollowerPressure_disp.svg)
 #md nothing #hide
 
 #md # Let's also plot the initial and final deformed shape of the arch (scaled ten-fold), along with the boundary conditions. To do that, we exploit AeroBeams' built-in visualization capabilities, by simply calling the `plot_steady_deformation()` function accordingly.

@@ -109,7 +109,7 @@ Vdot3_quarter_analytic = -δ*ω2^2*cos.(ω2*t)*sin(2π*1/4) + -σ*ω2*sin.(ω2*t
 Ωdot2_mid_analytic = δ*2π/L*ω2^2*cos.(ω2*t)*cos(2π*1/2) + σ*2π/L*ω2*sin.(ω2*t)*cos(2π*1/2)
 #md nothing #hide
 
-#md # Now let's plot the displacement, rotation, velocities and accelerations at the appropriate points of the beam. The correspondance with the analytical reference is very good, except for the angular acceleration at the midpoint, which oscillates around the analytical solution. That indicates the estimation of the initial value of that variable was not accurate, which may happen for the velocities states' rates ($\dot{V}$ and $\dot{\Omega}$).
+#md # Now let's plot the displacement, rotation, velocities and accelerations at the appropriate points of the beam. The correspondance with the analytical reference is very good, except for the angular acceleration at the midpoint, which oscillates around the analytical solution. That indicates the estimation of the initial value of that variable was not accurate, which may happen for the rates of the velocity states ($\dot{V}$ and $\dot{\Omega}$).
 #md using Plots
 #md pyplot()
 

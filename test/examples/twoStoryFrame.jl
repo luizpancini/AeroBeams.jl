@@ -1,5 +1,5 @@
 # # Modal analysis of a two-story frame
-# This example illustrates how to set up a modal analysis, using a two-story beam frame. This problem was proposed by [Petyt](https://doi.org/10.1017/CBO9780511761195).
+# This example illustrates how to set up a modal analysis, using a two-story beam frame. Moreover, it also shows how to assemble a model where the beams are not simply-connected (connected in sequence). This problem was proposed by [Petyt](https://doi.org/10.1017/CBO9780511761195).
 
 # ### Problem variables
 # The first step is to define the variables of our problem: geometric and material properties, and discretization. There are two types of beams in the frame: those with cross-section base `b1` and those with `b2`, but all are made of the same material. We also apply an uniform discretization.

@@ -4,6 +4,12 @@
 #md # ![](assets/BWB.png)
 #md # *BWB model geometry*
 
+#md # ![](assets/BWBbodyprops.png)
+#md # *BWB's body properties*
+
+#md # ![](assets/BWBwingprops.png)
+#md # *BWB's wing properties*
+
 # ### Problem setup
 # Let's begin by setting up the variables of our problem.
 using AeroBeams, DelimitedFiles
@@ -107,7 +113,7 @@ for mode in 1:nModes
 end
 #md nothing #hide
 
-# We can load the reference solution found with the University of Michigan's Nonlinear Aeroelastic Simulation Tool (UM/NAST)
+# We can load the reference solution found with the University of Michigan's Nonlinear Aeroelastic Simulation Tool (UM/NAST) in its 2024 version (not the version in Su's thesis).
 ## Load reference data
 trimAoARef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimAoA.txt")
 trimThrustRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimThrust.txt")
@@ -154,7 +160,7 @@ trimδRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimDelta.txt")
 #md # ![](BWBflutter_delta.svg)
 #md nothing #hide
 
-#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. It is seen that one of the modes crosses the zero-damping barrier, indicating flutter. Also notice that the mode tracking works well in this particular example, but a change in parameters may affect its behavior.
+#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. It is seen that one of the modes crosses the zero-damping barrier, indicating flutter. Also notice that the mode tracking may not always work perfectly.
 ## Colormap
 #md cmap = :rainbow
 #md modeColors = get(colorschemes[cmap], LinRange(0, 1, nModes))
