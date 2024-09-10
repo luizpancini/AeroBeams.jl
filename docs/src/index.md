@@ -3,7 +3,7 @@
 Documentation for [AeroBeams](https://github.com/luizpancini/AeroBeams.jl).
 
 ## Overview
-AeroBeams is a finite-element implementation of the geometrically exact beam theory of [Hodges](#1), augmented with aerodynamic formulations in order to solve aeroelastic problems. The structural part of the code was developed based on the works of [[2]](#2), [[3]](#3) and [[4]](#4), whereas the aerodynamic part follows [[5]](#5), [[6]](#6) and [[7]](#7). This package is written in [Julia](https://julialang.org/).
+AeroBeams is a finite-element implementation of the geometrically exact beam theory of [Hodges](@ref1), augmented with aerodynamic formulations in order to solve aeroelastic problems. The structural part of the code was developed based on the works of [[2]](#2), [[3]](#3) and [[4]](#4), whereas the aerodynamic part follows [[5]](#5), [[6]](#6) and [[7]](#7). This package is written in [Julia](https://julialang.org/).
 
 ## Installation
 
@@ -69,7 +69,7 @@ A few limitations of the theory to keep in mind when using this package:
 The University of Michigan's Nonlinear Aeroelastic Simulation Toolbox (UM/NAST) is a framework for simulating the flight dynamics of flexible aircraft structures modeled as an assembly of beams. It implements a strain-based geometrically exact beam theory, as described in [[9]](#9). It is not, however, an open source code.
 
 ## References
-[#1] Hodges, D. H. "Nonlinear Composite Beam Theory". 2006. American Institute of Aeronautics and Astronautics. [10.2514/4.866821](https://doi.org/10.2514/4.866821)
+<a id="ref1"></a> [1] Hodges, D. H. "Nonlinear Composite Beam Theory". 2006. American Institute of Aeronautics and Astronautics. [10.2514/4.866821](https://doi.org/10.2514/4.866821)
 
 [#2] Hodges, D. H., Shang, X. and Cesnik, C. E. S. "Finite element solution of nonlinear intrinsic equations for curved composite beams". 1996. Journal of the American Helicopter Society. [10.2514/6.1995-1174](https://doi.org/10.2514/6.1995-1174)
 

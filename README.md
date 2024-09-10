@@ -87,7 +87,7 @@ The University of Michigan's Nonlinear Aeroelastic Simulation Toolbox (UM/NAST) 
 
 <a id="8">[8]</a> J. C. Simo and L. Vu-Quoc. "On the Dynamics of Flexible Beams Under Large Overall Motions—The Plane Case: Part II". 1986. Journal of Applied Mechanics. [10.1115/1.3171871](https://doi.org/10.1115/1.3171871)
 
-<a id="9">[1]</a> Su, W and Cesnik, C. E. S. "Strain-based geometrically nonlinear beam formulation for modeling very flexible aircraft". 2011. International Journal of Solids and Structures. [10.1016/j.ijsolstr.2011.04.012](https://doi.org/10.1016/j.ijsolstr.2011.04.012)
+<a id="9">[9]</a> Su, W and Cesnik, C. E. S. "Strain-based geometrically nonlinear beam formulation for modeling very flexible aircraft". 2011. International Journal of Solids and Structures. [10.1016/j.ijsolstr.2011.04.012](https://doi.org/10.1016/j.ijsolstr.2011.04.012)
 
 
 [docs-img]: https://img.shields.io/badge/docs-dev-blue.svg
