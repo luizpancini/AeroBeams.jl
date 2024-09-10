@@ -3,10 +3,10 @@ EditURL = "../../test/examples/OMCgustTests.jl"
 ```
 
 # Gust response of an airfoil section
-This example illustrates how to set up an aerodynamic analysis of gust response. While AeroBeams *can't* run a strictly aerodynamic analyses (only aeroelastic ones), that can be done in practice by using a one-element stiff beam supported at both ends. We'll evaluate the response of the NACA 0012 airfoil to one-minus-cosine gusts through several tests, each with different pitch angle and gust length. The performance of the available aerodynamic solvers the gust indicial solvers will be assessed too.
+This example illustrates how to set up an aerodynamic analysis of gust response. While AeroBeams *can't* run a strictly aerodynamic analyses (only aeroelastic ones), that can be done in practice by using a one-element stiff beam supported at both ends, effectively removing structural deformation effects. We'll evaluate the response of the NACA 0012 airfoil to one-minus-cosine gusts through several tests, each with different pitch angle and gust length. The performance of the available aerodynamic solvers the gust indicial solvers will be assessed too.
 
 ### Core function setup
-The following core function solves our problem given the test case, the aerodynamic solver the gust indicial solver.
+The following core function solves our problem given the test case, the aerodynamic solver the gust indicial solver. Notice that we use the function [`create_OneMinusCosineGust`](@ref create_OneMinusCosineGust) with the appropriate arguments to streamline the process of creation of the gust.
 
 ````@example OMCgustTests
 using AeroBeams, DelimitedFiles
@@ -17,15 +17,15 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
 
     # Set test case data
     if testCase == 1
-        Ma = 0.2            ## Mach number
-        U = 68.06           ## Airspeed [m/s]
-        H = π               ## Gust length [m]
-        b = 0.40663         ## Airfoil semichord [m]
-        τ = 2*H*b/U         ## Non-dimensional gust length
-        w = 2.3748          ## Gust peak velocity [m/s]
-        t₀ = 80*b/U         ## Time of gust encounter [s]
-        tf = t₀ + 30*b/U    ## Total simulation time [s]
-        θ = 0*π/180         ## Airfoil pitch angle [deg]
+        Ma = 0.2            # Mach number
+        U = 68.06           # Airspeed [m/s]
+        H = π               # Normalized gust length
+        b = 0.40663         # Airfoil semichord [m]
+        τ = 2*H*b/U         # Gust duration [s]
+        w = 2.3748          # Gust peak velocity [m/s]
+        t₀ = 80*b/U         # Time of gust encounter [s]
+        tf = t₀ + 30*b/U    # Total simulation time [s]
+        θ = 0*π/180         # Airfoil pitch angle [deg]
     elseif testCase == 2
         Ma = 0.2
         U = 68.06
@@ -150,9 +150,9 @@ nothing #hide
 
 ### Problem setup
 To setup the problem, we define which tests will be run, and which aerodynamic and gust indicial solvers will be used. Notice that BLi stands for our [modified Beddoes-Leishman model](https://doi.org/10.1016/j.jfluidstructs.2021.103375), whereas BLo is the [original version](https://doi.org/10.4050/JAHS.34.3.3).
-Tests range
 
 ````@example OMCgustTests
+# Tests range
 tests = collect(1:1:6)
 
 # Aerodynamic and gust indicial solvers
@@ -187,7 +187,7 @@ end
 nothing #hide
 ````
 
-Let's compare the accuracy of the aerodynamic formulations by plotting the development of the lift coefficient. The indicial functions by Kussner and by [Berci and Righi](https://doi.org/10.1016/j.ast.2017.03.004) compare well to the CFD data by [Mallik and Raveh](https://doi.org/10.2514/1.J057546). The linear models show good results (except the quasi-steady one). However, at test 6 the dynamic stall models fare better, since the airfoil is at a high angle of attack (15 degrees) and stalls.
+Let's compare the accuracy of the aerodynamic formulations by plotting the development of the lift coefficient. The indicial functions by Kussner (approximation of analytical) and by [Berci and Righi](https://doi.org/10.1016/j.ast.2017.03.004) (semi-analytical) compare well to the CFD data by [Mallik and Raveh](https://doi.org/10.2514/1.J057546). The linear models show good results (except the quasi-steady one) for test 2, in which the airfoil is pitched by 10 degrees. However, at test 6 the dynamic stall models fare better, since the airfoil is at a high angle of attack (15 degrees) and stalls upon encountering the gust.
 
 ````@example OMCgustTests
 using Plots, ColorSchemes
