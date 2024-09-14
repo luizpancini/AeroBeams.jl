@@ -7,7 +7,7 @@ using AeroBeams
 wingAirfoil = NACA23012A
 
 # Option for reduced chord
-reducedChord = true
+reducedChord = false
 
 # TF to include beam pods and number of elements
 beamPods = true
@@ -44,9 +44,9 @@ trimδ = trimProblem.x[end]
 println("Trim variables: T = $(trimThrust), δ = $(trimδ*180/π)")
 
 # Set checked elevator deflection profile
-Δδ = -5*π/180
+Δδ = -10*π/180
 tδinit = 1
-tδramp = 10
+tδramp = 1
 tδpeak = tδinit+tδramp
 tδfinal = tδpeak+tδramp
 δ = t -> ifelse(
@@ -68,7 +68,7 @@ heliosDynamic,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamP
 
 # Time variables
 Δt = 5e-2
-tf = 60
+tf = 10
 
 # Set NR system solver for dynamic problem
 maxit = 50
