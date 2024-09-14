@@ -1,0 +1,6 @@
+docs/
+test/
+gr-temp/
+.vscode
+Manifest.toml
+.DS_Store
