@@ -23,7 +23,7 @@ The assembly of beams can be subjected to time-dependent boundary conditions tha
 - Gravitational loads
 
 Other assembly capabilities include:
-- Concentrated nodal inertias
+- Concentrated elemental inertias
 - Attached nodal springs
 
 Aerodynamic models are based on strip theory augmented with specified spanwise corrections. The following are available:
@@ -32,7 +32,7 @@ Aerodynamic models are based on strip theory augmented with specified spanwise c
 - Dynamic stall (original[^7] and modified Beddoes-Leishman models[^8]) 
 
 The beam assembly can also be immersed in gust fields, such as:
-- Discrete gusts (sharp-edged, 1-cosine, ...)
+- Discrete gusts (sharp-edged, one-minus-cosine, ...)
 - Continuous gusts (based on von Kármán or Dryden 2-dimensional spectra)
 
 Four types of analysis can be simulated:

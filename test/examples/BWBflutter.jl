@@ -184,7 +184,10 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md # ![](BWBflutter_Vgf.svg)
 
 #md # Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the [`plot_mode_shapes`](@ref plot_mode_shapes) function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.
+## Plot mode shapes  
+#md @suppress begin #hide
 #md modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)
+#md end #hide
 #md savefig("BWBflutter_modeShapes.svg") #hide
 #md nothing #hide
 #md # ![](BWBflutter_modeShapes.svg)

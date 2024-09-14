@@ -1,4 +1,4 @@
-# # Static analysis of composite beams
+# # Static structural analysis of composite beams
 # This example illustrates how to set up a static structural analysis of composite beams. We will investigate the deflection of several composite beams under tip loads caused by attached weights. This problem was proposed by [Minguet and Dugundji](https://doi.org/10.2514/3.25255):
 
 #md # ![](../assets/compositeCantileverMD.png)
