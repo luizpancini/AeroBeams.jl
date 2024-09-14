@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Creating a HALE aircraft model · AeroBeams.jl</title><meta name="title" content="Creating a HALE aircraft model · AeroBeams.jl"/><meta property="og:title" content="Creating a HALE aircraft model · AeroBeams.jl"/><meta property="twitter:title" content="Creating a HALE aircraft model · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/conventionalHALEmodel/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/conventionalHALEmodel/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/conventionalHALEmodel/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li class="is-active"><a class="tocitem" href>Creating a HALE aircraft model</a></li><li><a class="tocitem" href="../OMCgustTests/">Gust response of an airfoil section</a></li><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li><a class="tocitem" href="../sweptTipRotor/">Modal analysis of a rotating beam</a></li><li><a class="tocitem" href="../twoStoryFrame/">Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li><a class="tocitem" href="../heliosTrim/">Trimming a flying-wing HALE</a></li><li><a class="tocitem" href="../BWBflutter/">Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Creating a HALE aircraft model</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Creating a HALE aircraft model</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/conventionalHALEmodel.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Creating-a-HALE-aircraft-model"><a class="docs-heading-anchor" href="#Creating-a-HALE-aircraft-model">Creating a HALE aircraft model</a><a id="Creating-a-HALE-aircraft-model-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-a-HALE-aircraft-model" title="Permalink"></a></h1><p>This example illustrates how to create a conventional aircraft model, the high-altitude long-endurance (HALE) aircraft described by <a href="https://doi.org/10.2514/2.2738">Patil, Hodges and Cesnik</a>:</p><p><img src="../../assets/cHALE.png" alt/> <em>HALE model geometry</em> by <a href="https://doi.org/10.2514/2.2738">Patil, Hodges and Cesnik</a></p><p><img src="../../assets/cHALEdata.png" alt/> <em>HALE model data</em> by <a href="https://doi.org/10.2514/2.2738">Patil, Hodges and Cesnik</a></p><p>The contents of the present example are wrapped into the function <a href="../../publicAPI/#AeroBeams.create_conventional_HALE"><code>create_conventional_HALE</code></a>, in which you may check all the keyword arguments that we&#39;ll define below.</p><pre><code class="language-julia hljs"># Define input arguments
+using AeroBeams
+
+altitude=20e3
+aeroSolver=Indicial()
+derivationMethod=AD()
+flapLoadsSolver=TableLookup()
+gustLoadsSolver=IndicialGust(&quot;Kussner&quot;)
+stabilizersAero=true
+includeVS=true
+wAirfoil=deepcopy(flatPlate)
+sAirfoil=deepcopy(flatPlate)
+nElemWing=20
+nElemHorzStabilizer=10
+nElemTailBoom=10
+nElemVertStabilizer=5
+∞=1e12
+stiffnessFactor=1
+k1=0
+k2=0
+airspeed=0
+δElevIsTrimVariable=false
+thrustIsTrimVariable=false
+δElev=nothing
+thrust=0
+g=-9.80665
+wingCd0=0
+wingcnδ=2.5
+wingcmδ=-0.35
+wingcdδ=0.15
+stabsCd0=0
+stabscnδ=2.5
+stabscmδ=-0.35
+stabscdδ=0.15</code></pre><h3 id="Validation"><a class="docs-heading-anchor" href="#Validation">Validation</a><a id="Validation-1"></a><a class="docs-heading-anchor-permalink" href="#Validation" title="Permalink"></a></h3><p>The first step is the validation of the inputs, for which reasonable values are necessary.</p><pre><code class="language-julia hljs"># Validate
+@assert iseven(nElemWing)
+@assert iseven(nElemHorzStabilizer)
+@assert ∞ &gt; 1e8
+@assert stiffnessFactor &gt; 0
+@assert wingCd0 &gt;= 0
+@assert stabsCd0 &gt;= 0
+@assert airspeed &gt;= 0
+δElevIsInput = !isnothing(δElev)
+if δElevIsInput
+    @assert !δElevIsTrimVariable
+end
+if δElev isa Number
+    δElevConst = deepcopy(δElev)
+    δElev = t -&gt; δElevConst
+end
+if thrust isa Number
+    thrustConst = deepcopy(thrust)
+    thrust = t -&gt; thrustConst
+end</code></pre><h3 id="Atmosphere"><a class="docs-heading-anchor" href="#Atmosphere">Atmosphere</a><a id="Atmosphere-1"></a><a class="docs-heading-anchor-permalink" href="#Atmosphere" title="Permalink"></a></h3><p>Let&#39;s initialize an instance of the International Standard Atmosphere (ISA) at the specified altitude using the function <a href="../../publicAPI/#AeroBeams.standard_atmosphere"><code>standard_atmosphere</code></a>.</p><pre><code class="language-julia hljs"># Atmosphere
+atmosphere = standard_atmosphere(altitude)</code></pre><h3 id="Wing-aerodynamic-surface"><a class="docs-heading-anchor" href="#Wing-aerodynamic-surface">Wing aerodynamic surface</a><a id="Wing-aerodynamic-surface-1"></a><a class="docs-heading-anchor-permalink" href="#Wing-aerodynamic-surface" title="Permalink"></a></h3><p>In AeroBeams, each beam can have an aerodynamic surface attached to it. The wing surface is defined by an airfoil, <code>wAirfoil</code>, the normalized position of the beam&#39;s reference line (spar) on the chord, <code>wNormSparPos</code>, the normalized position of the flap (aileron) hinge on the chord, <code>wNormFlapPos</code>, and the normalized endpoints of the flap (aileron) span over the beam&#39;s arclength, <code>wNormFlapSpan</code>. We update the airfoil parameters to the specified atmospheric conditions using the function <a href="../../publicAPI/#AeroBeams.update_Airfoil_params!"><code>update_Airfoil_params!</code></a>. To create an aerodynamic surface, we use the function <a href="../../publicAPI/#AeroBeams.create_AeroSurface"><code>create_AeroSurface</code></a>.</p><pre><code class="language-julia hljs"># Wing surface
+wChord = 1
+wNormSparPos = 0.5
+wNormFlapPos = 0.75
+wNormFlapSpan = [0.75,1]
+update_Airfoil_params!(wAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=wChord/2)
+wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,updateAirfoilParameters=false)</code></pre><p>We then override the appropriate parameters of the airfoil with those input by the user.</p><pre><code class="language-julia hljs"># Override wing airfoil parameters
+wingSurf.airfoil.attachedFlowParameters.cd₀ = wingCd0
+wingSurf.airfoil.parametersBLi.cd₀ = wingCd0
+wingSurf.airfoil.parametersBLo.cd₀ = wingCd0
+wingSurf.airfoil.flapParameters.cnδ = wingcnδ
+wingSurf.airfoil.flapParameters.cmδ = wingcmδ
+wingSurf.airfoil.flapParameters.cdδ = wingcdδ</code></pre><h3 id="Wing-beam-(spar)"><a class="docs-heading-anchor" href="#Wing-beam-(spar)">Wing beam (spar)</a><a id="Wing-beam-(spar)-1"></a><a class="docs-heading-anchor-permalink" href="#Wing-beam-(spar)" title="Permalink"></a></h3><p>Next, we&#39;ll define the structural properties of the beam. Notice that we have the option of specifying a stiffness factor, <code>stiffnessFactor</code>, for the relevant properties of the wing. We then use the built-in functions <a href="../../publicAPI/#AeroBeams.isotropic_stiffness_matrix"><code>isotropic_stiffness_matrix</code></a> and <a href="../../publicAPI/#AeroBeams.inertia_matrix"><code>inertia_matrix</code></a> to create the sectional stiffness (force-strain relations) and inertia (velocity-displacement relation) matrices.</p><pre><code class="language-julia hljs"># Beam properties
+Lw = 16
+wGJ,wEIy,wEIz = 1e4,2e4,4e6
+wGJ,wEIy,wEIz = AeroBeams.multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
+wρA,wρIs = 0.75,0.1
+wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
+Cwing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
+Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz,ρIs=wρIs)</code></pre><p>In order to position the center of the wing at the origin of the frame A, we need the position of the first node of the assembly, at the left wingtip. That <code>initialPosition</code> vector will be a function of the undeformed wing curvature <code>k2</code> (which is zero in the original model). Similarly, the initial angle of twist of the wing, <code>ψ</code>, is a function of the undeformed wing twist curvature, <code>k1</code> (also zero in the original model).</p><pre><code class="language-julia hljs"># Initial position for first node of left wing
+ρ = 1/k2
+θ = Lw/ρ
+x = ρ*sin(θ)
+z = ρ*(1-cos(θ))
+initialPosition = k2 == 0 ? [-Lw; 0; 0] : [-x; 0; -z]
+
+# Initial angle of twist
+r = 1/k1
+ψ = Lw/r</code></pre><p>To create the beams of the left and right wings, we use the function <a href="../../publicAPI/#AeroBeams.create_Beam"><code>create_Beam</code></a>. The rotation parameters from the underformed beam basis (b) to the global basis (A), namely <code>p0</code>, are set for the left wing such that the left and right wings become symmetric about the x1-plane of basis A. We also create an antissymetric link between the ailerons of the left and right wings, using the function <a href="../../publicAPI/#AeroBeams.create_FlapLink"><code>create_FlapLink</code></a>.</p><pre><code class="language-julia hljs"># Wing beams
+leftWing = create_Beam(name=&quot;leftWing&quot;,length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=deepcopy(wingSurf),k=[-k1;k2;0],rotationParametrization=&quot;E321&quot;,p0=[0;-θ;-ψ])
+
+rightWing = create_Beam(name=&quot;rightWing&quot;,length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=deepcopy(wingSurf),k=[k1;k2;0],connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
+
+# Link wing ailerons
+aileronLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[-1])</code></pre><h3 id="Payload"><a class="docs-heading-anchor" href="#Payload">Payload</a><a id="Payload-1"></a><a class="docs-heading-anchor-permalink" href="#Payload" title="Permalink"></a></h3><p>The payload is modeled as a point inertia at the center of the wing spar. It is created with the constructor <a href="../../publicAPI/#AeroBeams.PointInertia"><code>PointInertia</code></a>, and then added to the center of the wing through the function <a href="../../publicAPI/#AeroBeams.add_point_inertias_to_beam!"><code>add_point_inertias_to_beam!</code></a>.</p><pre><code class="language-julia hljs"># Payload
+payloadMass = 50
+payloadInertia = 200
+payload = PointInertia(elementID=1,η=[-Lw/div(nElemWing,2)/2;0;0],mass=payloadMass,Iyy=payloadInertia,Izz=payloadInertia,Ixx=payloadInertia)
+add_point_inertias_to_beam!(rightWing,inertias=[payload])</code></pre><h3 id="Tail-boom"><a class="docs-heading-anchor" href="#Tail-boom">Tail boom</a><a id="Tail-boom-1"></a><a class="docs-heading-anchor-permalink" href="#Tail-boom" title="Permalink"></a></h3><p>The tail boom is assumed to be a rigid beam, devoid of aerodynamic surfaces, and rigidly connected to wing spar. Some of its sectional inertia matrix properties are assumed with reasonable values, since they are not given in the reference.</p><pre><code class="language-julia hljs"># Tail boom
+Lt = 10
+tρA,tρIy,tρIz = 0.08,wρIy/10,wρIz/10
+tailBoom = create_Beam(name=&quot;tailBoom&quot;,length=Lt,nElements=nElemTailBoom,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIy=tρIy,ρIz=tρIz)],rotationParametrization=&quot;E321&quot;,p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])</code></pre><h3 id="Horizontal-stabilizer"><a class="docs-heading-anchor" href="#Horizontal-stabilizer">Horizontal stabilizer</a><a id="Horizontal-stabilizer-1"></a><a class="docs-heading-anchor-permalink" href="#Horizontal-stabilizer" title="Permalink"></a></h3><p>The horizontal stabilizer&#39;s aerodynamic surface is constructed similarly to the wing&#39;s, though it depends on whether the elevator deflecton is a trim variable or not (through the flags <code>δElevIsTrimVariable</code> and <code>δElevIsInput</code>).</p><pre><code class="language-julia hljs"># Horizontal stabilizer surface
+hChord = 0.5
+hNormSparPos = 0.5
+hNormFlapPos = 0.75
+hNormFlapSpan = [0,1]
+update_Airfoil_params!(sAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=hChord/2)
+hsSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δ=δElev,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=false)
+
+# Override horizontal stabilizer airfoil parameters
+hsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
+hsSurf.airfoil.parametersBLi.cd₀ = stabsCd0
+hsSurf.airfoil.parametersBLo.cd₀ = stabsCd0
+hsSurf.airfoil.flapParameters.cnδ = stabscnδ
+hsSurf.airfoil.flapParameters.cmδ = stabscmδ
+hsSurf.airfoil.flapParameters.cdδ = stabscdδ</code></pre><p>The horizontal stabilizer beam (spar) is also created analogously to the wing, albeit now we input the <code>initialPosition</code> keyword to <a href="../../publicAPI/#AeroBeams.create_Beam"><code>create_Beam</code></a> in order to the define the position of the stabilizer&#39;s left tip. The aerodynamic surface is only attached to the wing if the flag <code>stabilizersAero</code> is true, using the function <a href="../../publicAPI/#AeroBeams.update_beam!"><code>update_beam!</code></a>.</p><pre><code class="language-julia hljs"># Horizontal stabilizer beam
+Lh = 5
+hρA,hρIy,hρIz = 0.08,wρIy/10,wρIz/10
+horzStabilizer = create_Beam(name=&quot;horzStabilizer&quot;,length=Lh,initialPosition=[-Lh/2;0;0],nElements=nElemHorzStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=hρA,ρIy=hρIy,ρIz=hρIz)],connectedBeams=[tailBoom],connectedNodesThis=[div(nElemHorzStabilizer,2)+1],connectedNodesOther=[nElemTailBoom+1])
+if stabilizersAero
+    horzStabilizer.aeroSurface = hsSurf
+    update_beam!(horzStabilizer)
+end</code></pre><h3 id="Vertical-stabilizer"><a class="docs-heading-anchor" href="#Vertical-stabilizer">Vertical stabilizer</a><a id="Vertical-stabilizer-1"></a><a class="docs-heading-anchor-permalink" href="#Vertical-stabilizer" title="Permalink"></a></h3><p>The construction of the vertical stabilizer is again similar to that of the wing and horizontal counterpart.</p><pre><code class="language-julia hljs"># Vertical stabilizer surface
+vChord = 0.5
+vNormSparPos = 0.5
+vNormFlapPos = 0.75
+vNormFlapSpan = [0,1]
+update_Airfoil_params!(sAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=vChord/2)
+vsSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,updateAirfoilParameters=false)
+
+# Override vertical stabilizer airfoil parameters
+vsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
+vsSurf.airfoil.parametersBLi.cd₀ = stabsCd0
+vsSurf.airfoil.parametersBLo.cd₀ = stabsCd0
+vsSurf.airfoil.flapParameters.cnδ = stabscnδ
+vsSurf.airfoil.flapParameters.cmδ = stabscmδ
+vsSurf.airfoil.flapParameters.cdδ = stabscdδ
+
+# Vertical stabilizer beam
+Lv = 2.5
+vρA,vρIy,vρIz = 0.08,hρIy,hρIz
+vertStabilizer = create_Beam(name=&quot;vertStabilizer&quot;,length=Lv,nElements=nElemVertStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=vρA,ρIy=vρIy,ρIz=vρIz)],rotationParametrization=&quot;E321&quot;,p0=[0;-π/2;0],connectedBeams=[tailBoom],connectedNodesThis=[1],connectedNodesOther=[nElemTailBoom+1])
+if stabilizersAero
+    vertStabilizer.aeroSurface = vsSurf
+    update_beam!(vertStabilizer)
+end</code></pre><h3 id="Thrust-force"><a class="docs-heading-anchor" href="#Thrust-force">Thrust force</a><a id="Thrust-force-1"></a><a class="docs-heading-anchor-permalink" href="#Thrust-force" title="Permalink"></a></h3><p>The thrust force of the vehicle is modeled as a follower concentrated force acting at the wing&#39;s center node, initially pointing in the x2-direction of the undeformed beam basis. Whether it is to take a time-dependent user input value or is a trim variable depends on the user&#39;s choice. It is created using the function <a href="../../publicAPI/#AeroBeams.create_BC"><code>create_BC</code></a>.</p><pre><code class="language-julia hljs"># Propeller thrust force
+thrustValue = thrustIsTrimVariable ? t -&gt; 0 : thrust
+
+propThrust = create_BC(name=&quot;propThrust&quot;,beam=rightWing,node=1,types=[&quot;Ff2b&quot;],values=[t-&gt;thrustValue(t)],toBeTrimmed=[thrustIsTrimVariable])</code></pre><h3 id="Model-assembly"><a class="docs-heading-anchor" href="#Model-assembly">Model assembly</a><a id="Model-assembly-1"></a><a class="docs-heading-anchor-permalink" href="#Model-assembly" title="Permalink"></a></h3><p>The beams composing the model depend on whether the vertical stabilizer is to be included, through the flag <code>includeVS</code>. The model is created with the appropriate inputs using the function <a href="../../publicAPI/#AeroBeams.create_Model"><code>create_Model</code></a>. Notice that the keyword argument <code>initialPosition</code> defines the position of the first node of the first beam of the model, namely, the node at the left wingtip. Also, the velocity of the body-attached global frame A with respect to an inertial frame is set through <code>v_A</code>.</p><pre><code class="language-julia hljs"># Beams of the model
+beams = includeVS ? [leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer] : [leftWing,rightWing,tailBoom,horzStabilizer]
+
+# Aircraft model
+conventionalHALE = create_Model(name=&quot;conventionalHALE&quot;,beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[aileronLink])</code></pre><p>Finally, we may visually check the undeformed assembly through the function <a href="../../publicAPI/#AeroBeams.plot_undeformed_assembly"><code>plot_undeformed_assembly</code></a>:</p><pre><code class="language-julia hljs"># Visualization
+p1 = plot_undeformed_assembly(conventionalHALE, view=(30,30))</code></pre><p><img src="../conventionalHALE.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../theory/">« Theory</a><a class="docs-footer-nextpage" href="../OMCgustTests/">Gust response of an airfoil section »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Saturday 14 September 2024 17:00">Saturday 14 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
