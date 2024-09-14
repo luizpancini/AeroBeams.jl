@@ -1,3 +1,9 @@
+## Index
+
+```@index
+Pages = ["publicAPI.md"]
+```
+
 ## Public API
 
 ### Creating an aerodynamic derivatives solver

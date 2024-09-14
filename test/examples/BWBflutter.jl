@@ -1,14 +1,14 @@
 # # Flutter of a Blended-Wing-Body
 # This example illustrates how to set up a flutter analysis of an aircraft in free flight. For that we take a Blended-Wing-Body (BWB) vehicle, a swept flying-wing with trailing-edge control surfaces. This aircraft model was described in [Weihua Su's PhD thesis](https://www.proquest.com/docview/304572531?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses):
 
-#md # ![](assets/BWB.png)
-#md # *BWB model geometry*
+#md # ![](../assets/BWB.png)
+#md # *BWB model geometry* by [Su](https://www.proquest.com/docview/304572531?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses)
 
-#md # ![](assets/BWBbodyprops.png)
-#md # *BWB's body properties*
+#md # ![](../assets/BWBbodyprops.png)
+#md # *BWB's body properties* by [Su](https://www.proquest.com/docview/304572531?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses)
 
-#md # ![](assets/BWBwingprops.png)
-#md # *BWB's wing properties*
+#md # ![](../assets/BWBwingprops.png)
+#md # *BWB's wing properties* by [Su](https://www.proquest.com/docview/304572531?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses)
 
 # ### Problem setup
 # Let's begin by setting up the variables of our problem.
@@ -118,86 +118,75 @@ end
 trimAoARef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimAoA.txt")
 trimThrustRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimThrust.txt")
 trimδRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimDelta.txt")
+freqsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/freqs.txt")
+dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md nothing #hide
 
 #md # We are ready to plot the results. The following plots show the trim root angle of attack, motor thrust and elevator deflection as functions of the airspeed. The correlation with the reference solution is very good.
-#md using Plots, ColorSchemes
-#md pyplot()
-#md nothing #hide
 #md using Suppressor #hide
+#md using Plots, ColorSchemes
+#md gr()
+#md ENV["GKSwstype"] = "100" #hide
+#md nothing #hide
 
 ## Root AoA
-#md @suppress_err begin #hide
 #md plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=[URange[1],URange[end]])
 #md plot!(URange, trimAoA*180/π, c=:black, lw=2, label="AeroBeams")
 #md scatter!(trimAoARef[1,:],trimAoARef[2,:], c=:black, ms=4, label="UM/NAST")
 #md savefig("BWBflutter_AoA.svg") #hide
-#md end #hide
-#md nothing #hide
 
 ## Thrust
-#md @suppress_err begin #hide
 #md plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[URange[1],URange[end]], legend=:bottomright)
 #md plot!(URange, trimThrust, c=:black, lw=2, label="AeroBeams")
 #md scatter!(trimThrustRef[1,:],trimThrustRef[2,:], c=:black, ms=4, label="UM/NAST")
 #md savefig("BWBflutter_thrust.svg") #hide
-#md end #hide
-#md nothing #hide
 
 ## Elevator deflection
-#md @suppress_err begin #hide
 #md plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Trim elevator deflection [deg]", xlims=[URange[1],URange[end]], legend=:bottomright)
 #md plot!(URange, trimδ*180/π, c=:black, lw=2, label="AeroBeams")
 #md scatter!(trimδRef[1,:],trimδRef[2,:], c=:black, ms=4, label="UM/NAST")
 #md savefig("BWBflutter_delta.svg") #hide
-#md end #hide
 #md nothing #hide
 
 #md # ![](BWBflutter_AoA.svg)
-#md nothing #hide
 #md # ![](BWBflutter_thrust.svg)
-#md nothing #hide
 #md # ![](BWBflutter_delta.svg)
-#md nothing #hide
 
-#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. It is seen that one of the modes crosses the zero-damping barrier, indicating flutter. Also notice that the mode tracking may not always work perfectly.
+#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. It is seen that one of the modes crosses the zero-damping barrier at approximately 132.5 m/s, indicating flutter. There is a good correlation with the results from UM/NAST, which predicts the flutter speed at 137.7 m/s.
 ## Colormap
 #md cmap = :rainbow
 #md modeColors = get(colorschemes[cmap], LinRange(0, 1, nModes))
+
 ## Root locus
-#md @suppress_err begin #hide
 #md plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-20,5],ylims=[0,120])
+#md scatter!([NaN],[NaN], c=:black, shape=:circle, ms=4, msw=0, label="AeroBeams")
+#md scatter!([NaN],[NaN], c=:black, shape=:utriangle, ms=4, msw=0, label="UM/NAST")
 #md for mode in 1:nModes
-#md scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], ms=4, msw=0, label=false)
+#md scatter!(dampsRef[mode+1,:], 2π*freqsRef[mode+1,:], c=:black, shape=:utriangle, ms=4, msw=0, label=false)
+#md scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
 #md end
 #md savefig("BWBflutter_rootlocus.svg") #hide
-#md end #hide
-#md nothing #hide
+
 ## V-g-f
-#md @suppress_err begin #hide
 #md plt51 = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=[0,120])
 #md for mode in 1:nModes
-#md scatter!(URange, modeFrequencies[mode], c=modeColors[mode], ms=4, msw=0, label=false)
+#md scatter!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
 #md end
 #md plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[URange[1],URange[end]], ylims=[-10,5])
 #md for mode in 1:nModes
-#md scatter!(URange, modeDampings[mode], c=modeColors[mode], ms=4, msw=0,label=false)
+#md scatter!(URange, modeDampings[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0,label=false)
 #md end
 #md plt5 = plot(plt51,plt52, layout=(2,1))
 #md savefig("BWBflutter_Vgf.svg") #hide
-#md end #hide
 #md nothing #hide
 
 #md # ![](BWBflutter_rootlocus.svg)
-#md nothing #hide
 #md # ![](BWBflutter_Vgf.svg)
-#md nothing #hide
 
 #md # Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the [`plot_mode_shapes`](@ref plot_mode_shapes) function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.
 #md modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)
 #md savefig("BWBflutter_modeShapes.svg") #hide
 #md nothing #hide
 #md # ![](BWBflutter_modeShapes.svg)
-#md nothing #hide
 
 println("Finished BWBflutter.jl") #src

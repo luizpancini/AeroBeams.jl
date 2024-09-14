@@ -1,5 +1,8 @@
 # # Static structural analysis of the Pazy wing
-# This example illustrates how to set up a static structural analysis, using the Technion's Pazy wing benchmark. The sectional properties of the wing's spar and the aerodynamic tip loss function were defined by [Riso and Cesnik](https://doi.org/10.2514/6.2022-2313). The data is publicly available at [https://github.com/UM-A2SRL/AePW3-LDWG](https://github.com/UM-A2SRL/AePW3-LDWG).
+# This example illustrates how to set up a static structural analysis, using the Technion's Pazy wing benchmark. More specifically, we'll simulate a coupled bending-torsion test. The sectional properties of the wing's spar and the aerodynamic tip loss function were defined by [Riso and Cesnik](https://doi.org/10.2514/6.2022-2313). That data is publicly available at [https://github.com/UM-A2SRL/AePW3-LDWG](https://github.com/UM-A2SRL/AePW3-LDWG).
+
+#md # ![](../assets/pazyTorsionTest.png)
+#md # *Pazy wing coupled bending-torsion test* by [Avin et al.](https://doi.org/10.2514/1.J060621)
 
 # ### Problem setup
 # Let's begin by setting the variables of our problem. In this example we will analyze the displacements and twist of the clamped wing caused by the attachment of a range of tip masses. Notice that we bring into scope some fixed geometrical and discretization properties of the wing's beam through the function [`geometrical_properties_Pazy`](@ref geometrical_properties_Pazy).
@@ -17,7 +20,7 @@ tip_OOP = Array{Float64}(undef,length(mRange))
 #md nothing #hide
 
 # ### Solving the problem
-# In the following loops, we create new model instances for each tip mass value, create and solve the steady problem, and then extract the outputs of interest. The model creation process is streamlined with the function [`create_Pazy`](@ref create_Pazy), taking the appropriate inputs. Notice that the twist angle is computed as the arcsine of the difference in "height" between the leading edge and trailing edge of the wingtip (throught the rotation of the local basis vector pointing in the x2-direction).
+# In the following loop, we create new model instances for each tip mass value, create and solve the steady problem, and then extract the outputs of interest. The tip mass is positioned in such a way to cause not only bending but also significant torsion of the wing. The model creation process is streamlined with the function [`create_Pazy`](@ref create_Pazy), taking the appropriate inputs. Notice that the twist angle is computed as the arcsine of the difference in "height" between the leading edge and trailing edge of the wingtip (throught the rotation of the local basis vector pointing in the x2-direction).
 ## Sweep tip mass
 for (i,m) in enumerate(mRange)
     ## Create model with current tip mass 80 mm behind the trailing-edge

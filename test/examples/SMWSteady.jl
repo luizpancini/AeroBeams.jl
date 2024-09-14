@@ -24,7 +24,7 @@ SMWSteady,L = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod
 σstep = 0.5
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
-# Undeformed nodal and midpoint positions
+# Undeformed nodal positions
 x1_0 = vcat([vcat(SMWSteady.beams[1].elements[e].r_n1[1],SMWSteady.beams[1].elements[e].r_n2[1]) for e in 1:nElem]...)
 x3_0 = vcat([vcat(SMWSteady.beams[1].elements[e].r_n1[3],SMWSteady.beams[1].elements[e].r_n2[3]) for e in 1:nElem]...)
 

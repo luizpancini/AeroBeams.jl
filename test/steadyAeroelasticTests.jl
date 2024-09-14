@@ -1,5 +1,14 @@
 # Steady aeroelastic problems
 
+@testset "Steady aeroelastic analysis of the clamped conventional HALE" begin
+    include("examples/conventionalHALEclampedSteady.jl")
+    # Self-comparison
+    x1_def_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEclampedSteady", "x1_def.txt"))
+    x3_def_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEclampedSteady", "x3_def.txt"))
+    @test x1_def ≈ x1_def_ atol=SELFatol
+    @test x3_def ≈ x3_def_ atol=SELFatol
+end
+
 @testset "Steady analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
     include("examples/PazyFFWTsteady.jl")
     # Self-comparison

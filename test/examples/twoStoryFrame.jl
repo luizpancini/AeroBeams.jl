@@ -1,8 +1,12 @@
 # # Modal analysis of a two-story frame
-# This example illustrates how to set up a modal analysis, using a two-story beam frame. Moreover, it also shows how to assemble a model where the beams are not simply-connected (connected in sequence). This problem was proposed by [Petyt](https://doi.org/10.1017/CBO9780511761195).
+# This example illustrates how to set up a modal analysis, using a two-story beam frame. Moreover, it also shows how to assemble a model where the beams are not all connected in sequence. This problem was proposed by [Petyt](https://doi.org/10.1017/CBO9780511761195).
+
+#md # ![](../assets/twoStoryFrame.png)
+
+#md # *Geometry of the two-story frame* by [Petyt](https://doi.org/10.1017/CBO9780511761195)
 
 # ### Problem variables
-# The first step is to define the variables of our problem: geometric and material properties, and discretization. There are two types of beams in the frame: those with cross-section base `b1` and those with `b2`, but all are made of the same material. We also apply an uniform discretization.
+# The first step is to define the variables of our problem: geometric and material properties, and discretization. There are two types of beams in the frame: vertical ones have cross-section base `b1` and horizontal ones have base `b2`, but all are made of the same material. We also apply an uniform discretization.
 using AeroBeams, LinearAlgebra
 
 ## Geometric properties
@@ -32,7 +36,7 @@ nElem = 10
 #md nothing #hide
 
 # ### Beams of the frame
-# In the following we initialize an array of beams and create each one in turn. Notice that their disposition in space is defined by the rotation parameters from the global basis A to the undeformed beam basis b, `p0`. Moreover, since this is a frame, the beams are not all connected one after another. That means there are connection nodes, which need to be specified if the assembly is to be correct. That is done by setting in [`create_Beam`](@ref create_Beam) the keywords `connectedBeams` (an array of the beams to which the present one connects), `connectedNodesThis` (the corresponding array of nodes of `connectedBeams` to which the present one connects) and `connectedNodesOther` (the corresponding array of nodes of the present beam that connect to `connectedNodesOther`). Notice that these arguments are recursive, that is, you only need to reference beams that were already created (if beam 2 connects to beam 1, those arguments need to be set up only for beam 2).
+# In the following we initialize an array of beams and create each one in turn. Notice that their disposition in space is defined by the rotation parameters from the global basis ``\mathcal{A}`` to the undeformed beam basis ``b^+``, `p0`. Moreover, since this is a frame, the beams are not all connected in sequence. That means there are connection nodes, which need to be specified. That is done by setting in [`create_Beam`](@ref create_Beam) the keywords `connectedBeams` (an array of the beams to which the present one connects), `connectedNodesThis` (the corresponding array of nodes of `connectedBeams` to which the present one connects) and `connectedNodesOther` (the corresponding array of nodes of the present beam that connect to `connectedNodesOther`). Notice that these arguments are recursive, that is, you only need to reference beams that were already created (if beam 2 connects to beam 1, those arguments need to be set up only for beam 2).
 ## Beams
 beams = Vector{Beam}(undef,16)
 
@@ -93,7 +97,7 @@ solve!(problem)
 #md nothing #hide
 
 # ### Post-processing
-# We can now extract the frequencies of vibration and compare to the reference finite element solution. The agreement is very good. Notice that only the first and seconding bending mode frequencies in a specific direction are compared (this problem is symmetric).
+# We can now extract the frequencies of vibration and compare to the reference finite element solution. The agreement is very good. Notice that only the first and seconding bending mode (swaying modes) in a specific direction are compared, since this problem is symmetric.
 ## Frequencies
 freqs = problem.frequenciesOscillatory
 
@@ -105,16 +109,14 @@ refFreqs = [11.8; 34.1]
 println("Relative errors: $ϵ_rel")
 #md nothing #hide
 
-#md # We can also visualize the mode shapes using the function [`plot_mode_shapes`](@ref plot_mode_shapes) with the appropriate arguments.
-#md using Suppressor #hide
-#md using Plots
-#md pyplot()
-#md @suppress begin #hide
+#md # We can also visualize the mode shapes using the function [`plot_mode_shapes`](@ref plot_mode_shapes) with the appropriate arguments. They compare well to thosed described in the reference.
+#md using Plots #hide
 #md modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),frequencyLabel="frequency",modalColorScheme=:rainbow)
 #md savefig("twoStoryFrame_modeShapes.svg") #hide
 #md nothing #hide
-#md end #hide
 #md # ![](twoStoryFrame_modeShapes.svg)
-#md nothing #hide
+#md # ![](../assets/twoStoryFrameModes.png)
+
+#md # *Swaying modes of the two-story frame* by [Petyt](https://doi.org/10.1017/CBO9780511761195)
 
 println("Finished twoStoryFrame.jl") #src

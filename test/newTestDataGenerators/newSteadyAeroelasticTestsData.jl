@@ -1,5 +1,11 @@
 # New reference data for steady aeroelastic tests
 
+# Steady aeroelastic analysis of the clamped conventional HALE
+include("../examples/conventionalHALEclampedSteady.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/conventionalHALEclampedSteady"))
+writedlm("test/newTestDataGenerators/conventionalHALEclampedSteady/x1_def.txt", x1_def)
+writedlm("test/newTestDataGenerators/conventionalHALEclampedSteady/x3_def.txt", x3_def)
+
 # Steady analysis of the Pazy wing with flared folding wing tip (FFWT)
 include("../examples/PazyFFWTsteady.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTsteady"))

@@ -98,8 +98,8 @@ Beam constructor
 - `C::Vector{<:Matrix{<:Number}}` = array of sectional stiffness matrices
 - `I::Vector{<:Matrix{<:Number}}` = array of sectional inertia matrices
 - `connectedBeams::Union{Nothing,Vector{Beam}}` = array of beams to which this beam is connected (a non-recursive property)
-- `connectedNodesThis::Vector{Int64}` = nodes of this beam which are connected to other beams' nodes (a non-recursive property)
-- `connectedNodesOther::Vector{Int64}` = respective nodes of the other beams (a non-recursive property)
+- `connectedNodesThis::Vector{Int64}` = nodes of this beam which are connected to other beams' nodes
+- `connectedNodesOther::Vector{Int64}` = respective nodes of the other beams
 - `pointInertias::Vector{PointInertia}` = attached point inertias
 - `hingedNodes::Vector{Int64}` = nodes with a hinge
 - `hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}` = respective hinged degrees-of-freedom

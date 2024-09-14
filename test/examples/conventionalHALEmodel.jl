@@ -1,11 +1,11 @@
 # # Creating a HALE aircraft model
 # This example illustrates how to create a conventional aircraft model, the high-altitude long-endurance (HALE) aircraft described by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738):
 
-#md # ![](assets/cHALE.png)
-#md # *HALE model geometry*
+#md # ![](../assets/cHALE.png)
+#md # *HALE model geometry* by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738)
 
-#md # ![](assets/cHALEdata.png)
-#md # *HALE model data*
+#md # ![](../assets/cHALEdata.png)
+#md # *HALE model data* by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738)
 
 # The contents of the present example are wrapped into the function [`create_conventional_HALE`](@ref create_conventional_HALE), in which you may check all the keyword arguments that we'll define below.
 

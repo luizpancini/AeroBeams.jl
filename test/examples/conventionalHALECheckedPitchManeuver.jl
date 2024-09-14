@@ -1,8 +1,8 @@
 # # Pitch maneuver of a HALE aircraft
 # This example illustrates how to set up a dynamic analysis of an aircraft in free flight. For that we take a high-altitude long-endurance (HALE) aircraft model described by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738):
 
-#md # ![](assets/cHALE.png)
-#md # *HALE model geometry*
+#md # ![](../assets/cHALE.png)
+#md # *HALE model geometry* by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738)
 
 # ### Problem setup
 # Let's begin by setting up the variables of our problem.
@@ -31,7 +31,7 @@ nElemWing = 20
 #md nothing #hide
 
 # ### Trim problem
-# We have to first trim the aircraft at the specified flight condition. Our trim variables are the engine's thrust (modeled as a follower force at the root of the wing), and the elevator deflection. For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxiter = 50`, the default is 20). We use the built-in function [`create_conventional_HALE`](@ref create_conventional_HALE) to streamline the model creation process.
+# We have to first trim the aircraft at the specified flight condition. Our trim variables are the engine's thrust (modeled as a follower force at the root of the wing), and the elevator deflection. For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxiter = 50`, the default is 20). We use the built-in function [`create_conventional_HALE`](@ref create_conventional_HALE) to streamline the model creation process. A dedicated [example](conventionalHALEmodel.md) explains the inner workings of that function.
 ## System solver
 relaxFactor = 0.5
 maxiter = 50
@@ -111,54 +111,39 @@ airspeed = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowVelocitiesAn
 
 #md # We are now ready to visualize the results through the changes in forward distance and altitude, root angle of attack and airspeed.
 #md using Plots
-#md pyplot()
-#md nothing #hide
+#md gr()
+#md ENV["GKSwstype"] = "100" #hide
 
 ## Forward distance
-#md @suppress_err begin #hide
 #md plt1 = plot(xlabel="Time [s]", ylabel="Forward distance [m]")
 #md plot!(t, Δu2, c=:black, lw=2, label=false)
 #md savefig("conventionalHALECheckedPitchManeuver_fdist.svg") #hide
-#md end #hide
-#md nothing #hide
 
 ## Altitude
-#md @suppress_err begin #hide
 #md plt2 = plot(xlabel="Time [s]", ylabel="Altitude [m]")
 #md plot!(t, Δu3, c=:black, lw=2, label=false)
 #md savefig("conventionalHALECheckedPitchManeuver_altitude.svg") #hide
-#md end #hide
-#md nothing #hide
 
 ## Root AoA
-#md @suppress_err begin #hide
 #md plt3 = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]")
 #md plot!(t, wingAoA*180/π, c=:black, lw=2, label="Wing")
 #md plot!(t, htAoA*180/π, c=:blue, lw=2, label="HT")
 #md savefig("conventionalHALECheckedPitchManeuver_AoA.svg") #hide
-#md end #hide
-#md nothing #hide
 
 ## Airspeed
-#md @suppress_err begin #hide
 #md plt4 = plot(xlabel="Time [s]", ylabel="Airspeed [m/s]")
 #md plot!(t, airspeed, c=:black, lw=2, label=false)
 #md savefig("conventionalHALECheckedPitchManeuver_airspeed.svg") #hide
-#md end #hide
 #md nothing #hide
 
 #md # ![](conventionalHALECheckedPitchManeuver_fdist.svg)
-#md nothing #hide
 #md # ![](conventionalHALECheckedPitchManeuver_altitude.svg)
-#md nothing #hide
 #md # ![](conventionalHALECheckedPitchManeuver_AoA.svg)
-#md nothing #hide
 #md # ![](conventionalHALECheckedPitchManeuver_airspeed.svg)
-#md nothing #hide
 
 #md # Let's also visualize the complete motion of the aircraft (rigid + elastic) through the view of an inertial observer. For that, we use the [`plot_dynamic_deformation`](@ref plot_dynamic_deformation) function with the appropriate arguments.
 #md @suppress begin #hide
-#md plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotBCs=false,plotDistLoads=false,plotFrequency=10,plotLimits=[(-20,20),(-10,250),(-20,20)],save=true,savePath="/docs/build/conventionalHALECheckedPitchManeuver_motion.gif")
+#md plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotBCs=false,plotDistLoads=false,plotFrequency=10,plotLimits=[(-20,20),(-10,250),(-20,20)],save=true,savePath="/docs/build/literate/conventionalHALECheckedPitchManeuver_motion.gif")
 #md nothing #hide
 #md end #hide
 #md # ![](conventionalHALECheckedPitchManeuver_motion.gif)

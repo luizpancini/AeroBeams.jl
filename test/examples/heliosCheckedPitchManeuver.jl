@@ -13,7 +13,7 @@ reducedChord = true
 beamPods = true
 
 # Option to set payload on wing
-payloadOnWing = true
+payloadOnWing = false
 
 # Number of elements of beams
 nElemStraightSemispan = 10
@@ -46,7 +46,7 @@ println("Trim variables: T = $(trimThrust), δ = $(trimδ*180/π)")
 # Set checked elevator deflection profile
 Δδ = -5*π/180
 tδinit = 1
-tδramp = 1
+tδramp = 10
 tδpeak = tδinit+tδramp
 tδfinal = tδpeak+tδramp
 δ = t -> ifelse(
@@ -67,8 +67,8 @@ tδfinal = tδpeak+tδramp
 heliosDynamic,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,nElemStraightSemispan=nElemStraightSemispan,nElemPod=nElemPod,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δ=δ,thrust=trimThrust,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing)
 
 # Time variables
-Δt = 1e-2
-tf = 5
+Δt = 5e-2
+tf = 60
 
 # Set NR system solver for dynamic problem
 maxit = 50

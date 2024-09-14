@@ -111,55 +111,44 @@ Vdot3_quarter_analytic = -δ*ω2^2*cos.(ω2*t)*sin(2π*1/4) + -σ*ω2*sin.(ω2*t
 
 #md # Now let's plot the displacement, rotation, velocities and accelerations at the appropriate points of the beam. The correspondance with the analytical reference is very good, except for the angular acceleration at the midpoint, which oscillates around the analytical solution. That indicates the estimation of the initial value of that variable was not accurate, which may happen for the rates of the velocity states ($\dot{V}$ and $\dot{\Omega}$).
 #md using Plots
-#md pyplot()
+#md gr()
+#md ENV["GKSwstype"] = "100" #hide
 
 ## Displacement at quarter-length
-#md @suppress_err begin #hide
 #md plt1 = plot(xlabel="\$t/T\$", ylabel="\$u_3\$ at \$x_1=L/4\$ [m]")
 #md plot!(tNorm,u3_quarter, c=:black, lw=2, label="AeroBeams")
 #md scatter!(tNorm[1:5:end],u3_quarter_analytic[1:5:end], c=:blue, ms=5, msw=0, label="Analytical")
 #md savefig("initialDispAndVelBeam_disp.svg") #hide
-#md end #hide
 
 ## Velocity at quarter-length
-#md @suppress_err begin #hide
 #md plt2 = plot(xlabel="\$t/T\$", ylabel="\$V_3\$ at \$x_1=L/4\$ [m/s]")
 #md plot!(tNorm,V3_quarter, c=:black, lw=2, label="AeroBeams")
 #md scatter!(tNorm[1:5:end],V3_quarter_analytic[1:5:end], c=:blue, ms=5, msw=0, label="Analytical")
 #md savefig("initialDispAndVelBeam_vel.svg") #hide
-#md end #hide
 
 ## Acceleration at quarter-length
-#md @suppress_err begin #hide
 #md plt3 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{V}_3\$ at \$x_1=L/4\$ [m/\$s^2\$]")
 #md plot!(tNorm,Vdot3_quarter, c=:black, lw=2, label="AeroBeams")
 #md scatter!(tNorm[1:5:end],Vdot3_quarter_analytic[1:5:end], c=:blue, ms=5, msw=0, label="Analytical")
 #md savefig("initialDispAndVelBeam_acc.svg") #hide
-#md end #hide
 
 ## Rotation at root
-#md @suppress_err begin #hide
 #md plt4 = plot(xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi)\$ at \$x_1=0\$")
 #md plot!(tNorm,θ2_root/(2π), c=:black, lw=2, label="AeroBeams")
 #md scatter!(tNorm[1:5:end],θ2_root_analytic[1:5:end]/(2*π), c=:blue, ms=5, msw=0, label="Analytical")
 #md savefig("initialDispAndVelBeam_rot.svg") #hide
-#md end #hide
 
 ## Angular velocity at mid-length
-#md @suppress_err begin #hide
 #md plt5 = plot(xlabel="\$t/T\$", ylabel="\$\\Omega_2\$ at \$x_1=L/2\$ [rad/s]")
 #md plot!(tNorm,Ω2_mid, c=:black, lw=2, label="AeroBeams")
 #md scatter!(tNorm[1:5:end],Ω2_mid_analytic[1:5:end], c=:blue, ms=5, msw=0, label="Analytical")
 #md savefig("initialDispAndVelBeam_angVel.svg") #hide
-#md end #hide
 
 ## Angular acceleration at mid-length
-#md @suppress_err begin #hide
 #md plt6 = plot(xlabel="\$t/T\$", ylabel="\$\\dot{\\Omega}_2\$ at \$x_1=L/2\$ [rad/\$s^2\$]")
 #md plot!(tNorm,Ωdot2_mid, c=:black, lw=2, label="AeroBeams")
 #md scatter!(tNorm[1:5:end],Ωdot2_mid_analytic[1:5:end], c=:blue, ms=5, msw=0, label="Analytical")
 #md savefig("initialDispAndVelBeam_angAcc.svg") #hide
-#md end #hide
 #md nothing #hide
 
 #md # ![](initialDispAndVelBeam_disp.svg)
@@ -172,7 +161,7 @@ Vdot3_quarter_analytic = -δ*ω2^2*cos.(ω2*t)*sin(2π*1/4) + -σ*ω2*sin.(ω2*t
 #md # Finally, we can visualize the motion of the beam using the function [`plot_dynamic_deformation`](@ref plot_dynamic_deformation) with the appropriate inputs.
 ## Animation
 #md @suppress begin #hide
-#md plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;-0.05;0],timeStampPos=[0.5;-0.05;0],plotFrequency=1,plotLimits=[(0,L),(-L/2,L/2),(-L,L)],save=true,savePath="/docs/build/initialDispAndVelBeam_motion.gif")
+#md plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;-0.05;0],timeStampPos=[0.5;-0.05;0],plotFrequency=1,plotLimits=[(0,L),(-L/2,L/2),(-L,L)],save=true,savePath="/docs/build/literate/initialDispAndVelBeam_motion.gif")
 #md nothing #hide
 #md end #hide
 #md # ![](initialDispAndVelBeam_motion.gif)

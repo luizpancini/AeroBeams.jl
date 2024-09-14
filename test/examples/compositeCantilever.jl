@@ -1,5 +1,6 @@
 using AeroBeams, LinearAlgebra
 
+# This problem was defined by [Wang and Yu](https://doi.org/10.1063/1.4985091)
 # Beam
 L = 60
 nElem = 10
