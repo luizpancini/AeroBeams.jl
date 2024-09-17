@@ -212,7 +212,10 @@ nothing #hide
 Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the [`plot_mode_shapes`](@ref plot_mode_shapes) function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.
 
 ````@example BWBflutter
+# Plot mode shapes
+@suppress begin #hide
 modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)
+end #hide
 savefig("BWBflutter_modeShapes.svg") #hide
 nothing #hide
 ````

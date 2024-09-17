@@ -87,7 +87,7 @@ nothing #hide
 ````
 
 ### Post-processing
-We begin by loading the experimental values by [Epps and Chandra](https://doi.org/10.4050/JAHS.41.29)
+We begin by loading the experimental values by [Epps and Chandra](https://doi.org/10.4050/JAHS.41.29).
 
 ````@example sweptTipRotor
 # Experimental values

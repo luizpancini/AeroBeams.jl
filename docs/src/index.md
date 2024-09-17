@@ -99,6 +99,7 @@ Pages = [
     "literate/heliosTrim.md",
     "literate/BWBflutter.md",
     "literate/conventionalHALECheckedPitchManeuver.md",
+    "literate/conventionalHALECheckedRollManeuver.md",
 ]
 ```
 

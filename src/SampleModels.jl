@@ -660,8 +660,12 @@ Creates a model based on the conventional HALE aircraft described by Patil, Hodg
 - `k2::Number` = undeformed wing flapwise bending curvature
 - `airspeed::Number` = local initial/trim airspeed
 - `δElevIsTrimVariable::Bool` = flag for elevator deflection being a trim variable
+- `δAilIsTrimVariable::Bool` = flag for aileron deflection being a trim variable
+- `δRuddIsTrimVariable::Bool` = flag for rudder deflection being a trim variable    
 - `thrustIsTrimVariable::Bool` = flag for motors' thrust being a trim variable
 - `δElev::Union{Nothing,Number,<:Function}` = elevator deflection
+- `δAil::Union{Nothing,Number,<:Function}` = aileron deflection
+- `δRudd::Union{Nothing,Number,<:Function}` = rudder deflection
 - `thrust::Union{Number,<:Function}` = motors' thrust
 - `g::Number` = local acceleration of gravity
 - `wingCd0::Number` = parisite drag coefficient for the wing
@@ -673,7 +677,7 @@ Creates a model based on the conventional HALE aircraft described by Patil, Hodg
 - `stabscmδ::Number` = cm vs δ slope for the stabilizers
 - `stabscdδ::Number` = cd vs δ slope for the stabilizers
 """
-function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,wAirfoil::Airfoil=deepcopy(flatPlate),sAirfoil::Airfoil=deepcopy(flatPlate),nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
+function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,wAirfoil::Airfoil=deepcopy(flatPlate),sAirfoil::Airfoil=deepcopy(flatPlate),nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Number=1e12,stiffnessFactor::Number=1,k1::Number=0,k2::Number=0,airspeed::Number=0,δElevIsTrimVariable::Bool=false,δAilIsTrimVariable::Bool=false,δRuddIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Number,<:Function}=nothing,δAil::Union{Nothing,Number,<:Function}=nothing,δRudd::Union{Nothing,Number,<:Function}=nothing,thrust::Union{Number,<:Function}=0,g::Number=-9.80665,wingCd0::Number=0,wingcnδ::Number=2.5,wingcmδ::Number=-0.35,wingcdδ::Number=0.15,stabsCd0::Number=0,stabscnδ::Number=2.5,stabscmδ::Number=-0.35,stabscdδ::Number=0.15)
 
     # Validate
     @assert iseven(nElemWing)
@@ -684,12 +688,28 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     @assert stabsCd0 >= 0
     @assert airspeed >= 0
     δElevIsInput = !isnothing(δElev)
+    δAilIsInput = !isnothing(δAil)
+    δRuddIsInput = !isnothing(δRudd)
     if δElevIsInput
         @assert !δElevIsTrimVariable
     end
     if δElev isa Number
         δElevConst = deepcopy(δElev)
         δElev = t -> δElevConst
+    end
+    if δAilIsInput
+        @assert !δAilIsTrimVariable
+    end
+    if δAil isa Number
+        δAilConst = deepcopy(δAil)
+        δAil = t -> δAilConst
+    end
+    if δRuddIsInput
+        @assert !δRuddIsTrimVariable
+    end
+    if δRudd isa Number
+        δRuddConst = deepcopy(δRudd)
+        δRudd = t -> δRuddConst
     end
     if thrust isa Number
         thrustConst = deepcopy(thrust)
@@ -703,17 +723,29 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     wChord = 1
     wNormSparPos = 0.5
     wNormFlapPos = 0.75
-    wNormFlapSpan = [0.75,1]
+    wFlapSize = 0.25
+    wLNormFlapSpan = [0,wFlapSize]
+    wRNormFlapSpan = [1-wFlapSize,1]
     update_Airfoil_params!(wAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=wChord/2)
-    wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wNormFlapSpan,updateAirfoilParameters=false)
+
+    wingSurfLeft = δAilIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wLNormFlapSpan,δ=δAil,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wLNormFlapSpan,δIsTrimVariable=δAilIsTrimVariable,updateAirfoilParameters=false)
+
+    wingSurfRight = δAilIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wRNormFlapSpan,δ=δAil,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wRNormFlapSpan,δIsTrimVariable=δAilIsTrimVariable,updateAirfoilParameters=false)
 
     # Override wing airfoil parameters
-    wingSurf.airfoil.attachedFlowParameters.cd₀ = wingCd0
-    wingSurf.airfoil.parametersBLi.cd₀ = wingCd0
-    wingSurf.airfoil.parametersBLo.cd₀ = wingCd0
-    wingSurf.airfoil.flapParameters.cnδ = wingcnδ
-    wingSurf.airfoil.flapParameters.cmδ = wingcmδ
-    wingSurf.airfoil.flapParameters.cdδ = wingcdδ
+    wingSurfLeft.airfoil.attachedFlowParameters.cd₀ = wingCd0
+    wingSurfLeft.airfoil.parametersBLi.cd₀ = wingCd0
+    wingSurfLeft.airfoil.parametersBLo.cd₀ = wingCd0
+    wingSurfLeft.airfoil.flapParameters.cnδ = wingcnδ
+    wingSurfLeft.airfoil.flapParameters.cmδ = wingcmδ
+    wingSurfLeft.airfoil.flapParameters.cdδ = wingcdδ
+
+    wingSurfRight.airfoil.attachedFlowParameters.cd₀ = wingCd0
+    wingSurfRight.airfoil.parametersBLi.cd₀ = wingCd0
+    wingSurfRight.airfoil.parametersBLo.cd₀ = wingCd0
+    wingSurfRight.airfoil.flapParameters.cnδ = wingcnδ
+    wingSurfRight.airfoil.flapParameters.cmδ = wingcmδ
+    wingSurfRight.airfoil.flapParameters.cdδ = wingcdδ
 
     # Wing properties
     Lw = 16
@@ -736,9 +768,9 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     ψ = Lw/r
 
     # Wing beams
-    leftWing = create_Beam(name="leftWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=deepcopy(wingSurf),k=[-k1;k2;0],rotationParametrization="E321",p0=[0;-θ;ψ])
+    leftWing = create_Beam(name="leftWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=wingSurfLeft,k=[-k1;k2;0],rotationParametrization="E321",p0=[0;-θ;ψ])
 
-    rightWing = create_Beam(name="rightWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=deepcopy(wingSurf),k=[k1;k2;0],connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
+    rightWing = create_Beam(name="rightWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=wingSurfRight,k=[k1;k2;0],connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
 
     # Link wing ailerons
     aileronLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[-1])
@@ -785,7 +817,7 @@ function create_conventional_HALE(; altitude::Number=20e3,aeroSolver::AeroSolver
     vNormFlapPos = 0.75
     vNormFlapSpan = [0,1]
     update_Airfoil_params!(sAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=vChord/2)
-    vsSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,updateAirfoilParameters=false)
+    vsSurf = δRuddIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,δ=δRudd,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,δIsTrimVariable=δRuddIsTrimVariable,updateAirfoilParameters=false)
 
     # Override vertical stabilizer airfoil parameters
     vsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
