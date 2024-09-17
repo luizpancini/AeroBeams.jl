@@ -44,11 +44,11 @@ Four types of analysis can be simulated:
 
 A simple built-in post-processing tool allows the visualization of the results. Here is an example of the large-displacement motion of the [Pazy wing](https://nescacademy.nasa.gov/workshops/AePW3/public/wg/largedeflection) benchmark upon encountering a continuous gust (simulated atmospheric turbulence):
 
-![Pazy Wing Continuous 1D Gust Deformation](test/outputs/figures/PazyWingContinuous1DGust/PazyWingContinuous1DGust_deformation.gif)
+![Pazy Wing Continuous 1D Gust Deformation](docs/src/assets/PazyWingContinuous1DGust_deformation.gif)
 
 Purely structural problems (in the abscence of aerodynamic loads) can analyzed as well, such as the "flying spaghetti" proposed by [[9]](#9):
 
-![flying spaghetti](test/outputs/figures/flyingSpaghetti2D/flyingSpaghetti2D_deformation.gif)
+![flying spaghetti](docs/src/assets/flyingSpaghetti2D_deformation.gif)
 
 ## Limitations
 A few limitations of the theory to keep in mind when using this package:
