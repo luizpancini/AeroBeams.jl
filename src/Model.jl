@@ -537,9 +537,12 @@ function update_linked_flap_deflections!(model::Model)
     # Loop flap links
     for flapLink in flapLinks
         @unpack masterBeam,slaveBeams,δMultipliers = flapLink
+        # Get first flapped element of master beam
+        flappedElementsMaster = masterBeam.elements[[element.aero.flapped for element in masterBeam.elements]]
+        e = flappedElementsMaster[1].localID
         # Loop slave beams
         for (i,slaveBeam) in enumerate(slaveBeams)
-            # Flapped elements of the beam
+            # Flapped elements of the slave beam
             flappedElements = slaveBeam.elements[[element.aero.flapped for element in slaveBeam.elements]]
             # Update TFs for flap deflection being null and for trim flap deflection 
             [setfield!(element.aero, :δIsZero, false) for element in flappedElements]
@@ -573,9 +576,9 @@ function update_linked_flap_deflections!(model::Model)
                 end
             end
             # Get flap deflection and rates of elements equal to the values of the master beam times the slave's deflection multiplier
-            δSlave = t -> masterBeam.elements[1].aero.δ(t)*δMultipliers[i]
-            δdotSlave = t -> masterBeam.elements[1].aero.δdot(t)*δMultipliers[i]
-            δddotSlave = t -> masterBeam.elements[1].aero.δddot(t)*δMultipliers[i]
+            δSlave = t -> masterBeam.elements[e].aero.δ(t)*δMultipliers[i]
+            δdotSlave = t -> masterBeam.elements[e].aero.δdot(t)*δMultipliers[i]
+            δddotSlave = t -> masterBeam.elements[e].aero.δddot(t)*δMultipliers[i]
             # Set flap deflection, its rates and deflection multipliers of the slave elements 
             [setfield!(element.aero, :δ, δSlave) for element in flappedElements]
             [setfield!(element.aero, :δdot, δdotSlave) for element in flappedElements]
@@ -584,6 +587,7 @@ function update_linked_flap_deflections!(model::Model)
             [setfield!(element.aero, :δdotNow, element.aero.δdot(0)) for element in flappedElements]
             [setfield!(element.aero, :δddotNow, element.aero.δddot(0)) for element in flappedElements]
             [setfield!(element.aero, :δMultiplier, δMultipliers[i]) for element in flappedElements]
+            [setfield!(element.aero, :flapped, true) for element in flappedElements]
         end
         # Loop beams
         for beam in vcat(masterBeam,slaveBeams...)
