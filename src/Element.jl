@@ -676,7 +676,7 @@ mutable struct Element <: BeamElement
         rotationConstraint = nothing
 
         # Initialize equation resultants and Jacobians
-        resultants = Resultants(nTotalAeroStates)
+        resultants = Resultants(aero.nTotalAeroStates)
         jacobians = Jacobians()
         
         # Create element
