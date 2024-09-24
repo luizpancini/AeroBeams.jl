@@ -18,13 +18,13 @@
     # Airfoil
     airfoil::Airfoil
     # Airfoil chord (constant or a function of normalized span)
-    c::Union{<:Function,Number}
+    c::Union{<:Function,Real}
     # Sweep angle (constant or a function of normalized span)
-    Λ::Union{<:Function,Number} 
+    Λ::Union{<:Function,Real} 
     # Spar position normalized by local chord (constant or a function of normalized span)
     normSparPos::Union{<:Function,Float64}
     # Trailing-edge flap span normalized by attached beam length
-    normFlapSpan::Union{Nothing,Vector{<:Number}}
+    normFlapSpan::Union{Nothing,Vector{<:Real}}
     # Trailing-edge flap chord normalized by local airfoil chord (only used if flapLoadsSolver is of type ThinAirfoilTheory)
     normFlapPos::Union{Nothing,Float64}
     # TF for flap deflection being a user input
@@ -34,7 +34,7 @@
     # TF for flap deflection being zero over time
     δIsZero::Bool 
     # Flap deflection 
-    δ::Union{Nothing,<:Function,Number}
+    δ::Union{Nothing,<:Function,Real}
     # Flap site ID (for flapLoadsSolver of type TableLookup)
     flapSiteID::Union{Nothing,Int64}
     # TF to update airfoil parameters according to flow parameters
@@ -42,7 +42,7 @@
     # Tip loss correction variables
     hasTipCorrection::Bool
     tipLossFunction::Union{Nothing,<:Function}
-    tipLossDecayFactor::Number
+    tipLossDecayFactor::Real
     # TF for small angle of attack approximations
     smallAngles::Bool
 
@@ -69,13 +69,13 @@ Aerodynamic surface constructor
 - `gustLoadsSolver::GustAeroSolver` = aerodynamic solver for gust-induced loads
 - `derivationMethod::DerivationMethod` = method for calculation of aerodynamic derivatives
 - `airfoil::Airfoil` = airfoil section
-- `c::Union{<:Function,Number}` = chord
-- `Λ::Union{<:Function,Number}` = sweep angle
+- `c::Union{<:Function,Real}` = chord
+- `Λ::Union{<:Function,Real}` = sweep angle
 - `normSparPos::Union{<:Function,Float64}` = normalized position of the spar (beam reference line) on the chord
-- `normFlapSpan::Union{Nothing,Vector{<:Number}}` = normalized position of the trailing-edge flap along the span (beam arclength)
+- `normFlapSpan::Union{Nothing,Vector{<:Real}}` = normalized position of the trailing-edge flap along the span (beam arclength)
 - `normFlapPos::Union{Nothing,Float64}` = normalized position of the trailing-edge flap hinge on the chord
 - `δIsTrimVariable::Bool` = flag for trailing-edge deflection being a trim variable
-- `δ::Union{Nothing,<:Function,Number}` = trailing-edge deflection [rad]
+- `δ::Union{Nothing,<:Function,Real}` = trailing-edge deflection [rad]
 - `flapSiteID::Union{Nothing,Int64}` = trailing-edge flap site ID
 - `updateAirfoilParameters::Bool` = flag to update airfoil parameters with local airspeed
 - `hasTipCorrection::Bool` = flag to employ a tip correction on aerodynamic coefficients
@@ -83,16 +83,16 @@ Aerodynamic surface constructor
 - `tipLossDecayFactor::Float64` = respective tip loss factor
 - `smallAngles::Bool` = flag to employ small angles approximation on the calculation of the angle of attack
 """
-function create_AeroSurface(; solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Number},Λ::Union{<:Function,Number}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Number}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Number}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Number=Inf64,smallAngles::Bool=false)
+function create_AeroSurface(; solver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=ThinAirfoilTheory(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil,c::Union{<:Function,Real},Λ::Union{<:Function,Real}=0.0,normSparPos::Union{<:Function,Float64},normFlapSpan::Union{Nothing,Vector{<:Real}}=nothing,normFlapPos::Union{Nothing,Float64}=nothing,δIsTrimVariable::Bool=false,δ::Union{Nothing,<:Function,Real}=nothing,flapSiteID::Union{Nothing,Int64}=nothing,updateAirfoilParameters::Bool=true,hasTipCorrection::Bool=false,tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Real=Inf64,smallAngles::Bool=false)
 
     # Validate
-    if c isa Number
+    if c isa Real
         @assert c > 0 "chord must be positive"
     end
-    if Λ isa Number
+    if Λ isa Real
         @assert -π/2 < Λ < π/2 "sweep angle too large (input must be in radians and smaller than π/2)"
     end
-    if normSparPos isa Number
+    if normSparPos isa Real
         @assert 0 < normSparPos < 1 "normSparPos must be between 0 and 1"
     end
     if !isnothing(normFlapSpan)
@@ -135,7 +135,7 @@ function create_AeroSurface(; solver::AeroSolver=Indicial(),flapLoadsSolver::Fla
         δ = t -> 0
         δdot = t -> 0
         δddot = t -> 0
-    elseif δ isa Number
+    elseif δ isa Real
         δconst = deepcopy(δ)
         δ = t -> δconst
         δdot = δIsTrimVariable ? t -> 0 : t -> ForwardDiff.derivative(δ, t)

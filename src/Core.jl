@@ -93,7 +93,7 @@ end
 
 
 # Computes the generalized velocities of basis b at the element's midpoint, resolved in basis A
-function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
+function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Real=0.0)
 
     @unpack R_AT,v_A,ω_A = model
     @unpack r = element
@@ -112,7 +112,7 @@ end
 
 
 # Computes the generalized accelerations of basis b at the element's midpoint, resolved in basis A
-function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
+function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Real=0.0)
 
     @unpack R_AT,v_A,ω_A,vdot_A,ωdot_A = model
     @unpack r = element

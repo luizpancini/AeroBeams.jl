@@ -10,16 +10,16 @@
     name::String
     units::UnitsSystem
     beams::Vector{Beam}
-    initialPosition::Vector{<:Number}
-    gravityVector::Vector{<:Number}
+    initialPosition::Vector{<:Real}
+    gravityVector::Vector{<:Real}
     BCs::Vector{BC}
     p_A0::Vector{Float64}
-    u_A::Union{Vector{<:Number},<:Function,Nothing}
-    v_A::Union{Vector{<:Number},<:Function,Nothing}
-    ω_A::Union{Vector{<:Number},<:Function,Nothing}
-    vdot_A::Union{Vector{<:Number},<:Function,Nothing}
-    ωdot_A::Union{Vector{<:Number},<:Function,Nothing}
-    altitude::Union{Nothing,Number}
+    u_A::Union{Vector{<:Real},<:Function,Nothing}
+    v_A::Union{Vector{<:Real},<:Function,Nothing}
+    ω_A::Union{Vector{<:Real},<:Function,Nothing}
+    vdot_A::Union{Vector{<:Real},<:Function,Nothing}
+    ωdot_A::Union{Vector{<:Real},<:Function,Nothing}
+    altitude::Union{Nothing,Real}
     atmosphere::Union{Nothing,Atmosphere}
     gust::Union{Nothing,Gust}
     trimLoadsLinks::Vector{TrimLoadsLink}
@@ -49,9 +49,9 @@
     masterRotationConstraintsDOF::Vector{Int64} = Vector{Int64}()
     slaveRotationConstraintsDOF::Vector{Int64} = Vector{Int64}()
     rotationConstraintsValues::Vector{Float64} = Vector{Float64}()
-    mass::Number = 0
-    centerOfMass::Vector{<:Number} = zeros(3)
-    I::Vector{<:Number} = zeros(3)
+    mass::Real = 0
+    centerOfMass::Vector{<:Real} = zeros(3)
+    I::Vector{<:Real} = zeros(3)
 
 end
 export Model
@@ -66,23 +66,23 @@ Creates a model
 - `name::String` = name of the model
 - `units::create_UnitsSystem` = units system
 - `beams::Vector{Beam}` = beams in the assembly
-- `initialPosition::Vector{<:Number}` = initial position vector of the first node of the first beam, resolved in the inertial frame I
-- `gravityVector::Vector{<:Number}` = gravity vector
+- `initialPosition::Vector{<:Real}` = initial position vector of the first node of the first beam, resolved in the inertial frame I
+- `gravityVector::Vector{<:Real}` = gravity vector
 - `BCs::Vector{BC}` = boundary condtions
 - `p_A0::Vector{Float64}` = initial rotation parameters that bring basis I to basis A
-- `u_A::Union{Vector{<:Number},<:Function,Nothing}` = displacement of basis A relative to basis I
-- `v_A::Union{Vector{<:Number},<:Function,Nothing}` = velocity of basis A relative to basis I
-- `ω_A::Union{Vector{<:Number},<:Function,Nothing}` = angular velocity of basis A relative to basis I
-- `vdot_A::Union{Vector{<:Number},<:Function,Nothing}` = acceleration of basis A relative to basis I
-- `ωdot_A::Union{Vector{<:Number},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
-- `altitude::Union{Nothing,Number}` = altidude
+- `u_A::Union{Vector{<:Real},<:Function,Nothing}` = displacement of basis A relative to basis I
+- `v_A::Union{Vector{<:Real},<:Function,Nothing}` = velocity of basis A relative to basis I
+- `ω_A::Union{Vector{<:Real},<:Function,Nothing}` = angular velocity of basis A relative to basis I
+- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}` = acceleration of basis A relative to basis I
+- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
+- `altitude::Union{Nothing,Real}` = altidude
 - `atmosphere::Union{Nothing,Atmosphere}` = atmosphere
 - `gust::Union{Nothing,Gust}` = gust
 - `trimLoadsLinks::Vector{TrimLoadsLink}` = links between trim loads
 - `flapLinks::Vector{FlapLink}` = links between flapped surfaces
 - `rotationConstraints::Vector{RotationConstraint}` = rotation constraints
 """
-function create_Model(; name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Number}=zeros(3),gravityVector::Vector{<:Number}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,altitude::Union{Nothing,Number}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
+function create_Model(; name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Real}=zeros(3),gravityVector::Vector{<:Real}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,altitude::Union{Nothing,Real}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
     
     # Initialize 
     self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,rotationConstraints=rotationConstraints)
@@ -935,7 +935,7 @@ function get_special_nodes!(model::Model)
         connectedElementsGlobalIDs = findall(x -> node in x, elementNodes)
         connectedElements = elements[connectedElementsGlobalIDs]
 
-        # Number of elements that are connected to the node
+        # Real of elements that are connected to the node
         nConnectedElements = length(connectedElements)
 
         # Find in which side and ζ position of the elements that node is 
@@ -1162,7 +1162,7 @@ function get_system_indices!(model::Model)
         @pack! element = DOF_χ,eqs_Fχ
     end
 
-    # Number of states/equations (system's order)
+    # Real of states/equations (system's order)
     systemOrder = i_equations - 1
 
     ## Set indices for special nodes' equations
@@ -1373,13 +1373,13 @@ Sets the motion of basis A into the model
 
 # Keyword arguments
 - `model::Model` = model
-- `u_A::Union{Vector{<:Number},<:Function,Nothing}` = displacement of basis A relative to basis I
-- `v_A::Union{Vector{<:Number},<:Function,Nothing}` = velocity of basis A relative to basis I
-- `ω_A::Union{Vector{<:Number},<:Function,Nothing}` = angular velocity of basis A relative to basis I
-- `vdot_A::Union{Vector{<:Number},<:Function,Nothing}` = acceleration of basis A relative to basis I
-- `ωdot_A::Union{Vector{<:Number},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
+- `u_A::Union{Vector{<:Real},<:Function,Nothing}` = displacement of basis A relative to basis I
+- `v_A::Union{Vector{<:Real},<:Function,Nothing}` = velocity of basis A relative to basis I
+- `ω_A::Union{Vector{<:Real},<:Function,Nothing}` = angular velocity of basis A relative to basis I
+- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}` = acceleration of basis A relative to basis I
+- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
 """
-function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Number},<:Function,Nothing}=nothing)
+function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing)
 
     # Reset values that were not input back to nothing on model
     @pack! model = u_A,v_A,ω_A,vdot_A,ωdot_A 

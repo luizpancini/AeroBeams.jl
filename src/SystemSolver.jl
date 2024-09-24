@@ -11,24 +11,24 @@
     relativeTolerance::Float64
     maximumIterations::Int64
     desiredIterations::Int64
-    maximumAbsoluteError::Number
-    maximumRelativeError::Number
-    initialLoadFactor::Number
+    maximumAbsoluteError::Real
+    maximumRelativeError::Real
+    initialLoadFactor::Real
     minimumLoadFactor::Float64
     maximumLoadFactorStep::Float64
     minimumLoadFactorStep::Float64
     ρ::Float64
     trackingLoadSteps::Bool
     displayStatus::Bool
-    minConvRateAeroJacUpdate::Number
-    minConvRateJacUpdate::Number
+    minConvRateAeroJacUpdate::Real
+    minConvRateJacUpdate::Real
     alwaysUpdateJacobian::Bool
 
     # Algorithm variables
     loadFactorStep::Float64 = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
     convergedPartialSolution::Bool = false
     convergedFinalSolution::Bool = false
-    convRate::Number = 0
+    convRate::Real = 0
 
 end
 
@@ -43,20 +43,20 @@ Newton-Raphson nonlinear system solver constructor
 - `relativeTolerance::Float64` = relative convergence tolerance
 - `maximumIterations::Int64` = maximum number of iterations
 - `desiredIterations::Int64` = desired number of iterations
-- `maximumAbsoluteError::Number` = maximum absolute error for divergence detection
-- `maximumRelativeError::Number` = maximum relative error for divergence detection
-- `initialLoadFactor::Number` = initial load factor
+- `maximumAbsoluteError::Real` = maximum absolute error for divergence detection
+- `maximumRelativeError::Real` = maximum relative error for divergence detection
+- `initialLoadFactor::Real` = initial load factor
 - `minimumLoadFactor::Float64` = minimum load factor
 - `maximumLoadFactorStep::Float64` = maximum load factor step
 - `minimumLoadFactorStep::Float64` = minimum load factor step
 - `ρ::Float64` = relaxation factor for trim variables
 - `trackingLoadSteps::Bool` = flag to track partial load steps solutions
 - `displayStatus::Bool` = flag to display status
-- `minConvRateAeroJacUpdate::Number` = minimum convergence rate to skip computation of aerodynamic Jacobians
-- `minConvRateJacUpdate::Number` = minimum convergence rate to skip computation of structural Jacobians
+- `minConvRateAeroJacUpdate::Real` = minimum convergence rate to skip computation of aerodynamic Jacobians
+- `minConvRateJacUpdate::Real` = minimum convergence rate to skip computation of structural Jacobians
 - `alwaysUpdateJacobian::Bool` = flag to update Jacobians on every iteration
 """
-function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Number=1e6,maximumRelativeError::Number=1e6,initialLoadFactor::Number=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Number=2.0,minConvRateJacUpdate::Number=2.0,alwaysUpdateJacobian::Bool=true)
+function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Real=1e6,maximumRelativeError::Real=1e6,initialLoadFactor::Real=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Real=2.0,minConvRateJacUpdate::Real=2.0,alwaysUpdateJacobian::Bool=true)
 
     @assert 0.5 <= ρ <= 1 "relaxation factor (ρ) must be between 0.5 and 1.0"
     @assert minConvRateAeroJacUpdate > 1 "minConvRateAeroJacUpdate to skip calculation of aerodynamic derivatives must be greater than 1"

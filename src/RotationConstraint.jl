@@ -11,7 +11,7 @@
     masterElementLocalID::Int64
     slaveElementLocalID::Int64
     DOF::Int64
-    value::Number
+    value::Real
 
     # Secondary (outputs from hinge creation)
     masterElementGlobalID::Int64
@@ -31,9 +31,9 @@ Rotation constraint constructor
 - `masterElementLocalID::Int64` = local ID of the master element
 - `slaveElementLocalID::Int64` = local ID of the slave element
 - `DOF::Int64` = constrained rotation degree-of-freedom
-- `value::Number` = value of the slave DOF relative to the master DOF
+- `value::Real` = value of the slave DOF relative to the master DOF
 """
-function create_RotationConstraint(; masterBeam::Beam,slaveBeam::Beam,masterElementLocalID::Int64,slaveElementLocalID::Int64,DOF::Int64,value::Number)
+function create_RotationConstraint(; masterBeam::Beam,slaveBeam::Beam,masterElementLocalID::Int64,slaveElementLocalID::Int64,DOF::Int64,value::Real)
 
     # Validate
     @assert masterElementLocalID <= masterBeam.nElements "masterBeam does not have 'masterElementLocalID' elements"

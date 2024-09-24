@@ -8,7 +8,7 @@ abstract type SystemSolver end
 Defines variables for the update of the initial velocities states
 
 # Fields
-- `Δt::Number` = time step
+- `Δt::Real` = time step
 - `maxIter::Int64` = maximum number of iterations
 - `relaxFactor::Float64` = relaxation factor
 - `tol::Float64` = convergence tolerance
@@ -17,14 +17,14 @@ Defines variables for the update of the initial velocities states
 @with_kw mutable struct InitialVelocitiesUpdateOptions
 
     # Fields
-    Δt::Number = 0
+    Δt::Real = 0
     maxIter::Int64 = 2
-    relaxFactor::Number = 0.5
+    relaxFactor::Real = 0.5
     tol::Float64 = 1e-6
     displayProgress::Bool = false
 
     # Constructor
-    function InitialVelocitiesUpdateOptions(Δt::Number,maxIter::Int64,relaxFactor::Number,tol::Float64,displayProgress::Bool)
+    function InitialVelocitiesUpdateOptions(Δt::Real,maxIter::Int64,relaxFactor::Real,tol::Float64,displayProgress::Bool)
 
         # Check relaxation factor
         @assert (0 < relaxFactor <= 1)
@@ -119,8 +119,8 @@ end
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
     aeroVariablesOverσ::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
     # Maximum absolute value of aerodynamic load coefficients over time
-    maxAeroForce::Number = 0
-    maxAeroMoment::Number = 0
+    maxAeroForce::Real = 0
+    maxAeroMoment::Real = 0
 
 end
 export SteadyProblem
@@ -207,8 +207,8 @@ export create_SteadyProblem
     compElementalStatesOverσ::Vector{Vector{ComplementaryElementalStates{Float64}}} = Vector{Vector{ComplementaryElementalStates{Float64}}}()
     aeroVariablesOverσ::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
     # Maximum absolute value of aerodynamic load coefficients over time
-    maxAeroForce::Number = 0
-    maxAeroMoment::Number = 0
+    maxAeroForce::Real = 0
+    maxAeroMoment::Real = 0
 
 end
 export TrimProblem
@@ -267,7 +267,7 @@ export create_TrimProblem
     systemSolver::SystemSolver
     # TF to get linear solution
     getLinearSolution::Bool
-    # Number of desired oscillatory modes
+    # Real of desired oscillatory modes
     nModes::Int64
     # Frequency filter limits
     frequencyFilterLimits::Vector{Float64}
@@ -316,8 +316,8 @@ export create_TrimProblem
     modeShapesAbs::Vector{ModeShape{Float64}} = Vector{ModeShape{Float64}}()
     modeShapesAbsNonOsc::Vector{ModeShape{Float64}} = Vector{ModeShape{Float64}}()
     # Maximum absolute value of aerodynamic load coefficients over time
-    maxAeroForce::Number = 0
-    maxAeroMoment::Number = 0
+    maxAeroForce::Real = 0
+    maxAeroMoment::Real = 0
 
 end
 export EigenProblem
@@ -388,13 +388,13 @@ export create_EigenProblem
     # TF to get linear solution
     getLinearSolution::Bool
     # Time variables
-    initialTime::Number
-    Δt::Union{Nothing,Number}
-    finalTime::Union{Nothing,Number}
+    initialTime::Real
+    Δt::Union{Nothing,Real}
+    finalTime::Union{Nothing,Real}
     timeVector::Union{Nothing,Vector{Float64}}
     adaptableΔt::Bool
-    minΔt::Union{Nothing,Number}
-    maxΔt::Union{Nothing,Number}
+    minΔt::Union{Nothing,Real}
+    maxΔt::Union{Nothing,Real}
     # Boundary-crossing tolerance
     δb::Float64
     # Initial states update options
@@ -415,9 +415,9 @@ export create_EigenProblem
     jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     # Time variables
-    timeNow::Number = 0
-    timeBeginTimeStep::Number = 0
-    timeEndTimeStep::Number = 0
+    timeNow::Real = 0
+    timeBeginTimeStep::Real = 0
+    timeEndTimeStep::Real = 0
     indexBeginTimeStep::Int64 = 1
     indexEndTimeStep::Int64 = 2
     sizeOfTime::Int64 = 1
@@ -439,8 +439,8 @@ export create_EigenProblem
     compElementalStatesRatesOverTime::Vector{Vector{ComplementaryElementalStatesRates}} = Vector{Vector{ComplementaryElementalStatesRates}}()
     aeroVariablesOverTime::Vector{Vector{Union{Nothing,AeroVariables}}} = Vector{Vector{Union{Nothing,AeroVariables}}}()
     # Maximum absolute value of aerodynamic load coefficients over time
-    maxAeroForce::Number = 0
-    maxAeroMoment::Number = 0
+    maxAeroForce::Real = 0
+    maxAeroMoment::Real = 0
 
 end
 export DynamicProblem
@@ -455,13 +455,13 @@ Dynamic problem constructor
 - `model::Model` = model
 - `systemSolver::systemSolver` = nonlinear system solver
 - `getLinearSolution::Bool` = flag to solve for linear structural solution
-- `initialTime::Number` = initial time
-- `Δt::Union{Nothing,Number}` = time step
-- `finalTime::Union{Nothing,Number}` = final time
+- `initialTime::Real` = initial time
+- `Δt::Union{Nothing,Real}` = time step
+- `finalTime::Union{Nothing,Real}` = final time
 - `timeVector::Union{Nothing,Vector{Float64}}` = time vector
 - `adaptableΔt::Bool` = flag for adaptable time step
-- `minΔt::Union{Nothing,Number}` = minimum time step (when adaptable)
-- `maxΔt::Union{Nothing,Number}` = maximum time step (when adaptable)
+- `minΔt::Union{Nothing,Real}` = minimum time step (when adaptable)
+- `maxΔt::Union{Nothing,Real}` = maximum time step (when adaptable)
 - `δb::Float64` = discontinuities boundary convergence norm
 - `skipInitialStatesUpdate::Bool` = flag to skip update of initial states
 - `initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions` = options for the initial velocities update
@@ -471,7 +471,7 @@ Dynamic problem constructor
 - `displayFrequency::Int64` = frequency of time steps in which to display progress
 - `x0::Vector{Float64}` = initial states
 """
-function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Number=0.0,Δt::Union{Nothing,Number}=nothing,finalTime::Union{Nothing,Number}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Number}=nothing,maxΔt::Union{Nothing,Number}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
+function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Real=0.0,Δt::Union{Nothing,Real}=nothing,finalTime::Union{Nothing,Real}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Real}=nothing,maxΔt::Union{Nothing,Real}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
 
     # Initialize problem
     problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,adaptableΔt=adaptableΔt,minΔt=minΔt,maxΔt=maxΔt,δb=δb,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency)
@@ -1556,7 +1556,7 @@ end
 
 
 # Saves the solution at the current time step
-function save_time_step_data!(problem::Problem,timeNow::Number)
+function save_time_step_data!(problem::Problem,timeNow::Real)
 
     @unpack x,savedTimeVector,xOverTime,elementalStatesOverTime,nodalStatesOverTime,compElementalStatesOverTime,elementalStatesRatesOverTime,compElementalStatesRatesOverTime,aeroVariablesOverTime,model = problem
     @unpack elements = model

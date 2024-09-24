@@ -187,11 +187,11 @@ mutable struct Element <: BeamElement
     # Point inertias attached to the element
     attachedPointInertias::Vector{PointInertia}
     # Geometric/material element variables
-    Δℓ::Number
-    x1::Number
+    Δℓ::Real
+    x1::Real
     x1_norm::Float64
-    k::Vector{<:Number}
-    r::Vector{<:Number}
+    k::Vector{<:Real}
+    r::Vector{<:Real}
     R0::Matrix{Float64}
     R0T::Matrix{Float64}
     S::Matrix{Float64}
@@ -209,8 +209,8 @@ mutable struct Element <: BeamElement
     # Geometric nodal variables
     x1_n1_norm::Float64
     x1_n2_norm::Float64
-    x1_n1::Number
-    x1_n2::Number
+    x1_n1::Real
+    x1_n2::Real
     r_n1::Vector{Float64}
     r_n2::Vector{Float64}
     R0_n1::Matrix{Float64}
@@ -547,7 +547,7 @@ end
 
 
 # Gets the distributed loads in the element's local coordinate
-function get_element_distributed_loads(parent::Beam,Δℓ::Number,x1_n1::Number)
+function get_element_distributed_loads(parent::Beam,Δℓ::Real,x1_n1::Real)
 
     @unpack f_A_of_x1t,m_A_of_x1t,f_b_of_x1t,m_b_of_x1t,ff_A_of_x1t,mf_A_of_x1t,ff_b_of_x1t,mf_b_of_x1t = parent
 

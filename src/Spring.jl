@@ -10,12 +10,12 @@
     basis::String
     elementsIDs::Vector{Int64}
     nodesSides::Vector{Int64}
-    ku::Vector{<:Number}
-    kp::Vector{<:Number}
-    kTranslational::Number
-    kTwist::Number
-    kIPBending::Number
-    kOOPBending::Number
+    ku::Vector{<:Real}
+    kp::Vector{<:Real}
+    kTranslational::Real
+    kTwist::Real
+    kIPBending::Real
+    kOOPBending::Real
 
     # Secondary (outputs from spring creation)
     hasDoubleAttachment::Bool
@@ -36,16 +36,16 @@ Creates a spring
 - `basis::String` = basis on which stiffnesses are defined
 - `elementsIDs::Vector{Int64}` = local IDs of the element(s)' node(s) to which the spring is attached
 - `nodesSides::Vector{Int64}` = sides (1 or 2) of the node(s) to which the spring is attached
-- `ku::Vector{<:Number}` = translational stiffness vector
-- `kp::Vector{<:Number}` = rotational stiffness vector
-- `kTranslational::Number` = translational stiffness (same in all directions)
-- `kTwist::Number` = twist stiffness (rotation about x1 direction)
-- `kIPBending::Number` = in-plane bending stiffness (rotation about x3 direction)
-- `kOOPBending::Number` = out-of-plane bending stiffness (rotation about x2 direction)
+- `ku::Vector{<:Real}` = translational stiffness vector
+- `kp::Vector{<:Real}` = rotational stiffness vector
+- `kTranslational::Real` = translational stiffness (same in all directions)
+- `kTwist::Real` = twist stiffness (rotation about x1 direction)
+- `kIPBending::Real` = in-plane bending stiffness (rotation about x3 direction)
+- `kOOPBending::Real` = out-of-plane bending stiffness (rotation about x2 direction)
 """
-function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Number}=zeros(3),kp::Vector{<:Number}=zeros(3),kTranslational::Number=0,kTwist::Number=0,kIPBending::Number=0,kOOPBending::Number=0)
+function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Real}=zeros(3),kp::Vector{<:Real}=zeros(3),kTranslational::Real=0,kTwist::Real=0,kIPBending::Real=0,kOOPBending::Real=0)
 
-    # Number of attachments
+    # Real of attachments
     N = length(elementsIDs)
 
     # Validate
