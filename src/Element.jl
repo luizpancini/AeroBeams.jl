@@ -230,57 +230,57 @@ end
 mutable struct Jacobians
     
     # Fields
-    F_u1_p::Vector{Float64}
-    F_u2_p::Vector{Float64}
-    F_u1_F::Vector{Float64}
-    F_u2_F::Vector{Float64}
-    F_u1_V::Vector{Float64}
-    F_u2_V::Vector{Float64}
-    F_u1_Ω::Vector{Float64}
-    F_u2_Ω::Vector{Float64}
-    F_p1_p::Vector{Float64}
-    F_p2_p::Vector{Float64}
-    F_p1_F::Vector{Float64}
-    F_p2_F::Vector{Float64}
-    F_p1_M::Vector{Float64}
-    F_p2_M::Vector{Float64}
-    F_p1_V::Vector{Float64}
-    F_p2_V::Vector{Float64}
-    F_p1_Ω::Vector{Float64}
-    F_p2_Ω::Vector{Float64}
-    F_F1_u::Vector{Float64}
-    F_F2_u::Vector{Float64}
-    F_F1_p::Vector{Float64}
-    F_F2_p::Vector{Float64}
-    F_F1_F::Vector{Float64}
-    F_F2_F::Vector{Float64}
-    F_F1_M::Vector{Float64}
-    F_F2_M::Vector{Float64}
-    F_M1_p::Vector{Float64}
-    F_M2_p::Vector{Float64}
-    F_M1_F::Vector{Float64}
-    F_M2_F::Vector{Float64}
-    F_M1_M::Vector{Float64}
-    F_M2_M::Vector{Float64}
-    F_V_u::Vector{Float64}
-    F_V_p::Vector{Float64}
-    F_V_V::Vector{Float64}
-    F_Ω_p::Vector{Float64}
-    F_Ω_Ω::Vector{Float64}
-    F_u1_pdot::Vector{Float64}
-    F_u2_pdot::Vector{Float64}
-    F_u1_Vdot::Vector{Float64}
-    F_u2_Vdot::Vector{Float64}
-    F_u1_Ωdot::Vector{Float64}
-    F_u2_Ωdot::Vector{Float64}
-    F_p1_pdot::Vector{Float64}
-    F_p2_pdot::Vector{Float64}
-    F_p1_Vdot::Vector{Float64}
-    F_p2_Vdot::Vector{Float64}
-    F_p1_Ωdot::Vector{Float64}
-    F_p2_Ωdot::Vector{Float64}
-    F_V_udot::Vector{Float64}
-    F_Ω_pdot::Vector{Float64}
+    F_u1_p::Matrix{Float64}
+    F_u2_p::Matrix{Float64}
+    F_u1_F::Matrix{Float64}
+    F_u2_F::Matrix{Float64}
+    F_u1_V::Matrix{Float64}
+    F_u2_V::Matrix{Float64}
+    F_u1_Ω::Matrix{Float64}
+    F_u2_Ω::Matrix{Float64}
+    F_p1_p::Matrix{Float64}
+    F_p2_p::Matrix{Float64}
+    F_p1_F::Matrix{Float64}
+    F_p2_F::Matrix{Float64}
+    F_p1_M::Matrix{Float64}
+    F_p2_M::Matrix{Float64}
+    F_p1_V::Matrix{Float64}
+    F_p2_V::Matrix{Float64}
+    F_p1_Ω::Matrix{Float64}
+    F_p2_Ω::Matrix{Float64}
+    F_F1_u::Matrix{Float64}
+    F_F2_u::Matrix{Float64}
+    F_F1_p::Matrix{Float64}
+    F_F2_p::Matrix{Float64}
+    F_F1_F::Matrix{Float64}
+    F_F2_F::Matrix{Float64}
+    F_F1_M::Matrix{Float64}
+    F_F2_M::Matrix{Float64}
+    F_M1_p::Matrix{Float64}
+    F_M2_p::Matrix{Float64}
+    F_M1_F::Matrix{Float64}
+    F_M2_F::Matrix{Float64}
+    F_M1_M::Matrix{Float64}
+    F_M2_M::Matrix{Float64}
+    F_V_u::Matrix{Float64}
+    F_V_p::Matrix{Float64}
+    F_V_V::Matrix{Float64}
+    F_Ω_p::Matrix{Float64}
+    F_Ω_Ω::Matrix{Float64}
+    F_u1_pdot::Matrix{Float64}
+    F_u2_pdot::Matrix{Float64}
+    F_u1_Vdot::Matrix{Float64}
+    F_u2_Vdot::Matrix{Float64}
+    F_u1_Ωdot::Matrix{Float64}
+    F_u2_Ωdot::Matrix{Float64}
+    F_p1_pdot::Matrix{Float64}
+    F_p2_pdot::Matrix{Float64}
+    F_p1_Vdot::Matrix{Float64}
+    F_p2_Vdot::Matrix{Float64}
+    F_p1_Ωdot::Matrix{Float64}
+    F_p2_Ωdot::Matrix{Float64}
+    F_V_udot::Matrix{Float64}
+    F_Ω_pdot::Matrix{Float64}
 
     # Constructor
     function Jacobians()
@@ -676,7 +676,7 @@ mutable struct Element <: BeamElement
         rotationConstraint = nothing
 
         # Initialize equation resultants and Jacobians
-        resultants = Resultants(aero.nTotalAeroStates)
+        resultants = !isnothing(aero) ? Resultants(aero.nTotalAeroStates) : Resultants(0)
         jacobians = Jacobians()
         
         # Create element

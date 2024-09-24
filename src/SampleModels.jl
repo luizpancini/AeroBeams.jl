@@ -132,7 +132,7 @@ Returns the fixed geometrical (and discretization) properties of the Pazy wing
 """
 function geometrical_properties_Pazy()
 
-    # Real of elements
+    # Number of elements
     nElem = 15
 
     # Length
@@ -275,7 +275,7 @@ function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy
     # Total length 
     L = 0.549843728
 
-    # Real of elements in each part of the wing
+    # Number of elements in each part of the wing
     nElem = 15
     nElem1 = hingeNode-1
     nElem2 = nElem-nElem1

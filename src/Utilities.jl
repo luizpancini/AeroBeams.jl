@@ -29,7 +29,7 @@ Rounds the array or number to input tolerance (defaults to machine epsilon)
 """
 function round_off!(x,tol=eps())
 
-    if x isa Real
+    if x isa Number
         # Scale the number by dividing it by the tolerance
         xScaled = x / tol
         # Round the scaled value to the nearest integer
@@ -58,14 +58,14 @@ export rms
 
 
 """
-    tilde(v::Vector{<:Real})
+    tilde(v::Vector{<:Number})
 
 Computes the skew-symmetric matrix associated with a vector
 
 # Arguments
-- `v::Vector{<:Real}` = three-element vector
+- `v::Vector{<:Number}` = three-element vector
 """
-function tilde(v::Vector{<:Real})
+function tilde(v::Vector{<:Number})
     return [  0.0  -v[3]   v[2]
              v[3]    0.0  -v[1]
             -v[2]   v[1]   0.0]
@@ -73,13 +73,13 @@ end
 export tilde
 
 # Divides the input variables in-place
-function divide_inplace!(divisor::Real, vars...)
+function divide_inplace!(divisor::Number, vars...)
     return (var ./ divisor for var in vars)
 end
 
 
 # Multiplies the input variables in-place
-function multiply_inplace!(multiplier::Real, vars...)
+function multiply_inplace!(multiplier::Number, vars...)
     return (var .* multiplier for var in vars)
 end
 
@@ -98,15 +98,15 @@ end
 Creates a 6x6 sectional stiffness matrix
 
 # Arguments
-- `∞::Real` = value for rigid properties
-- `EA::Real` = axial stiffness
-- `GAy::Real` = shear stiffness in the x2 direction
-- `GAz::Real` = shear stiffness in the x3 direction
-- `GJ::Real` = torsional stiffness
-- `EIy::Real` = bending stiffness about the x2 direction
-- `EIz::Real` = bending stiffness about the x3 direction
+- `∞::Number` = value for rigid properties
+- `EA::Number` = axial stiffness
+- `GAy::Number` = shear stiffness in the x2 direction
+- `GAz::Number` = shear stiffness in the x3 direction
+- `GJ::Number` = torsional stiffness
+- `EIy::Number` = bending stiffness about the x2 direction
+- `EIz::Number` = bending stiffness about the x3 direction
 """
-function isotropic_stiffness_matrix(; ∞::Real=1e16,EA::Real=∞,GAy::Real=∞,GAz::Real=∞,GJ::Real=∞,EIy::Real=∞,EIz::Real=∞)
+function isotropic_stiffness_matrix(; ∞::Number=1e16,EA::Number=∞,GAy::Number=∞,GAz::Number=∞,GJ::Number=∞,EIy::Number=∞,EIz::Number=∞)
 
     @assert ∞ > 0
     @assert EA > 0
@@ -128,14 +128,14 @@ export isotropic_stiffness_matrix
 Creates a 6x6 sectional inertia matrix
 
 # Arguments
-- `ρA::Real` = mass per unit length
-- `ρIy::Real` = mass moment of inertia per unit length about the x2-axis
-- `ρIz::Real` = mass moment of inertia per unit length about the x3-axis
-- `ρIs::Real` = mass moment of inertia per unit length about the x1-axis
-- `e2::Real` = offset of center of gravity in the x2 direction with respect to the local reference line
-- `e3::Real` = offset of center of gravity in the x3 direction with respect to the local reference line
+- `ρA::Number` = mass per unit length
+- `ρIy::Number` = mass moment of inertia per unit length about the x2-axis
+- `ρIz::Number` = mass moment of inertia per unit length about the x3-axis
+- `ρIs::Number` = mass moment of inertia per unit length about the x1-axis
+- `e2::Number` = offset of center of gravity in the x2 direction with respect to the local reference line
+- `e3::Number` = offset of center of gravity in the x3 direction with respect to the local reference line
 """
-function inertia_matrix(; ρA::Real=0,ρIy::Real=0,ρIz::Real=0,ρIs::Real=ρIy+ρIz,e2::Real=0,e3::Real=0)
+function inertia_matrix(; ρA::Number=0,ρIy::Number=0,ρIz::Number=0,ρIs::Number=ρIy+ρIz,e2::Number=0,e3::Number=0)
 
     @assert ρA >= 0
     @assert ρIy >= 0
@@ -154,7 +154,7 @@ export inertia_matrix
 
 
 # Computes some useful functions of the curvature vector
-function curvature_quantities(k::Vector{<:Real})
+function curvature_quantities(k::Vector{<:Number})
 
     # External self-product 
     kkT = k * k'
@@ -170,7 +170,7 @@ end
 
 
 # Computes the position vector at an arclength value
-function position_vector_from_curvature(R0::Matrix{Float64},k::Vector{<:Real},x1::Real) 
+function position_vector_from_curvature(R0::Matrix{Float64},k::Vector{<:Number},x1::Number) 
 
     kkT, ktilde, knorm = curvature_quantities(k)
 
@@ -184,7 +184,7 @@ end
 
 
 # Computes the rotation tensor at an arclength position
-function rotation_tensor_from_curvature(R0::Matrix{Float64},k::Vector{<:Real},x1::Real) 
+function rotation_tensor_from_curvature(R0::Matrix{Float64},k::Vector{<:Number},x1::Number) 
 
     kkT, ktilde, knorm = curvature_quantities(k)
 
@@ -203,14 +203,14 @@ end
 
 
 """
-    rotation_tensor_E321(p::Vector{<:Real})
+    rotation_tensor_E321(p::Vector{<:Number})
 
 Computes the rotation tensor according to Euler parameters sequence 3-2-1
 
 # Arguments
-- `p::Vector{<:Real}` = rotation parameters
+- `p::Vector{<:Number}` = rotation parameters
 """
-function rotation_tensor_E321(p::Vector{<:Real})
+function rotation_tensor_E321(p::Vector{<:Number})
 
     # Euler angles 3-2-1 sequence (yaw, pitch and roll angles), respective sines and cosines
     yaw = p[1]
@@ -237,14 +237,14 @@ export rotation_tensor_E321
 
 
 """
-    rotation_tensor_E313(p::Vector{<:Real})
+    rotation_tensor_E313(p::Vector{<:Number})
 
 Computes the rotation tensor according to Euler parameters sequence 3-1-3
 
 # Arguments
-- `p::Vector{<:Real}` = rotation parameters
+- `p::Vector{<:Number}` = rotation parameters
 """
-function rotation_tensor_E313(p::Vector{<:Real})
+function rotation_tensor_E313(p::Vector{<:Number})
 
     # Euler angles 3-1-3 sequence (precession=ϕ, nutation=θ and spin=ψ angles), respective sines and cosines
     ϕ = p[1]
@@ -271,14 +271,14 @@ export rotation_tensor_E313
 
 
 """
-    rotation_tensor_WM(p::Vector{<:Real})
+    rotation_tensor_WM(p::Vector{<:Number})
 
 Computes the rotation tensor according to Wiener-Milenkovic parameters
 
 # Arguments
-- `p::Vector{<:Real}` = rotation parameters
+- `p::Vector{<:Number}` = rotation parameters
 """
-function rotation_tensor_WM(p::Vector{<:Real})
+function rotation_tensor_WM(p::Vector{<:Number})
 
     # Scaling factor and scaled rotation parameters
     λ, ps, _ , pNorm, psNorm = rotation_parameter_scaling(p)
@@ -318,7 +318,7 @@ export rotation_tensor_WM
 
 
 # Scales the Wiener-Milenkovic rotation parameters
-function rotation_parameter_scaling(p::Vector{<:Real})
+function rotation_parameter_scaling(p::Vector{<:Number})
 
     # Initialize scaling factor and number of odd half rotations
     λ = 1.0
@@ -385,7 +385,7 @@ end
 
 
 # Computes the derivatives of the scaling factor with respect to the extended rotation parameters
-function scaling_derivatives_extended_parameters(λ::Float64,p::Vector{<:Real},pNorm::Real)
+function scaling_derivatives_extended_parameters(λ::Float64,p::Vector{<:Number},pNorm::Number)
 
     λ_p = λ == 1.0 ? zeros(3) : (1-λ)*p/pNorm^2
 
@@ -574,7 +574,7 @@ end
 
 
 # Computes the inverse of the transpose of the tangent operator tensor according to Wiener-Milenkovic parameters
-function tangent_operator_transpose_inverse_WM(p::Vector{<:Real})
+function tangent_operator_transpose_inverse_WM(p::Vector{<:Number})
 
     # Scaling factor and scaled rotation parameters
     _,ps,_,_,psNorm = rotation_parameter_scaling(p)
@@ -690,7 +690,7 @@ end
 
 
 # Computes the rotation angle given the Wiener-Milenkovic rotation parameters
-function rotation_angle(p::Vector{<:Real})
+function rotation_angle(p::Vector{<:Number})
 
     # Scale rotation parameters and get number of half rotations
     _,_,halfRotations,pNorm,_ = rotation_parameter_scaling(p)
@@ -707,14 +707,14 @@ end
 
 
 """
-    rotation_parameters_WM(R::Matrix{<:Real})
+    rotation_parameters_WM(R::Matrix{<:Number})
 
 Computes the Wiener-Milenkovic rotation parameters given a rotation tensor
 
 # Arguments
-- `R::Matrix{<:Real}` = rotation tensor
+- `R::Matrix{<:Number}` = rotation tensor
 """
-function rotation_parameters_WM(R::Matrix{<:Real})
+function rotation_parameters_WM(R::Matrix{<:Number})
 
     # Get quaternion
     q = quaternion_from_rotation_tensor(R)
@@ -737,15 +737,15 @@ export rotation_parameters_WM
 
 
 """
-    ypr_from_rotation_tensor(R::Matrix{<:Real},tol::Float64=1e-6)
+    ypr_from_rotation_tensor(R::Matrix{<:Number},tol::Float64=1e-6)
 
 Computes the Euler angles from the sequence 3-2-1 given the rotation tensor
 
 # Arguments
-- `R::Matrix{<:Real}` = rotation tensor
+- `R::Matrix{<:Number}` = rotation tensor
 - `tol::Float64` = round-off tolerance
 """
-function ypr_from_rotation_tensor(R::Matrix{<:Real},tol::Float64=1e-6)
+function ypr_from_rotation_tensor(R::Matrix{<:Number},tol::Float64=1e-6)
     
     # First combination
     #---------------------------------------------------------------------------
@@ -799,14 +799,14 @@ export ypr_from_rotation_tensor
 
 
 """
-    quaternion_from_rotation_tensor(R::Matrix{<:Real})
+    quaternion_from_rotation_tensor(R::Matrix{<:Number})
 
 Computes the quaternion (Euler parameters) given a rotation tensor
 
 # Arguments
-- `R::Matrix{<:Real}` = rotation tensor
+- `R::Matrix{<:Number}` = rotation tensor
 """
-function quaternion_from_rotation_tensor(R::Matrix{<:Real})
+function quaternion_from_rotation_tensor(R::Matrix{<:Number})
 
     # Quaternion component product matrix
     T = [1+R[1,1]+R[2,2]+R[3,3] R[3,2]-R[2,3] R[1,3]-R[3,1] R[2,1]-R[1,2];
@@ -835,17 +835,17 @@ export quaternion_from_rotation_tensor
 
 
 """
-    mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
+    mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
 Applies mode tracking based on eigenvectors match
 
 # Arguments
-- `controlParam::Vector{<:Real}` = vector of control parameter
+- `controlParam::Vector{<:Number}` = vector of control parameter
 - `freqs::Array{Vector{Float64}}` = frequencies vector
 - `damps::Array{Vector{Float64}}` = dampings vector
 - `eigenvectors::Array{Matrix{ComplexF64}}` = complex-valued eigenvectors
 """
-function mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
+function mode_tracking(controlParam::Vector{<:Number},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
     # Validate inputs
     @assert length(controlParam) == length(freqs) == length(damps) == length(eigenvectors)
@@ -856,7 +856,7 @@ function mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}
     # Length of control parameter range
     N = length(controlParam)
  
-    # Real of modes
+    # Number of modes
     nModes = length(freqs[1])
 
     # Initialize array of matched modes
@@ -889,7 +889,7 @@ export mode_tracking
 
 
 # Finds the unrepeated columns of the n highest values in matrix O, where n is the size of O
-function highest_in_rowcol(O::Matrix{<:Real})
+function highest_in_rowcol(O::Matrix{<:Number})
 
     # Size of the original matrix
     n = size(O, 1)
@@ -925,18 +925,18 @@ end
 
 
 """
-    get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::Float64=1e3*eps())
+    get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number}; tol::Float64=1e3*eps())
 
 Computes the FFT and PSD of signal y(t)
 
 # Arguments
-- `t::Vector{<:Real}` = time signal
-- `y::Vector{<:Real}` = quantity signal
+- `t::Vector{<:Number}` = time signal
+- `y::Vector{<:Number}` = quantity signal
 
 # Keyword arguments
 - `tol::Float64` = tolerance for time signal being equally spaced
 """
-function get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::Float64=1e3*eps())
+function get_FFT_and_PSD(t::Vector{<:Number},y::Vector{<:Number}; tol::Float64=1e3*eps())
     
     @assert length(t) > 1
     @assert maximum(abs.(diff(diff(t)))) < tol "t must be an evenly spaced vector"

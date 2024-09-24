@@ -45,7 +45,7 @@ Creates a spring
 """
 function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Real}=zeros(3),kp::Vector{<:Real}=zeros(3),kTranslational::Real=0,kTwist::Real=0,kIPBending::Real=0,kOOPBending::Real=0)
 
-    # Real of attachments
+    # Number of attachments
     N = length(elementsIDs)
 
     # Validate

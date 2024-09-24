@@ -650,6 +650,7 @@ function update_number_gust_states!(model::Model)
         F_χ_Ωdot = initial_F_χ_Ωdot(solver,nTotalAeroStates,pitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
         F_χ_χdot = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
         χ = zeros(nTotalAeroStates)
+        F_χ = zeros(nTotalAeroStates)
         if typeof(solver) in [BLi]
             χ[pitchPlungeStatesRange[4:6]] .= 1.0
         end
@@ -660,6 +661,7 @@ function update_number_gust_states!(model::Model)
         @pack! element.states = χ
         @pack! element.statesRates = χdot
         @pack! element = χdotEquiv
+        @pack! element.resultants = F_χ
     end
 
 end
@@ -935,7 +937,7 @@ function get_special_nodes!(model::Model)
         connectedElementsGlobalIDs = findall(x -> node in x, elementNodes)
         connectedElements = elements[connectedElementsGlobalIDs]
 
-        # Real of elements that are connected to the node
+        # Number of elements that are connected to the node
         nConnectedElements = length(connectedElements)
 
         # Find in which side and ζ position of the elements that node is 
@@ -1162,7 +1164,7 @@ function get_system_indices!(model::Model)
         @pack! element = DOF_χ,eqs_Fχ
     end
 
-    # Real of states/equations (system's order)
+    # Number of states/equations (system's order)
     systemOrder = i_equations - 1
 
     ## Set indices for special nodes' equations

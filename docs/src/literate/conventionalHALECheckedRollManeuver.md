@@ -127,7 +127,7 @@ airspeed = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowVelocitiesAn
 nothing #hide
 ````
 
-We are now ready to visualize the results through the changes in forward distance and altitude, root angle of attack and airspeed.
+We are now ready to visualize the results through the changes in lateral distance (``x_1``), forward distance (``x_2``) and altitude (``x_3``), angles of attack and airspeed.
 
 ````@example conventionalHALECheckedRollManeuver
 using Plots
@@ -151,10 +151,10 @@ savefig("conventionalHALECheckedRollManeuver_altitude.svg") #hide
 
 # AoA
 plt4 = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]")
-plot!(t, wingAoA*180/π, c=:black, lw=2, label="Wing (center)")
+plot!(t, wingAoA*180/π, c=:black, lw=2, label="Wing (root)")
 plot!(t, leftWingtipAoA*180/π, c=:green, lw=2, label="Wing (left tip)")
 plot!(t, rightWingtipAoA*180/π, c=:red, lw=2, label="Wing (right tip)")
-plot!(t, htAoA*180/π, c=:blue, lw=2, label="HT (center)")
+plot!(t, htAoA*180/π, c=:blue, lw=2, label="HT (root)")
 plot!(t, vtAoA*180/π, c=:cyan, lw=2, label="VT (root)")
 savefig("conventionalHALECheckedRollManeuver_AoA.svg") #hide
 
@@ -165,6 +165,7 @@ savefig("conventionalHALECheckedRollManeuver_airspeed.svg") #hide
 nothing #hide
 ````
 
+![](conventionalHALECheckedRollManeuver_ldist.svg)
 ![](conventionalHALECheckedRollManeuver_fdist.svg)
 ![](conventionalHALECheckedRollManeuver_altitude.svg)
 ![](conventionalHALECheckedRollManeuver_AoA.svg)
