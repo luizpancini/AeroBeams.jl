@@ -170,6 +170,179 @@ end
 
 
 #
+# mutable struct Resultants
+
+#     Resultants composite type
+
+# Fields
+# - `F_u1::Vector{Float64}` = first node translational equilibrium equation resultant
+# - `F_u2::Vector{Float64}` = second node translational equilibrium equation resultant
+# - `F_p1::Vector{Float64}` = first node rotational equilibrium equation resultant
+# - `F_p2::Vector{Float64}` = second node rotational equilibrium equation resultant
+# - `F_F1::Vector{Float64}` = first node translational compatibility equation resultant
+# - `F_F2::Vector{Float64}` = second node translational compatibility equation resultant
+# - `F_M1::Vector{Float64}` = first node rotational compatibility equation resultant
+# - `F_M2::Vector{Float64}` = second node rotational compatibility equation resultant
+# - `F_V::Vector{Float64}` = midpoint linear velocity-displacement compatibility equation resultant
+# - `F_Ω::Vector{Float64}` = midpoint angular velocity-displacement compatibility equation resultant
+mutable struct Resultants
+    
+    # Fields
+    F_u1::Vector{Float64}
+    F_u2::Vector{Float64}
+    F_p1::Vector{Float64}
+    F_p2::Vector{Float64}
+    F_F1::Vector{Float64}
+    F_F2::Vector{Float64}
+    F_M1::Vector{Float64}
+    F_M2::Vector{Float64}
+    F_V::Vector{Float64}
+    F_Ω::Vector{Float64}
+    F_χ::Vector{Float64}
+
+    # Constructor
+    function Resultants(nTotalAeroStates)
+
+        F_u1 = zeros(3)
+        F_u2 = zeros(3)
+        F_p1 = zeros(3)
+        F_p2 = zeros(3)
+        F_F1 = zeros(3)
+        F_F2 = zeros(3)
+        F_M1 = zeros(3)
+        F_M2 = zeros(3)
+        F_V = zeros(3)
+        F_Ω = zeros(3)
+        F_χ = zeros(nTotalAeroStates)
+
+        return new(F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ)
+    end
+end
+
+
+#
+# mutable struct Jacobians
+
+#     Jacobians composite type
+
+# Notes
+# These are the partial derivatives (Jacobians) of the finite element equations w.r.t. the states and states' rates (only the structural ones)
+mutable struct Jacobians
+    
+    # Fields
+    F_u1_p::Vector{Float64}
+    F_u2_p::Vector{Float64}
+    F_u1_F::Vector{Float64}
+    F_u2_F::Vector{Float64}
+    F_u1_V::Vector{Float64}
+    F_u2_V::Vector{Float64}
+    F_u1_Ω::Vector{Float64}
+    F_u2_Ω::Vector{Float64}
+    F_p1_p::Vector{Float64}
+    F_p2_p::Vector{Float64}
+    F_p1_F::Vector{Float64}
+    F_p2_F::Vector{Float64}
+    F_p1_M::Vector{Float64}
+    F_p2_M::Vector{Float64}
+    F_p1_V::Vector{Float64}
+    F_p2_V::Vector{Float64}
+    F_p1_Ω::Vector{Float64}
+    F_p2_Ω::Vector{Float64}
+    F_F1_u::Vector{Float64}
+    F_F2_u::Vector{Float64}
+    F_F1_p::Vector{Float64}
+    F_F2_p::Vector{Float64}
+    F_F1_F::Vector{Float64}
+    F_F2_F::Vector{Float64}
+    F_F1_M::Vector{Float64}
+    F_F2_M::Vector{Float64}
+    F_M1_p::Vector{Float64}
+    F_M2_p::Vector{Float64}
+    F_M1_F::Vector{Float64}
+    F_M2_F::Vector{Float64}
+    F_M1_M::Vector{Float64}
+    F_M2_M::Vector{Float64}
+    F_V_u::Vector{Float64}
+    F_V_p::Vector{Float64}
+    F_V_V::Vector{Float64}
+    F_Ω_p::Vector{Float64}
+    F_Ω_Ω::Vector{Float64}
+    F_u1_pdot::Vector{Float64}
+    F_u2_pdot::Vector{Float64}
+    F_u1_Vdot::Vector{Float64}
+    F_u2_Vdot::Vector{Float64}
+    F_u1_Ωdot::Vector{Float64}
+    F_u2_Ωdot::Vector{Float64}
+    F_p1_pdot::Vector{Float64}
+    F_p2_pdot::Vector{Float64}
+    F_p1_Vdot::Vector{Float64}
+    F_p2_Vdot::Vector{Float64}
+    F_p1_Ωdot::Vector{Float64}
+    F_p2_Ωdot::Vector{Float64}
+    F_V_udot::Vector{Float64}
+    F_Ω_pdot::Vector{Float64}
+
+    # Constructor
+    function Jacobians()
+
+        F_u1_p = zeros(3,3)
+        F_u2_p = zeros(3,3)
+        F_u1_F = zeros(3,3)
+        F_u2_F = zeros(3,3)
+        F_u1_V = zeros(3,3)
+        F_u2_V = zeros(3,3)
+        F_u1_Ω = zeros(3,3)
+        F_u2_Ω = zeros(3,3)
+        F_p1_p = zeros(3,3)
+        F_p2_p = zeros(3,3)
+        F_p1_F = zeros(3,3)
+        F_p2_F = zeros(3,3)
+        F_p1_M = zeros(3,3)
+        F_p2_M = zeros(3,3)
+        F_p1_V = zeros(3,3)
+        F_p2_V = zeros(3,3)
+        F_p1_Ω = zeros(3,3)
+        F_p2_Ω = zeros(3,3)
+        F_F1_u = zeros(3,3)
+        F_F2_u = zeros(3,3)
+        F_F1_p = zeros(3,3)
+        F_F2_p = zeros(3,3)
+        F_F1_F = zeros(3,3)
+        F_F2_F = zeros(3,3)
+        F_F1_M = zeros(3,3)
+        F_F2_M = zeros(3,3)
+        F_M1_p = zeros(3,3)
+        F_M2_p = zeros(3,3)
+        F_M1_F = zeros(3,3)
+        F_M2_F = zeros(3,3)
+        F_M1_M = zeros(3,3)
+        F_M2_M = zeros(3,3)
+        F_V_u = zeros(3,3)
+        F_V_p = zeros(3,3)
+        F_V_V = zeros(3,3)
+        F_Ω_p = zeros(3,3)
+        F_Ω_Ω = zeros(3,3)
+        F_u1_pdot = zeros(3,3)
+        F_u2_pdot = zeros(3,3)
+        F_u1_Vdot = zeros(3,3)
+        F_u2_Vdot = zeros(3,3)
+        F_u1_Ωdot = zeros(3,3)
+        F_u2_Ωdot = zeros(3,3)
+        F_p1_pdot = zeros(3,3)
+        F_p2_pdot = zeros(3,3)
+        F_p1_Vdot = zeros(3,3)
+        F_p2_Vdot = zeros(3,3)
+        F_p1_Ωdot = zeros(3,3)
+        F_p2_Ωdot = zeros(3,3)
+        F_V_udot = zeros(3,3)
+        F_Ω_pdot = zeros(3,3)
+
+        return new(F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot)
+    end
+end
+
+
+#
 # mutable struct Element <: BeamElement
 
 #     Element composite type
@@ -344,6 +517,9 @@ mutable struct Element <: BeamElement
     aero::Union{Nothing,AeroProperties}
     # Relative rotation constraint
     rotationConstraint::Union{Nothing,RotationConstraint}
+    # Finite element equation resultants and Jacobians
+    resultants::Resultants
+    jacobians::Jacobians
 
     # Constructor
     function Element(parent::Beam) 
@@ -498,9 +674,13 @@ mutable struct Element <: BeamElement
 
         # Initialize rotation constraint on slave element
         rotationConstraint = nothing
+
+        # Initialize equation resultants and Jacobians
+        resultants = Resultants(nTotalAeroStates)
+        jacobians = Jacobians()
         
         # Create element
-        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,x1_norm,k,r,R0,R0T,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1_norm,x1_n2_norm,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,R,RR0,RR0T,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,v,ω,vdot,ωdot,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f1_χ,f2_χ,m1_χ,m2_χ,f1_p,f2_p,m1_p,m2_p,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,aero,rotationConstraint)
+        self = new(parent,localID,globalID,nodesLocalID,nodesGlobalID,attachedPointInertias,Δℓ,x1,x1_norm,k,r,R0,R0T,S,I,μ,ηtilde,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,x1_n1_norm,x1_n2_norm,x1_n1,x1_n2,r_n1,r_n2,R0_n1,R0_n2,R0T_n1,R0T_n2,states,statesRates,compStates,compStatesRates,nodalStates,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv,R,RR0,RR0T,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,v,ω,vdot,ωdot,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,f_A_of_ζt,m_A_of_ζt,f_b_of_ζt,m_b_of_ζt,ff_A_of_ζt,mf_A_of_ζt,ff_b_of_ζt,mf_b_of_ζt,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,f1,f2,m1,m2,f_g,m_g,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f1_χ,f2_χ,m1_χ,m2_χ,f1_p,f2_p,m1_p,m2_p,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,aero,rotationConstraint,resultants,jacobians)
 
         # Add element to parent beam
         push!(parent.elements, self)
