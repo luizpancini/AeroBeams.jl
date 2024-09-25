@@ -571,8 +571,10 @@ function update_linked_flap_deflections!(model::Model)
                     F_χ_Vdot = initial_F_χ_Vdot(solver,nTotalAeroStates,pitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
                     F_χ_Ωdot = initial_F_χ_Ωdot(solver,nTotalAeroStates,pitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
                     F_χ_χdot = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
+                    F_χ = zeros(nTotalAeroStates)
                     # Pack data
                     @pack! element.aero = nTotalAeroStates,nFlapStates,flapStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot
+                    @pack! element.resultants = F_χ
                 end
             end
             # Get flap deflection and rates of elements equal to the values of the master beam times the slave's deflection multiplier
