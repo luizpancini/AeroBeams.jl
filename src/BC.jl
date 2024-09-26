@@ -27,8 +27,8 @@
     initialTrimValue::Vector{Float64}
     R0_n::Matrix{Float64}
     globalNodeID::Int64
-    Fmax::Number
-    Mmax::Number
+    Fmax::Real
+    Mmax::Real
 
 end
 export BC
@@ -61,7 +61,7 @@ function create_BC(; name::String="",beam::Beam,node::Int64,types::Vector{String
         end
     end
     for value in values
-        if !(value isa Number || value isa Function)
+        if !(value isa Real || value isa Function)
             throw(ArgumentError("Elements of 'values' must be either numbers or functions"))
         end
     end
@@ -101,7 +101,7 @@ export create_BC
 
 
 # Updates the boundary conditions at the current time
-function update_BC_data!(bc::BC,timeNow::Number=0)
+function update_BC_data!(bc::BC,timeNow::Real=0)
 
     @unpack name,types,values,R0_n,toBeTrimmed,Fmax,Mmax = bc
 

@@ -5,16 +5,16 @@
 #
 @with_kw mutable struct Atmosphere
 
-    ρ::Number = 1.225
-    μ::Number = 1.7894e-5
-    a::Number = 340.3
+    ρ::Real = 1.225
+    μ::Real = 1.7894e-5
+    a::Real = 340.3
 
 end
 export Atmosphere
 
 
 # Calculates air properties from given pressure and temperature
-function air_properties_from_pressure_and_temperature(p::Number,T::Number,R::Number=287.05864074988347,γ::Number=1.4,β::Number=1.458e-6,S::Number=110.4)
+function air_properties_from_pressure_and_temperature(p::Real,T::Real,R::Real=287.05864074988347,γ::Real=1.4,β::Real=1.458e-6,S::Real=110.4)
 
     # Check inputs
     @assert p > 0
@@ -39,14 +39,14 @@ end
 
 
 """
-    standard_atmosphere(altitude::Number)
+    standard_atmosphere(altitude::Real)
 
 Atmosphere constructor based on the International Standard Atmosphere (https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
 
 # Arguments
-- `altitude::Number`
+- `altitude::Real`
 """
-function standard_atmosphere(altitude::Number)
+function standard_atmosphere(altitude::Real)
 
     # Check altitude
     if altitude > 47e3

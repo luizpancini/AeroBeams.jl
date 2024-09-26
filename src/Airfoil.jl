@@ -4,27 +4,27 @@
 #     AttachedFlowParameters composite type
 
 # Fields
-# - `α₀N::Number`
-# - `ϵₙ::Number`
-# - `ϵₘ::Number`
-# - `η::Number`
-# - `cd₀::Number`
-# - `cm₀::Number`
-# - `cmα::Number`
-# - `cnα::Number`
+# - `α₀N::Real`
+# - `ϵₙ::Real`
+# - `ϵₘ::Real`
+# - `η::Real`
+# - `cd₀::Real`
+# - `cm₀::Real`
+# - `cmα::Real`
+# - `cnα::Real`
 #
 @with_kw mutable struct AttachedFlowParameters
 
-    α₀N::Number
-    ϵₙ::Number
-    ϵₘ::Number
-    η::Number
-    cd₀::Number
-    cm₀::Number
-    cmα::Number
-    cnα::Number
+    α₀N::Real
+    ϵₙ::Real
+    ϵₘ::Real
+    η::Real
+    cd₀::Real
+    cm₀::Real
+    cmα::Real
+    cnα::Real
 
-    function AttachedFlowParameters(name::String; Re::Number=0,Ma::Number=0)
+    function AttachedFlowParameters(name::String; Re::Real=0,Ma::Real=0)
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["flatPlate","NACA0002","NACA0006"]
@@ -149,179 +149,179 @@ end
 #     BLiParameters composite type
 
 # Fields
-# - `α₀N::Number`
-# - `αds₀::Number`
-# - `αₛₛ::Number`
-# - `α1₀N::Number`
-# - `α1₀M::Number`
-# - `α1₀T::Number`
-# - `βσ1N::Number`
-# - `βσ1T::Number`
-# - `βσ2N::Number`
-# - `βS2Nlpr::Number`
-# - `βS2Tlpr::Number`
-# - `βS1Nu::Number`
-# - `βS1Mu::Number`
-# - `βS1Tu::Number`
-# - `βS1Nd::Number`
-# - `βS1Md::Number`
-# - `βS1Td::Number`
-# - `βS2Nu::Number`
-# - `βS2Mu::Number`
-# - `βS2Tu::Number`
-# - `βS2Nd::Number`
-# - `βS2Md::Number`
-# - `βS2Td::Number`
-# - `γLS::Number`
-# - `δα₀::Number`
-# - `δα₁::Number`
-# - `ϵₙ::Number`
-# - `ϵₘ::Number`
-# - `η::Number`
-# - `κ₀::Number`
-# - `κ₁::Number`
-# - `κ₂::Number`
-# - `κ₃::Number`
-# - `λ₁::Number`
-# - `λ₂::Number`
-# - `μv₂::Number`
-# - `ν₁::Number`
-# - `ν₂::Number`
-# - `ν₃::Number`
-# - `ν₄::Number`
-# - `ν₅::Number`
-# - `χu::Number`
-# - `χd::Number`
-# - `ξ::Number`
-# - `ζₐ::Number`
-# - `cd₀::Number`
-# - `cm₀::Number`
-# - `cnα::Number`
-# - `dt::Number`
-# - `dm::Number`
-# - `E₀::Number`
-# - `E₁::Number`
-# - `f₀N::Number`
-# - `f₀M::Number`
-# - `f₀T::Number`
-# - `fbN::Number`
-# - `fbM::Number`
-# - `fbT::Number`
-# - `gᵥ::Number`
-# - `gᵥ₂::Number`
-# - `K₀::Number`
-# - `K₁::Number`
-# - `K₂::Number`
-# - `r₀::Number`
-# - `S1N::Number`
-# - `S1M::Number`
-# - `S1T::Number`
-# - `S2N::Number`
-# - `S2M::Number`
-# - `S2T::Number`
-# - `Ta::Number`
-# - `Tf::Number`
-# - `Tg::Number`
-# - `Tv::Number`
-# - `Tv₂::Number`
-# - `Vn₁::Number`
-# - `Vn₂::Number`
-# - `Vn₃::Number`
-# - `Vm::Number`
-# - `Vt::Number`
-# - `ztd::Number`
-# - `ztu::Number`
-# - `zm::Number`
+# - `α₀N::Real`
+# - `αds₀::Real`
+# - `αₛₛ::Real`
+# - `α1₀N::Real`
+# - `α1₀M::Real`
+# - `α1₀T::Real`
+# - `βσ1N::Real`
+# - `βσ1T::Real`
+# - `βσ2N::Real`
+# - `βS2Nlpr::Real`
+# - `βS2Tlpr::Real`
+# - `βS1Nu::Real`
+# - `βS1Mu::Real`
+# - `βS1Tu::Real`
+# - `βS1Nd::Real`
+# - `βS1Md::Real`
+# - `βS1Td::Real`
+# - `βS2Nu::Real`
+# - `βS2Mu::Real`
+# - `βS2Tu::Real`
+# - `βS2Nd::Real`
+# - `βS2Md::Real`
+# - `βS2Td::Real`
+# - `γLS::Real`
+# - `δα₀::Real`
+# - `δα₁::Real`
+# - `ϵₙ::Real`
+# - `ϵₘ::Real`
+# - `η::Real`
+# - `κ₀::Real`
+# - `κ₁::Real`
+# - `κ₂::Real`
+# - `κ₃::Real`
+# - `λ₁::Real`
+# - `λ₂::Real`
+# - `μv₂::Real`
+# - `ν₁::Real`
+# - `ν₂::Real`
+# - `ν₃::Real`
+# - `ν₄::Real`
+# - `ν₅::Real`
+# - `χu::Real`
+# - `χd::Real`
+# - `ξ::Real`
+# - `ζₐ::Real`
+# - `cd₀::Real`
+# - `cm₀::Real`
+# - `cnα::Real`
+# - `dt::Real`
+# - `dm::Real`
+# - `E₀::Real`
+# - `E₁::Real`
+# - `f₀N::Real`
+# - `f₀M::Real`
+# - `f₀T::Real`
+# - `fbN::Real`
+# - `fbM::Real`
+# - `fbT::Real`
+# - `gᵥ::Real`
+# - `gᵥ₂::Real`
+# - `K₀::Real`
+# - `K₁::Real`
+# - `K₂::Real`
+# - `r₀::Real`
+# - `S1N::Real`
+# - `S1M::Real`
+# - `S1T::Real`
+# - `S2N::Real`
+# - `S2M::Real`
+# - `S2T::Real`
+# - `Ta::Real`
+# - `Tf::Real`
+# - `Tg::Real`
+# - `Tv::Real`
+# - `Tv₂::Real`
+# - `Vn₁::Real`
+# - `Vn₂::Real`
+# - `Vn₃::Real`
+# - `Vm::Real`
+# - `Vt::Real`
+# - `ztd::Real`
+# - `ztu::Real`
+# - `zm::Real`
 # - `λbWMat::Matrix{Float64}`
 #
 @with_kw mutable struct BLiParameters
 
-    α₀N::Number
-    αds₀::Number
-    αₛₛ::Number
-    α1₀N::Number
-    α1₀M::Number
-    α1₀T::Number
-    βσ1N::Number
-    βσ1T::Number
-    βσ2N::Number
-    βS2Nlpr::Number
-    βS2Tlpr::Number
-    βS1Nu::Number
-    βS1Mu::Number
-    βS1Tu::Number
-    βS1Nd::Number
-    βS1Md::Number
-    βS1Td::Number
-    βS2Nu::Number
-    βS2Mu::Number
-    βS2Tu::Number
-    βS2Nd::Number
-    βS2Md::Number
-    βS2Td::Number
-    γLS::Number
-    δα₀::Number
-    δα₁::Number
-    ϵₙ::Number
-    ϵₘ::Number
-    η::Number
-    κ₀::Number
-    κ₁::Number
-    κ₂::Number
-    κ₃::Number
-    λ₁::Number
-    λ₂::Number
-    μv₂::Number
-    ν₁::Number
-    ν₂::Number
-    ν₃::Number
-    ν₄::Number
-    ν₅::Number
-    χu::Number
-    χd::Number
-    ξ::Number
-    ζₐ::Number
-    cd₀::Number
-    cm₀::Number
-    cnα::Number
-    dt::Number
-    dm::Number
-    E₀::Number
-    E₁::Number
-    f₀N::Number
-    f₀M::Number
-    f₀T::Number
-    fbN::Number
-    fbM::Number
-    fbT::Number
-    gᵥ::Number
-    gᵥ₂::Number
-    K₀::Number
-    K₁::Number
-    K₂::Number
-    r₀::Number
-    S1N::Number
-    S1M::Number
-    S1T::Number
-    S2N::Number
-    S2M::Number
-    S2T::Number
-    Ta::Number
-    Tf::Number
-    Tg::Number
-    Tv::Number
-    Tv₂::Number
-    Vn₁::Number
-    Vn₂::Number
-    Vn₃::Number
-    Vm::Number
-    Vt::Number
-    ztd::Number
-    ztu::Number
-    zm::Number
+    α₀N::Real
+    αds₀::Real
+    αₛₛ::Real
+    α1₀N::Real
+    α1₀M::Real
+    α1₀T::Real
+    βσ1N::Real
+    βσ1T::Real
+    βσ2N::Real
+    βS2Nlpr::Real
+    βS2Tlpr::Real
+    βS1Nu::Real
+    βS1Mu::Real
+    βS1Tu::Real
+    βS1Nd::Real
+    βS1Md::Real
+    βS1Td::Real
+    βS2Nu::Real
+    βS2Mu::Real
+    βS2Tu::Real
+    βS2Nd::Real
+    βS2Md::Real
+    βS2Td::Real
+    γLS::Real
+    δα₀::Real
+    δα₁::Real
+    ϵₙ::Real
+    ϵₘ::Real
+    η::Real
+    κ₀::Real
+    κ₁::Real
+    κ₂::Real
+    κ₃::Real
+    λ₁::Real
+    λ₂::Real
+    μv₂::Real
+    ν₁::Real
+    ν₂::Real
+    ν₃::Real
+    ν₄::Real
+    ν₅::Real
+    χu::Real
+    χd::Real
+    ξ::Real
+    ζₐ::Real
+    cd₀::Real
+    cm₀::Real
+    cnα::Real
+    dt::Real
+    dm::Real
+    E₀::Real
+    E₁::Real
+    f₀N::Real
+    f₀M::Real
+    f₀T::Real
+    fbN::Real
+    fbM::Real
+    fbT::Real
+    gᵥ::Real
+    gᵥ₂::Real
+    K₀::Real
+    K₁::Real
+    K₂::Real
+    r₀::Real
+    S1N::Real
+    S1M::Real
+    S1T::Real
+    S2N::Real
+    S2M::Real
+    S2T::Real
+    Ta::Real
+    Tf::Real
+    Tg::Real
+    Tv::Real
+    Tv₂::Real
+    Vn₁::Real
+    Vn₂::Real
+    Vn₃::Real
+    Vm::Real
+    Vt::Real
+    ztd::Real
+    ztu::Real
+    zm::Real
     λbWMat::Matrix{Float64}
     
-    function BLiParameters(name::String; Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+    function BLiParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["NACA0012"]
@@ -888,57 +888,57 @@ end
 #     BLoParameters composite type
 
 # Fields
-# - `α₀N::Number`
-# - `α1₀::Number`
-# - `δα::Number`
-# - `ϵₙ::Number`
-# - `ϵₘ::Number`
-# - `η::Number`
-# - `cd₀::Number`
-# - `cm₀::Number`
-# - `cn₁::Number`
-# - `cnα::Number`
-# - `Df::Number`
-# - `E₀::Number`
-# - `f₀::Number`
-# - `fb::Number`
-# - `K₀::Number`
-# - `K₁::Number`
-# - `K₂::Number`
-# - `S1::Number`
-# - `S2::Number`
-# - `Tf₀::Number`
-# - `Tp::Number`
-# - `Tv₀::Number`
-# - `TvL::Number`
+# - `α₀N::Real`
+# - `α1₀::Real`
+# - `δα::Real`
+# - `ϵₙ::Real`
+# - `ϵₘ::Real`
+# - `η::Real`
+# - `cd₀::Real`
+# - `cm₀::Real`
+# - `cn₁::Real`
+# - `cnα::Real`
+# - `Df::Real`
+# - `E₀::Real`
+# - `f₀::Real`
+# - `fb::Real`
+# - `K₀::Real`
+# - `K₁::Real`
+# - `K₂::Real`
+# - `S1::Real`
+# - `S2::Real`
+# - `Tf₀::Real`
+# - `Tp::Real`
+# - `Tv₀::Real`
+# - `TvL::Real`
 #
 @with_kw mutable struct BLoParameters
 
-    α₀N::Number
-    α1₀::Number
-    δα::Number
-    ϵₙ::Number
-    ϵₘ::Number
-    η::Number
-    cd₀::Number
-    cm₀::Number
-    cn₁::Number
-    cnα::Number
-    Df::Number
-    E₀::Number
-    f₀::Number
-    fb::Number
-    K₀::Number
-    K₁::Number
-    K₂::Number
-    S1::Number
-    S2::Number
-    Tf₀::Number
-    Tp::Number
-    Tv₀::Number
-    TvL::Number
+    α₀N::Real
+    α1₀::Real
+    δα::Real
+    ϵₙ::Real
+    ϵₘ::Real
+    η::Real
+    cd₀::Real
+    cm₀::Real
+    cn₁::Real
+    cnα::Real
+    Df::Real
+    E₀::Real
+    f₀::Real
+    fb::Real
+    K₀::Real
+    K₁::Real
+    K₂::Real
+    S1::Real
+    S2::Real
+    Tf₀::Real
+    Tp::Real
+    Tv₀::Real
+    TvL::Real
     
-    function BLoParameters(name::String; Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+    function BLoParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["NACA0012"]
@@ -1047,15 +1047,15 @@ end
 #     FlapParameters composite type
 
 # Fields
-# - `cdδ::Number`
-# - `cmδ::Number`
-# - `cnδ::Number`
+# - `cdδ::Real`
+# - `cmδ::Real`
+# - `cnδ::Real`
 # 
 @with_kw mutable struct FlapParameters
 
-    cdδ::Number
-    cmδ::Number
-    cnδ::Number
+    cdδ::Real
+    cmδ::Real
+    cnδ::Real
 
     function FlapParameters(name::String; flapSiteID::Int64)
 
@@ -1530,12 +1530,12 @@ Airfoil constructor
 
 # Arguments
 - `name::String` = name of the airfoil
-- `Re::Number` = Reynolds number
-- `Ma::Number` = Mach number
-- `U::Number` = relative airspeed
-- `b::Number` = semichord
+- `Re::Real` = Reynolds number
+- `Ma::Real` = Mach number
+- `U::Real` = relative airspeed
+- `b::Real` = semichord
 """
-function create_Airfoil(; name::String,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+function create_Airfoil(; name::String,Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
     coordinates = get_airfoil_coordinates(name)
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
@@ -1556,12 +1556,12 @@ Airfoil constructor (with a trailing-edge flap)
 # Arguments
 - `name::String` = name of the airfoil
 - `flapSiteID::Int64` = flap site ID
-- `Re::Number` = Reynolds number
-- `Ma::Number` = Mach number
-- `U::Number` = relative airspeed
-- `b::Number` = semichord
+- `Re::Real` = Reynolds number
+- `Ma::Real` = Mach number
+- `U::Real` = relative airspeed
+- `b::Real` = semichord
 """
-function create_flapped_Airfoil(; name::String,flapSiteID::Int64,Re::Number=0,Ma::Number=0,U::Number=0,b::Number=0)
+function create_flapped_Airfoil(; name::String,flapSiteID::Int64,Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
     coordinates = get_airfoil_coordinates(name)
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)
@@ -1583,12 +1583,12 @@ Updates the airfoil parameters
 - `airfoil::Airfoil`
 
 # Keyword arguments
-- `Re::Number` = Reynolds number
-- `Ma::Number` = Mach number
-- `U::Number` = reference relative airspeed
-- `b::Number` = reference semichord
+- `Re::Real` = Reynolds number
+- `Ma::Real` = Mach number
+- `U::Real` = reference relative airspeed
+- `b::Real` = reference semichord
 """
-function update_Airfoil_params!(airfoil::Airfoil; Re::Number=0,Ma::Number=0,U::Number,b::Number)
+function update_Airfoil_params!(airfoil::Airfoil; Re::Real=0,Ma::Real=0,U::Real,b::Real)
 
     airfoil.attachedFlowParameters = AttachedFlowParameters(airfoil.name,Re=Re,Ma=Ma)
     airfoil.parametersBLi = BLiParameters(airfoil.name,Re=Re,Ma=Ma,U=U,b=b)

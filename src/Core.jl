@@ -93,7 +93,7 @@ end
 
 
 # Computes the generalized velocities of basis b at the element's midpoint, resolved in basis A
-function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
+function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Real=0.0)
 
     @unpack R_AT,v_A,ω_A = model
     @unpack r = element
@@ -112,7 +112,7 @@ end
 
 
 # Computes the generalized accelerations of basis b at the element's midpoint, resolved in basis A
-function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Number=0.0)
+function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Real=0.0)
 
     @unpack R_AT,v_A,ω_A,vdot_A,ωdot_A = model
     @unpack r = element
@@ -587,29 +587,30 @@ function element_residual!(problem::Problem,model::Model,element::Element)
     @unpack γ,κ,P,H = element.compStates
     @unpack udot,pdot,χdot = element.statesRates
     @unpack Pdot,Hdot = element.compStatesRates
+    @unpack F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ = element.resultants
 
     ## Static terms
     # --------------------------------------------------------------------------
     # --- F_u --- #
     tmp = RR0 * F
-    F_u1 = -tmp - f1
-    F_u2 =  tmp - f2
+    F_u1 .= -tmp - f1
+    F_u2 .=  tmp - f2
 
     # --- F_p --- #
     tmp = RR0 * M
     tmp2 = Δℓ/2 * RR0 * cross(a1+γ,F)
-    F_p1 = -tmp - m1 - tmp2
-    F_p2 =  tmp - m2 - tmp2
+    F_p1 .= -tmp - m1 - tmp2
+    F_p2 .=  tmp - m2 - tmp2
 
     # --- F_F --- #
     tmp = Δℓ/2 * (RR0 * (a1+γ) - R0*a1)
-    F_F1 =  u - tmp
-    F_F2 = -u - tmp
+    F_F1 .=  u - tmp
+    F_F2 .= -u - tmp
 
     # --- F_M --- #
     tmp = Δℓ/2 * HTinv * R0 * κ
-    F_M1 =  p - tmp
-    F_M2 = -p - tmp
+    F_M1 .=  p - tmp
+    F_M2 .= -p - tmp
 
     ## Steady terms
     # ------------------------------------------------------------------------- 
@@ -624,15 +625,15 @@ function element_residual!(problem::Problem,model::Model,element::Element)
     F_p2 .+= tmp
 
     # --- F_V --- #
-    F_V = RR0*V - v - cross(ω,u)
+    F_V .= RR0*V - v - cross(ω,u)
     
     # --- F_Ω --- #
-    F_Ω = Ω - RR0T*ω
+    F_Ω .= Ω - RR0T*ω
 
     # --- F_χ --- #
     if !isempty(eqs_Fχ)
         @unpack A,B = element.aero
-        F_χ = -(A*χ+B)
+        F_χ .= -(A*χ+B)
     end
 
     ## Transient dynamic terms
@@ -732,6 +733,7 @@ function element_residual!(problem::Problem,model::Model,element::Element)
     end
 
     @pack! problem = residual
+    @pack! element.resultants = F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ
 end
 
 
@@ -767,7 +769,7 @@ function gravitational_loads_derivatives_rotation_parameters(element::Element)
 
     # Distributed weight moment vector derivative w.r.t. extended rotation parameters
     if any(!iszero(f_g))
-        mg_p = mul3(R_p1,R_p2,R_p3,R'*m_g) + RR0*ηtilde*R0T*mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),f_g)
+        mg_p = mul3(R_p1,R_p2,R_p3,R'*m_g) + RR0*ηtilde*R0T*mul3(R_p1',R_p2',R_p3',f_g)
     else
         mg_p = zeros(3,3)
     end
@@ -991,6 +993,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     @unpack pdot,Vdot,Ωdot = element.statesRates
     @unpack γ,κ,P,H = element.compStates
     @unpack Pdot,Hdot = element.compStatesRates
+    @unpack F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω = element.jacobians
 
     ## Static terms
     # --------------------------------------------------------------------------
@@ -1000,52 +1003,52 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     # --- F_u --- #
     # F_u_p
     tmp = mul3(R_p1,R_p2,R_p3,R0*F)
-    F_u1_p = -tmp - f1_p
-    F_u2_p =  tmp - f2_p
+    F_u1_p .= -tmp - f1_p
+    F_u2_p .=  tmp - f2_p
     # F_u_F
-    F_u1_F = -RR0
-    F_u2_F =  RR0
+    F_u1_F .= -RR0
+    F_u2_F .=  RR0
 
     # --- F_p --- #
     # F_p_p
     tmp1 = mul3(R_p1,R_p2,R_p3,R0*M)
     tmp2 = Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*cross(a1+γ,F))
-    F_p1_p = -tmp1 - m1_p - tmp2
-    F_p2_p =  tmp1 - m2_p - tmp2
+    F_p1_p .= -tmp1 - m1_p - tmp2
+    F_p2_p .=  tmp1 - m2_p - tmp2
     # F_p_F
-    F_p1_F = -Δℓ/2 * RR0 * (tilde(a1+γ)-F_tilde*S_11)
-    F_p2_F = F_p1_F
+    F_p1_F .= -Δℓ/2 * RR0 * (tilde(a1+γ)-F_tilde*S_11)
+    F_p2_F .= F_p1_F
     # F_p_M
     tmp = Δℓ/2 * RR0 * F_tilde * S_12
-    F_p1_M = tmp - RR0
-    F_p2_M = tmp + RR0
+    F_p1_M .= tmp - RR0
+    F_p2_M .= tmp + RR0
 
     # --- F_F --- #
     # F_F_u
-    F_F1_u = I3
-    F_F2_u = -F_F1_u
+    F_F1_u .= I3
+    F_F2_u .= -F_F1_u
     # F_F_p
-    F_F1_p = -mul3(R_p1,R_p2,R_p3,Δℓ/2*R0*(a1+γ))
-    F_F2_p = F_F1_p
+    F_F1_p .= -mul3(R_p1,R_p2,R_p3,Δℓ/2*R0*(a1+γ))
+    F_F2_p .= F_F1_p
     # F_F_F
-    F_F1_F = -Δℓ/2 * RR0 * S_11
-    F_F2_F = F_F1_F
+    F_F1_F .= -Δℓ/2 * RR0 * S_11
+    F_F2_F .= F_F1_F
     # F_F_M
-    F_F1_M = -Δℓ/2 * RR0 * S_12
-    F_F2_M = F_F1_M
+    F_F1_M .= -Δℓ/2 * RR0 * S_12
+    F_F2_M .= F_F1_M
 
     # --- F_M --- #
     # F_M_p
     tmp = mul3(HTinv_p1,HTinv_p2,HTinv_p3,Δℓ/2*R0*κ)
-    F_M1_p =  I3 - tmp
-    F_M2_p = -I3 - tmp
+    F_M1_p .=  I3 - tmp
+    F_M2_p .= -I3 - tmp
     # F_M_F
     tmp = -Δℓ/2 * HTinv * R0
-    F_M1_F = tmp * S_21
-    F_M2_F = F_M1_F
+    F_M1_F .= tmp * S_21
+    F_M2_F .= F_M1_F
     # F_M_M
-    F_M1_M = tmp * S_22
-    F_M2_M = F_M1_M
+    F_M1_M .= tmp * S_22
+    F_M2_M .= F_M1_M
 
     ## Steady-state terms
     # --------------------------------------------------------------------------
@@ -1063,12 +1066,12 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     F_u2_p .+= tmp 
     # F_u_V
     tmp = Δℓ/2 * ω_tilde_RR0 * I_11
-    F_u1_V = tmp
-    F_u2_V = copy(tmp)
+    F_u1_V .= tmp
+    F_u2_V .= copy(tmp)
     # F_u_Ω
     tmp = Δℓ/2 * ω_tilde_RR0 * I_12
-    F_u1_Ω = tmp
-    F_u2_Ω = copy(tmp)
+    F_u1_Ω .= tmp
+    F_u2_Ω .= copy(tmp)
     
     # --- F_p --- # 
     # F_p_p
@@ -1077,26 +1080,26 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     F_p2_p .+= tmp  
     # F_p_V
     tmp = Δℓ/2 * (ω_tilde_RR0*I_21 + RR0*(V_tilde*I_11-tilde(P)))
-    F_p1_V = tmp 
-    F_p2_V = copy(tmp)   
+    F_p1_V .= tmp 
+    F_p2_V .= copy(tmp)   
     # F_p_Ω
     tmp = Δℓ/2 * (ω_tilde_RR0*I_22 + RR0*V_tilde*I_12)
-    F_p1_Ω = tmp 
-    F_p2_Ω = copy(tmp) 
+    F_p1_Ω .= tmp 
+    F_p2_Ω .= copy(tmp) 
     
     # --- F_V --- #    
     # F_V_u
-    F_V_u = -ω_tilde   
+    F_V_u .= -ω_tilde   
     # F_V_p
-    F_V_p = mul3(R_p1,R_p2,R_p3,R0*V) 
+    F_V_p .= mul3(R_p1,R_p2,R_p3,R0*V) 
     # F_V_V
-    F_V_V = RR0
+    F_V_V .= RR0
     
     # --- F_Ω --- #   
     # F_Ω_p
-    F_Ω_p = -R0T * mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),ω)  
+    F_Ω_p .= -R0T * mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),ω)  
     # F_Ω_Ω
-    F_Ω_Ω = I3  
+    F_Ω_Ω .= I3  
 
     ## Transient dynamic terms
     # --------------------------------------------------------------------------
@@ -1268,6 +1271,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     end
 
     @pack! problem = jacobian
+    @pack! element.jacobians = F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω
 
 end
 
@@ -1281,42 +1285,43 @@ function element_inertia!(problem::Problem,model::Model,element::Element)
     @unpack V,Ω = element.states
     @unpack Vdot,Ωdot = element.statesRates
     @unpack P,H = element.compStates
+    @unpack F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot = element.jacobians
 
     ## Structural terms
     # --------------------------------------------------------------------------
     # --- F_u --- #
     # F_u_pdot
-    F_u1_pdot = Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*P)
-    F_u2_pdot = F_u1_pdot
+    F_u1_pdot .= Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*P)
+    F_u2_pdot .= F_u1_pdot
     # F_u_Vdot
     tmp = Δℓ/2 * RR0 * I_11
-    F_u1_Vdot = tmp
-    F_u2_Vdot = copy(tmp)
+    F_u1_Vdot .= tmp
+    F_u2_Vdot .= copy(tmp)
     # F_u_Ωdot
     tmp = Δℓ/2 * RR0 * I_12
-    F_u1_Ωdot = tmp
-    F_u2_Ωdot = copy(tmp)
+    F_u1_Ωdot .= tmp
+    F_u2_Ωdot .= copy(tmp)
 
     # --- F_p --- #
     # F_p_pdot
-    F_p1_pdot = Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*H)
-    F_p2_pdot = F_p1_pdot
+    F_p1_pdot .= Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*H)
+    F_p2_pdot .= F_p1_pdot
     # F_p_Vdot
     tmp = Δℓ/2 * RR0 * I_21
-    F_p1_Vdot = tmp
-    F_p2_Vdot = copy(tmp)
+    F_p1_Vdot .= tmp
+    F_p2_Vdot .= copy(tmp)
     # F_p_Ωdot
     tmp = Δℓ/2 * RR0 * I_22
-    F_p1_Ωdot = tmp
-    F_p2_Ωdot = copy(tmp)
+    F_p1_Ωdot .= tmp
+    F_p2_Ωdot .= copy(tmp)
 
     # --- F_V --- #
     # F_V_udot
-    F_V_udot = -I3
+    F_V_udot .= -I3
 
     # --- F_Ω --- #
     # F_Ω_pdot
-    F_Ω_pdot = -R0T * HT
+    F_Ω_pdot .= -R0T * HT
 
     ## Aerodynamic loads terms
     # --------------------------------------------------------------------------
@@ -1365,7 +1370,7 @@ function element_inertia!(problem::Problem,model::Model,element::Element)
     end
 
     @pack! problem = inertia
-
+    @pack! element.jacobians = F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot
 end
 
 

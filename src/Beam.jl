@@ -12,17 +12,17 @@ abstract type BeamElement end
     # Name 
     name::String
     # Geometry 
-    length::Number 
+    length::Real 
     rotationParametrization::String
-    p0::Vector{<:Number}
-    k::Vector{<:Number}
-    initialPosition::Vector{<:Number}
+    p0::Vector{<:Real}
+    k::Vector{<:Real}
+    initialPosition::Vector{<:Real}
     # Discretization
     nElements::Int64 
     normalizedNodalPositions::Vector{Float64}
     # Sectional properties (stiffness and inertia matrices)
-    C::Vector{<:Matrix{<:Number}} 
-    I::Vector{<:Matrix{<:Number}}
+    C::Vector{<:Matrix{<:Real}} 
+    I::Vector{<:Matrix{<:Real}}
     # Connection relative to other beams
     connectedBeams::Union{Nothing,Vector{Beam}}
     connectedNodesThis::Vector{Int64}
@@ -33,10 +33,10 @@ abstract type BeamElement end
     hingedNodes::Vector{Int64}
     hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}
     # Initial generalized displacements and velocities
-    u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
-    p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
-    udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
-    pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}
+    u0_of_x1::Union{Vector{<:Real},<:Function,Nothing}
+    p0_of_x1::Union{Vector{<:Real},<:Function,Nothing}
+    udot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}
+    pdot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}
     # Distributed loads
     f_A_of_x1t::Union{Nothing,<:Function}
     m_A_of_x1t::Union{Nothing,<:Function}
@@ -88,25 +88,25 @@ Beam constructor
 
 # Keyword Arguments
 - `name::String` = name of the beam
-- `length::Number` = (arc)length of the beam
+- `length::Real` = (arc)length of the beam
 - `rotationParametrization::String` = type of rotation parametrization to define basis b
-- `p0::Vector{<:Number}` = rotation parameters from basis A to basis b
-- `k::Vector{<:Number}` = undeformed beam's curvatures per unit length
-- `initialPosition::Vector{<:Number}` = initial position of the beam's first node relative to the beam's origin (which may be another beam's node)
+- `p0::Vector{<:Real}` = rotation parameters from basis A to basis b
+- `k::Vector{<:Real}` = undeformed beam's curvatures per unit length
+- `initialPosition::Vector{<:Real}` = initial position of the beam's first node relative to the beam's origin (which may be another beam's node)
 - `nElements::Int64` = number of elements for discretization
 - `normalizedNodalPositions::Vector{Float64}` = normalized nodal positions of beam elements
-- `C::Vector{<:Matrix{<:Number}}` = array of sectional stiffness matrices
-- `I::Vector{<:Matrix{<:Number}}` = array of sectional inertia matrices
+- `C::Vector{<:Matrix{<:Real}}` = array of sectional stiffness matrices
+- `I::Vector{<:Matrix{<:Real}}` = array of sectional inertia matrices
 - `connectedBeams::Union{Nothing,Vector{Beam}}` = array of beams to which this beam is connected (a non-recursive property)
 - `connectedNodesThis::Vector{Int64}` = nodes of this beam which are connected to other beams' nodes
 - `connectedNodesOther::Vector{Int64}` = respective nodes of the other beams
 - `pointInertias::Vector{PointInertia}` = attached point inertias
 - `hingedNodes::Vector{Int64}` = nodes with a hinge
 - `hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}` = respective hinged degrees-of-freedom
-- `u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}` = initial displacement (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
-- `p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}` = initial rotation parameters (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
-- `udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}` = initial displacement's rates (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
-- `pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}` = initial rotation parameters' rates (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
+- `u0_of_x1::Union{Vector{<:Real},<:Function,Nothing}` = initial displacement (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
+- `p0_of_x1::Union{Vector{<:Real},<:Function,Nothing}` = initial rotation parameters (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
+- `udot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}` = initial displacement's rates (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
+- `pdot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}` = initial rotation parameters' rates (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
 - `f_A_of_x1t::Union{Nothing,<:Function}` = distributed dead forces initially resolved in basis A, as a function of the beam arclength coordinate (x1) and time (t)
 - `m_A_of_x1t::Union{Nothing,<:Function}` = distributed dead moments initially resolved in basis A, as a function of the beam arclength coordinate (x1) and time (t)
 - `f_b_of_x1t::Union{Nothing,<:Function}` = distributed dead forces initially resolved in basis b, as a function of the beam arclength coordinate (x1) and time (t)
@@ -118,7 +118,7 @@ Beam constructor
 - `aeroSurface::Union{Nothing,AeroSurface}` = attached aerodynamic surface
 - `springs::Vector{Spring}` = array of attached springs
 """
-function create_Beam(; name::String="",length::Number,rotationParametrization::String="WM",p0::Vector{<:Number}=zeros(3),k::Vector{<:Number}=zeros(3),initialPosition::Vector{<:Number}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),C::Vector{<:Matrix{<:Number}},I::Vector{<:Matrix{<:Number}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Number},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing,aeroSurface::Union{Nothing,AeroSurface}=nothing,springs::Vector{Spring}=Vector{Spring}())
+function create_Beam(; name::String="",length::Real,rotationParametrization::String="WM",p0::Vector{<:Real}=zeros(3),k::Vector{<:Real}=zeros(3),initialPosition::Vector{<:Real}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),C::Vector{<:Matrix{<:Real}},I::Vector{<:Matrix{<:Real}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing,aeroSurface::Union{Nothing,AeroSurface}=nothing,springs::Vector{Spring}=Vector{Spring}())
 
     # Initialize the beam
     self = Beam(name=name,length=length,rotationParametrization=rotationParametrization,p0=p0,k=k,initialPosition=initialPosition,nElements=nElements,normalizedNodalPositions=normalizedNodalPositions,C=C,I=I,connectedBeams=connectedBeams,connectedNodesThis=connectedNodesThis,connectedNodesOther=connectedNodesOther,pointInertias=pointInertias,hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,u0_of_x1=u0_of_x1,p0_of_x1=p0_of_x1,udot0_of_x1=udot0_of_x1,pdot0_of_x1=pdot0_of_x1,f_A_of_x1t=f_A_of_x1t,m_A_of_x1t=m_A_of_x1t,f_b_of_x1t=f_b_of_x1t,m_b_of_x1t=m_b_of_x1t,ff_A_of_x1t=ff_A_of_x1t,mf_A_of_x1t=mf_A_of_x1t,ff_b_of_x1t=ff_b_of_x1t,mf_b_of_x1t=mf_b_of_x1t,aeroSurface=aeroSurface,springs=springs)
@@ -248,7 +248,7 @@ function validate_initial_conditions!(beam::Beam)
     # Displacements 
     if u0_of_x1 isa Function
         @assert length(u0_of_x1(0)) == 3
-    elseif u0_of_x1 isa Vector{<:Number}
+    elseif u0_of_x1 isa Vector{<:Real}
         @assert length(u0_of_x1) == 3
         u0_of_x1_const = deepcopy(u0_of_x1)
         u0_of_x1 = x1 -> u0_of_x1_const
@@ -259,7 +259,7 @@ function validate_initial_conditions!(beam::Beam)
     # Rotation parameters
     if p0_of_x1 isa Function
         @assert length(p0_of_x1(0)) == 3
-    elseif p0_of_x1 isa Vector{<:Number}
+    elseif p0_of_x1 isa Vector{<:Real}
         @assert length(p0_of_x1) == 3
         p0_of_x1_const = deepcopy(p0_of_x1)
         p0_of_x1 = x1 -> p0_of_x1_const
@@ -270,7 +270,7 @@ function validate_initial_conditions!(beam::Beam)
     # Displacements' rates
     if udot0_of_x1 isa Function
         @assert length(udot0_of_x1(0)) == 3
-    elseif udot0_of_x1 isa Vector{<:Number}
+    elseif udot0_of_x1 isa Vector{<:Real}
         @assert length(udot0_of_x1) == 3
         udot0_of_x1_const = deepcopy(udot0_of_x1)
         udot0_of_x1 = x1 -> udot0_of_x1_const
@@ -281,7 +281,7 @@ function validate_initial_conditions!(beam::Beam)
     # Rotation parameters' rates
     if pdot0_of_x1 isa Function
         @assert length(pdot0_of_x1(0)) == 3
-    elseif pdot0_of_x1 isa Vector{<:Number}
+    elseif pdot0_of_x1 isa Vector{<:Real}
         @assert length(pdot0_of_x1) == 3
         pdot0_of_x1_const = deepcopy(pdot0_of_x1)
         pdot0_of_x1 = x1 -> pdot0_of_x1_const
@@ -338,56 +338,56 @@ function validate_distributed_loads!(beam::Beam)
     if isnothing(f_A_of_x1t)
         f_A_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(f_A_of_x1t(0,0),Vector{<:Number})
+        @assert isa(f_A_of_x1t(0,0),Vector{<:Real})
         @assert length(f_A_of_x1t(0,0)) == 3
         hasDistributedDeadForcesBasisA = true
     end
     if isnothing(m_A_of_x1t)
         m_A_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(m_A_of_x1t(0,0),Vector{<:Number})
+        @assert isa(m_A_of_x1t(0,0),Vector{<:Real})
         @assert length(m_A_of_x1t(0,0)) == 3
         hasDistributedDeadMomentsBasisA = true
     end
     if isnothing(f_b_of_x1t)
         f_b_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(f_b_of_x1t(0,0),Vector{<:Number})
+        @assert isa(f_b_of_x1t(0,0),Vector{<:Real})
         @assert length(f_b_of_x1t(0,0)) == 3
         hasDistributedDeadForcesBasisb = true
     end
     if isnothing(m_b_of_x1t)
         m_b_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(m_b_of_x1t(0,0),Vector{<:Number})
+        @assert isa(m_b_of_x1t(0,0),Vector{<:Real})
         @assert length(m_b_of_x1t(0,0)) == 3
         hasDistributedDeadMomentsBasisb = true
     end
     if isnothing(ff_A_of_x1t)
         ff_A_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(ff_A_of_x1t(0,0),Vector{<:Number})
+        @assert isa(ff_A_of_x1t(0,0),Vector{<:Real})
         @assert length(ff_A_of_x1t(0,0)) == 3
         hasDistributedFollowerForcesBasisA = true
     end
     if isnothing(mf_A_of_x1t)
         mf_A_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(mf_A_of_x1t(0,0),Vector{<:Number})
+        @assert isa(mf_A_of_x1t(0,0),Vector{<:Real})
         @assert length(mf_A_of_x1t(0,0)) == 3
         hasDistributedFollowerMomentsBasisA = true
     end
     if isnothing(ff_b_of_x1t)
         ff_b_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(ff_b_of_x1t(0,0),Vector{<:Number})
+        @assert isa(ff_b_of_x1t(0,0),Vector{<:Real})
         @assert length(ff_b_of_x1t(0,0)) == 3
         hasDistributedFollowerForcesBasisb = true
     end
     if isnothing(mf_b_of_x1t)
         mf_b_of_x1t = (x1,t) -> zeros(3)
     else
-        @assert isa(mf_b_of_x1t(0,0),Vector{<:Number})
+        @assert isa(mf_b_of_x1t(0,0),Vector{<:Real})
         @assert length(mf_b_of_x1t(0,0)) == 3
         hasDistributedFollowerMomentsBasisb = true
     end
@@ -557,7 +557,7 @@ function add_loads_to_beam!(beam::Beam; loadTypes::Vector{String},loadFuns::Vect
 
         # Check inputs
         @assert in(load,["f_A_of_x1t","m_A_of_x1t","f_b_of_x1t","m_b_of_x1t","ff_A_of_x1t","mf_A_of_x1t","ff_b_of_x1t","mf_b_of_x1t"])
-        @assert isa(fun(0,0),Vector{<:Number})
+        @assert isa(fun(0,0),Vector{<:Real})
         @assert length(fun(0,0)) == 3
 
         # Update load on beam
@@ -623,7 +623,7 @@ function add_initial_displacements_and_velocities_to_beam!(beam::Beam;conditionT
 
         # Check inputs
         @assert in(type,["u0_of_x1","p0_of_x1","udot0_of_x1","pdot0_of_x1"])
-        @assert isa(fun(0),Vector{<:Number})
+        @assert isa(fun(0),Vector{<:Real})
         @assert length(fun(0)) == 3
 
         # Set initial condition on beam

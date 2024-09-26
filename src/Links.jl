@@ -71,7 +71,7 @@ export create_TrimLoadsLink
 
     masterBeam::Beam
     slaveBeams::Vector{Beam}
-    δMultipliers::Vector{<:Number}
+    δMultipliers::Vector{<:Real}
 
 end
 
@@ -84,9 +84,9 @@ Flap link constructor (a link between flapped surfaces)
 # Keyword arguments
 - `masterBeam::Beam` = beam of the master surface
 - `slaveBeams::Vector{Beam}` = beams of the slave surfaces
-- `δMultipliers::Vector{<:Number}` = multiplication factors of flap deflection in slave surfaces relative to the master surface
+- `δMultipliers::Vector{<:Real}` = multiplication factors of flap deflection in slave surfaces relative to the master surface
 """
-function create_FlapLink(; masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Number}=ones(length(slaveBeams)))
+function create_FlapLink(; masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Real}=ones(length(slaveBeams)))
 
     # Validate 
     @assert !isnothing(masterBeam.aeroSurface) "master beam has no aerodynamic surface"

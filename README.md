@@ -1,8 +1,9 @@
 # AeroBeams
 
-| **Documentation**         | **Build Status**                      |
-|:------------------------- |:------------------------------------- |
-| [![][docs-img]][docs-url] | [![][gh-actions-img]][gh-actions-url] |
+| **Documentation**         | **Build Status**                      | **Code Coverage**     |
+|:------------------------- |:------------------------------------- |:--------------------  |
+| [![][docs-img]][docs-url] | [![][gh-actions-img]][gh-actions-url] | [![][cc-img]][cc-url] |
+
 
 ## Overview
 AeroBeams is a finite-element implementation of the geometrically exact beam theory of [Hodges](#1), augmented with aerodynamic formulations in order to solve aeroelastic problems. The structural part of the code was developed based on the works of [[2]](#2), [[3]](#3) and [[4]](#4), whereas the aerodynamic part follows [[5]](#5), [[6]](#6), [[7]](#7) and [[8]](#8). This package is written in [Julia](https://julialang.org/).
@@ -97,3 +98,6 @@ The University of Michigan's Nonlinear Aeroelastic Simulation Toolbox (UM/NAST) 
 
 [gh-actions-img]: https://github.com/luizpancini/AeroBeams.jl/actions/workflows/CI.yml/badge.svg?branch=main
 [gh-actions-url]: https://github.com/luizpancini/AeroBeams.jl/actions/workflows/CI.yml?query=branch%3Amain
+
+[cc-img]: https://codecov.io/gh/luizpancini/AeroBeams.jl/graph/badge.svg?token=0URFVWVPIC
+[cc-url]: https://codecov.io/gh/luizpancini/AeroBeams.jl

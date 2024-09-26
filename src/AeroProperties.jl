@@ -654,10 +654,10 @@ end
     derivationMethod::DerivationMethod
     # Geometry
     airfoil::Airfoil
-    b::Number
-    c::Number
+    b::Real
+    c::Real
     normSparPos::Float64
-    Λ::Number
+    Λ::Real
     Rw::Matrix{Float64}
     RwT::Matrix{Float64}
     RwR0::Matrix{Float64}
@@ -672,17 +672,17 @@ end
     δdot::Function
     δddot::Function
     # Current values of flap deflection and its rates
-    δNow::Number
-    δdotNow::Number
-    δddotNow::Number
+    δNow::Real
+    δdotNow::Real
+    δddotNow::Real
     # Flap deflection multiplier for slave surfaces
-    δMultiplier::Number
+    δMultiplier::Real
     # TF to update airfoil parameters according to flow parameters
     updateAirfoilParameters::Bool
     # TF for tip loss correction, tip loss correction factor as a function of the element's local coordinate (ζ), and value at midpoint
     hasTipCorrection::Bool
     ϖ::Function
-    ϖMid::Number = ϖ(1/2)
+    ϖMid::Real = ϖ(1/2)
     # TF for small angle of attack approximations
     smallAngles::Bool
     # State matrices
@@ -745,14 +745,14 @@ end
 end
 
 # AeroProperties constructor
-function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Number,x1_norm::Float64,x1_n1_norm::Float64,x1_n2_norm::Float64)
+function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1_norm::Float64,x1_n1_norm::Float64,x1_n2_norm::Float64)
 
     # Set geometric properties 
     airfoil = aeroSurface.airfoil
-    c = aeroSurface.c isa Number ? aeroSurface.c : aeroSurface.c(x1)
+    c = aeroSurface.c isa Real ? aeroSurface.c : aeroSurface.c(x1)
     b = c/2
-    normSparPos = aeroSurface.normSparPos isa Number ? aeroSurface.normSparPos : aeroSurface.normSparPos(x1)
-    Λ = aeroSurface.Λ isa Number ? aeroSurface.Λ : aeroSurface.Λ(x1)
+    normSparPos = aeroSurface.normSparPos isa Real ? aeroSurface.normSparPos : aeroSurface.normSparPos(x1)
+    Λ = aeroSurface.Λ isa Real ? aeroSurface.Λ : aeroSurface.Λ(x1)
     Rw = rotation_tensor_E321([-Λ; 0; -airfoil.attachedFlowParameters.α₀N])
     RwT = Matrix(Rw')
     RwR0 = Rw*R0
@@ -865,7 +865,7 @@ end
 
 
 # Computes the initial value of F_χ_Vdot (for zero relative airspeed)
-function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},cnα::Number)
+function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},cnα::Real)
 
     F_χ_Vdot = zeros(nStates,3)
 
@@ -881,7 +881,7 @@ end
 
 
 # Computes the initial value of F_χ_Ωdot (for zero relative airspeed)
-function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},c::Number,normSparPos::Float64,cnα::Number)
+function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},c::Real,normSparPos::Float64,cnα::Real)
 
     F_χ_Ωdot = zeros(nStates,3)
 
