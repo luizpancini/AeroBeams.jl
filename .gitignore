@@ -5,6 +5,5 @@
 /docs/Manifest.toml
 /docs/build/
 /test/outputs/
-/test/plotGenerators/
 /gr-temp
 /.vscode
