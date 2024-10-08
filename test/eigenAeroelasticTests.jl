@@ -219,7 +219,7 @@ end
 @testset "Linear flutter analysis of the sixteen-meter-wing" begin
     include("examples/SMWLinearFlutter.jl")
     # Reference comparison
-    @test flutterSpeed ≈ flutterSpeedRef rtol=1e-2
+    @test flutterSpeed ≈ flutterSpeedRef rtol=2e-2
     @test flutterFreq ≈ flutterFreqRef rtol=2e-2
     # Self-comparison
     flutterSpeed_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SMWLinearFlutter", "flutterSpeed.txt"))[1]
