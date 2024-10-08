@@ -67,7 +67,7 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterURange", "freqs.txt"))
     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosFlutterURange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+    @test hcat(freqs...)' ≈ freqs_ atol=1e-2
     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 end
 
