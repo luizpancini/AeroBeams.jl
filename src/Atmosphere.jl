@@ -8,6 +8,7 @@
     ρ::Real = 1.225
     μ::Real = 1.7894e-5
     a::Real = 340.3
+    g::Real = 9.80665
 
 end
 export Atmosphere
@@ -79,34 +80,34 @@ function standard_atmosphere(altitude::Real)
     
     # Pressure and temperature at input altitude
     #---------------------------------------------------------------------------
-    # Gravity [m/s^2] (the calculations already consider geopotential altitude - see https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
-    g = g₀
-    # Temperature [K] and pressure [Pa]
+    # Gravity [m/s^2] (Earth's radius ≈ 6.371e6 m)
+    g = g₀ * (6.371e6/(6.371e6+altitude))^2
+    # Temperature [K] and pressure [Pa] (the calculations already consider geopotential altitude - see https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
     T₁₁ = T₀+λTropo*11e3
     T₂₀ = T₀-71.5
     T₃₂ = T₀-59.5
-    p₁₁ = p₀*(1+λTropo*11e3/T₀)^(-g/(R*λTropo))
-    p₂₀ = p₁₁*exp(-g/(R*T₁₁)*(20e3-11e3))
-    p₃₂ = p₂₀*(1+λStrat*(32e3-20e3)/T₂₀)^(-g/(R*λStrat))
+    p₁₁ = p₀*(1+λTropo*11e3/T₀)^(-g₀/(R*λTropo))
+    p₂₀ = p₁₁*exp(-g₀/(R*T₁₁)*(20e3-11e3))
+    p₃₂ = p₂₀*(1+λStrat*(32e3-20e3)/T₂₀)^(-g₀/(R*λStrat))
     if altitude <= 11e3
         T = T₀+λTropo*altitude
-        p = p₀*(1+λTropo*altitude/T₀)^(-g/(R*λTropo))
+        p = p₀*(1+λTropo*altitude/T₀)^(-g₀/(R*λTropo))
     elseif altitude <= 20e3
         T = T₀-71.5 
-        p = p₁₁*exp(-g/(R*T₁₁)*(altitude-11e3))
+        p = p₁₁*exp(-g₀/(R*T₁₁)*(altitude-11e3))
     elseif altitude <= 32e3
         T = T₀-71.5+λStrat*(altitude-20e3)
-        p = p₂₀*(1+λStrat*(altitude-20e3)/T₂₀)^(-g/(R*λStrat))
+        p = p₂₀*(1+λStrat*(altitude-20e3)/T₂₀)^(-g₀/(R*λStrat))
     elseif altitude <= 47e3
         T = T₀-59.5+λStratPause*(altitude-32e3)
-        p = p₃₂*(1+λStratPause*(altitude-32e3)/T₃₂)^(-g/(R*λStratPause))
+        p = p₃₂*(1+λStratPause*(altitude-32e3)/T₃₂)^(-g₀/(R*λStratPause))
     end
     
     # Corresponding air density, sound speed and dynamic viscosity
     ρ,μ,a = air_properties_from_pressure_and_temperature(p,T)
 
     # Set atmosphere
-    atmosphere = Atmosphere(ρ,μ,a)
+    atmosphere = Atmosphere(ρ,μ,a,g)
 
     return atmosphere
 

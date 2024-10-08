@@ -348,11 +348,11 @@ Returns the wing model and its span
 
 # Arguments
 - `aeroSolver::AeroSolver` = aerodynamic solver
+- `flapLoadsSolver::FlapAeroSolver` = aerodynamic solver for flap loads
 - `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
 - `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
-- `updateAirfoilParameters::Bool` = flag to update airfoil parameters with airspeed
 - `airfoil::Airfoil` = airfoil section
-- `θ::Real` = pitch angle
+- `θ::Real` = pitch angle [rad]
 - `k1::Real` = twisting curvature
 - `k2::Real` = flapwise bending curvature
 - `nElem::Int64` = number of elements for discretization
@@ -362,14 +362,25 @@ Returns the wing model and its span
 - `stiffnessFactor::Real` = stiffness factor for beam structural properties
 - `∞::Real` = value of rigid structural properties
 - `tipF3::Real` = tip dead transverse force applied at the tip
+- `cd0::Real` = parasite drag coefficient for the wing
+- `cnδ::Real` = cn vs δ slope for the wing
+- `cmδ::Real` = cm vs δ slope for the wing
+- `cdδ::Real` = cd vs δ slope for the wing
+- `hasInducedDrag::Bool` = flag to include induced drag
+- `δAil::Union{Nothing,Real,<:Function}` = aileron deflection
+- `additionalBCs::Vector{BC}` = additional BCs (beyond the clamp and tip load)
 """
-function create_SMW(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),updateAirfoilParameters::Bool=true,airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,k1::Real=0,k2::Real=0,nElem::Int64=32,altitude::Real=0,airspeed::Real=0,g::Real=9.80665,stiffnessFactor::Real=1,∞::Real=1e12,tipF3::Real=0)
+function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,k1::Real=0,k2::Real=0,nElem::Int64=32,altitude::Real=0,airspeed::Real=0,g::Real=standard_atmosphere(altitude).g,stiffnessFactor::Real=1,∞::Real=1e12,tipF3::Real=0,cd0::Real=0,cnδ::Real=2.5,cmδ::Real=-0.35,cdδ::Real=0.15,hasInducedDrag::Bool=false,δAil::Union{Nothing,Real,<:Function}=nothing,additionalBCs::Vector{BC}=Vector{BC}())
 
     # Validate
     @assert -π/2 < θ < π/2
     @assert nElem > 1
     @assert altitude >= 0
     @assert airspeed >= 0
+    if δAil isa Real
+        δAilConst = deepcopy(δAil)
+        δAil = t -> δAilConst
+    end
 
     # Atmosphere
     atmosphere = standard_atmosphere(altitude)
@@ -377,8 +388,20 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAer
     # Wing surface
     chord = 1
     normSparPos = 0.5
+    normFlapPos = 0.75
+    ailSize = 0.25
+    normFlapSpan = [1-ailSize,1]
     update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
-    wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=updateAirfoilParameters)
+
+    wingSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,normFlapPos=normFlapPos,normFlapSpan=normFlapSpan,δ=δAil,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=true)
+
+    # Override wing airfoil parameters
+    wingSurf.airfoil.attachedFlowParameters.cd₀ = cd0
+    wingSurf.airfoil.parametersBLi.cd₀ = cd0
+    wingSurf.airfoil.parametersBLo.cd₀ = cd0
+    wingSurf.airfoil.flapParameters.cnδ = cnδ
+    wingSurf.airfoil.flapParameters.cmδ = cmδ
+    wingSurf.airfoil.flapParameters.cdδ = cdδ
 
     # Wing properties
     L = 16
@@ -390,14 +413,26 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAer
     I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)
 
     # Wing beam
-    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,C=[C],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ],k=[k1;k2;0])
+    beam = create_Beam(name="rightWing",length=L,nElements=nElem,C=[C],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ],k=[k1;k2;0])
+    
+    # Update beam of additional BCs, if applicable
+    for BC in additionalBCs
+        BC.beam = beam
+    end
+    BCs = additionalBCs
 
-    # BCs
+    # Add root clamp and tip load to BCs
     clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-    tipLoad = create_BC(name="tipLoad",beam=beam,node=nElem+1,types=["F3A"],values=[tipF3])
+    push!(BCs,clamp)
+
+    # Add tip load to BCs, if applicable
+    if isempty(additionalBCs)
+        tipLoad = create_BC(name="tipLoad",beam=beam,node=nElem+1,types=["F3A"],values=[tipF3])
+        push!(BCs,tipLoad)
+    end
 
     # Wing model
-    wing = create_Model(name="SMW",beams=[beam],BCs=[clamp,tipLoad],altitude=altitude,gravityVector=[0;0;-g],v_A=[0;airspeed;0])
+    wing = create_Model(name="SMW",beams=[beam],BCs=BCs,altitude=altitude,gravityVector=[0;0;-g],v_A=[0;airspeed;0])
 
     return wing,L
 end
@@ -668,16 +703,17 @@ Creates a model based on the conventional HALE aircraft described by Patil, Hodg
 - `δRudd::Union{Nothing,Real,<:Function}` = rudder deflection
 - `thrust::Union{Real,<:Function}` = motors' thrust
 - `g::Real` = local acceleration of gravity
-- `wingCd0::Real` = parisite drag coefficient for the wing
+- `wingCd0::Real` = parasite drag coefficient for the wing
 - `wingcnδ::Real` = cn vs δ slope for the wing
 - `wingcmδ::Real` = cm vs δ slope for the wing
 - `wingcdδ::Real` = cd vs δ slope for the wing
-- `stabsCd0::Real` = parisite drag coefficient for the stabilizers
+- `stabsCd0::Real` = parasite drag coefficient for the stabilizers
 - `stabscnδ::Real` = cn vs δ slope for the stabilizers
 - `stabscmδ::Real` = cm vs δ slope for the stabilizers
 - `stabscdδ::Real` = cd vs δ slope for the stabilizers
+- `hasInducedDrag::Bool` = flag to include induced drag
 """
-function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,wAirfoil::Airfoil=deepcopy(flatPlate),sAirfoil::Airfoil=deepcopy(flatPlate),nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Real=1e12,stiffnessFactor::Real=1,k1::Real=0,k2::Real=0,airspeed::Real=0,δElevIsTrimVariable::Bool=false,δAilIsTrimVariable::Bool=false,δRuddIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Real,<:Function}=nothing,δAil::Union{Nothing,Real,<:Function}=nothing,δRudd::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,g::Real=-9.80665,wingCd0::Real=0,wingcnδ::Real=2.5,wingcmδ::Real=-0.35,wingcdδ::Real=0.15,stabsCd0::Real=0,stabscnδ::Real=2.5,stabscmδ::Real=-0.35,stabscdδ::Real=0.15)
+function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,wAirfoil::Airfoil=deepcopy(flatPlate),sAirfoil::Airfoil=deepcopy(flatPlate),nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Real=1e12,stiffnessFactor::Real=1,k1::Real=0,k2::Real=0,airspeed::Real=0,δElevIsTrimVariable::Bool=false,δAilIsTrimVariable::Bool=false,δRuddIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Real,<:Function}=nothing,δAil::Union{Nothing,Real,<:Function}=nothing,δRudd::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,g::Real=-9.80665,wingCd0::Real=0,wingcnδ::Real=2.5,wingcmδ::Real=-0.35,wingcdδ::Real=0.15,stabsCd0::Real=0,stabscnδ::Real=2.5,stabscmδ::Real=-0.35,stabscdδ::Real=0.15,hasInducedDrag::Bool=false)
 
     # Validate
     @assert iseven(nElemWing)
@@ -728,9 +764,9 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     wRNormFlapSpan = [1-wFlapSize,1]
     update_Airfoil_params!(wAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=wChord/2)
 
-    wingSurfLeft = δAilIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wLNormFlapSpan,δ=δAil,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wLNormFlapSpan,δIsTrimVariable=δAilIsTrimVariable,updateAirfoilParameters=false)
+    wingSurfLeft = δAilIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wLNormFlapSpan,δ=δAil,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=true) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wLNormFlapSpan,δIsTrimVariable=δAilIsTrimVariable,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=true)
 
-    wingSurfRight = δAilIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wRNormFlapSpan,δ=δAil,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wRNormFlapSpan,δIsTrimVariable=δAilIsTrimVariable,updateAirfoilParameters=false)
+    wingSurfRight = δAilIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wRNormFlapSpan,δ=δAil,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=true) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=wAirfoil,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=wRNormFlapSpan,δIsTrimVariable=δAilIsTrimVariable,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=true)
 
     # Override wing airfoil parameters
     wingSurfLeft.airfoil.attachedFlowParameters.cd₀ = wingCd0
@@ -792,7 +828,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     hNormFlapPos = 0.75
     hNormFlapSpan = [0,1]
     update_Airfoil_params!(sAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=hChord/2)
-    hsSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δ=δElev,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=false)
+    hsSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δ=δElev,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=hChord,normSparPos=hNormSparPos,normFlapPos=hNormFlapPos,normFlapSpan=hNormFlapSpan,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=false)
 
     # Override horizontal stabilizer airfoil parameters
     hsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
@@ -817,7 +853,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     vNormFlapPos = 0.75
     vNormFlapSpan = [0,1]
     update_Airfoil_params!(sAirfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=vChord/2)
-    vsSurf = δRuddIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,δ=δRudd,updateAirfoilParameters=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,δIsTrimVariable=δRuddIsTrimVariable,updateAirfoilParameters=false)
+    vsSurf = δRuddIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,δ=δRudd,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=false) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=flapLoadsSolver,airfoil=sAirfoil,c=vChord,normSparPos=vNormSparPos,normFlapPos=vNormFlapPos,normFlapSpan=vNormFlapSpan,δIsTrimVariable=δRuddIsTrimVariable,updateAirfoilParameters=false,hasInducedDrag=hasInducedDrag,hasSymmetricCounterpart=false)
 
     # Override vertical stabilizer airfoil parameters
     vsSurf.airfoil.attachedFlowParameters.cd₀ = stabsCd0
@@ -845,9 +881,9 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     beams = includeVS ? [leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer] : [leftWing,rightWing,tailBoom,horzStabilizer]
 
     # Aircraft model
-    conventional_HALE = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[aileronLink])
+    conventionalHALE = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[aileronLink])
 
-    return conventional_HALE,leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer
+    return conventionalHALE,leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer
 end
 export create_conventional_HALE
 

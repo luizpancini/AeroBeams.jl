@@ -153,6 +153,9 @@ function update_beam!(beam::Beam)
     # Get derivatives of generalized initial displacements with respect to arclength coordinate
     initial_displacements_derivatives!(beam)
 
+    # Update attached aerodynamic surface properties
+    update_aero_surface!(beam)
+
     # Create beam elements
     create_beam_elements!(beam)
 
@@ -458,6 +461,34 @@ function initial_displacements_derivatives!(beam::Beam)
 
     @pack! beam = uprime0_of_x1,pprime0_of_x1
 
+end
+
+
+# Updates the beam-dependent properties of the attached aerodynamic surface (if any)
+function update_aero_surface!(beam::Beam)
+
+    @unpack aeroSurface = beam
+
+    # Skip if there are no attached surface
+    if isnothing(aeroSurface)
+        return
+    end
+
+    # Unpack geometric variables
+    @unpack length = beam
+    @unpack c,hasSymmetricCounterpart = aeroSurface
+
+    # Compute surface planform area
+    if c isa Real
+        area = c * length
+    else
+        area,_ = quadgk(c, 0, length)
+    end
+
+    # Aspect ratio
+    AR = hasSymmetricCounterpart ? 2*length^2/area : length^2/area
+
+    @pack! beam.aeroSurface = area,AR
 end
 
 

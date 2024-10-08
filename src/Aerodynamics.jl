@@ -367,14 +367,23 @@ end
 function attached_flow_ct!(element::Element,δNow)
 
     @unpack flapped,flapLoadsSolver,ϖMid,smallAngles = element.aero
+    @unpack hasInducedDrag = element.parent.aeroSurface
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack η,cd₀,cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack cnC = element.aero.aeroCoefficients
+    @unpack η,cd₀ = element.aero.airfoil.attachedFlowParameters
     @unpack cdδ = element.aero.airfoil.flapParameters
 
     # Circulatory component
-    ct = smallAngles ? -cd₀ + cnα * αₑ^2 : -cd₀/cos(αₑ) + η * cnα * sin(αₑ)^2
+    ct = smallAngles ? -cd₀ + cnC/ϖMid * αₑ : -cd₀/cos(αₑ) + η * cnC/ϖMid * tan(αₑ)
     if flapped && typeof(flapLoadsSolver) == TableLookup
         ct -= cdδ*abs(δNow)/cos(αₑ)
+    end
+
+    # Induced (drag) component
+    if hasInducedDrag
+        @unpack cnC = element.aero.aeroCoefficients
+        @unpack AR = element.parent.aeroSurface
+        ct -= (cnC/ϖMid)^2/(π*AR)/cos(αₑ)
     end
 
     # Scale by tip loss correction factor at element's midpoint

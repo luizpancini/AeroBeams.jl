@@ -1,5 +1,8 @@
 using AeroBeams, LinearAlgebra, LinearInterpolations, DelimitedFiles
 
+# Option for mode tracking
+modeTracking = true
+
 # Aerodynamic solver and derivatives method
 aeroSolver = Indicial()
 derivationMethod = AD()
@@ -24,7 +27,7 @@ NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 # Set precurvature, tip force and airspeed ranges, and initialize outputs
 kRange = collect(0:0.018:0.018)
 F3Range = collect(0:2:40)
-URange = collect(20:0.5:35)
+URange = vcat(1e-3,collect(20:0.5:35))
 untrackedFreqs = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(kRange),length(F3Range),length(URange))
@@ -35,6 +38,10 @@ flutterSpeed = Array{Float64}(undef,length(kRange),length(F3Range))
 flutterFreq = Array{Float64}(undef,length(kRange),length(F3Range))
 flutterMode = Array{Int64}(undef,length(kRange),length(F3Range))
 flutterTipDisp = Array{Float64}(undef,length(kRange),length(F3Range))
+modeDampings = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),nModes)
+modeFrequencies = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),nModes)
+
+SMWFlutterPrecurvatureRange = Array{Model}(undef,length(kRange),length(F3Range),length(URange))
 
 # Set number of vibration modes
 nModes = 5
@@ -43,16 +50,14 @@ nModes = 5
 for (ki,k) in enumerate(kRange)
     # Sweep tip force
     for (i,F3) in enumerate(F3Range)
-        # Update model
-        SMWFlutterPrecurvatureRange,_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ*π/180,k2=k,nElem=nElem,altitude=h,g=g,tipF3=F3)
         # Sweep airspeed
         for (j,U) in enumerate(URange)
             # Display progress
             println("Solving for k=$k, F3 = $F3 N, U = $U m/s")
-            # Update velocity of basis A (and update model)
-            set_motion_basis_A!(model=SMWFlutterPrecurvatureRange,v_A=[0;U;0])
+            # Update model
+            SMWFlutterPrecurvatureRange[ki,i,j],_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ*π/180,k2=k,nElem=nElem,altitude=h,g=g,tipF3=F3,airspeed=U)
             # Create and solve problem
-            problem = create_EigenProblem(model=SMWFlutterPrecurvatureRange,systemSolver=NR,nModes=nModes,frequencyFilterLimits=[1e-3,Inf64])
+            problem = create_EigenProblem(model=SMWFlutterPrecurvatureRange[ki,i,j],systemSolver=NR,nModes=nModes,frequencyFilterLimits=[1e-3,Inf64])
             solve!(problem)
             # Frequencies, dampings and eigenvectors
             untrackedFreqs[ki,i,j] = problem.frequenciesOscillatory
@@ -62,7 +67,16 @@ for (ki,k) in enumerate(kRange)
             tip_u3[ki,i,j] = problem.nodalStatesOverσ[end][nElem].u_n2[3]
         end
         # Frequencies and dampings after mode tracking
-        freqs[ki,i,:],damps[ki,i,:],_ = mode_tracking(URange,untrackedFreqs[ki,i,:],untrackedDamps[ki,i,:],untrackedEigenvectors[ki,i,:])
+        if modeTracking
+            freqs[ki,i,:],damps[ki,i,:],_ = mode_tracking(URange,untrackedFreqs[ki,i,:],untrackedDamps[ki,i,:],untrackedEigenvectors[ki,i,:])
+        else
+            freqs[ki,i,:],damps[ki,i,:] = untrackedFreqs[ki,i,:],untrackedDamps[ki,i,:]
+        end
+        # Separate frequencies and dampings by mode
+        for mode in 1:nModes
+            modeFrequencies[ki,i,mode] = [freqs[ki,i,j][mode] for j in eachindex(URange)]
+            modeDampings[ki,i,mode] = [damps[ki,i,j][mode] for j in eachindex(URange)]
+        end
         # Flutter speeds, frequencies and tip displacements of modes at current tip force
         dampsCurrentF3 = Array{Vector{Float64}}(undef,nModes)
         freqsCurrentF3 = Array{Vector{Float64}}(undef,nModes)
