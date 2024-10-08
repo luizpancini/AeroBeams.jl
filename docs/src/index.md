@@ -69,6 +69,9 @@ A few limitations of the theory to keep in mind when using this package:
 
 The University of Michigan's Nonlinear Aeroelastic Simulation Toolbox (UM/NAST) is a framework for simulating the flight dynamics of flexible aircraft structures modeled as an assembly of beams. It implements a strain-based geometrically exact beam theory[^10]. It is not, however, an open source code.
 
+[ASWING](https://web.mit.edu/drela/Public/web/aswing/) is a program for the aerodynamic, structural, and control-response analysis
+of aircraft with flexible wings and fuselages of high to moderate aspect ratio. It uses a displacement-based nonlinear beam structural formulation coupled to a general extented lifting-line aerodynamic model to simulate the flight of aircraft with or without a user-defined control law. ASWING is licensed for commercial use.
+
 ## Theory
 
 A basic understanding of the theory will help the user of this package:
