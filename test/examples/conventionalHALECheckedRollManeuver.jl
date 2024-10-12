@@ -4,6 +4,9 @@
 #md # ![](../assets/cHALE.png)
 #md # *HALE model geometry* by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738)
 
+#md # !!! tip
+#md #     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/conventionalHALECheckedRollManeuver.jl).
+
 # ### Problem setup
 # Let's begin by setting up the variables of our problem.
 using AeroBeams
@@ -55,7 +58,7 @@ println("Trim variables/outputs: AoA = $(trimAoA*180/π), T = $(trimThrust), δ 
 # The coordinate turn maneuver investigated is defined by checked aileron and rudder deflections, linearly ramped. The time-dependent aileron and rudder profiles, `δAil` and `δRudd`, are passed as arguments to create the model for the dynamic problem.
 #md using Suppressor #hide
 ## Set checked aileron and rudder deflection profiles
-Δδ = -10*π/180
+Δδ = -15*π/180
 tδinit = 1
 tδramp = 5
 tδpeak = tδinit+tδramp

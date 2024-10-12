@@ -5,6 +5,9 @@ EditURL = "../../../test/examples/OMCgustTests.jl"
 # Gust response of an airfoil section
 This example illustrates how to set up an aerodynamic analysis of gust response. While AeroBeams *can't* run a strictly aerodynamic analyses (only aeroelastic ones), that can be done in practice by using a one-element stiff beam supported at both ends, effectively removing structural deformation effects. We'll evaluate the response of the NACA 0012 airfoil to one-minus-cosine gusts through several tests, each with different pitch angle and gust length. The performance of the available aerodynamic solvers the gust indicial solvers will be assessed too.
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/OMCgustTests.jl).
+
 ### Core function setup
 The following core function solves our problem given the test case, the aerodynamic solver the gust indicial solver. Notice that we use the function [`create_OneMinusCosineGust`](@ref create_OneMinusCosineGust) with the appropriate arguments to streamline the process of creation of the gust.
 

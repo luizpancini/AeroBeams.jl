@@ -5,6 +5,9 @@ EditURL = "../../../test/examples/initialDispAndVelBeam.jl"
 # Motion of a simply supported beam under initial conditions
 This example illustrates how to set up a dynamic analysis with initial conditions. To do that, we take a simply supported beam under a specified combination of sinusoidal initial displacement and velocity.
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/initialDispAndVelBeam.jl).
+
 ### Initial conditions
 The setup of our problem begins by specifying the initial conditions, defined by the variable `initialConditions`. These could theoretically be defined by the displacement (`u3`), the angle of rotation (`θ2`), or both. However, experience shows that the most accurate results are found with the first option. The displacement and rotation (and their time rates) correspond to those of a simply supported beam's second bending mode shape. Notice that `θ2` is the angle of rotation over the beam's arclength coordinate (`x1`) and `p2` is the corresponding Wiener-Milenkovic rotation parameter.
 

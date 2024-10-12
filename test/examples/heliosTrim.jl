@@ -7,6 +7,9 @@
 #md # ![](../assets/heliosProps.png)
 #md # *Flying-wing properties* by [Patil and Hodges](https://doi.org/10.2514/1.17640)
 
+#md # !!! tip
+#md #     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/heliosTrim.jl).
+
 # ### Problem setup
 # Let's begin by setting up the variables of our problem. We select the airfoil for the wing, and the optional flags to include the vertical beam pods and of setting the payload on the wing. Our set up matches that of [Patil and Hodges](https://doi.org/10.2514/1.17640). We will investigate the longitudinal trim of the aircraft at both rigid and elastic (nominal) configurations, using the payload at the center station as the varying parameter.
 using AeroBeams, DelimitedFiles
@@ -75,7 +78,7 @@ end
 TRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Helios/trim_thrust.txt")
 #md nothing #hide
 
-#md # We now plot the trim outputs as functions of the payload, for both rigid and elastic configurations. The agreement with the reference is very good, except for the thrust, which was constant and independent of the aircraft stiffness in the reference solution.
+#md # We now plot the trim outputs as functions of the payload, for both rigid and elastic configurations. The agreement with the reference is very good. Notice that the thrust (per motor) remains almost constant, for both rigid and flexible aircraft, because the drag slope with flap deflection is assumed null (``c_{d_\\delta} = 0``) and induced drag is neglected, so that only the parasite drag (``c_{d_0}``) component is present.
 ## Plot configurations
 #md using Plots, ColorSchemes
 #md gr()
@@ -115,7 +118,7 @@ TRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Helios/trim_thrust.txt")
 #md end
 #md savefig("heliosTrim_delta.svg") #hide
 
-## Trim thrust
+## Trim thrust per motor
 #md plt3 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500], ylims=[0,60])
 #md plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
 #md scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")

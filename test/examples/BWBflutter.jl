@@ -10,6 +10,9 @@
 #md # ![](../assets/BWBwingprops.png)
 #md # *BWB's wing properties* by [Su](https://www.proquest.com/docview/304572531?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses)
 
+#md # !!! tip
+#md #     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/BWBflutter.jl).
+
 # ### Problem setup
 # Let's begin by setting up the variables of our problem.
 using AeroBeams, DelimitedFiles
@@ -122,7 +125,7 @@ freqsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/freqs.txt")
 dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md nothing #hide
 
-#md # We are ready to plot the results. The following plots show the trim root angle of attack, motor thrust and elevator deflection as functions of the airspeed. The correlation with the reference solution is very good.
+#md # We are ready to plot the results. The following plots show the trim root angle of attack, motor thrust and elevator deflection as functions of the airspeed. The correlation with the reference solution is very good, except for the thrust. This difference arises because of the way in which the airfoil tangential force is computed when a flap deflection is present: either as proportional to the total normal force, the including flap-induced component (in AeroBeams), or proportional to the effective angle of attack (in UM/NAST).
 #md using Suppressor #hide
 #md using Plots, ColorSchemes
 #md gr()

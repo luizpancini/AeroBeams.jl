@@ -8,6 +8,9 @@ This example illustrates how to set up a dynamic analysis, using the articulated
 ![](../assets/articulatedbeam.png)
 *Articulated beam: definition and motion* by [Simo and Vu-Quoc](https://doi.org/10.1115/1.3171871)
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/flyingScissors.jl).
+
 ### Beam
 The set up of this problem begins with the definition of the articulated links (beams), each with its own inertia properties. Notice, however, that we create a single beam, which has different properties for each half of its elements. This beam has a hinge defined by the arguments `hingedNodes` and `hingedNodesDoF` of the function [`create_Beam`](@ref create_Beam).
 

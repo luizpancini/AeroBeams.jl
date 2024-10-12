@@ -8,6 +8,9 @@ This example illustrates how to set up a static structural analysis, using the T
 ![](../assets/pazyTorsionTest.png)
 *Pazy wing coupled bending-torsion test* by [Avin et al.](https://doi.org/10.2514/1.J060621)
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/PazyWingTorsionTest.jl).
+
 ### Problem setup
 Let's begin by setting the variables of our problem. In this example we will analyze the displacements and twist of the clamped wing caused by the attachment of a range of tip masses. Notice that we bring into scope some fixed geometrical and discretization properties of the wing's beam through the function [`geometrical_properties_Pazy`](@ref geometrical_properties_Pazy).
 

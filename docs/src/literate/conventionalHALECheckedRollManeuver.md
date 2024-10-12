@@ -8,6 +8,9 @@ This example illustrates how to set up a dynamic analysis of an aircraft in free
 ![](../assets/cHALE.png)
 *HALE model geometry* by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738)
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/conventionalHALECheckedRollManeuver.jl).
+
 ### Problem setup
 Let's begin by setting up the variables of our problem.
 
@@ -66,7 +69,7 @@ The coordinate turn maneuver investigated is defined by checked aileron and rudd
 ````@example conventionalHALECheckedRollManeuver
 using Suppressor #hide
 # Set checked aileron and rudder deflection profiles
-Δδ = -10*π/180
+Δδ = -15*π/180
 tδinit = 1
 tδramp = 5
 tδpeak = tδinit+tδramp

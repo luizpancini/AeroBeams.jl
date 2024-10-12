@@ -8,6 +8,9 @@ This example illustrates how to set up a dynamic analysis of an aircraft in free
 ![](../assets/cHALE.png)
 *HALE model geometry* by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738)
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/conventionalHALECheckedPitchManeuver.jl).
+
 ### Problem setup
 Let's begin by setting up the variables of our problem.
 

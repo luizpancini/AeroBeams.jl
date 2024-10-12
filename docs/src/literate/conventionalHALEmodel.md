@@ -11,6 +11,9 @@ This example illustrates how to create a conventional aircraft model, the high-a
 ![](../assets/cHALEdata.png)
 *HALE model data* by [Patil, Hodges and Cesnik](https://doi.org/10.2514/2.2738)
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/conventionalHALEmodel.jl).
+
 The contents of the present example are wrapped into the function [`create_conventional_HALE`](@ref create_conventional_HALE), in which you may check all the keyword arguments that we'll define below.
 
 ````@example conventionalHALEmodel

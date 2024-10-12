@@ -5,6 +5,9 @@
 
 #md # *Pazy wing in the wind tunnel* by [Avin et al.](https://doi.org/10.2514/1.J060621)
 
+#md # !!! tip
+#md #     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/PazyWingFlutterPitchRange.jl).
+
 # ### Problem setup
 # Let's begin by setting the variables of our problem. In this example we will analyze the flutter onset and offset boundaries of the clamped wing under several root pitch angles, defined by the array `θRange`.
 using AeroBeams, LinearInterpolations

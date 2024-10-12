@@ -11,6 +11,9 @@ This example illustrates how to set up a trim analysis of an aircraft in free fl
 ![](../assets/heliosProps.png)
 *Flying-wing properties* by [Patil and Hodges](https://doi.org/10.2514/1.17640)
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/heliosTrim.jl).
+
 ### Problem setup
 Let's begin by setting up the variables of our problem. We select the airfoil for the wing, and the optional flags to include the vertical beam pods and of setting the payload on the wing. Our set up matches that of [Patil and Hodges](https://doi.org/10.2514/1.17640). We will investigate the longitudinal trim of the aircraft at both rigid and elastic (nominal) configurations, using the payload at the center station as the varying parameter.
 
@@ -85,7 +88,7 @@ TRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Helios/trim_thrust.txt")
 nothing #hide
 ````
 
-We now plot the trim outputs as functions of the payload, for both rigid and elastic configurations. The agreement with the reference is very good, except for the thrust, which was constant and independent of the aircraft stiffness in the reference solution.
+We now plot the trim outputs as functions of the payload, for both rigid and elastic configurations. The agreement with the reference is very good. Notice that the thrust (per motor) remains almost constant, for both rigid and flexible aircraft, because the drag slope with flap deflection is assumed null (``c_{d_\\delta} = 0``) and induced drag is neglected, so that only the parasite drag (``c_{d_0}``) component is present.
 
 ````@example heliosTrim
 # Plot configurations
@@ -127,7 +130,7 @@ for (i,λ) in enumerate(λRange)
 end
 savefig("heliosTrim_delta.svg") #hide
 
-# Trim thrust
+# Trim thrust per motor
 plt3 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500], ylims=[0,60])
 plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")

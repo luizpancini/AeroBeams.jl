@@ -5,6 +5,9 @@
 
 #md # *Geometry of the two-story frame* by [Petyt](https://doi.org/10.1017/CBO9780511761195)
 
+#md # !!! tip
+#md #     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/twoStoryFrame.jl).
+
 # ### Problem variables
 # The first step is to define the variables of our problem: geometric and material properties, and discretization. There are two types of beams in the frame: vertical ones have cross-section base `b1` and horizontal ones have base `b2`, but all are made of the same material. We also apply an uniform discretization.
 using AeroBeams, LinearAlgebra

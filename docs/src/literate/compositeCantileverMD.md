@@ -13,6 +13,9 @@ This example illustrates how to set up a static structural analysis of composite
 
 *Laminate properties* by [Minguet and Dugundji](https://doi.org/10.2514/3.25255)
 
+!!! tip
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/compositeCantileverMD.jl).
+
 ### Problem setup
 Let's begin by setting up the variables of our problem. We create three beams, each of a different composite laminate, clamp them ar the root, and apply the tip load. Notice that only beam 1 has a diagonal sectional stiffness matrix, whereas the others have coupling terms.
 

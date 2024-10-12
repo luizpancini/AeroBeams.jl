@@ -34,8 +34,8 @@ end
 display(plt1)
 savefig(string(absPath,"/heliosTrim_AoA.pdf"))
 
-# Trim propeller force
-plt2 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500])
+# Trim thrust force
+plt2 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500], ylims=[0,40])
 for (i,λ) in enumerate(λRange)
     plot!(PRange, trimThrust[i,:], c=colors[i], lw=lw, label=labels[i])
 end
