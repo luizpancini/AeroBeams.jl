@@ -25,7 +25,7 @@ plot!(URange, trimAoA*180/π, c=:black, lw=lw, label=false)
 display(plt1)
 savefig(string(absPath,"/BWBflutter_AoA.pdf"))
 
-# Trim propeller force vs airspeed
+# Trim thrust force vs airspeed
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[URange[1],URange[end]])
 plot!(URange, trimThrust, c=:black, lw=lw, label=false)
 display(plt2)
@@ -53,9 +53,9 @@ plt51 = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=[0
 for mode in 1:nModes
     scatter!(URange, modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=msw,  label=false)
 end
-plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[URange[1],URange[end]], ylims=[-10,5])
+plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping ratio", xlims=[URange[1],URange[end]], ylims=[-0.25,0.1])
 for mode in 1:nModes
-    scatter!(URange, modeDampings[mode], c=modeColors[mode], ms=ms, msw=msw, label=false)
+    scatter!(URange, modeDampings[mode]./modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=msw, label=false)
 end
 plt5 = plot(plt51,plt52, layout=(2,1))
 display(plt5)
