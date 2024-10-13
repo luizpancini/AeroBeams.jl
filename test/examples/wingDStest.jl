@@ -37,7 +37,7 @@ surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,ai
 L = 10*2*b
 EIy,GJ = 5e6,1e8
 ρA,ρIy,ρIz = 10,1e-2,1e-2
-nElem = 10
+nElem = 20
 ∞ = 1e12
 wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=10*EIy)],I=[inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz)],rotationParametrization="E321",p0=[0;0;a₀-a₁],aeroSurface=surf,pdot0_of_x1=x1->[pdot(0); 0.0; 0.0])
 
@@ -65,14 +65,15 @@ problem = create_DynamicProblem(model=wingDStest,finalTime=tf,Δt=Δt,systemSolv
 solve!(problem)
 
 # Unpack numerical solution
+elemRangePlot = [1,nElem]
+sizeRange = 1:length(elemRangePlot)
 t = problem.timeVector
-α = [problem.aeroVariablesOverTime[i][nElem].flowAnglesAndRates.α for i in 1:length(t)]
-cn = [problem.aeroVariablesOverTime[i][nElem].aeroCoefficients.cn for i in 1:length(t)]
-cm = [problem.aeroVariablesOverTime[i][nElem].aeroCoefficients.cm for i in 1:length(t)]
-ct = [problem.aeroVariablesOverTime[i][nElem].aeroCoefficients.ct for i in 1:length(t)]
-cl = @. cn*cos(α) + ct*sin(α)
-cdrag = @. cn*sin(α) - ct*cos(α)
-Vdot3 = [problem.elementalStatesRatesOverTime[i][nElem].Vdot[3] for i in 1:length(t)]
+α = [[problem.aeroVariablesOverTime[i][elem].flowAnglesAndRates.α for i in 1:length(t)] for elem in elemRangePlot]
+cn = [[problem.aeroVariablesOverTime[i][elem].aeroCoefficients.cn for i in 1:length(t)] for elem in elemRangePlot]
+cm = [[problem.aeroVariablesOverTime[i][elem].aeroCoefficients.cm for i in 1:length(t)] for elem in elemRangePlot]
+ct = [[problem.aeroVariablesOverTime[i][elem].aeroCoefficients.ct for i in 1:length(t)] for elem in elemRangePlot]
+cl = @. [cn[e]*cos(α[e]) + ct[e]*sin(α[e]) for e in sizeRange]
+cdrag = @. [cn[e]*sin(α[e]) - ct[e]*cos(α[e]) for e in sizeRange]
 
 # Load reference data from McAlister et al (frame 10022)
 clRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "DSModelTest", "cl.txt"))

@@ -1,8 +1,8 @@
 # AeroBeams
 
-| **Documentation**         | **Build Status**                      | **Code Coverage**     |
-|:------------------------- |:------------------------------------- |:--------------------  |
-| [![][docs-img]][docs-url] | [![][gh-actions-img]][gh-actions-url] | [![][cc-img]][cc-url] |
+| **Documentation**                                      | **Build Status**                      | **Code Coverage**     |
+|:----------------------------------------------------   |:------------------------------------- |:--------------------  |
+| [![][docss-img]][docss-url][![][docsd-img]][docsd-url] | [![][gh-actions-img]][gh-actions-url] | [![][cc-img]][cc-url] |
 
 
 ## Overview
@@ -99,8 +99,10 @@ This package was developed with the support of the São Paulo Research Foundatio
 <a id="10">[10]</a> Su, W and Cesnik, C. E. S. "Strain-based geometrically nonlinear beam formulation for modeling very flexible aircraft". 2011. International Journal of Solids and Structures. [10.1016/j.ijsolstr.2011.04.012](https://doi.org/10.1016/j.ijsolstr.2011.04.012)
 
 
-[docs-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-url]: https://luizpancini.github.io/AeroBeams.jl/stable/
+[docss-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docss-url]: https://luizpancini.github.io/AeroBeams.jl/stable/
+[docsd-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docsd-url]: https://luizpancini.github.io/AeroBeams.jl/dev/
 
 [gh-actions-img]: https://github.com/luizpancini/AeroBeams.jl/actions/workflows/CI.yml/badge.svg?branch=main
 [gh-actions-url]: https://github.com/luizpancini/AeroBeams.jl/actions/workflows/CI.yml?query=branch%3Amain
