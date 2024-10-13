@@ -1,7 +1,7 @@
 using Plots, ColorSchemes
 
 # Run the script
-# include("../examples/OMCgustTests.jl")
+include("../examples/OMCgustTests.jl")
 
 # Plot configurations
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(aeroSolvers)))
@@ -32,7 +32,7 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
             # Gust indicial solver name
             gustSolverName = gustLoadsSolver.indicialFunctionName
             # Set paths
-            relPath = string("/test/outputs/figures/OMCgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase)
+            relPath = string("/test/outputs/figures/OMCgustTests/",aeroSolverName,"_",gustSolverName,"_test",testCase)
             absPath = string(pwd(),relPath)
             mkpath(absPath)
             # Lift coefficient increment over time

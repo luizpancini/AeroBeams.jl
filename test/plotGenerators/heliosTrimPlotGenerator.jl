@@ -36,8 +36,11 @@ savefig(string(absPath,"/heliosTrim_AoA.pdf"))
 
 # Trim thrust force
 plt2 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500], ylims=[0,40])
+plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
+scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")
 for (i,λ) in enumerate(λRange)
     plot!(PRange, trimThrust[i,:], c=colors[i], lw=lw, label=labels[i])
+    scatter!(TRef[1,:], TRef[2,:], c=colors[i], ms=ms, msw=0, label=false)
 end
 display(plt2)
 savefig(string(absPath,"/heliosTrim_thrust.pdf"))
