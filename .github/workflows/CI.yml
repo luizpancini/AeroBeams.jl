@@ -59,6 +59,7 @@ jobs:
       - name: Install Python dependencies for PyCall
         run: |
           julia -e 'using Pkg; Pkg.add("PyCall")'
+          julia -e 'using Pkg; Pkg.add("Conda")'
           julia -e 'ENV["PYTHON"]=""'
           julia -e 'using Pkg; Pkg.build("PyCall")'
           julia -e 'using Conda; Conda.add("matplotlib")'
