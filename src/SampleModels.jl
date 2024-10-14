@@ -150,6 +150,57 @@ export geometrical_properties_Pazy
 
 
 """
+    typical_section_data(name::String)
+
+Returns the data of the typical section of given name
+
+# Arguments
+- `name::String` = name of the typical section
+
+# Outputs
+- `a` = position of elastic axis (semichords aft of midchord)
+- `e` = position of mass axis (semichords aft of midchord)
+- `μ` = mass ratio
+- `rα²` = squared radius of gyration in pitch 
+- `σ` = ratio of plunge to pitch frequency in vacuo
+- `ωα` = pitch frequency in vacuo [rad/s]
+- `c` = chord [m]
+"""
+function typical_section_data(name::String)
+
+    if name == "HP-1" # Defined in problem 5.5 of Hodges & Pierce
+        a = -1/5
+        e = -1/10
+        μ = 20
+        rα² = 6/25
+        σ = 2/5
+        ωα = 50 # A numerical value was not given
+        c = 1   # A numerical value was not given
+    elseif name == "HP-2" # Defined in problem 5.9 of Hodges & Pierce
+        a = -1/3
+        e = -1/10
+        μ = 50
+        rα² = 4/25
+        σ = 2/5
+        ωα = 40 # A numerical value was not given
+        c = 1   # A numerical value was not given
+    elseif name == "Fung" # Defined by Fung - An Introduction to Theory of Aeroelasticity
+        a = -0.15
+        e = 0.1
+        μ = 76
+        rα² = 0.6229^2
+        ωα = 64.1
+        ωh = 55.9
+        σ = ωh/ωα
+        c = 0.127*2
+    end
+
+    return a,e,μ,rα²,σ,ωα,c
+end
+export typical_section_data
+
+
+"""
     create_Pazy(; kwargs...)
 
 Creates the Pazy wing

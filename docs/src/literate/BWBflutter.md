@@ -30,7 +30,7 @@ aeroSolver = Indicial()
 h = 0e3
 
 # Airspeed range
-URange = collect(30:5:150)
+URange = collect(30:5:160)
 
 # Number of vibration modes
 nModes = 8
@@ -105,7 +105,7 @@ for (i,U) in enumerate(URange)
     update_model!(BWBeigen)
 
     # Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1e0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia)
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1.0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia)
     solve_eigen!(eigenProblem)
 
     # The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution

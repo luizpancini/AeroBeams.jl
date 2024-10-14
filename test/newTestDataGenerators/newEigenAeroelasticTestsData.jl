@@ -116,15 +116,15 @@ for i in eachindex(kRange)
     writedlm(string("test/newTestDataGenerators/SMWFlutterPrecurvatureRange/flutterSpeedk",i,".txt"),flutterSpeed[i,:])
 end
 
-# # Flutter boundary analysis of the sixteen-meter-wing as a function of the wing curvature with root angle as the varying parameter
-# include("../examples/SMWFlutterPrecurvatureRange2.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/SMWFlutterPrecurvatureRange2"))
-# for (ki,k) in enumerate(kRange)
-#     for (i,θ) in enumerate(θRange)
-#         writedlm(string("test/newTestDataGenerators/SMWFlutterPrecurvatureRange2/freqs_k",ki,"th",i,".txt"),hcat(freqs[ki,i,:]...)')
-#         writedlm(string("test/newTestDataGenerators/SMWFlutterPrecurvatureRange2/damps_k",ki,"th",i,".txt"),hcat(damps[ki,i,:]...)')
-#     end
-# end
+# Flutter boundary analysis of the sixteen-meter-wing as a function of the wing curvature with root angle as the varying parameter
+include("../examples/SMWFlutterPrecurvatureRange2.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/SMWFlutterPrecurvatureRange2"))
+for (ki,k) in enumerate(kRange)
+    for (i,θ) in enumerate(θRange)
+        writedlm(string("test/newTestDataGenerators/SMWFlutterPrecurvatureRange2/freqs_k",ki,"th",i,".txt"),hcat(freqs[ki,i,:]...)')
+        writedlm(string("test/newTestDataGenerators/SMWFlutterPrecurvatureRange2/damps_k",ki,"th",i,".txt"),hcat(damps[ki,i,:]...)')
+    end
+end
 
 # Flutter boundary analysis of the sixteen-meter-wing as a function of the bending-torsion coupling factor
 include("../examples/SMWFlutterStructuralCouplingRange.jl")
@@ -142,3 +142,9 @@ include("../examples/SMWLinearFlutter.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/SMWLinearFlutter"))
 writedlm("test/newTestDataGenerators/SMWLinearFlutter/flutterSpeed.txt", flutterSpeed)
 writedlm("test/newTestDataGenerators/SMWLinearFlutter/flutterFreq.txt", flutterFreq)
+
+# Flutter and divergence analysis of a typical section
+include("../examples/typicalSectionFlutterAndDivergence.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/typicalSectionFlutterAndDivergence"))
+writedlm("test/newTestDataGenerators/typicalSectionFlutterAndDivergence/freqs.txt", freqs)
+writedlm("test/newTestDataGenerators/typicalSectionFlutterAndDivergence/damps.txt", damps)

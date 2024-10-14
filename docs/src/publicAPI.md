@@ -105,6 +105,7 @@ create_RotationConstraint
 ```@docs
 tip_loss_factor_Pazy
 geometrical_properties_Pazy
+typical_section_data
 create_Pazy
 create_PazyFFWT
 create_SMW

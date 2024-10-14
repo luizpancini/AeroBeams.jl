@@ -90,6 +90,7 @@ The following examples are a useful starting point for those new to the package.
 Pages = [
     "literate/conventionalHALEmodel.md",
     "literate/OMCgustTests.md",
+    "literate/typicalSectionFlutterAndDivergence.md",
     "literate/archUnderFollowerPressure.md",
     "literate/compositeCantileverMD.md",
     "literate/PazyWingTorsionTest.md",

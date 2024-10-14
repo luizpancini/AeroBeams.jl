@@ -1,7 +1,7 @@
 using AeroBeams, Documenter, Literate
 
 # Examples to be included in the documentation
-global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALECheckedRollManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl"]
+global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALECheckedRollManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl","typicalSectionFlutterAndDivergence.jl"]
 
 # Generate .md files with Literate
 for ex in included
@@ -29,6 +29,7 @@ makedocs(;
         "Examples" => [
         "Creating a HALE aircraft model" => "literate/conventionalHALEmodel.md",
         "Gust response of an airfoil section" => "literate/OMCgustTests.md",
+        "Flutter and divergence of a typical aeroelastic section" => "literate/typicalSectionFlutterAndDivergence.md",
         "Static structural analysis of an arch under follower pressure" => "literate/archUnderFollowerPressure.md",
         "Static structural analysis of composite beams" => "literate/compositeCantileverMD.md",
         "Static structural analysis of the Pazy wing" => "literate/PazyWingTorsionTest.md",
