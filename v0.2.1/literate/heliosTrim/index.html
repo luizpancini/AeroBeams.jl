@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Trimming a flying-wing HALE · AeroBeams.jl</title><meta name="title" content="Trimming a flying-wing HALE · AeroBeams.jl"/><meta property="og:title" content="Trimming a flying-wing HALE · AeroBeams.jl"/><meta property="twitter:title" content="Trimming a flying-wing HALE · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/heliosTrim/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/heliosTrim/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/heliosTrim/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../conventionalHALEmodel/">Creating a HALE aircraft model</a></li><li><a class="tocitem" href="../OMCgustTests/">Gust response of an airfoil section</a></li><li><a class="tocitem" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section</a></li><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li><a class="tocitem" href="../sweptTipRotor/">Modal analysis of a rotating beam</a></li><li><a class="tocitem" href="../twoStoryFrame/">Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li class="is-active"><a class="tocitem" href>Trimming a flying-wing HALE</a></li><li><a class="tocitem" href="../BWBflutter/">Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li><li><a class="tocitem" href="../conventionalHALECheckedRollManeuver/">Coordinated turn maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Trimming a flying-wing HALE</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Trimming a flying-wing HALE</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/heliosTrim.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Trimming-a-flying-wing-HALE"><a class="docs-heading-anchor" href="#Trimming-a-flying-wing-HALE">Trimming a flying-wing HALE</a><a id="Trimming-a-flying-wing-HALE-1"></a><a class="docs-heading-anchor-permalink" href="#Trimming-a-flying-wing-HALE" title="Permalink"></a></h1><p>This example illustrates how to set up a trim analysis of an aircraft in free flight. For that we take a model of the <a href="https://en.wikipedia.org/wiki/AeroVironment_Helios_Prototype">Helios aircraft</a>, a 75 meters wingspan flying-wing HALE. This aircraft model was described in <a href="https://doi.org/10.2514/1.17640">Patil and Hodges</a>:</p><p><img src="../../assets/helios.png" alt/> <em>Flying-wing HALE model geometry</em> by <a href="https://doi.org/10.2514/1.17640">Patil and Hodges</a></p><p><img src="../../assets/heliosProps.png" alt/> <em>Flying-wing properties</em> by <a href="https://doi.org/10.2514/1.17640">Patil and Hodges</a></p><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>The code for this example is available <a href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/heliosTrim.jl">here</a>.</p></div></div><h3 id="Problem-setup"><a class="docs-heading-anchor" href="#Problem-setup">Problem setup</a><a id="Problem-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-setup" title="Permalink"></a></h3><p>Let&#39;s begin by setting up the variables of our problem. We select the airfoil for the wing, and the optional flags to include the vertical beam pods and of setting the payload on the wing. Our set up matches that of <a href="https://doi.org/10.2514/1.17640">Patil and Hodges</a>. We will investigate the longitudinal trim of the aircraft at both rigid and elastic (nominal) configurations, using the payload at the center station as the varying parameter.</p><pre><code class="language-julia hljs">using AeroBeams, DelimitedFiles
+
+# Wing airfoil
+wingAirfoil = deepcopy(HeliosWingAirfoil)
+
+# Flag to include beam pods
+beamPods = true
+
+# Flag to set payload on wing
+payloadOnWing = false
+
+# Aerodynamic solver
+aeroSolver = Indicial()
+
+# Set NR system solver
+relaxFactor = 0.5
+NR = create_NewtonRaphson(ρ=relaxFactor)
+
+# Airspeed (40 ft/s) [m]
+U = 40*0.3048
+
+# Set stiffness factor and payload ranges
+λRange = [1,50]
+PRange = collect(0:20:500)
+
+# Initialize outputs
+problem = Array{TrimProblem}(undef,length(λRange),length(PRange))
+trimAoA = Array{Float64}(undef,length(λRange),length(PRange))
+trimThrust = Array{Float64}(undef,length(λRange),length(PRange))
+trimδ = Array{Float64}(undef,length(λRange),length(PRange))</code></pre><h3 id="Solving-the-problem"><a class="docs-heading-anchor" href="#Solving-the-problem">Solving the problem</a><a id="Solving-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-the-problem" title="Permalink"></a></h3><p>At this point we can sweep the stiffness factor and payload vectors to find the trim solution at each value.</p><pre><code class="language-julia hljs"># Sweep stiffness factor
+for (i,λ) in enumerate(λRange)
+    # Sweep payload
+    for (j,P) in enumerate(PRange)
+        # Model
+        helios,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
+        # Set initial guess solution as previous known solution
+        x0 = (j==1) ? zeros(0) : problem[i,j-1].x
+        # Create and solve trim problem
+        problem[i,j] = create_TrimProblem(model=helios,systemSolver=NR,x0=x0)
+        solve!(problem[i,j])
+        # Trim results
+        trimAoA[i,j] = problem[i,j].aeroVariablesOverσ[end][midSpanElem].flowAnglesAndRates.αₑ*180/π
+        trimThrust[i,j] = problem[i,j].x[end-1]*problem[i,j].model.forceScaling
+        trimδ[i,j] = problem[i,j].x[end]*180/π
+    end
+end</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>The first post-processing step is to load the reference data by <a href="https://doi.org/10.2514/1.17640">Patil and Hodges</a>.</p><pre><code class="language-julia hljs"># Load reference data
+αFlexibleRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/Helios/trim_AoA_flexible.txt&quot;)
+αRigidRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/Helios/trim_AoA_rigid.txt&quot;)
+δFlexibleRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/Helios/trim_delta_flexible.txt&quot;)
+δRigidRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/Helios/trim_delta_rigid.txt&quot;)
+TRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/Helios/trim_thrust.txt&quot;)</code></pre><p>We now plot the trim outputs as functions of the payload, for both rigid and elastic configurations. The agreement with the reference is very good. Notice that the thrust (per motor) remains almost constant, for both rigid and flexible aircraft, because the drag slope with flap deflection is assumed null (<span>$c_{d_\delta} = 0$</span>) and induced drag is neglected, so that only the parasite drag (<span>$c_{d_0}$</span>) component is present.</p><pre><code class="language-julia hljs"># Plot configurations
+using Plots, ColorSchemes
+gr()
+colors = get(colorschemes[:rainbow], LinRange(0, 1, length(λRange)))
+labels = [&quot;Flexible&quot; &quot;Rigid&quot;]
+lw = 2
+ms = 3
+msw = 0
+
+# Trim root angle of attack
+plt1 = plot(xlabel=&quot;Payload [lb]&quot;, ylabel=&quot;Trim root AoA [deg]&quot;, xlims=[0,500], ylims=[0,5])
+plot!([NaN], [NaN], c=:black, lw=lw, label=&quot;AeroBeams&quot;)
+scatter!([NaN], [NaN], c=:black, ms=ms, label=&quot;Patil &amp; Hodges (2006)&quot;)
+for (i,λ) in enumerate(λRange)
+    plot!(PRange, trimAoA[i,:], c=colors[i], lw=lw, label=labels[i])
+    if i==1
+        scatter!(αFlexibleRef[1,:], αFlexibleRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
+    else
+        scatter!(αRigidRef[1,:], αRigidRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
+    end
+end
+
+# Trim elevator deflection
+plt2 = plot(xlabel=&quot;Payload [lb]&quot;, ylabel=&quot;Trim elevator deflection [deg]&quot;, xlims=[0,500], ylims=[0,10])
+plot!([NaN], [NaN], c=:black, lw=lw, label=&quot;AeroBeams&quot;)
+scatter!([NaN], [NaN], c=:black, ms=ms, label=&quot;Patil &amp; Hodges (2006)&quot;)
+for (i,λ) in enumerate(λRange)
+    plot!(PRange, trimδ[i,:], c=colors[i], lw=lw, label=labels[i])
+    if i==1
+        scatter!(δFlexibleRef[1,:], δFlexibleRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
+    else
+        scatter!(δRigidRef[1,:], δRigidRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
+    end
+end
+
+# Trim thrust per motor
+plt3 = plot(xlabel=&quot;Payload [lb]&quot;, ylabel=&quot;Trim thrust per motor [N]&quot;, xlims=[0,500], ylims=[0,60])
+plot!([NaN], [NaN], c=:black, lw=lw, label=&quot;AeroBeams&quot;)
+scatter!([NaN], [NaN], c=:black, ms=ms, label=&quot;Patil &amp; Hodges (2006)&quot;)
+for (i,λ) in enumerate(λRange)
+    plot!(PRange, trimThrust[i,:], c=colors[i], lw=lw, label=labels[i])
+    scatter!(TRef[1,:], TRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
+end</code></pre><p><img src="../heliosTrim_AoA.svg" alt/> <img src="../heliosTrim_delta.svg" alt/> <img src="../heliosTrim_thrust.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../flyingScissors/">« Dynamic analysis of an articulated beam</a><a class="docs-footer-nextpage" href="../BWBflutter/">Flutter of a Blended-Wing-Body »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Tuesday 15 October 2024 16:46">Tuesday 15 October 2024</span>. Using Julia version 1.11.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
