@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Flutter of a Blended-Wing-Body · AeroBeams.jl</title><meta name="title" content="Flutter of a Blended-Wing-Body · AeroBeams.jl"/><meta property="og:title" content="Flutter of a Blended-Wing-Body · AeroBeams.jl"/><meta property="twitter:title" content="Flutter of a Blended-Wing-Body · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/BWBflutter/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/BWBflutter/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/BWBflutter/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../conventionalHALEmodel/">Creating a HALE aircraft model</a></li><li><a class="tocitem" href="../OMCgustTests/">Gust response of an airfoil section</a></li><li><a class="tocitem" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section</a></li><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li><a class="tocitem" href="../sweptTipRotor/">Modal analysis of a rotating beam</a></li><li><a class="tocitem" href="../twoStoryFrame/">Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li><a class="tocitem" href="../heliosTrim/">Trimming a flying-wing HALE</a></li><li class="is-active"><a class="tocitem" href>Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li><li><a class="tocitem" href="../conventionalHALECheckedRollManeuver/">Coordinated turn maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Flutter of a Blended-Wing-Body</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Flutter of a Blended-Wing-Body</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/BWBflutter.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Flutter-of-a-Blended-Wing-Body"><a class="docs-heading-anchor" href="#Flutter-of-a-Blended-Wing-Body">Flutter of a Blended-Wing-Body</a><a id="Flutter-of-a-Blended-Wing-Body-1"></a><a class="docs-heading-anchor-permalink" href="#Flutter-of-a-Blended-Wing-Body" title="Permalink"></a></h1><p>This example illustrates how to set up a flutter analysis of an aircraft in free flight. For that we take a Blended-Wing-Body (BWB) vehicle, a swept flying-wing with trailing-edge control surfaces. This aircraft model was described in <a href="https://www.proquest.com/docview/304572531?pq-origsite=gscholar&amp;fromopenview=true&amp;sourcetype=Dissertations%20&amp;%20Theses">Weihua Su&#39;s PhD thesis</a>:</p><p><img src="../../assets/BWB.png" alt/> <em>BWB model geometry</em> by <a href="https://www.proquest.com/docview/304572531?pq-origsite=gscholar&amp;fromopenview=true&amp;sourcetype=Dissertations%20&amp;%20Theses">Su</a></p><p><img src="../../assets/BWBbodyprops.png" alt/> <em>BWB&#39;s body properties</em> by <a href="https://www.proquest.com/docview/304572531?pq-origsite=gscholar&amp;fromopenview=true&amp;sourcetype=Dissertations%20&amp;%20Theses">Su</a></p><p><img src="../../assets/BWBwingprops.png" alt/> <em>BWB&#39;s wing properties</em> by <a href="https://www.proquest.com/docview/304572531?pq-origsite=gscholar&amp;fromopenview=true&amp;sourcetype=Dissertations%20&amp;%20Theses">Su</a></p><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>The code for this example is available <a href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/BWBflutter.jl">here</a>.</p></div></div><h3 id="Problem-setup"><a class="docs-heading-anchor" href="#Problem-setup">Problem setup</a><a id="Problem-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-setup" title="Permalink"></a></h3><p>Let&#39;s begin by setting up the variables of our problem.</p><pre><code class="language-julia hljs">using AeroBeams, DelimitedFiles
+
+# Aerodynamic solver
+aeroSolver = Indicial()
+
+# Flight altitude
+h = 0e3
+
+# Airspeed range
+URange = collect(30:5:160)
+
+# Number of vibration modes
+nModes = 8
+
+# Pre-allocate memory and initialize output arrays
+trimAoA = Array{Float64}(undef,length(URange))
+trimThrust = Array{Float64}(undef,length(URange))
+trimδ = Array{Float64}(undef,length(URange))
+untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
+untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
+untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
+freqs = Array{Vector{Float64}}(undef,length(URange))
+damps = Array{Vector{Float64}}(undef,length(URange))</code></pre><p>For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (<code>relaxFactor = 0.5</code>), and an increased number of maximum iterations (<code>maxiter = 50</code>, the default is 20).</p><pre><code class="language-julia hljs"># System solver
+relaxFactor = 0.5
+maxiter = 50
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter)</code></pre><p>Next, we address an important step to be taken when performing flutter analyses in free flight with AeroBeams: to attach the model to light springs in displacement and rotation. This step is necessary for the solver to find the flight dynamic (rigid-body) modes of the vehicle, by introducing some sensitivity of the finite element states to those degrees-of-freedom. In the present case, we will attach two springs to the vehicle, one at each of the nodes where the transition from the body (fuselage) to the wing begins. An appropriate value for the stiffness of the springs is specified by the variable <code>μ</code>. The vectors <code>ku</code> and <code>kp</code> denote the stiffness values in the three orthogonal directions.</p><pre><code class="language-julia hljs"># Attachment springs
+μ = 1e-2
+ku = kp = μ*[1; 1; 1]
+spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
+spring2 = create_Spring(elementsIDs=[3],nodesSides=[2],ku=ku,kp=kp)</code></pre><h3 id="Problem-solution"><a class="docs-heading-anchor" href="#Problem-solution">Problem solution</a><a id="Problem-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-solution" title="Permalink"></a></h3><p>At this point we can sweep the airspeed vector to find the solution at each value.</p><pre><code class="language-julia hljs"># Sweep airspeed range
+for (i,U) in enumerate(URange)
+    # The first step of the solution is to trim the aircraft at that flight condition (combination of altitude and airspeed). We leverage the built-in function in AeroBeams to create our model for trim problem.
+    BWBtrim = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h,airspeed=U)
+
+    # Next, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
+    add_springs_to_beam!(beam=BWBtrim.beams[2],springs=[spring1])
+    add_springs_to_beam!(beam=BWBtrim.beams[3],springs=[spring2])
+    BWBtrim.skipValidationMotionBasisA = true
+    update_model!(BWBtrim)
+
+    # To increase the rate of convergence, we may set initial an guess solution for the trim problem as the known solution at the previous airspeed (except at the first one).
+    x0Trim = i == 1 ? zeros(0) : trimProblem.x
+
+    # Now we create and solve the trim problem.
+    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR,x0=x0Trim)
+    solve!(trimProblem)
+
+    # We extract the trim variables at the current airspeed and set them into our pre-allocated arrays. The trimmed angle of attack at the root, `trimAoA[i]`, is not necessary for the flutter analyses, it is merely an output of interest.
+    trimAoA[i] = trimProblem.aeroVariablesOverσ[end][BWBtrim.beams[3].elementRange[1]].flowAnglesAndRates.αₑ
+    trimThrust[i] = trimProblem.x[end-1]*BWBtrim.forceScaling
+    trimδ[i] = trimProblem.x[end]
+
+    # All the variables needed for the stability analysis are now in place.We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state.
+    BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
+
+    # Again, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
+    add_springs_to_beam!(beam=BWBeigen.beams[2],springs=[spring1])
+    add_springs_to_beam!(beam=BWBeigen.beams[3],springs=[spring2])
+    BWBeigen.skipValidationMotionBasisA = true
+    update_model!(BWBeigen)
+
+    # Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1.0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia)
+    solve_eigen!(eigenProblem)
+
+    # The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution
+    untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
+    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
+    untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
+end</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>We can use the built-in <a href="../../publicAPI/#AeroBeams.mode_tracking"><code>mode_tracking</code></a> function  to enhance the chances of correctly tracking the frequencies and dampings of each mode</p><pre><code class="language-julia hljs"># Mode tracking
+freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+
+# Separate frequencies and damping ratios by mode
+modeDampings = Array{Vector{Float64}}(undef,nModes)
+modeFrequencies =  Array{Vector{Float64}}(undef,nModes)
+for mode in 1:nModes
+    modeDampings[mode] = [damps[i][mode] for i in eachindex(URange)]
+    modeFrequencies[mode] = [freqs[i][mode] for i in eachindex(URange)]
+end</code></pre><p>We can load the reference solution found with the University of Michigan&#39;s Nonlinear Aeroelastic Simulation Tool (UM/NAST) in its 2024 version (not the version in Su&#39;s thesis).</p><pre><code class="language-julia hljs"># Load reference data
+trimAoARef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/BWB/trimAoA.txt&quot;)
+trimThrustRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/BWB/trimThrust.txt&quot;)
+trimδRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/BWB/trimDelta.txt&quot;)
+freqsRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/BWB/freqs.txt&quot;)
+dampsRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/BWB/damps.txt&quot;)</code></pre><p>We are ready to plot the results. The following plots show the trim root angle of attack, motor thrust and elevator deflection as functions of the airspeed. The correlation with the reference solution is very good, except for the thrust. This difference arises because of the way in which the airfoil tangential force is computed when a flap deflection is present: either as proportional to the total normal force, the including flap-induced component (in AeroBeams), or proportional to the effective angle of attack (in UM/NAST).</p><pre><code class="language-julia hljs">using Plots, ColorSchemes
+gr()
+
+# Root AoA
+plt1 = plot(xlabel=&quot;Airspeed [m/s]&quot;, ylabel=&quot;Trim root AoA [deg]&quot;, xlims=[URange[1],URange[end]])
+plot!(URange, trimAoA*180/π, c=:black, lw=2, label=&quot;AeroBeams&quot;)
+scatter!(trimAoARef[1,:],trimAoARef[2,:], c=:black, ms=4, label=&quot;UM/NAST&quot;)
+
+# Thrust
+plt2 = plot(xlabel=&quot;Airspeed [m/s]&quot;, ylabel=&quot;Trim thrust [N]&quot;, xlims=[URange[1],URange[end]], legend=:bottomright)
+plot!(URange, trimThrust, c=:black, lw=2, label=&quot;AeroBeams&quot;)
+scatter!(trimThrustRef[1,:],trimThrustRef[2,:], c=:black, ms=4, label=&quot;UM/NAST&quot;)
+
+# Elevator deflection
+plt3 = plot(xlabel=&quot;Airspeed [m/s]&quot;, ylabel=&quot;Trim elevator deflection [deg]&quot;, xlims=[URange[1],URange[end]], legend=:bottomright)
+plot!(URange, trimδ*180/π, c=:black, lw=2, label=&quot;AeroBeams&quot;)
+scatter!(trimδRef[1,:],trimδRef[2,:], c=:black, ms=4, label=&quot;UM/NAST&quot;)</code></pre><p><img src="../BWBflutter_AoA.svg" alt/> <img src="../BWBflutter_thrust.svg" alt/> <img src="../BWBflutter_delta.svg" alt/></p><p>The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. It is seen that one of the modes crosses the zero-damping barrier at approximately 132.5 m/s, indicating flutter. There is a good correlation with the results from UM/NAST, which predicts the flutter speed at 137.7 m/s.</p><pre><code class="language-julia hljs"># Colormap
+cmap = :rainbow
+modeColors = get(colorschemes[cmap], LinRange(0, 1, nModes))
+
+# Root locus
+plt4 = plot(xlabel=&quot;Damping [1/s]&quot;, ylabel=&quot;Frequency [rad/s]&quot;, xlims=[-20,5],ylims=[0,120])
+scatter!([NaN],[NaN], c=:black, shape=:circle, ms=4, msw=0, label=&quot;AeroBeams&quot;)
+scatter!([NaN],[NaN], c=:black, shape=:utriangle, ms=4, msw=0, label=&quot;UM/NAST&quot;)
+for mode in 1:nModes
+scatter!(dampsRef[mode+1,:], 2π*freqsRef[mode+1,:], c=:black, shape=:utriangle, ms=4, msw=0, label=false)
+scatter!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
+end
+
+# V-g-f
+plt51 = plot(ylabel=&quot;Frequency [rad/s]&quot;, xlims=[URange[1],URange[end]], ylims=[0,120])
+for mode in 1:nModes
+scatter!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
+end
+plt52 = plot(xlabel=&quot;Airspeed [m/s]&quot;, ylabel=&quot;Damping [1/s]&quot;, xlims=[URange[1],URange[end]], ylims=[-10,5])
+for mode in 1:nModes
+scatter!(URange, modeDampings[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0,label=false)
+end
+plt5 = plot(plt51,plt52, layout=(2,1))</code></pre><p><img src="../BWBflutter_rootlocus.svg" alt/> <img src="../BWBflutter_Vgf.svg" alt/></p><p>Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the <a href="../../publicAPI/#AeroBeams.plot_mode_shapes"><code>plot_mode_shapes</code></a> function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.</p><pre><code class="language-julia hljs"># Plot mode shapes
+modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)</code></pre><p><img src="../BWBflutter_modeShapes.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../heliosTrim/">« Trimming a flying-wing HALE</a><a class="docs-footer-nextpage" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Wednesday 16 October 2024 18:18">Wednesday 16 October 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
