@@ -27,6 +27,15 @@ end
     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 end
 
+@testset "Flutter analysis of the Goland wing" begin
+    include("examples/GolandWingFlutter.jl")
+    # Self-comparison
+    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "GolandWingFlutter", "freqs.txt"))
+    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "GolandWingFlutter", "damps.txt"))
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+    @test hcat(damps...)' ≈ damps_ atol=SELFatol
+end
+
 @testset "Flutter analysis of the wing of the Helios flying-wing" begin
     include("examples/heliosWingFlutter.jl")
     # Self-comparison

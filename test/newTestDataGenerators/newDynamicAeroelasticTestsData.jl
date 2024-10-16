@@ -12,6 +12,12 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/conventionalHALECheckedPitchMan
 writedlm("test/newTestDataGenerators/conventionalHALECheckedPitchManeuver/wingAoA.txt", wingAoA)
 writedlm("test/newTestDataGenerators/conventionalHALECheckedPitchManeuver/Deltau3.txt", Δu3)
 
+# Dynamic analysis of the conventional HALE aircraft undergoing a coordinated turn maneuver
+include("../examples/conventionalHALECheckedRollManeuver.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/conventionalHALECheckedRollManeuver"))
+writedlm("test/newTestDataGenerators/conventionalHALECheckedRollManeuver/wingAoA.txt", wingAoA)
+writedlm("test/newTestDataGenerators/conventionalHALECheckedRollManeuver/Deltau3.txt", Δu3)
+
 # Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver
 include("../examples/heliosCheckedPitchManeuver.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/heliosCheckedPitchManeuver"))

@@ -26,6 +26,12 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/conventionalHALEURange"))
 writedlm("test/newTestDataGenerators/conventionalHALEURange/freqs.txt", freqs)
 writedlm("test/newTestDataGenerators/conventionalHALEURange/damps.txt", damps)
 
+# Flutter analysis of the Goland wing
+include("../examples/GolandWingFlutter.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/GolandWingFlutter"))
+writedlm("test/newTestDataGenerators/GolandWingFlutter/freqs.txt", freqs)
+writedlm("test/newTestDataGenerators/GolandWingFlutter/damps.txt", damps)
+
 # Flutter analysis of the Helios flying-wing in free flight with payload and structural stiffness as the varying parameters
 include("../examples/heliosFlutterPLambdaRange.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/heliosFlutterPLambdaRange"))

@@ -18,7 +18,7 @@ Let's begin by setting up the variables of our problem: we'll model the 2-DOF (p
 using AeroBeams, LinearInterpolations, DelimitedFiles
 
 # Aerodynamic solver
-aeroSolver = Indicial()
+aeroSolver = Inflow(6)
 
 # Derivation method
 derivationMethod = FD(nothing)
@@ -28,46 +28,38 @@ altitude = 0
 atmosphere = standard_atmosphere(altitude)
 ρ = atmosphere.ρ
 
-# Wing span
-L = 1
-
 # Given typical section data
 typicalSectionName = "HP-1"
 airfoil = deepcopy(flatPlate)
 a,e,μ,rα²,σ,ωα,c = typical_section_data(typicalSectionName)
 
-# Derived typical section data: semichord, distance from mass to elastic axis, total mass, pitching inertia, plunge stiffness and pitch stiffness
+# Derived typical section data: semichord, mass per unit length, pitching inertia, distance from elastic axis to mass axis, plunge stiffness and pitch stiffness
 b = c/2
-xα = e-a
-m = μ * π*ρ*b^2 * L
-ρIs = rα²*m*b^2
+m = μ * π*ρ*b^2
+Iα = rα²*m*b^2
+e2 = -(e-a)*b
 kh = m*(σ*ωα)^2
-kα = ρIs*ωα^2
+kα = Iα*ωα^2
 
 # Number of elements for the wing (the results are independent of it)
 nElem = 2
 nothing #hide
 ````
 
-We now create the aerodynamic surface to be attached to the wing's beam, an array of point masses to be attached at each beam element at the specified CG position, the attachment springs, and the rigid beam of the wing. Two sliding journals (allowing only pitch and plunge motion) are added at the wingtips, further removing any elastic effects of the beam.
+We now create the aerodynamic surface to be attached to the wing's beam, the attachment springs, and the rigid beam of the wing. Two sliding journals (allowing only pitch and plunge motion) are added at the wingtips, further removing any elastic effects of the beam.
 
 ````@example typicalSectionFlutterAndDivergence
 # Aerodynamic surface
 surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=c,normSparPos=(a+1)/2,updateAirfoilParameters=false)
 nothing #hide
 
-# Balance point masses - located at CG position over chord
-pointMasses = Vector{PointInertia}(undef,nElem)
-for e in 1:nElem
-    pointMasses[e] = PointInertia(elementID=e,mass=m/nElem,η=[(-1)^(e+1)*L/nElem/2;-xα*b;0])
-end
-
-# Attachment springs
+# Attachment springs (in pitch and plunge)
 springs = create_Spring(elementsIDs=[1],nodesSides=[2],ku=kh*[0;0;1],kp=kα*[1;0;0])
 
 # Rigid wing
+L = 1
 ∞ = 1e15
-wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρIs=ρIs)],aeroSurface=surf,pointInertias=pointMasses,springs=[springs])
+wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=m,ρIs=Iα,e2=e2)],aeroSurface=surf,springs=[springs])
 
 # BCs
 journal1 = create_BC(name="journal-1",beam=wing,node=1,types=["u1A","u2A","p2A","p3A"],values=[0,0,0,0])
@@ -82,7 +74,7 @@ The model consists of the beam and boundary conditions. We also select the airsp
 typicalSectionFlutterAndDivergence = create_Model(name="typicalSectionFlutterAndDivergence",beams=[wing],BCs=[journal1,journal2])
 
 # Airspeed range
-URange = collect(1:0.5:80)
+URange = collect(5:1:80)
 
 # Number of oscillatory modes
 nModes = 2
@@ -169,7 +161,7 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/typicalSectionFlutterA
 nothing #hide
 ````
 
-We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. We can see that the correlation with the reference solution is very good, with flutter and divergence speeds being matched. Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be found in spite of it.
+We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly! Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be found in spite of it.
 
 ````@example typicalSectionFlutterAndDivergence
 using Plots, ColorSchemes
@@ -180,7 +172,7 @@ nothing #hide
 # Plot configurations
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes+1))
 modeLabels = ["Plunge" "Pitch"]
-lw = 2
+lw = 3
 ms = 2
 
 # Frequency plot
@@ -212,6 +204,19 @@ nothing #hide
 ````
 
 ![](typicalSectionFlutter_Vgf.svg)
+
+Finally, we show the numerical values of the nondimensional flutter speed and frequency
+
+````@example typicalSectionFlutterAndDivergence
+# Compute nondimensional flutter speed and frequency
+flutterSpeedAll = vcat(flutterOnsetSpeed...)
+flutterFreqAll = vcat(flutterOnsetFreq...)
+ind = argmin(flutterSpeedAll)
+flutterSpeed = flutterSpeedAll[ind]
+flutterFreq = flutterFreqAll[ind]
+println("Nondimensional flutter speed = $(flutterSpeed/(b*ωα))")
+println("Nondimensional flutter frequency = $(flutterFreq/ωα)")
+````
 
 ---
 

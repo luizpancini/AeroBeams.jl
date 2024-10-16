@@ -18,6 +18,15 @@ end
     @test Δu3 ≈ Δu3_ atol=SELFatol
 end
 
+@testset "Dynamic analysis of the conventional HALE aircraft undergoing a coordinated turn maneuver" begin
+    include("examples/conventionalHALECheckedRollManeuver.jl")
+    # Self-comparison
+    wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "wingAoA.txt"))
+    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "Deltau3.txt"))
+    @test wingAoA ≈ wingAoA_ atol=SELFatol
+    @test Δu3 ≈ Δu3_ atol=SELFatol
+end
+
 @testset "Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver" begin
     include("examples/heliosCheckedPitchManeuver.jl")
     # Self-comparison
