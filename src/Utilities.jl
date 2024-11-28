@@ -889,6 +889,38 @@ export quaternion_from_rotation_tensor
 
 
 """
+    WM_to_ypr(p)
+
+Transforms Wiener-Milenkovic parameters to Euler parameters of sequence 3-2-1 (yaw, pitch, roll)
+
+# Arguments
+- `p` = rotation parameters
+"""
+function WM_to_ypr(p)
+
+    R,_ = rotation_tensor_WM(p)
+    
+    return ypr_from_rotation_tensor(R)
+end
+export WM_to_ypr
+
+
+"""
+    ypr_to_WM(p)
+
+Transforms Euler parameters of sequence 3-2-1 (yaw, pitch, roll) to Wiener-Milenkovic parameters
+
+# Arguments
+- `p` = rotation parameters
+"""
+function ypr_to_WM(p)
+
+    return rotation_parameters_WM(rotation_tensor_E321(p))
+end
+export ypr_to_WM
+
+
+"""
     mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
 Applies mode tracking based on eigenvectors match
