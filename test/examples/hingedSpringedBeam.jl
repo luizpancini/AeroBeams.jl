@@ -9,7 +9,7 @@ EA = 1e6
 EIy = 1e6
 nElem = 100
 midElem = div(nElem,2)
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(EA=EA,EIy=EIy)],hingedNodes=[midElem+1],hingedNodesDoF=[[false,true,false]])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EA=EA,EIy=EIy)],hingedNodes=[midElem+1],hingedNodesDoF=[[false,true,false]])
 
 # Spring
 kOOPBending = 1e5

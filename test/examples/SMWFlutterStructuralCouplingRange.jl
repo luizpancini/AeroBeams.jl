@@ -22,11 +22,11 @@ GJ,EIy,EIz = 1e4,2e4,4e6
 ρIz = ρIs-ρIy
 nElem = 16
 ∞ = 1e12
-Ciso = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+S_iso = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
 for (i,Ψ) in enumerate(ΨRange)
-    C = Ciso
-    C[4,6] = C[6,4] = -Ψ*sqrt(GJ*EIz)
-    wings[i] = create_Beam(name="beam",length=L,nElements=nElem,C=[C],I=[inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
+    S = S_iso
+    S[4,6] = S[6,4] = -Ψ*sqrt(GJ*EIz)
+    wings[i] = create_Beam(name="beam",length=L,nElements=nElem,S=[S],I=[inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
 end
 
 # BCs

@@ -8,7 +8,7 @@ A,Iy = b*H,b*H^3/12
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,0,0,0])
 nElem = 20
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

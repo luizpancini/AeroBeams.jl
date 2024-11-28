@@ -19,7 +19,7 @@ A,Iy = 4.05e-4,13.1e-8
 E = 70.4e9
 EA,EIy = E*A,E*Iy
 nElem = 40
-beam = create_Beam(name="arch",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=1e12,EA=EA,EIy=EIy)],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;k2;0])
+beam = create_Beam(name="arch",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=1e12,EA=EA,EIy=EIy)],rotationParametrization="E321",p0=[0;-θ/2;0],k=[0;k2;0])
 #md nothing #hide
 
 # ### BCs

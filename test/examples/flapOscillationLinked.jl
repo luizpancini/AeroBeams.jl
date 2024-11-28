@@ -34,8 +34,8 @@ surf2 = create_AeroSurface(solver=aeroSolver,flapLoadsSolver=flapLoadsSolver,air
 L = 1
 nElem = 1
 ∞ = 1e16
-wing1 = create_Beam(name="wing1",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],aeroSurface=surf1)
-wing2 = create_Beam(name="wing2",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],aeroSurface=surf2,connectedBeams=[wing1],connectedNodesThis=[1],connectedNodesOther=[nElem+1])
+wing1 = create_Beam(name="wing1",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],aeroSurface=surf1)
+wing2 = create_Beam(name="wing2",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],aeroSurface=surf2,connectedBeams=[wing1],connectedNodesThis=[1],connectedNodesOther=[nElem+1])
 
 # Flap links
 m = -1

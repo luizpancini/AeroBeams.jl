@@ -34,18 +34,18 @@ W = m*g
 
 ## Beam 1
 stiffnessMatrix1 = diagm([3.7e6,2.6e5,2.9e5,0.183,0.707,276])
-beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix1],rotationParametrization="E321")
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,S=[stiffnessMatrix1],rotationParametrization="E321")
 
 ## Beam 2
 stiffnessMatrix2 = diagm([4e6,2.6e5,5.5e5,0.368,0.522,298])
 stiffnessMatrix2[1,2] = stiffnessMatrix2[2,1] = -2.7e5
 stiffnessMatrix2[4,5] = stiffnessMatrix2[5,4] = -0.102
-beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix2],rotationParametrization="E321")
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,S=[stiffnessMatrix2],rotationParametrization="E321")
 
 ## Beam 3
 stiffnessMatrix3 = diagm([3.9e6,1.1e6,1.2e5,1.18,0.983,290])
 stiffnessMatrix3[1,4] = stiffnessMatrix3[4,1] = -522
-beam3 = create_Beam(name="beam3",length=L,nElements=nElem,C=[stiffnessMatrix3],rotationParametrization="E321")
+beam3 = create_Beam(name="beam3",length=L,nElements=nElem,S=[stiffnessMatrix3],rotationParametrization="E321")
 
 ## BCs
 clamp1 = create_BC(name="clamp1",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

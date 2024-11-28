@@ -10,6 +10,13 @@ include("../examples/archUnderFollowerPressure.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/archUnderFollowerPressure"))
 writedlm("test/newTestDataGenerators/archUnderFollowerPressure/mid_u3.txt", mid_u3)
 
+# Static analysis of a biclamped, hinged beam under distributed and concentrated loads
+include("../examples/biclampedHingedBeam.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/biclampedHingedBeam"))
+writedlm("test/newTestDataGenerators/biclampedHingedBeam/u3Mid.txt", u3Mid)
+writedlm("test/newTestDataGenerators/biclampedHingedBeam/p2Left.txt", p2Left)
+writedlm("test/newTestDataGenerators/biclampedHingedBeam/p2Right.txt", p2Right)
+
 # Static analysis of a cantilever beam bending under self weight
 include("../examples/cantileverUnderSelfWeight.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/cantileverUnderSelfWeight"))
@@ -24,6 +31,46 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/cantileverWithTipSpring"))
 writedlm("test/newTestDataGenerators/cantileverWithTipSpring/u3.txt", u3)
 writedlm("test/newTestDataGenerators/cantileverWithTipSpring/F3.txt", F3)
 writedlm("test/newTestDataGenerators/cantileverWithTipSpring/M2.txt", M2)
+
+# Static analysis of a clamped beam, hinged at the middle with imposed hinge angle, under distributed and concentrated loads
+include("../examples/clampedHingedBeam.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/clampedHingedBeam"))
+writedlm("test/newTestDataGenerators/clampedHingedBeam/u1.txt", u1)
+writedlm("test/newTestDataGenerators/clampedHingedBeam/u3.txt", u3)
+writedlm("test/newTestDataGenerators/clampedHingedBeam/p2.txt", p2)
+writedlm("test/newTestDataGenerators/clampedHingedBeam/F3.txt", F3)
+writedlm("test/newTestDataGenerators/clampedHingedBeam/M2.txt", M2)
+
+# Static analysis of a clamped beam rotated in 3D space, hinged at the middle with imposed hinge angle, under distributed and concentrated loads
+include("../examples/clampedHingedBeamRotated.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/clampedHingedBeamRotated"))
+writedlm("test/newTestDataGenerators/clampedHingedBeamRotated/u1.txt", u1)
+writedlm("test/newTestDataGenerators/clampedHingedBeamRotated/u2.txt", u2)
+writedlm("test/newTestDataGenerators/clampedHingedBeamRotated/u3.txt", u3)
+writedlm("test/newTestDataGenerators/clampedHingedBeamRotated/p2_b.txt", p2_b)
+writedlm("test/newTestDataGenerators/clampedHingedBeamRotated/F3.txt", F3)
+writedlm("test/newTestDataGenerators/clampedHingedBeamRotated/M2.txt", M2)
+
+# Static analysis of a clamped beam, hinged at the middle, under distributed loads, with varying spring stiffnesses around the hinge
+include("../examples/clampedHingedBeamSpringRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/clampedHingedBeamSpringRange"))
+writedlm("test/newTestDataGenerators/clampedHingedBeamSpringRange/u1.txt", u1)
+writedlm("test/newTestDataGenerators/clampedHingedBeamSpringRange/u3.txt", u3)
+writedlm("test/newTestDataGenerators/clampedHingedBeamSpringRange/p2.txt", p2)
+writedlm("test/newTestDataGenerators/clampedHingedBeamSpringRange/F3.txt", F3)
+writedlm("test/newTestDataGenerators/clampedHingedBeamSpringRange/M2.txt", M2)
+
+# Static analysis of a clamped beam, hinged at the middle with imposed hinge angles about 3 directions, under distributed and concentrated loads
+include("../examples/clampedUniversalHingeBeam.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/clampedUniversalHingeBeam"))
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/u1.txt", u1)
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/u2.txt", u2)
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/u3.txt", u3)
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/p1.txt", p1)
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/p2.txt", p2)
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/p3.txt", p3)
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/F3.txt", F3)
+writedlm("test/newTestDataGenerators/clampedUniversalHingeBeam/M2.txt", M2)
 
 # Static analysis of composite laminates subjected to tip loads
 include("../examples/compositeCantileverMD.jl")

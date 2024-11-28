@@ -32,11 +32,11 @@ The form of the strain energy per unit length is assumed to be known as a functi
 ```
 in which ``\underline{F}^{\star}`` and ``\underline{M}^{\star}`` are the sectional force and moment resultants (*i.e.*, internal load vectors resolved in basis ``B^{\star}``) and ``\underline{\gamma}^{+}`` and ``\underline{\kappa}^{+}`` are the force and moment strains (*i.e.*, unidimensional strain measures). These quantities are related through the *generalized force-strain*, or *geometry-material constitutive relation*:
 ```math
-\begin{bmatrix} \underline{F}^{\star} \\ \underline{M}^{\star} \end{bmatrix} = \underline{\underline{C}} \begin{bmatrix} \underline{\gamma}^+ \\ \underline{\kappa}^+ \end{bmatrix} \\
+\begin{bmatrix} \underline{F}^{\star} \\ \underline{M}^{\star} \end{bmatrix} = \underline{\underline{S}} \begin{bmatrix} \underline{\gamma}^+ \\ \underline{\kappa}^+ \end{bmatrix} \\
 ```
-in which ``\underline{\underline{C}}`` is the *sectional stiffness matrix*. For simple cross-sections of isotropic materials it takes a diagonal form,
+in which ``\underline{\underline{S}}`` is the *sectional stiffness matrix*. For simple cross-sections of isotropic materials it takes a diagonal form,
 ```math
-\underline{\underline{C}} = \begin{bmatrix}
+\underline{\underline{S}} = \begin{bmatrix}
 EA &   &   &   &   &    \\
    & GA_y  &   &   &  &  \\
    &   & GA_z  &   &  &  \\
@@ -45,10 +45,10 @@ EA &   &   &   &   &    \\
    &   &   &   &   & EI_z
 \end{bmatrix}
 ```
-where ``EA`` is the *axial stiffness*, ``GA_y`` and ``GA_z`` are the *shear stiffnesses*, ``GJ`` is the *torsional stiffness*, and ``EI_y`` and ``EI_z`` are the *bending stiffnesses*. However, for complex cross-sections of anisotropic materials, ``\underline{\underline{C}}`` may become a fully populated matrix that has to be numerically computed (for instance with [GXBeam.jl](https://github.com/byuflowlab/GXBeam.jl)). In AeroBeams, the sectional stiffness matrix of each element of the beam can be specified through the argument `C` to the function [`create_Beam`](@ref create_Beam).
+where ``EA`` is the *axial stiffness*, ``GA_y`` and ``GA_z`` are the *shear stiffnesses*, ``GJ`` is the *torsional stiffness*, and ``EI_y`` and ``EI_z`` are the *bending stiffnesses*. However, for complex cross-sections of anisotropic materials, ``\underline{\underline{S}}`` may become a fully populated matrix that has to be numerically computed (for instance with [GXBeam.jl](https://github.com/byuflowlab/GXBeam.jl)). In AeroBeams, the sectional stiffness matrix of each element of the beam can be specified through the argument `S` to the function [`create_Beam`](@ref create_Beam).
 
 !!! note
-    If the beam has a uniform cross-section and material, a single-valued array may be input for `C`.
+    If the beam has a uniform cross-section and material, a single-valued array may be input for `S`.
 
 Now, the kinetic energy per unit length of the beam is
 ```math

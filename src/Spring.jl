@@ -23,8 +23,11 @@
     nodesGlobalIDs::Vector{Int64}
     Ku::Matrix{Float64}
     Kp::Matrix{Float64}
+    λ::Float64
+    λOtherNode::Float64
 
 end
+export Spring
 
 
 """
@@ -57,8 +60,13 @@ function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides
         @assert nodeSide in [1,2] "nodeSide must be either 1 or 2"
     end
     @assert length(ku) == length(kp) == 3 "ku and kp must be three-element vectors"
-    @assert all(x -> x>=0, [ku; kp]) "elements of ku and kp must be >= 0"
-    @assert all(x -> x>=0, [kTranslational; kTwist; kIPBending; kOOPBending]) "kTranslational, kTwist, kIPBending and kOOPBending must be >= 0"
+    if N == 1
+        @assert all(x -> x>=0, [ku; kp]) "elements of ku and kp must be >= 0 for simply-attached springs"
+        @assert any(!iszero, [ku; kp]) "for simply-attached springs, at least one of entry of ku or kp must be > 0"    
+    else
+        @assert all(x -> x>=0, [kTranslational; kTwist; kIPBending; kOOPBending]) "kTranslational, kTwist, kIPBending and kOOPBending must be >= 0"
+        @assert any(!iszero, [kTranslational; kTwist; kIPBending; kOOPBending]) "for doubly-attached springs, at least one of kTranslational, kTwist, kIPBending and kOOPBending must be > 0"
+    end
 
     # TF for being attached to beams at both ends
     hasDoubleAttachment = N == 2
@@ -78,7 +86,10 @@ function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides
         Kp = [kp[1] 0 0; 0 kp[2] 0; 0 0 kp[3]]
     end
 
-    return Spring(basis=basis,elementsIDs=elementsIDs,nodesSides=nodesSides,ku=ku,kp=kp,kTranslational=kTranslational,kTwist=kTwist,kIPBending=kIPBending,kOOPBending=kOOPBending,hasDoubleAttachment=hasDoubleAttachment,nodesSpecialIDs=nodesSpecialIDs,nodesGlobalIDs=nodesGlobalIDs,Ku=Ku,Kp=Kp)
+    # Initialize rotation parameter scalings
+    λ = λOtherNode = 1.0
+
+    return Spring(basis=basis,elementsIDs=elementsIDs,nodesSides=nodesSides,ku=ku,kp=kp,kTranslational=kTranslational,kTwist=kTwist,kIPBending=kIPBending,kOOPBending=kOOPBending,hasDoubleAttachment=hasDoubleAttachment,nodesSpecialIDs=nodesSpecialIDs,nodesGlobalIDs=nodesGlobalIDs,Ku=Ku,Kp=Kp,λ=λ,λOtherNode=λOtherNode)
 
 end
 export create_Spring

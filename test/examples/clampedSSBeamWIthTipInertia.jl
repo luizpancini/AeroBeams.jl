@@ -6,7 +6,7 @@ EA = 1e6
 EIy = 1
 ρA = 1
 nElem = 100
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(EA=EA,EIy=EIy)],I=[inertia_matrix(ρA=ρA)])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EA=EA,EIy=EIy)],I=[inertia_matrix(ρA=ρA)])
 
 # Point inertia
 μ = 1

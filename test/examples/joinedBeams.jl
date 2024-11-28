@@ -8,10 +8,10 @@ L = 4*3.586301959539938
 stiffnessMatrix = diagm(1.0 ./ [2.93944738387698e-10, 8.42991725049126e-10, 3.38313996669689e-08, 4.69246721094557e-08, 6.79584100559513e-08, 1.37068861370898e-09])
 inertiaMatrix = diagm([4.86e-2, 4.86e-2, 4.86e-2, 1.0632465e-2, 2.10195e-4, 1.042227e-2])
 nElem = 8
-beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[α;-β;γ+π])
-beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-α;-β;-γ])
-beam3 = create_Beam(name="beam3",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-π+α;β;-γ])
-beam4 = create_Beam(name="beam4",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π-α;β;γ+π],connectedBeams=[beam1],connectedNodesThis=[nElem+1],connectedNodesOther=[1])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[α;-β;γ+π])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-α;-β;-γ])
+beam3 = create_Beam(name="beam3",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[-π+α;β;-γ])
+beam4 = create_Beam(name="beam4",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π-α;β;γ+π],connectedBeams=[beam1],connectedNodesThis=[nElem+1],connectedNodesOther=[1])
 
 # BCs
 Fₗ = 1e6

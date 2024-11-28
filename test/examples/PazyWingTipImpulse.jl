@@ -19,7 +19,7 @@ upright = true
 nElem,L,chord,normSparPos = geometrical_properties_Pazy()
 
 # Dummy beam for tip impulse
-dummyBeam = create_Beam(length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=1)])
+dummyBeam = create_Beam(length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=1)])
 
 # Set tip impulse (on dummy beam, updated later on model creation)
 F₀ = 10

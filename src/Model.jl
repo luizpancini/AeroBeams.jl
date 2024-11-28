@@ -45,10 +45,8 @@
     R_A_ofTime::Vector{Matrix{Float64}} = Vector{Matrix{Float64}}()
     skipValidationMotionBasisA::Bool = false
     nTrimVariables::Int64 = 0
-    nRotationConstraints::Int64 = 0
-    masterRotationConstraintsDOF::Vector{Int64} = Vector{Int64}()
-    slaveRotationConstraintsDOF::Vector{Int64} = Vector{Int64}()
-    rotationConstraintsValues::Vector{Float64} = Vector{Float64}()
+    hasRotationConstraints::Bool = false
+    rotationConstraintBalanceLoadBCid::Vector{Int64} = Vector{Int64}()
     mass::Real = 0
     centerOfMass::Vector{<:Real} = zeros(3)
     I::Vector{<:Real} = zeros(3)
@@ -105,13 +103,11 @@ Updates the model with its current settings
 """
 function update_model!(model::Model)
 
-    @unpack beams,BCs = model
-
     # Validate inputs
     validate_model!(model)
 
     # Assemble the beams into model  
-    assemble_model!(model,beams)
+    assemble_model!(model)
 
     # Compute inertia properties of the assembly
     inertia_properties!(model)
@@ -131,11 +127,11 @@ function update_model!(model::Model)
     # Update the global IDs of the springs' nodes
     update_spring_nodes_ids!(model)
 
-    # Update the global IDs of the elements with relative rotation constraints
-    update_relative_rotation_constraint_elements_ids!(model)
+    # Initialize the balance loads for the rotation constraint
+    initialize_rotation_constraints_balance_load!(model)
 
     # Set BCs on model 
-    set_BCs!(model,BCs)
+    set_BCed_nodes!(model)
 
     # Get rotation tensors from basis A
     initialize_basis_A_rotation!(model)
@@ -323,7 +319,9 @@ end
 
 
 # Loads the assembly of beams into the model
-function assemble_model!(model::Model,beams::Vector{Beam})
+function assemble_model!(model::Model)
+
+    @unpack beams,rotationConstraints = model
 
     # Reset to a model empty of beams and elements
     model.beams = Vector{Beam}()
@@ -335,7 +333,7 @@ function assemble_model!(model::Model,beams::Vector{Beam})
     elementNodes = Vector{Vector{Int64}}()
     r_n = Vector{Vector{Float64}}()
     forceScaling = 1.0
-    S = Vector{Matrix{Float64}}()
+    C = Vector{Matrix{Float64}}()
     nodeCount = 0
 
     # Check input
@@ -459,7 +457,7 @@ function assemble_model!(model::Model,beams::Vector{Beam})
 
         # Update array of assembly's sectional compliance matrices
         for element in elements
-            push!(S,element.S)
+            push!(C,element.C)
         end
 
         # Update total number of elements of the model
@@ -471,7 +469,7 @@ function assemble_model!(model::Model,beams::Vector{Beam})
     nNodesTotal = maximum(vcat(elementNodes...))
 
     # Get force scaling
-    forceScaling = force_scaling(S)
+    forceScaling = length(rotationConstraints) > 0 ? 1 : force_scaling(C)
 
     @pack! model = beams,nElementsTotal,nNodesTotal,elementNodes,r_n,forceScaling
 
@@ -739,32 +737,6 @@ function update_spring_nodes_ids!(model::Model)
 end
 
 
-# Updates the global IDs of the elements with relative rotation constraints
-function update_relative_rotation_constraint_elements_ids!(model::Model)
-
-    @unpack rotationConstraints,elements = model
-
-    # Loop rotation constraints
-    for constraint in rotationConstraints
-        @unpack masterBeam,slaveBeam,masterElementLocalID,slaveElementLocalID,value,DOF = constraint
-        # Initialize
-        masterElementGlobalID,slaveElementGlobalID = 0,0
-        # Loop elements
-        for element in elements
-            # Set global IDs and set constraint on slave element
-            if element.parent == masterBeam && element.localID == masterElementLocalID
-                masterElementGlobalID = element.globalID
-            elseif element.parent == slaveBeam && element.localID == slaveElementLocalID
-                slaveElementGlobalID = element.globalID
-                element.rotationConstraint = constraint
-            end
-        end
-        @pack! constraint = masterElementGlobalID,slaveElementGlobalID
-    end
-
-end
-
-
 # Initializes the rotation tensor from basis I (fixed, inertial) to basis A, and its transpose
 function initialize_basis_A_rotation!(model::Model)
 
@@ -793,7 +765,7 @@ function update_initial_conditions!(model::Model)
         for element in beam.elements
 
             # Unpack
-            @unpack states,statesRates,compStates,nodalStates,Δℓ,x1,x1_n1,x1_n2,R0,R0T,R0T_n1,R0T_n2,S,I,k = element
+            @unpack states,statesRates,compStates,nodalStates,Δℓ,x1,x1_n1,x1_n2,R0,R0T,R0T_n1,R0T_n2,C,I,k = element
 
             # b basis' generalized velocities at element's midpoint, resolved in basis A
             v,ω = element_velocities_basis_b!(model,element)
@@ -822,7 +794,7 @@ function update_initial_conditions!(model::Model)
             round_off!(γ)
 
             # Sectional forces, resolved in basis B
-            sectionalForces = inv(S)*[γ; κ]
+            sectionalForces = inv(C)*[γ; κ]
             F = sectionalForces[1:3]
             M = sectionalForces[4:6]
 
@@ -890,11 +862,44 @@ function update_initial_conditions!(model::Model)
 end
 
 
-# Sets the BCs onto the model
-function set_BCs!(model::Model,BCs::Vector{BC})
+# Initializes the balance loads on the respectively assigned rotation constraint nodes
+function initialize_rotation_constraints_balance_load!(model)
 
-    # Set BCs on model
-    model.BCs = BCs
+    @unpack rotationConstraints,beams,BCs = model
+
+    # Initialize array with IDs of the balance load BCs
+    rotationConstraintBalanceLoadBCid = Vector{Int64}()
+
+    # Loop rotation constraints
+    for (i,rotationConstraint) in enumerate(rotationConstraints)
+        @unpack beam,loadBalanceLocalNode,slaveDOF = rotationConstraint
+        # Set load type
+        if slaveDOF == 1
+            loadType = "M1A"
+        elseif slaveDOF == 2
+            loadType = "M2A"
+        elseif slaveDOF == 3
+            loadType = "M3A"
+        end
+        # Loop beams
+        for currentBeam in beams
+            # Add balance moment to BCs and set ID of that BC
+            if currentBeam == beam
+                push!(BCs,create_BC(name=string("balanceMoment",i),beam=beam,node=loadBalanceLocalNode,types=[loadType],values=[0.0]))
+                push!(rotationConstraintBalanceLoadBCid,length(BCs))
+            end
+        end
+    end
+
+    @pack! model = BCs,rotationConstraintBalanceLoadBCid
+    
+end
+
+
+# Sets the BC'ed nodes
+function set_BCed_nodes!(model::Model)
+
+    @unpack BCs = model
 
     # Loop BCs
     for BC in BCs
@@ -1009,7 +1014,7 @@ function get_system_indices!(model::Model)
     # Flag indicating whether indices of a node's equations/states indices have been assigned
     assigned = falses(nNodesTotal)
     # Array with element on which node's equations have been assigned (first column contains the elements, and second column which local node it is in that element)
-    e_assigned::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
+    e_assigned = Vector{Vector{Int64}}()
     # Indices for next equations/states
     i_equations = 1                   
     i_states = 1
@@ -1340,11 +1345,8 @@ function get_system_indices!(model::Model)
 
     # Update number of trim variables
     nTrimVariables = nTrimLoads+nTrimδ
-
-    # Update number of relative rotation constraints
-    nRotationConstraints = length(rotationConstraints)
     
-    @pack! model = systemOrder,elements,specialNodes,nTrimVariables,nRotationConstraints
+    @pack! model = systemOrder,elements,specialNodes,nTrimVariables
 
 end
 
@@ -1352,20 +1354,32 @@ end
 # Updates the aggregate data of relative rotation constraints
 function update_relative_rotation_constraint_data!(model::Model)
 
-    @unpack rotationConstraints,elements = model
+    @unpack rotationConstraints,elements,systemOrder = model
 
-    # Initialize
-    masterRotationConstraintsDOF,slaveRotationConstraintsDOF,rotationConstraintsValues = Vector{Int64}(),Vector{Int64}(),Vector{Float64}()
+    # Update flag for relative rotation constraints
+    model.hasRotationConstraints = length(rotationConstraints) > 0
 
     # Loop rotation constraints
     for constraint in rotationConstraints
-        @unpack masterElementGlobalID,slaveElementGlobalID,value,DOF = constraint
-        push!(masterRotationConstraintsDOF,elements[masterElementGlobalID].DOF_p[DOF])  
-        push!(slaveRotationConstraintsDOF,elements[slaveElementGlobalID].DOF_p[DOF])
-        push!(rotationConstraintsValues,value)
+        @unpack beam,masterElementLocalID,slaveElementLocalID,masterDOF,slaveDOF = constraint
+        # Initialize global IDs of elements
+        masterElementGlobalID,slaveElementGlobalID = 0,0
+        # Loop elements
+        for element in elements
+            # Set global IDs
+            if element.parent == beam && element.localID == masterElementLocalID
+                masterElementGlobalID = element.globalID
+            end
+            if element.parent == beam && element.localID == slaveElementLocalID
+                slaveElementGlobalID = element.globalID
+            end
+        end
+        # Set global DOFs
+        masterElemMasterGlobalDOF = elements[masterElementGlobalID].DOF_p[masterDOF]
+        slaveElemSlaveGlobalDOF = elements[slaveElementGlobalID].DOF_p[slaveDOF]
+        # Pack data
+        @pack! constraint = masterElementGlobalID,slaveElementGlobalID,masterElemMasterGlobalDOF,slaveElemSlaveGlobalDOF
     end
-
-    @pack! model = masterRotationConstraintsDOF,slaveRotationConstraintsDOF,rotationConstraintsValues
 
 end
 

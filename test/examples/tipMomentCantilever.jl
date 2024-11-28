@@ -7,7 +7,7 @@ EIy = 30e6*1/12
 ∞ = 1e14
 stiffnessMatrix = diagm([EA,∞,∞,∞,EIy,∞])
 nElem = 40
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix])
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

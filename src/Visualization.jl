@@ -76,7 +76,7 @@ Plots the initial and final deformed states for the model in the given problem
 # Keyword arguments
 - `plotBCs::Bool` = flag to plot BCs
 - `plotDistLoads::Bool` = flag to plot distributed loads (includes gravitational and aerodynamic loads)
-- `view::Union{Nothing,Tuple{Int64,Int64}}` = view angles
+- `view::Union{Nothing,Tuple{Real,Real}}` = view angles
 - `scale::Number` = displacements and rotations scale
 - `lw::Number` = linewidth
 - `colorUndef` = color for undeformed assembly
@@ -93,7 +93,7 @@ Plots the initial and final deformed states for the model in the given problem
 - `save::Bool` = flag to save the figure
 - `savePath::String` = relative path on which to save the figure
 """
-function plot_steady_deformation(problem::Problem; plotBCs::Bool=true, plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
+function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,plotUndeformed::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -111,7 +111,9 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true, plotDistL
 
     # Initialize plot
     plt = plot(grid=grid)
-    plot!([NaN],[NaN], c=colorUndef, lw=lw, label="Undeformed")
+    if plotUndeformed
+        plot!([NaN],[NaN], c=colorUndef, lw=lw, label="Undeformed")
+    end
     plot!([NaN],[NaN], c=colorDef, lw=lw, label="Deformed")
     plot!(legend=legendPos)
 
@@ -159,28 +161,38 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true, plotDistL
     x2Plane = maximum(abs.(vcat(x2Def...))) < tolPlane ? true : false
     x3Plane = maximum(abs.(vcat(x3Def...))) < tolPlane ? true : false
 
-    # Plot undeformed and deformed beam assemblies actording to view
+    # Plot undeformed and deformed beam assemblies according to view
     if isnothing(view)
         if x1Plane
             plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
-            plot!(x2Undef, x3Undef, color=colorUndef,lw=lw,label=false)
+            if plotUndeformed
+                plot!(x2Undef, x3Undef, color=colorUndef,lw=lw,label=false)
+            end
             plot!(x2Def, x3Def, color=colorDef,aspect_ratio=:equal,lw=lw,label=false)
         elseif x2Plane
             plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
-            plot!(x1Undef, x3Undef, color=colorUndef,lw=lw,label=false)
+            if plotUndeformed
+                plot!(x1Undef, x3Undef, color=colorUndef,lw=lw,label=false)
+            end
             plot!(x1Def, x3Def, color=colorDef,aspect_ratio=:equal,lw=lw,label=false)
         elseif x3Plane
             plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
-            plot!(x1Undef, x2Undef, color=colorUndef,lw=lw,label=false)
+            if plotUndeformed
+                plot!(x1Undef, x2Undef, color=colorUndef,lw=lw,label=false)
+            end
             plot!(x1Def, x2Def, color=colorDef,aspect_ratio=:equal,lw=lw,label=false)
         else
             plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
-            plot!(x1Undef, x2Undef, x3Undef, camera=(45,45),color=colorUndef,lw=lw,label=false)
+            if plotUndeformed
+                plot!(x1Undef, x2Undef, x3Undef, camera=(45,45),color=colorUndef,lw=lw,label=false)
+            end
             plot!(x1Def, x2Def, x3Def, camera=(45,45),color=colorDef,lw=lw,label=false)
         end
     else
         plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
-        plot!(x1Undef, x2Undef, x3Undef, camera=view,color=colorUndef,lw=lw,label=false)
+        if plotUndeformed
+            plot!(x1Undef, x2Undef, x3Undef, camera=view,color=colorUndef,lw=lw,label=false)
+        end
         plot!(x1Def, x2Def, x3Def, camera=view,color=colorDef,lw=lw,label=false)
     end
 
@@ -190,10 +202,12 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true, plotDistL
             continue
         end
         # Plot undeformed aerodynamic surfaces
-        Xu = [undefAirfoilCoords_n1[e][1,:] undefAirfoilCoords_n2[e][1,:]]
-        Yu = [undefAirfoilCoords_n1[e][2,:] undefAirfoilCoords_n2[e][2,:]]
-        Zu = [undefAirfoilCoords_n1[e][3,:] undefAirfoilCoords_n2[e][3,:]]
-        surface!(Xu,Yu,Zu, color=palette([colorUndef,colorUndef],2), colorbar=false, alpha=surfα)
+        if plotUndeformed
+            Xu = [undefAirfoilCoords_n1[e][1,:] undefAirfoilCoords_n2[e][1,:]]
+            Yu = [undefAirfoilCoords_n1[e][2,:] undefAirfoilCoords_n2[e][2,:]]
+            Zu = [undefAirfoilCoords_n1[e][3,:] undefAirfoilCoords_n2[e][3,:]]
+            surface!(Xu,Yu,Zu, color=palette([colorUndef,colorUndef],2), colorbar=false, alpha=surfα)
+        end
         # Plot deformed aerodynamic surfaces
         Xd = [defAirfoilCoords_n1[e][1,:] defAirfoilCoords_n2[e][1,:]]
         Yd = [defAirfoilCoords_n1[e][2,:] defAirfoilCoords_n2[e][2,:]]
@@ -201,14 +215,14 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true, plotDistL
         surface!(Xd,Yd,Zd, color=palette([colorDef,colorDef],2), colorbar=false, alpha=surfα)
     end
 
-    # Plot generalized displacements and concentrated loads, if applicable
-    if plotBCs
-        plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,0,1)
-    end
-
     # Plot distributed loads (including aerodynamic and gravitational), if applicable
     if plotDistLoads
         plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,1)
+    end
+
+    # Plot generalized displacements and concentrated loads, if applicable
+    if plotBCs
+        plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,0,1)
     end
 
     # Initialize TF for plane plot
@@ -652,7 +666,7 @@ Plots the mode shapes of the model in the given problem
 
 # Keyword arguments
 - `plotBCs::Bool` = flag to plot BCs
-- `view::Union{Nothing,Tuple{Int64,Int64}}` = view angles
+- `view::Union{Nothing,Tuple{Real,Real}}` = view angles
 - `nModes::Union{Nothing,Int64}` = number of modes to plot
 - `scale::Number` = displacements and rotations scale
 - `frequencyLabel::String` = option for frequency label (only frequency or frequency and damping)
@@ -667,7 +681,7 @@ Plots the mode shapes of the model in the given problem
 - `save::Bool` = flag to save the figure
 - `savePath::String` = relative path on which to save the figure
 """
-function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",lw::Number=1,colorSteady=:black,modalColorScheme=:jet1,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",lw::Number=1,colorSteady=:black,modalColorScheme=:jet1,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert problem isa EigenProblem
@@ -871,7 +885,7 @@ Plots the animated deformation of the model in the given problem
 - `plotUndeformed::Bool` = flag to plot undeformed assembly
 - `plotBCs::Bool` = flag to plot BCs
 - `plotDistLoads::Bool` = flag to plot distributed loads (includes gravitational and aerodynamic loads)
-- `view::Union{Nothing,Tuple{Int64,Int64}}` = view angles
+- `view::Union{Nothing,Tuple{Real,Real}}` = view angles
 - `fps::Number` = frame rate for gif
 - `scale::Number` = displacements and rotations scale
 - `frequencyLabel::String` = option for frequency label (only frequency or frequency and damping)
@@ -892,7 +906,7 @@ Plots the animated deformation of the model in the given problem
 - `timeStampPos::Vector{<:Number}` = position of time stamp on plot
 - `displayProgress::Bool` = flag to display progress of gif creation
 """
-function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Int64,Int64}}=nothing,fps::Number=30,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Number}=[0.1;0.05;0.05],timeStampPos::Vector{<:Number}=[0.5;0.05;0.05],displayProgress::Bool=false) where {T1<:Number,T2<:Number}
+function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Number=30,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Number}=[0.1;0.05;0.05],timeStampPos::Vector{<:Number}=[0.5;0.05;0.05],displayProgress::Bool=false) where {T1<:Number,T2<:Number}
 
     # Validate
     @assert problem isa DynamicProblem
@@ -2335,6 +2349,18 @@ function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,
             end
         end
 
+        ## Gravity loads
+        # ----------------------------------------------------------------------
+        if !iszero(gravityVector) && μ > 0
+            for (dir,ai) in zip(1:3,[a1, a2, a3])
+                Fi = repeat([gravityVector[dir]],3)
+                if maximum(abs.(Fi)) == 0
+                    continue
+                end
+                plt = draw_distributed_forces!(plt, F=Fi,R=[I3,I3,I3],ai=ai,P2=P2,Ndiv=Ndiv,L=L,x1Plane=x1Plane,x2Plane=x2Plane,x3Plane=x3Plane,view=view,color=:gold)
+            end
+        end
+
         ## Dead distributed forces initially resolved in basis A
         # ----------------------------------------------------------------------
         if hasDistributedDeadForcesBasisA
@@ -2444,18 +2470,6 @@ function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,
                     continue
                 end
                 plt = draw_distributed_moments!(plt, M=Mi,Mmax=Mmax,R=[R_n1*R0_n1,R_e*R0,R_n2*R0_n2],axis=dir,P2=P2,Ndiv=Ndiv,L=L,x1Plane=x1Plane,x2Plane=x2Plane,x3Plane=x3Plane,view=view)
-            end
-        end
-
-        ## Gravity loads
-        # ----------------------------------------------------------------------
-        if !iszero(gravityVector) && μ > 0
-            for (dir,ai) in zip(1:3,[a1, a2, a3])
-                Fi = repeat([gravityVector[dir]],3)
-                if maximum(abs.(Fi)) == 0
-                    continue
-                end
-                plt = draw_distributed_forces!(plt, F=Fi,R=[I3,I3,I3],ai=ai,P2=P2,Ndiv=Ndiv,L=L,x1Plane=x1Plane,x2Plane=x2Plane,x3Plane=x3Plane,view=view,color=:gold)
             end
         end
 

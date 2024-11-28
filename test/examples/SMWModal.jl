@@ -11,9 +11,9 @@ solve!(problem)
 freqs = problem.frequenciesOscillatory
 
 # Extract properties
-GJ = SMWModal.beams[1].C[1][4,4]
-EIy = SMWModal.beams[1].C[1][5,5]
-EIz = SMWModal.beams[1].C[1][6,6]
+GJ = SMWModal.beams[1].S[1][4,4]
+EIy = SMWModal.beams[1].S[1][5,5]
+EIz = SMWModal.beams[1].S[1][6,6]
 ρA = SMWModal.beams[1].I[1][1,1]
 ρIs = SMWModal.beams[1].I[1][4,4]
 

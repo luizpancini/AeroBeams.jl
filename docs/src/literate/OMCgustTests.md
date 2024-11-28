@@ -93,8 +93,9 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
     # Wing beam
     L = 1
     nElem = 1
+    ρA = 1
     ∞ = 1e12
-    wing = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
+    wing = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=ρA)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
 
     # BCs
     clamp1 = create_BC(name="clamp1",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

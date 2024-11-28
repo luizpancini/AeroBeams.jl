@@ -16,7 +16,7 @@ EA,GA,GJ,EIy,EIz = 1e6,1e4,1e9,1.0,1e9
 nElem = 40
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,ρI,ρI,ρI])
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix])
 if initialConditions == "displacement"
     beam.u0_of_x1=x1->[0; 0; u3(x1)]
 elseif initialConditions == "rotation"

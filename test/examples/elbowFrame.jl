@@ -7,8 +7,8 @@ EA,GAy,GAz,GJ,EIy,EIz = 1e6,1e6,1e6,1e3,1e3,1e3
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
 nElem = 20
-beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
-beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π/2;0;0])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[π/2;0;0])
 
 # BCs
 F₀ = 50

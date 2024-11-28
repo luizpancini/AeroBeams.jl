@@ -14,7 +14,7 @@ E,ρ = 200e9,7.8e3
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*I,∞])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,2*ρ*I,ρ*I,ρ*I])
 nElem = 20
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,(π/2-θ₀),0],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,(π/2-θ₀),0],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
 
 # BCs
 support = create_BC(name="support",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])

@@ -32,7 +32,7 @@ G = E/(2*(1+0.325))
 ρ = 2.51e-4
 
 # Seciontal stiffness and inertia matrices
-C = isotropic_stiffness_matrix(EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)
+S = isotropic_stiffness_matrix(EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)
 I = inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz,ρIs=ρ*Is)
 
 # Discretization variables
@@ -49,8 +49,8 @@ tipAngleRange = π/180*collect(0:2.5:45)
 nModes = 8
 
 # Beam frame
-baseBeam = create_Beam(name="baseBeam",length=L1,nElements=nElemBeam1,C=[C],I=[I])
-tipBeam = create_Beam(name="tipBeam",length=L2,nElements=nElemBeam2,C=[isotropic_stiffness_matrix(∞=1e12,EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)],I=[I],rotationParametrization="E321")
+baseBeam = create_Beam(name="baseBeam",length=L1,nElements=nElemBeam1,S=[S],I=[I])
+tipBeam = create_Beam(name="tipBeam",length=L2,nElements=nElemBeam2,S=[isotropic_stiffness_matrix(∞=1e12,EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)],I=[I],rotationParametrization="E321")
 
 # BCs
 clamp = create_BC(name="clamp",beam=baseBeam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

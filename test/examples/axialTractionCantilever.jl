@@ -7,7 +7,7 @@ EA,GA,GJ,EIy,EIz = 2e10*1e-6,1e12,1e12,1e12,1e12
 nElem = 20
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,ρI,ρI,ρI])
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix])
 
 # Time variables
 tf = 1.0

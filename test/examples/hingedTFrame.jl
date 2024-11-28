@@ -9,18 +9,18 @@ EI = 200e9*5e-6
 ∞ = 1e12
 stiffnessMatrix = diagm([∞,∞,∞,∞,EI,EI])
 nElem = 20
-beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[true,false,true]])
-beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[π/2;0;0],hingedNodes=[1],hingedNodesDoF=[[true,false,true]],connectedBeams=[beam1],connectedNodesThis=[1],connectedNodesOther=[div(nElem,2)+1])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,S=[stiffnessMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[true,false,true]])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,S=[stiffnessMatrix],rotationParametrization="E321",p0=[π/2;0;0],hingedNodes=[1],hingedNodesDoF=[[true,false,true]],connectedBeams=[beam1],connectedNodesThis=[1],connectedNodesOther=[div(nElem,2)+1])
 
 # BCs
 q = 1e5
 add_loads_to_beam!(beam2,loadTypes=["f_A_of_x1t"],loadFuns=[(x1,t)->[q; 0; q]])
-clamp1 = create_BC(name="clamp1",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-clamp2 = create_BC(name="clamp2",beam=beam1,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-pin = create_BC(name="pin",beam=beam2,node=nElem+1,types=["u1A","u3A","p2A"],values=[0,0,0])
+pin1 = create_BC(name="pin1",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
+pin2 = create_BC(name="pin2",beam=beam1,node=nElem+1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
+pin3 = create_BC(name="pin3",beam=beam2,node=nElem+1,types=["u1A","u3A","p2A"],values=[0,0,0])
 
 # Model
-hingedTFrame = create_Model(name="hingedTFrame",beams=[beam1,beam2],BCs=[clamp1,clamp2,pin])
+hingedTFrame = create_Model(name="hingedTFrame",beams=[beam1,beam2],BCs=[pin1,pin2,pin3])
 
 # Setup nonlinear system solver
 σ0 = 0.01

@@ -7,7 +7,7 @@ A,Iy = 1,1/12
 ∞ = 1e14
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
 nElem = 20
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix])
 
 # BCs - separate load in two parts
 F = 130e3

@@ -5,7 +5,7 @@ L = 1
 GJ = 1
 ρIs = 1
 nElem = 50
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(GJ=GJ)],I=[inertia_matrix(ρIs=ρIs)])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(GJ=GJ)],I=[inertia_matrix(ρIs=ρIs)])
 
 # Point inertia
 μ = 1

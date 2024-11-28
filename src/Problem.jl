@@ -529,7 +529,7 @@ export create_DynamicProblem
 function set_initial_states!(problem::Problem)
 
     @unpack x,model,σ,initialStatesInput = problem
-    @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling = model
+    @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling,rotationConstraints = model
 
     # Skip if states were input
     if initialStatesInput
@@ -574,6 +574,12 @@ function set_initial_states!(problem::Problem)
 
     # Scale by initial load factor
     x *= σ
+
+    # Set rotation constraints
+    for constraint in rotationConstraints
+        @unpack masterElemMasterGlobalDOF,slaveElemSlaveGlobalDOF,value = constraint
+        x[slaveElemSlaveGlobalDOF] = x[masterElemMasterGlobalDOF] + value
+    end
 
     @pack! problem = x
 
@@ -1072,7 +1078,8 @@ function solve_initial_dynamic!(problem::Problem)
     end
 
     # Update model as if all nodes were BC'ed to the specified initial displacements
-    AeroBeams.set_BCs!(modelCopy,initialDisplacementsBCs)
+    modelCopy.BCs = initialDisplacementsBCs
+    set_BCed_nodes!(modelCopy)
     modelCopy.skipValidationMotionBasisA = true
     update_model!(modelCopy)
     problemCopy.model = modelCopy

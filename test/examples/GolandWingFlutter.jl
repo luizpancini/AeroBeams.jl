@@ -43,7 +43,7 @@ GJ = 0.99e6
 e2 = -(normCGPos-normSparPos)*chord
 ∞ = 1e12
 nElem = 30
-beam = create_Beam(name="wingBeam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy)],I=[inertia_matrix(ρA=ρA,ρIs=ρIs,e2=e2)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
+beam = create_Beam(name="wingBeam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy)],I=[inertia_matrix(ρA=ρA,ρIs=ρIs,e2=e2)],rotationParametrization="E321",p0=[0;0;θ],aeroSurface=surf)
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
