@@ -30,7 +30,7 @@ EI = 1
 ρA = 1
 ∞ = 1e4
 nElem = 48
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞,EIy=EI)],I=[inertia_matrix(ρA=ρA)])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞,EIy=EI)],I=[inertia_matrix(ρA=ρA)])
 if initialConditions == "displacement"
     beam.u0_of_x1=x1->[0; 0; u3(x1)]
     beam.udot0_of_x1=x1->[0; 0; udot3(x1)]

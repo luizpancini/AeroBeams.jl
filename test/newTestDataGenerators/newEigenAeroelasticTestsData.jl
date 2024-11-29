@@ -58,12 +58,6 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/heliosWingFlutter"))
 writedlm("test/newTestDataGenerators/heliosWingFlutter/freqs.txt", freqs)
 writedlm("test/newTestDataGenerators/heliosWingFlutter/damps.txt", damps)
 
-# Eigen-analysis of the Pazy wing with flared folding wing tip (FFWT)
-include("../examples/PazyFFWTeigen.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTeigen"))
-writedlm("test/newTestDataGenerators/PazyFFWTeigen/freqs.txt", freqs)
-writedlm("test/newTestDataGenerators/PazyFFWTeigen/damps.txt", damps)
-
 # Flutter analysis of the Pazy wing
 include("../examples/PazyWingFlutter.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingFlutter"))

@@ -10,7 +10,7 @@ E,ν = 1e7,0
 G = E/(2*(1+ν))
 stiffnessMatrix = diagm([E*A,G*A,G*A,G*J,E*Iy,E*Iz])
 nElem = 16
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],k=[0;0;1/R])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],k=[0;0;1/R])
 
 # BCs
 F = 600

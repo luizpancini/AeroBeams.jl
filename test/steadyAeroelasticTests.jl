@@ -12,12 +12,41 @@ end
 @testset "Steady analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
     include("examples/PazyFFWTsteady.jl")
     # Self-comparison
-    u3_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "u3_of_x1.txt"))
-    p2_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "p2_of_x1.txt"))
-    M2_of_x1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "M2_of_x1.txt"))
-    @test u3_of_x1 ≈ u3_of_x1_ atol=SELFatol
-    @test p2_of_x1 ≈ p2_of_x1_ atol=SELFatol
-    @test M2_of_x1 ≈ M2_of_x1_ atol=SELFatol
+    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "u1.txt"))
+    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "u3.txt"))
+    p1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "p1.txt"))
+    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "p2.txt"))
+    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "M2.txt"))
+    α_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "alpha.txt"))
+    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "cn.txt"))
+    hingeBalanceM_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "hingeBalanceM.txt"))[1]
+    @test u1 ≈ u1_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol
+    @test p1 ≈ p1_ atol=SELFatol
+    @test p2 ≈ p2_ atol=SELFatol
+    @test M2 ≈ M2_ atol=SELFatol
+    @test α ≈ α_ atol=SELFatol
+    @test cn ≈ cn_ atol=SELFatol
+    @test hingeBalanceM ≈ hingeBalanceM_ atol=SELFatol
+end
+
+@testset "Steady analysis of the Pazy wing with flared folding wing tip (FFWT) and varying airspeed" begin
+    include("examples/PazyFFWTsteadyURange.jl")
+    # Self-comparison
+    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "u1.txt"))
+    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "u3.txt"))
+    p1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "p1.txt"))
+    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "p2.txt"))
+    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "M2.txt"))
+    α_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "alpha.txt"))
+    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "cn.txt"))
+    @test vcat(u1'...) ≈ u1_ atol=SELFatol
+    @test vcat(u3'...) ≈ u3_ atol=SELFatol
+    @test vcat(p1'...) ≈ p1_ atol=SELFatol
+    @test vcat(p2'...) ≈ p2_ atol=SELFatol
+    @test vcat(M2'...) ≈ M2_ atol=SELFatol
+    @test vcat(α'...) ≈ α_ atol=SELFatol
+    @test vcat(cn'...) ≈ cn_ atol=SELFatol
 end
 
 @testset "Steady analysis of the Pazy wing with varying root pitch angle" begin

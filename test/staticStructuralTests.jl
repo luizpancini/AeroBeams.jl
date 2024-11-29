@@ -14,6 +14,21 @@ end
     @test mid_u3 ≈ mid_u3_ atol=SELFatol
 end
 
+@testset "Static analysis of a biclamped, hinged beam under distributed and concentrated loads" begin
+    include("examples/biclampedHingedBeam.jl")
+    # Reference comparison
+    @test u3Mid ≈ u3MidRef rtol=1e-2
+    @test p2Left ≈ p2LeftRef rtol=2e-2
+    @test p2Right ≈ p2RightRef rtol=1e-2
+    # Self-comparison
+    u3Mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedHingedBeam", "u3Mid.txt"))[1]
+    p2Left_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedHingedBeam", "p2Left.txt"))[1]
+    p2Right_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedHingedBeam", "p2Right.txt"))[1]
+    @test u3Mid ≈ u3Mid_ atol=SELFatol
+    @test p2Left ≈ p2Left_ atol=SELFatol
+    @test p2Right ≈ p2Right_ atol=SELFatol
+end
+
 @testset "Static analysis of a cantilever beam bending under self weight" begin
     include("examples/cantileverUnderSelfWeight.jl")
     # Self-comparison
@@ -36,6 +51,74 @@ end
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipSpring", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipSpring", "M2.txt"))
     @test u3 ≈ u3_ atol=SELFatol
+    @test F3 ≈ F3_ atol=SELFatol
+    @test M2 ≈ M2_ atol=SELFatol
+end
+
+@testset "Static analysis of a clamped beam, hinged at the middle with imposed hinge angle, under distributed and concentrated loads" begin
+    include("examples/clampedHingedBeam.jl")
+    # Self-comparison
+    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "u1.txt"))
+    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "u3.txt"))
+    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "p2.txt"))
+    F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "F3.txt"))
+    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "M2.txt"))
+    @test u1 ≈ u1_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol
+    @test p2 ≈ p2_ atol=SELFatol
+    @test F3 ≈ F3_ atol=SELFatol
+    @test M2 ≈ M2_ atol=SELFatol
+end
+
+@testset "Static analysis of a clamped beam rotated in 3D space, hinged at the middle with imposed hinge angle, under distributed and concentrated loads" begin
+    include("examples/clampedHingedBeamRotated.jl")
+    # Self-comparison
+    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "u1.txt"))
+    u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "u2.txt"))
+    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "u3.txt"))
+    p2_b_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "p2_b.txt"))
+    F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "F3.txt"))
+    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "M2.txt"))
+    @test u1 ≈ u1_ atol=SELFatol
+    @test u2 ≈ u2_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol
+    @test p2_b ≈ p2_b_ atol=SELFatol
+    @test F3 ≈ F3_ atol=SELFatol
+    @test M2 ≈ M2_ atol=SELFatol
+end
+
+@testset "Static analysis of a clamped beam, hinged at the middle, under distributed loads, with varying spring stiffnesses around the hinge" begin
+    include("examples/clampedHingedBeamSpringRange.jl")
+    # Self-comparison
+    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "u1.txt"))
+    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "u3.txt"))
+    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "p2.txt"))
+    F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "F3.txt"))
+    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "M2.txt"))
+    @test isapprox(vcat(u1'...), u1_, atol=SELFatol, nans=true)
+    @test isapprox(vcat(u3'...), u3_, atol=SELFatol, nans=true)
+    @test isapprox(vcat(p2'...), p2_, atol=SELFatol, nans=true)
+    @test isapprox(vcat(F3'...), F3_, atol=SELFatol, nans=true)
+    @test isapprox(vcat(M2'...), M2_, atol=SELFatol, nans=true)
+end
+
+@testset "Static analysis of a clamped beam, hinged at the middle with imposed hinge angles about 3 directions, under distributed and concentrated loads" begin
+    include("examples/clampedUniversalHingeBeam.jl")
+    # Self-comparison
+    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "u1.txt"))
+    u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "u2.txt"))
+    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "u3.txt"))
+    p1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "p1.txt"))
+    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "p2.txt"))
+    p3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "p3.txt"))
+    F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "F3.txt"))
+    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedUniversalHingeBeam", "M2.txt"))
+    @test u1 ≈ u1_ atol=SELFatol
+    @test u2 ≈ u2_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol
+    @test p1 ≈ p1_ atol=SELFatol
+    @test p2 ≈ p2_ atol=SELFatol
+    @test p3 ≈ p3_ atol=SELFatol
     @test F3 ≈ F3_ atol=SELFatol
     @test M2 ≈ M2_ atol=SELFatol
 end
@@ -100,6 +183,10 @@ end
 
 @testset "Static analysis of a hinged beam subjected to a distributed load" begin
     include("examples/hingedBeam.jl")
+    # Reference comparison
+    @test u3Mid ≈ u3MidRef rtol=1e-2
+    @test p2Left ≈ p2LeftRef rtol=2e-2
+    @test p2Right ≈ p2RightRef rtol=1e-2
     # Self-comparison
     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "u3.txt"))
     p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "p2.txt"))

@@ -6,7 +6,7 @@ EIy = 1e7
 ∞ = 1e12
 stiffnessMatrix = diagm([∞,∞,∞,∞,EIy,∞])
 nElem = 20
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix])
 
 # BCs
 q₀ = 1e6

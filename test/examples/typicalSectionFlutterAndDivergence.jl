@@ -50,7 +50,7 @@ springs = create_Spring(elementsIDs=[1],nodesSides=[2],ku=kh*[0;0;1],kp=kα*[1;0
 ## Rigid wing
 L = 1
 ∞ = 1e15
-wing = create_Beam(name="wing",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=m,ρIs=Iα,e2=e2)],aeroSurface=surf,springs=[springs])
+wing = create_Beam(name="wing",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=m,ρIs=Iα,e2=e2)],aeroSurface=surf,springs=[springs])
 
 ## BCs
 journal1 = create_BC(name="journal-1",beam=wing,node=1,types=["u1A","u2A","p2A","p3A"],values=[0,0,0,0])

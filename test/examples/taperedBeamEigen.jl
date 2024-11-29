@@ -8,7 +8,7 @@ EIy0 = 1
 ρA = x1 -> ρA0*(1-x1/(2*L))
 EIy = x1 -> EIy0*(1-x1/(2*L))
 x1 = collect(LinRange(L/nElem/2,L-L/nElem/2,nElem))
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(EIy=EIy(x)) for x in x1],I=[inertia_matrix(ρA=ρA(x)) for x in x1])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy(x)) for x in x1],I=[inertia_matrix(ρA=ρA(x)) for x in x1])
 
 # BCs
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

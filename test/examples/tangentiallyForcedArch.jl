@@ -9,7 +9,7 @@ E = 72e9
 EA,GAy,GAz,GJ,EIy,EIz = E*A,∞,∞,∞,E*Iy,∞
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 nElem = 20
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-π/2;0],k=[0;1/R;0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],rotationParametrization="E321",p0=[0;-π/2;0],k=[0;1/R;0])
 
 # BCs
 F = 2.5e3

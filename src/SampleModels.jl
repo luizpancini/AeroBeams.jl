@@ -35,14 +35,14 @@ function stiffness_matrices_Pazy(GAy::Real,GAz::Real)
     c_EIy_EIz = [-1.17141160e-01 -1.12442858e-01 -1.15192612e-01 -1.18950224e-01 -1.20649484e-01 -1.21389557e-01 -1.21682056e-01 -1.21652571e-01 -1.21317479e-01 -1.20584487e-01 -1.19291993e-01 -1.17184960e-01 -1.14807975e-01 -1.16130851e-01 -1.14249441e-01]
 
     # Set matrices
-    C = [[    EA[i]  0    0  c_EA_GJ[i]  c_EA_EIy[i]  c_EA_EIz[i];
+    S = [[    EA[i]  0    0  c_EA_GJ[i]  c_EA_EIy[i]  c_EA_EIz[i];
                   0 GAy   0           0            0            0;
                   0  0  GAz           0            0            0;
          c_EA_GJ[i]  0    0       GJ[i]  c_GJ_EIy[i]  c_GJ_EIz[i];
         c_EA_EIy[i]  0    0 c_GJ_EIy[i]       EIy[i] c_EIy_EIz[i];
         c_EA_EIz[i]  0    0 c_GJ_EIz[i] c_EIy_EIz[i]       EIz[i]] for i in 1:15]
 
-    return C
+    return S
 end
 
 
@@ -248,13 +248,13 @@ function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAe
     nodalPositions = nodal_positions_Pazy()
 
     # Stiffness matrices
-    C = stiffness_matrices_Pazy(GAy,GAz)
+    S = stiffness_matrices_Pazy(GAy,GAz)
 
     # Inertia matrices
     I = inertia_matrices_Pazy()
 
     # Tip loss factor
-    τ = tip_loss_factor_Pazy(θ,airspeed)
+    τ = tip_loss_factor_Pazy(θ*180/pi,airspeed)
 
     # Rotation parameters from basis A to basis b
     p0 = upright ? [-Λ; -π/2; θ] : [-Λ; 0; θ]
@@ -269,7 +269,7 @@ function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAe
     tipInertia = PointInertia(elementID=nElem,η=[L/nElem/2+ξtipMass[1];ξtipMass[2];ξtipMass[3]],mass=tipMass,inertiaMatrix=tipMassInertia)
 
     # Wing beam
-    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,C=C,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,pointInertias=[tipInertia])
+    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,pointInertias=[tipInertia])
 
     # Update beam of additional BCs, if applicable
     for BC in additionalBCs
@@ -295,7 +295,7 @@ export create_Pazy
 Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 
 # Arguments
-- `p0::Vector{<:Real}` = initial rotation parameters
+- `p0::Vector{<:Real}` = initial rotation parameters in the Euler 3-2-1 sequence (yaw-pitch-roll)
 - `airfoil::Airfoil` = airfoil section
 - `aeroSolver::AeroSolver` = aerodynamic solver
 - `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
@@ -304,18 +304,21 @@ Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 - `GAy::Real` = shear stiffness in the x2 direction
 - `GAz::Real` = shear stiffness in the x3 direction
 - `hingeNode::Int64` = hinge node
-- `hingeAngle::Real` = hinge (fold) angle
-- `flareAngle::Real` = flare angle
+- `foldAngle::Real` = fold angle [rad]
+- `flareAngle::Real` = flare angle [rad]
 - `kSpring::Real` = stiffness of the hinge
 - `g::Real` = local acceleration of gravity
 - `altitude::Real` = altitude
 - `airspeed::Real` = local airspeed
 """
-function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,hingeAngle::Real=0,flareAngle::Real=10,kSpring::Real=1e6,g::Real=-9.80665,altitude::Real=0,airspeed::Real)
+function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,foldAngle::Real=0,flareAngle::Real=0,kSpring::Real=1e6,g::Real=9.80665,altitude::Real=0,airspeed::Real=0)
 
+    # Validate
     @assert 2 <= hingeNode <= 15 "hingeNode must be between 2 and 15"
-    @assert -3π/4 <= hingeAngle <= 3π/4 "set hingeAngle between -3π/4 and 3π/4 "
-    @assert 0 <= flareAngle <= 20 "set flareAngle between 0 and 20 (degrees)"
+    if !isnothing(foldAngle)
+        @assert -π < foldAngle <= π "set foldAngle between -π and π (rad) "
+    end
+    @assert 0 <= flareAngle <= π/2 "set flareAngle between 0 and π/2 (rad)"
     @assert kSpring >= 0
     @assert g >= 0
     @assert airspeed >= 0
@@ -326,66 +329,74 @@ function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy
     # Total length 
     L = 0.549843728
 
-    # Number of elements in each part of the wing
+    # Number of elements
     nElem = 15
-    nElem1 = hingeNode-1
-    nElem2 = nElem-nElem1
 
-    # Normalized nodal positions in each part of the wing
+    # Normalized nodal positions
     nodalPositions = nodal_positions_Pazy()
-    nodalPositions1 = nodalPositions[1:hingeNode]/nodalPositions[hingeNode]
-    nodalPositions2 = (nodalPositions[hingeNode:end].-nodalPositions[hingeNode])./(nodalPositions[end]-nodalPositions[hingeNode])
-
-    # Length in each part of the wing
-    L1 = L*nodalPositions[hingeNode]
-    L2 = L*(nodalPositions[end]-nodalPositions[hingeNode])
 
     # Stiffness matrices
-    C = stiffness_matrices_Pazy(GAy,GAz)
-    C1 = C[1:nElem1]
-    C2 = C[nElem1+1:end]
+    S = stiffness_matrices_Pazy(GAy,GAz)
 
     # Inertia matrices
     I = inertia_matrices_Pazy()
-    I1 = I[1:nElem1]
-    I2 = I[nElem1+1:end]
 
     # Chord
     chord = 0.0989
 
-    # Normalized spar position in each part of the wing
+    # Normalized spar position
     normSparPos = 0.44096
-    normSparPos1 = normSparPos
-    normSparPos2 = x1 -> normSparPos + x1*tand(flareAngle)/chord
-    @assert 0 < normSparPos2(L2) < 1 "flareAngle is too large for the specified hingeNode"
+
+    # Elements inboard and outboard of the hinge
+    inboardElem = hingeNode-1
+    outboardElem = hingeNode
 
     # Update airfoil parameters
     update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
 
-    # Aerodynamic surfaces
-    surf1 = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos1,hasTipCorrection=withTipCorrection)
+    # Tip loss factor
+    τ = tip_loss_factor_Pazy(p0[3],airspeed)
 
-    surf2 = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,Λ=-flareAngle*π/180,normSparPos=normSparPos2,hasTipCorrection=withTipCorrection)
+    # Aerodynamic surface
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=τ)
 
     # Beams 
-    mainWing = create_Beam(name="mainWing",length=L1,nElements=nElem1,normalizedNodalPositions=nodalPositions1,C=C1,I=I1,rotationParametrization="E321",p0=p0,aeroSurface=surf1,hingedNodes=[nElem1+1],hingedNodesDoF=[[false,true,false]])
+    beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[[flareAngle > 0; true; flareAngle > 0]])
 
-    wingTip = create_Beam(name="wingTip",length=L2,nElements=nElem2,normalizedNodalPositions=nodalPositions2,C=C2,I=I2,rotationParametrization="E321",p0=p0+[-flareAngle*π/180;0;0],aeroSurface=surf2)
+    # Hinge twist angle (arising from flare angle)
+    γ = flareAngle*foldAngle/(π/2)
 
-    # Relative rotation constraint
-    rotationConstraint = create_RotationConstraint(masterBeam=mainWing,slaveBeam=wingTip,masterElementLocalID=nElem1,slaveElementLocalID=1,DOF=2,value=4*tan(hingeAngle/4))
+    # Equivalent Wiener-Milenkovic rotation parameters from fold and flare angles
+    p = ypr_to_WM([0,foldAngle,γ])
 
-    # Spring around hinge
-    spring = create_Spring(basis="A",elementsIDs=[nElem1,1],nodesSides=[1,2],kIPBending=kSpring)
-    add_spring_to_beams!(beams=[mainWing,wingTip],spring=spring)
+    # Set relative rotation constraints from fold and flare angle, if applicable
+    rotationConstraints = Vector{RotationConstraint}()
+    # Rotation constraint for fold angle
+    foldAngleRotationConstraint = create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=2,slaveDOF=2,value=p[2],loadBalanceLocalNode=hingeNode+1)
+    # Add to constraints
+    push!(rotationConstraints,foldAngleRotationConstraint)
+    if flareAngle > 0
+        # Rotation constraint for twist angle originating from flare angle
+        flareAngleRotationConstraint = create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=1,slaveDOF=1,value=p[1],loadBalanceLocalNode=hingeNode+1)
+        # Rotation constraint for null IP rotation
+        IPRotationConstraint = create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=3,slaveDOF=3,value=p[3],loadBalanceLocalNode=hingeNode+1)
+        # Add to constraints
+        push!(rotationConstraints,flareAngleRotationConstraint,IPRotationConstraint)
+    end
+
+    # OOP bending spring around hinge
+    if kSpring > 0
+        spring = create_Spring(basis="A",elementsIDs=[inboardElem,outboardElem],nodesSides=[1,2],kOOPBending=kSpring)
+        add_spring_to_beams!(beams=[beam,beam],spring=spring)
+    end
 
     # BCs
-    clamp = create_BC(name="clamp",beam=mainWing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+    clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
     # Wing model
-    pazyFFWT = create_Model(name="pazyFFWT",beams=[mainWing,wingTip],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=[rotationConstraint],units=create_UnitsSystem(frequency="Hz"))
+    pazyFFWT = create_Model(name="pazyFFWT",beams=[beam],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=rotationConstraints,units=create_UnitsSystem(frequency="Hz"))
 
-    return pazyFFWT,hingeNode
+    return pazyFFWT
 end
 export create_PazyFFWT
 
@@ -460,11 +471,11 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAer
     GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, GJ,EIy,EIz)
     ρA,ρIs = 0.75,0.1
     ρIy,ρIz = (EIy/EIz)*ρIs,(1-EIy/EIz)*ρIs
-    C = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    S = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
     I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)
 
     # Wing beam
-    beam = create_Beam(name="rightWing",length=L,nElements=nElem,C=[C],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ],k=[k1;k2;0])
+    beam = create_Beam(name="rightWing",length=L,nElements=nElem,S=[S],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ],k=[k1;k2;0])
     
     # Update beam of additional BCs, if applicable
     for BC in additionalBCs
@@ -533,11 +544,11 @@ function create_TDWing(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::Gust
     ρA,ρIs,ρIy = 0.2351,0.2056e-4,1e-6
     ρIz = ρIy*EIz/EIy
     e3 = 1e-2*chord
-    C = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    S = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
     I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs,e3=e3)
 
     # Wing beam
-    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,C=[C],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ])
+    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,S=[S],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ])
 
     # Wing's tip store
     tipMass = 0.0417
@@ -623,17 +634,17 @@ function create_Helios(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),deri
     GJ,EIy,EIz = 1.6530e5,1.0331e6,1.2398e7
     wρA,wρIy,wρIz = 8.929,0.691,3.456
     GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, GJ,EIy,EIz)
-    wingC = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
-    wingI = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
+    Swing = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 
     # Wing beams
-    leftWingDihedral = create_Beam(name="leftWingDihedral",length=wingSection,nElements=nElemDihedralSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf),rotationParametrization="E321",p0=[0;Γ;0])
+    leftWingDihedral = create_Beam(name="leftWingDihedral",length=wingSection,nElements=nElemDihedralSemispan,S=[Swing],I=[Iwing],aeroSurface=deepcopy(wingSurf),rotationParametrization="E321",p0=[0;Γ;0])
 
-    leftWingStraight = create_Beam(name="leftWingStraight",length=2*wingSection,nElements=nElemStraightSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf))
+    leftWingStraight = create_Beam(name="leftWingStraight",length=2*wingSection,nElements=nElemStraightSemispan,S=[Swing],I=[Iwing],aeroSurface=deepcopy(wingSurf))
 
-    rightWingStraight = create_Beam(name="rightWingStraight",length=2*wingSection,nElements=nElemStraightSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf))
+    rightWingStraight = create_Beam(name="rightWingStraight",length=2*wingSection,nElements=nElemStraightSemispan,S=[Swing],I=[Iwing],aeroSurface=deepcopy(wingSurf))
 
-    rightWingDihedral = create_Beam(name="rightWingDihedral",length=wingSection,nElements=nElemDihedralSemispan,C=[wingC],I=[wingI],aeroSurface=deepcopy(wingSurf),rotationParametrization="E321",p0=[0;-Γ;0])
+    rightWingDihedral = create_Beam(name="rightWingDihedral",length=wingSection,nElements=nElemDihedralSemispan,S=[Swing],I=[Iwing],aeroSurface=deepcopy(wingSurf),rotationParametrization="E321",p0=[0;-Γ;0])
 
     # Link elevators
     elevatorLink = create_FlapLink(masterBeam=rightWingStraight,slaveBeams=[leftWingDihedral,leftWingStraight,rightWingDihedral])
@@ -661,15 +672,15 @@ function create_Helios(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),deri
 
     # Pod properties
     pρA,pρIy,pρIz = 0,wρIy,wρIz
-    podC = isotropic_stiffness_matrix(∞=∞)
-    podI = inertia_matrix(ρA=pρA,ρIy=pρIy,ρIz=pρIz)
+    Spod = isotropic_stiffness_matrix(∞=∞)
+    Ipod = inertia_matrix(ρA=pρA,ρIy=pρIy,ρIz=pρIz)
 
     # Pod beams
-    leftPod = create_Beam(name="leftPod",length=podLength,nElements=nElemPod,C=[podC],I=[podI],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[leftWingStraight],connectedNodesThis=[1],connectedNodesOther=[1])
+    leftPod = create_Beam(name="leftPod",length=podLength,nElements=nElemPod,S=[Spod],I=[Ipod],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[leftWingStraight],connectedNodesThis=[1],connectedNodesOther=[1])
 
-    centerPod = create_Beam(name="centerPod",length=podLength,nElements=nElemPod,C=[podC],I=[podI],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[rightWingStraight],connectedNodesThis=[1],connectedNodesOther=[1])
+    centerPod = create_Beam(name="centerPod",length=podLength,nElements=nElemPod,S=[Spod],I=[Ipod],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[rightWingStraight],connectedNodesThis=[1],connectedNodesOther=[1])
 
-    rightPod = create_Beam(name="rightPod",length=podLength,nElements=nElemPod,C=[podC],I=[podI],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[rightWingStraight],connectedNodesThis=[1],connectedNodesOther=[nElemStraightSemispan+1])
+    rightPod = create_Beam(name="rightPod",length=podLength,nElements=nElemPod,S=[Spod],I=[Ipod],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[rightWingStraight],connectedNodesThis=[1],connectedNodesOther=[nElemStraightSemispan+1])
 
     # Generate copies for wing model (has to be done before aircraft model creation)
     wingStraight = deepcopy(rightWingStraight)
@@ -840,7 +851,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     wGJ,wEIy,wEIz = multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
     wρA,wρIs = 0.75,0.1
     wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
-    Cwing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
+    Swing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
     Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz,ρIs=wρIs)
 
     # Initial position for first node of left wing
@@ -855,9 +866,9 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     ψ = Lw/r
 
     # Wing beams
-    leftWing = create_Beam(name="leftWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=wingSurfLeft,k=[-k1;k2;0],rotationParametrization="E321",p0=[0;-θ;ψ])
+    leftWing = create_Beam(name="leftWing",length=Lw,nElements=div(nElemWing,2),S=[Swing],I=[Iwing],aeroSurface=wingSurfLeft,k=[-k1;k2;0],rotationParametrization="E321",p0=[0;-θ;ψ])
 
-    rightWing = create_Beam(name="rightWing",length=Lw,nElements=div(nElemWing,2),C=[Cwing],I=[Iwing],aeroSurface=wingSurfRight,k=[k1;k2;0],connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
+    rightWing = create_Beam(name="rightWing",length=Lw,nElements=div(nElemWing,2),S=[Swing],I=[Iwing],aeroSurface=wingSurfRight,k=[k1;k2;0],connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
 
     # Link wing ailerons
     aileronLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[-1])
@@ -871,7 +882,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     # Tail boom
     Lt = 10
     tρA,tρIy,tρIz = 0.08,wρIy/10,wρIz/10
-    tailBoom = create_Beam(name="tailBoom",length=Lt,nElements=nElemTailBoom,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIy=tρIy,ρIz=tρIz)],rotationParametrization="E321",p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])
+    tailBoom = create_Beam(name="tailBoom",length=Lt,nElements=nElemTailBoom,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=tρA,ρIy=tρIy,ρIz=tρIz)],rotationParametrization="E321",p0=[-π/2;0;0],connectedBeams=[rightWing],connectedNodesThis=[1],connectedNodesOther=[1])
 
     # Horizontal stabilizer surface
     hChord = 0.5
@@ -892,7 +903,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     # Horizontal stabilizer beam
     Lh = 5
     hρA,hρIy,hρIz = 0.08,wρIy/10,wρIz/10
-    horzStabilizer = create_Beam(name="horzStabilizer",length=Lh,initialPosition=[-Lh/2;0;0],nElements=nElemHorzStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=hρA,ρIy=hρIy,ρIz=hρIz)],connectedBeams=[tailBoom],connectedNodesThis=[div(nElemHorzStabilizer,2)+1],connectedNodesOther=[nElemTailBoom+1])
+    horzStabilizer = create_Beam(name="horzStabilizer",length=Lh,initialPosition=[-Lh/2;0;0],nElements=nElemHorzStabilizer,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=hρA,ρIy=hρIy,ρIz=hρIz)],connectedBeams=[tailBoom],connectedNodesThis=[div(nElemHorzStabilizer,2)+1],connectedNodesOther=[nElemTailBoom+1])
     if stabilizersAero
         horzStabilizer.aeroSurface = hsSurf
         update_beam!(horzStabilizer)
@@ -917,7 +928,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     # Vertical stabilizer beam
     Lv = 2.5
     vρA,vρIy,vρIz = 0.08,hρIy,hρIz
-    vertStabilizer = create_Beam(name="vertStabilizer",length=Lv,nElements=nElemVertStabilizer,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=vρA,ρIy=vρIy,ρIz=vρIz)],rotationParametrization="E321",p0=[0;-π/2;0],connectedBeams=[tailBoom],connectedNodesThis=[1],connectedNodesOther=[nElemTailBoom+1])
+    vertStabilizer = create_Beam(name="vertStabilizer",length=Lv,nElements=nElemVertStabilizer,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=vρA,ρIy=vρIy,ρIz=vρIz)],rotationParametrization="E321",p0=[0;-π/2;0],connectedBeams=[tailBoom],connectedNodesThis=[1],connectedNodesOther=[nElemTailBoom+1])
     if stabilizersAero
         vertStabilizer.aeroSurface = vsSurf
         update_beam!(vertStabilizer)
@@ -1026,7 +1037,7 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     wEA,wGJ,wEIy,wEIz = 155_000_000,11_000,11_700,130_000
     wGJ,wEIy,wEIz = multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
     wρA,wρIy,wρIz = 6.2,0.0005,0.00462
-    Cwing = isotropic_stiffness_matrix(∞=∞,EA=wEA,GJ=wGJ,EIy=wEIy,EIz=wEIz)
+    Swing = isotropic_stiffness_matrix(∞=∞,EA=wEA,GJ=wGJ,EIy=wEIy,EIz=wEIz)
     Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 
     # Concentrated wing inertias
@@ -1041,9 +1052,9 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     end
 
     # Wing beams
-    leftWing = create_Beam(name="leftWing",length=wingSemispan,nElements=nElemWing,C=[Cwing],I=[Iwing],aeroSurface=leftWingSurf,rotationParametrization="E321",p0=[wΛ;0;0],pointInertias=wLConInertias)
+    leftWing = create_Beam(name="leftWing",length=wingSemispan,nElements=nElemWing,S=[Swing],I=[Iwing],aeroSurface=leftWingSurf,rotationParametrization="E321",p0=[wΛ;0;0],pointInertias=wLConInertias)
 
-    rightWing = create_Beam(name="rightWing",length=wingSemispan,nElements=nElemWing,C=[Cwing],I=[Iwing],aeroSurface=rightWingSurf,rotationParametrization="E321",p0=[-wΛ;0;0],pointInertias=wRConInertias)
+    rightWing = create_Beam(name="rightWing",length=wingSemispan,nElements=nElemWing,S=[Swing],I=[Iwing],aeroSurface=rightWingSurf,rotationParametrization="E321",p0=[-wΛ;0;0],pointInertias=wRConInertias)
 
     # Link wing elevons
     elevonLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[1])
@@ -1062,7 +1073,7 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     nElemFus = 3
     fEA,fGJ,fEIy,fEIz = 169_000_000,2_250_000,750_000,35_000_000
     fρA,fρIy,fρIz = 50,0.7,22.0
-    Cfus = isotropic_stiffness_matrix(∞=∞,EA=fEA,GJ=fGJ,EIy=fEIy,EIz=fEIz)
+    Sfus = isotropic_stiffness_matrix(∞=∞,EA=fEA,GJ=fGJ,EIy=fEIy,EIz=fEIz)
     Ifus = inertia_matrix(ρA=fρA,ρIy=fρIy,ρIz=fρIz)
 
     # Concentrated fuselage inertias
@@ -1072,9 +1083,9 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     fRightConInertia = PointInertia(elementID=1,η=[-fusLength/nElemFus/2;fConMassOffset;0],mass=fConMass)
 
     # Fuselage beams
-    leftFus = create_Beam(name="leftFus",length=fusLength,nElements=nElemFus,C=[Cfus],I=[Ifus],aeroSurface=leftFusSurf,rotationParametrization="E321",p0=[-fΛ;0;0],pointInertias=[fLeftConInertia])
+    leftFus = create_Beam(name="leftFus",length=fusLength,nElements=nElemFus,S=[Sfus],I=[Ifus],aeroSurface=leftFusSurf,rotationParametrization="E321",p0=[-fΛ;0;0],pointInertias=[fLeftConInertia])
 
-    rightFus = create_Beam(name="rightFus",length=fusLength,nElements=nElemFus,C=[Cfus],I=[Ifus],aeroSurface=rightFusSurf,rotationParametrization="E321",p0=[fΛ;0;0],pointInertias=[fRightConInertia])
+    rightFus = create_Beam(name="rightFus",length=fusLength,nElements=nElemFus,S=[Sfus],I=[Ifus],aeroSurface=rightFusSurf,rotationParametrization="E321",p0=[fΛ;0;0],pointInertias=[fRightConInertia])
 
     # Propellers thrust force
     thrustValue = thrustIsTrimVariable ? t -> 0 : thrust

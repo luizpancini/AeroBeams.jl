@@ -6,8 +6,8 @@ L = 1
 stiffnessMatrix = diagm([∞,∞,∞,∞,∞,∞])
 nElem1 = 2
 nElem2 = 1
-beam1 = create_Beam(name="beam1",length=L,nElements=nElem1,C=[stiffnessMatrix])
-beam2 = create_Beam(name="beam2",length=L,nElements=nElem2,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem1,S=[stiffnessMatrix])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem2,S=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
 
 # BCs - balanceLoads are the equivalent reactions at the pin
 F = 1

@@ -9,7 +9,7 @@ Is = Iy+Iz
 nElements = 20
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
-beam = create_Beam(name="beam",length=L,nElements=nElements,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElements,S=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 F = 1e3

@@ -75,8 +75,9 @@ function solve_NewtonRaphson!(problem::Problem)
     @unpack absoluteTolerance,relativeTolerance,maximumIterations,desiredIterations,maximumAbsoluteError,maximumRelativeError,minimumLoadFactor,loadFactorStep,maximumLoadFactorStep,minimumLoadFactorStep,trackingLoadSteps,displayStatus,convergedFinalSolution,convergedPartialSolution,alwaysUpdateJacobian,minConvRateJacUpdate = problem.systemSolver
 
     # Reset converged solution flag and load factor step
-    convergedFinalSolution = false
+    convergedPartialSolution = convergedFinalSolution = false
     loadFactorStep = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
+    @pack! problem.systemSolver = convergedPartialSolution,convergedFinalSolution,loadFactorStep
 
     ## Load steps
     #---------------------------------------------------------------------------
@@ -89,14 +90,16 @@ function solve_NewtonRaphson!(problem::Problem)
         iter = 0
         xKnown = deepcopy(x)
         residualKnown = deepcopy(residual)
-        loadFactorKnown = loadstep == 1 ? 0.0 : (convergedPartialSolution ? σ-loadFactorStep : deepcopy(σ))
+        BCsKnown = deepcopy(problem.model.BCs)
+        specialNodesKnown = deepcopy(problem.model.specialNodes)
+        loadFactorKnown = loadstep == 1 ? 0.0 : deepcopy(σ)
         ϵ_abs_previous = 1
         # Reset partial convergence flag
         convergedPartialSolution = false
         # Reset TF to skip Jacobian update
         problem.skipJacobianUpdate = false
         # Update load factor 
-        σ = loadstep == 1 ? σ : min(1.0,σ+loadFactorStep)
+        σ = loadstep == 1 ? σ : max(loadFactorKnown, min(1.0,σ+loadFactorStep))
         @pack! problem = σ
         ## Nonlinear solution procedure
         # ----------------------------------------------------------------------
@@ -155,10 +158,13 @@ function solve_NewtonRaphson!(problem::Problem)
             x = xKnown 
             residual = residualKnown
             σ = loadFactorKnown
+            BCs = BCsKnown
+            specialNodes = specialNodesKnown
             if displayStatus
                 println("Unconverged, reducing load factor and trying again...")
             end
             @pack! problem = x,residual,σ 
+            # @pack! problem.model = BCs,specialNodes
         # In case of converged partial solution    
         else
             # Update states on element level
@@ -239,9 +245,14 @@ end
 # Solves the linear system of equations at current time step and load factor
 function solve_linear_system!(problem::Problem)
 
-    @unpack x,Δx,residual,jacobian = problem
-    @unpack systemOrder,nTrimVariables,nRotationConstraints = problem.model
+    @unpack x,Δx,residual,jacobian,getLinearSolution = problem
+    @unpack systemOrder,nTrimVariables,hasRotationConstraints,rotationConstraints,rotationConstraintBalanceLoadBCid,forceScaling = problem.model
     @unpack ρ = problem.systemSolver
+
+    # Issue warning for singular Jacobian in linear problems
+    if getLinearSolution && nTrimVariables == 0 && det(jacobian) ≈ 0
+        println("Singular Jacobian")
+    end
 
     # Solve the linear system according to problem type
     #---------------------------------------------------------------------------
@@ -249,18 +260,8 @@ function solve_linear_system!(problem::Problem)
     if problem isa TrimProblem
         Δx .= -pinv(Matrix(jacobian))*residual
     # Problem with relative rotation constraints    
-    elseif nRotationConstraints > 0
-        @unpack masterRotationConstraintsDOF,slaveRotationConstraintsDOF,rotationConstraintsValues = problem.model
-        # Remove slave DOFs from Jacobian
-        jacobianReduced = jacobian[1:end, setdiff(1:end, slaveRotationConstraintsDOF)]
-        # Reset residuals from slave DOFs
-        residual[slaveRotationConstraintsDOF] .= 0
-        # Compute states increment array
-        ΔxReduced = -pinv(Matrix(jacobianReduced))*residual
-        Δx = deepcopy(ΔxReduced)
-        for i in eachindex(slaveRotationConstraintsDOF)
-            insert!(Δx,slaveRotationConstraintsDOF[i],0)
-        end
+    elseif hasRotationConstraints
+        Δx,Δλ = linear_solver_with_constraints(x,jacobian,residual,rotationConstraints)
     # Regular problem    
     else
         try
@@ -278,11 +279,10 @@ function solve_linear_system!(problem::Problem)
     x[1:systemOrder] .+= Δx[1:systemOrder]
     x[systemOrder+1:systemOrder+nTrimVariables] .+= ρ*Δx[systemOrder+1:systemOrder+nTrimVariables]
 
-    # Set values of slave states in relative constraints  
-    if nRotationConstraints > 0
-        for (slaveDOF,masterDOF,value) in zip(slaveRotationConstraintsDOF,masterRotationConstraintsDOF,rotationConstraintsValues)
-            x[slaveDOF] = x[masterDOF] + value
-        end
+    # Update balance loads of rotation constraints with Lagrange multipliers increment
+    for (i,constraint) in enumerate(rotationConstraints)
+        problem.model.BCs[rotationConstraintBalanceLoadBCid[i]].values[1] = constraint.balanceMoment -= Δλ[i]
+        update_BC_data!(problem.model.BCs[rotationConstraintBalanceLoadBCid[i]],problem.timeNow)
     end
 
     @pack! problem = x,Δx,residual
@@ -333,6 +333,37 @@ function line_search_step_size(x,p,residual,jacobian,c1=1e-4,ρ=0.5)
     end
 
     return α
+end
+
+
+# Solves a linear, overdetermined system with constraints
+function linear_solver_with_constraints(x,jacobian,residual,rotationConstraints)
+
+    # Initialize arrays of overdetermined system
+    A = copy(jacobian)
+    b = copy(-residual)
+
+    # Size of nominal system (without constraint)
+    N = length(b)
+
+    # Loop constraints
+    for constraint in rotationConstraints
+        @unpack masterElemMasterGlobalDOF,slaveElemSlaveGlobalDOF = constraint
+        # Initialize current value of Lagrange multiplier coefficients array
+        c = zeros(size(A,1))
+        # Adjust arrays by adding the equation: Δx[slaveElemSlaveGlobalDOF] - Δx[masterElemMasterGlobalDOF] = 0
+        c[slaveElemSlaveGlobalDOF] = 1
+        c[masterElemMasterGlobalDOF] = -1
+        A = [A c; c' 0]
+        b = [b; 0]
+    end
+
+    # Solve constrained linear system for solution and Lagrange multipliers increments
+    sol = A\b
+    Δx = sol[1:N]
+    Δλ = sol[N+1:end]
+
+    return Δx,Δλ
 end
 
 

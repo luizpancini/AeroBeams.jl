@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,scale=1e6,showScale=true,scalePos=[0.3,0.5],save=true,savePath=string(relPath,"/hingedBeam_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,scale=1e0,showScale=true,scalePos=[0.3,0.5],save=true,savePath=string(relPath,"/hingedBeam_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations
@@ -27,12 +27,12 @@ display(plt2)
 savefig(string(absPath,"/hingedBeam_p2.pdf"))
 
 # F3
-plt3 = plot(x1/L, F3/1e3, lw=lw, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3\$ [kN]")
+plt3 = plot(x1/L, F3, lw=lw, label=false, xlabel="\$x_1/L\$", ylabel="\$F_3\$ [N]")
 display(plt3)
 savefig(string(absPath,"/hingedBeam_F3.pdf"))
 
 # M2
-plt4 = plot(x1/L, M2/1e3, lw=lw, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2\$ [kN.m]")
+plt4 = plot(x1/L, M2, lw=lw, label=false, xlabel="\$x_1/L\$", ylabel="\$M_2\$ [N.m]")
 display(plt4)
 savefig(string(absPath,"/hingedBeam_M2.pdf"))
 

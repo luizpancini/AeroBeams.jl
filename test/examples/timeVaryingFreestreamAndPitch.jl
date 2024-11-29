@@ -34,7 +34,7 @@ pddot = iszero(Δθ) ? t -> 0 : t -> ForwardDiff.derivative(pdot,t)
 L = 1
 nElem = 1
 ∞ = 1e12
-wing = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],rotationParametrization="E321",p0=[0;0;0],pdot0_of_x1=[pdot(0);0;0],aeroSurface=surf)
+wing = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],rotationParametrization="E321",p0=[0;0;0],pdot0_of_x1=[pdot(0);0;0],aeroSurface=surf)
 
 # BCs
 journal1 = create_BC(name="journal1",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,t->p(t),0,0])

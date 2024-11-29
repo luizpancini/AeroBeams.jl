@@ -6,7 +6,7 @@ EI = 333.333
 ∞ = 1e14
 stiffnessMatrix = diagm([∞,∞,∞,∞,EI,∞])
 nElem = 30
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix])
 
 # BCs
 F = 1

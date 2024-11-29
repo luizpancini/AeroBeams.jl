@@ -5,7 +5,7 @@ L = 1
 EIy = 1
 ρA = 1
 nElem = 20
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(EIy=EIy)],I=[inertia_matrix(ρA=ρA)])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],I=[inertia_matrix(ρA=ρA)])
 
 # Spring
 κ = 1

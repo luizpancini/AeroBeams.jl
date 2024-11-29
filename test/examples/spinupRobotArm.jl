@@ -17,7 +17,7 @@ EA,GA,GJ,EI = 2.8e7,1e7,1.4e4,1.4e4
 nElements = 3
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
-beam = create_Beam(name="beam",length=L,nElements=nElements,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElements,S=[stiffnessMatrix],I=[inertiaMatrix])
 if !rotateBasisA
     add_initial_displacements_and_velocities_to_beam!(beam,conditionTypes=["pdot0_of_x1"],conditionFuns=[(x1)->[0; 0; pdot(0)]])
 end

@@ -3,7 +3,7 @@ using AeroBeams
 # Beam
 L = EA = ρA = 1
 nElem = 100
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(∞=1e12,EA=EA)],I=[inertia_matrix(ρA=ρA)])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=1e12,EA=EA)],I=[inertia_matrix(ρA=ρA)])
 
 # BCs: free - free
 BCs = Vector{BC}()

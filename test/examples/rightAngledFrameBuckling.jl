@@ -13,8 +13,8 @@ G = E/(2*(1+ν))
 EA,GAy,GAz,GJ,EIy,EIz = E*A,G*A*Ksy,G*A*Ksz,G*J*Kt,E*Iy,E*Iz
 stiffnessMatrix = diagm([EA,GAy,GAz,GJ,EIy,EIz])
 nElem = 10
-beam1 = create_Beam(name="beam1",length=L,nElements=nElem,C=[stiffnessMatrix])
-beam2 = create_Beam(name="beam2",length=L,nElements=nElem,C=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,S=[stiffnessMatrix])
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,S=[stiffnessMatrix],rotationParametrization="E321",p0=[0;π/2;0])
 
 # BCs
 δ = 1e-3

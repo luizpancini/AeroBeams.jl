@@ -16,7 +16,7 @@ inertiaMatrix = [ 258.053        0.0      0.0       0.0  7.07839  -71.6871;
                       0.0   -7.07839  71.6871     48.59      0.0       0.0;
                   7.07839        0.0      0.0       0.0    2.172       0.0;
                  -71.6871        0.0      0.0       0.0      0.0    46.418]
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs
 F = 1e5

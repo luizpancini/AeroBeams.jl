@@ -10,7 +10,7 @@ G = E/(2*(1+ν))
 nElem = 60
 stiffnessMatrix = diagm([E*A,G*A*Ksy,G*A*Ksz,G*J,E*Iy,E*Iz])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,-π/2,0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,-π/2,0])
 
 # BCs
 ω = 32*(2*π)

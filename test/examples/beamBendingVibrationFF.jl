@@ -7,7 +7,7 @@ EA,GA,GJ,EIy,EIz = 1e6,1e9,1e9,1,1e6
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EIy,EIz])
 inertiaMatrix = diagm([ρA,ρA,ρA,0,0,0])
 nElem = 100
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs: free - free
 BCs = Vector{BC}()

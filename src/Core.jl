@@ -137,14 +137,9 @@ function element_states!(problem::Problem,model::Model,element::Element)
     @unpack forceScaling = model
     @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ = element
     @unpack u,p,F,M,V,Ω,χ = element.states
-    @unpack rotationConstraint = element
 
     u .= x[DOF_u]
     p .= x[DOF_p]
-    if !isnothing(rotationConstraint)
-        @unpack DOF,masterElementGlobalID,value = rotationConstraint
-        p[DOF] = model.elements[masterElementGlobalID].states.p[DOF] + value
-    end
     F .= x[DOF_F]*forceScaling
     M .= x[DOF_M]*forceScaling
     V .= x[DOF_V]
@@ -520,7 +515,7 @@ end
 # Computes the strains for the current element, resolved in basis B
 function element_strains!(element::Element)
 
-    @unpack states,compStates,S = element
+    @unpack states,compStates,C = element
     @unpack F,M = states
     @unpack γ,κ = element.compStates
     
@@ -528,7 +523,7 @@ function element_strains!(element::Element)
     forces = [F; M]
     
     # Sectional strains vector 
-    strains = S*forces
+    strains = C*forces
     γ .= strains[1:3] 
     κ .= strains[4:6]
 
@@ -688,9 +683,9 @@ function element_residual!(problem::Problem,model::Model,element::Element)
             residual[eqs_FM1] .+= notHingedNode1Mat*F_M1 + hingedNode1Mat*F_p1/forceScaling 
         # This is a special node (has separate compatibility equations)    
         else
-            # Set separate compatibility equations' residual  
+            # Set separate compatibility equations' residual / set moment equilibrium equations' residual for hinged degrees-of-freedomresi
             residual[eqs_FF1_sep] .= F_F1
-            residual[eqs_FM1_sep] .= F_M1
+            residual[eqs_FM1_sep] .= notHingedNode1Mat*F_M1 + hingedNode1Mat*F_p1/forceScaling
         end
     end
     # Set or add to residuals for the element's last node
@@ -988,7 +983,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
 
     @unpack jacobian = problem
     @unpack forceScaling = model
-    @unpack Δℓ,S_11,S_12,S_21,S_22,I_11,I_12,I_21,I_22,ω,R0,R0T,RR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,f1_p,f2_p,m1_p,m2_p,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_FV,eqs_FΩ,eqs_Fχ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,aero = element
+    @unpack Δℓ,C_11,C_12,C_21,C_22,I_11,I_12,I_21,I_22,ω,R0,R0T,RR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,f1_p,f2_p,m1_p,m2_p,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_FV,eqs_FΩ,eqs_Fχ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,aero = element
     @unpack F,M,V,Ω = element.states
     @unpack pdot,Vdot,Ωdot = element.statesRates
     @unpack γ,κ,P,H = element.compStates
@@ -1016,10 +1011,10 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     F_p1_p .= -tmp1 - m1_p - tmp2
     F_p2_p .=  tmp1 - m2_p - tmp2
     # F_p_F
-    F_p1_F .= -Δℓ/2 * RR0 * (tilde(a1+γ)-F_tilde*S_11)
+    F_p1_F .= -Δℓ/2 * RR0 * (tilde(a1+γ)-F_tilde*C_11)
     F_p2_F .= F_p1_F
     # F_p_M
-    tmp = Δℓ/2 * RR0 * F_tilde * S_12
+    tmp = Δℓ/2 * RR0 * F_tilde * C_12
     F_p1_M .= tmp - RR0
     F_p2_M .= tmp + RR0
 
@@ -1031,10 +1026,10 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     F_F1_p .= -mul3(R_p1,R_p2,R_p3,Δℓ/2*R0*(a1+γ))
     F_F2_p .= F_F1_p
     # F_F_F
-    F_F1_F .= -Δℓ/2 * RR0 * S_11
+    F_F1_F .= -Δℓ/2 * RR0 * C_11
     F_F2_F .= F_F1_F
     # F_F_M
-    F_F1_M .= -Δℓ/2 * RR0 * S_12
+    F_F1_M .= -Δℓ/2 * RR0 * C_12
     F_F2_M .= F_F1_M
 
     # --- F_M --- #
@@ -1044,10 +1039,10 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     F_M2_p .= -I3 - tmp
     # F_M_F
     tmp = -Δℓ/2 * HTinv * R0
-    F_M1_F .= tmp * S_21
+    F_M1_F .= tmp * C_21
     F_M2_F .= F_M1_F
     # F_M_M
-    F_M1_M .= tmp * S_22
+    F_M1_M .= tmp * C_22
     F_M2_M .= F_M1_M
 
     ## Steady-state terms
@@ -1189,21 +1184,28 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     jacobian[eqs_Fp1,DOF_M] .= notHingedNode1Mat*F_p1_M
     jacobian[eqs_Fp1,DOF_V] .= F_p1_V/forceScaling
     jacobian[eqs_Fp1,DOF_Ω] .= F_p1_Ω/forceScaling
-    # If the first compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
-    if eqsNode1Set && isSpecialNode1 
-        eqs_FF1 = eqs_FF1_sep                         
-        eqs_FM1 = eqs_FM1_sep
+    # Compatibility equations' Jacobian entries for the element's first node. If the shared compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
+    if eqsNode1Set && isSpecialNode1
+        # --- F_F1 --- #
+        jacobian[eqs_FF1_sep,DOF_u] .= F_F1_u
+        jacobian[eqs_FF1_sep,DOF_p] .= F_F1_p
+        jacobian[eqs_FF1_sep,DOF_F] .= F_F1_F*forceScaling
+        jacobian[eqs_FF1_sep,DOF_M] .= F_F1_M*forceScaling
+        # --- F_M1 --- #
+        jacobian[eqs_FM1_sep,DOF_p] .= notHingedNode1Mat*F_M1_p + hingedNode1Mat*F_p1_p/forceScaling
+        jacobian[eqs_FM1_sep,DOF_F] .= notHingedNode1Mat*F_M1_F*forceScaling + hingedNode1Mat*F_p1_F
+        jacobian[eqs_FM1_sep,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling  + hingedNode1Mat*F_p1_M
+    else
+        # --- F_F1 --- #
+        jacobian[eqs_FF1,DOF_u] .= F_F1_u
+        jacobian[eqs_FF1,DOF_p] .= F_F1_p
+        jacobian[eqs_FF1,DOF_F] .= F_F1_F*forceScaling
+        jacobian[eqs_FF1,DOF_M] .= F_F1_M*forceScaling
+        # --- F_M1 --- #
+        jacobian[eqs_FM1,DOF_p] .= notHingedNode1Mat*F_M1_p + hingedNode1Mat*F_p1_p/forceScaling
+        jacobian[eqs_FM1,DOF_F] .= notHingedNode1Mat*F_M1_F*forceScaling + hingedNode1Mat*F_p1_F
+        jacobian[eqs_FM1,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling  + hingedNode1Mat*F_p1_M
     end
-    # Compatibility equations' Jacobian entries for the element's first node
-    # --- F_F1 --- #
-    jacobian[eqs_FF1,DOF_u] .= F_F1_u
-    jacobian[eqs_FF1,DOF_p] .= F_F1_p
-    jacobian[eqs_FF1,DOF_F] .= F_F1_F*forceScaling
-    jacobian[eqs_FF1,DOF_M] .= F_F1_M*forceScaling
-    # --- F_M1 --- #
-    jacobian[eqs_FM1,DOF_p] .= notHingedNode1Mat*F_M1_p + hingedNode1Mat*F_p1_p/forceScaling
-    jacobian[eqs_FM1,DOF_F] .= notHingedNode1Mat*F_M1_F*forceScaling + hingedNode1Mat*F_p1_F
-    jacobian[eqs_FM1,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling  + hingedNode1Mat*F_p1_M
 
     # ---------- Node 2 ----------- #
     # Equilibrium equations' Jacobian entries for the element's second node
@@ -1218,21 +1220,28 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     jacobian[eqs_Fp2,DOF_M] .= F_p2_M
     jacobian[eqs_Fp2,DOF_V] .= F_p2_V/forceScaling
     jacobian[eqs_Fp2,DOF_Ω] .= F_p2_Ω/forceScaling
-    # If the first compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
+    # Compatibility equations' Jacobian entries for the element's second node. If the shared compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
     if eqsNode2Set && isSpecialNode2  
-        eqs_FF2 = eqs_FF2_sep                         
-        eqs_FM2 = eqs_FM2_sep
+        # --- F_F2 --- #
+        jacobian[eqs_FF2_sep,DOF_u] .= F_F2_u
+        jacobian[eqs_FF2_sep,DOF_p] .= F_F2_p
+        jacobian[eqs_FF2_sep,DOF_F] .= F_F2_F*forceScaling
+        jacobian[eqs_FF2_sep,DOF_M] .= F_F2_M*forceScaling
+        # --- F_M2 --- #
+        jacobian[eqs_FM2_sep,DOF_p] .= F_M2_p
+        jacobian[eqs_FM2_sep,DOF_F] .= F_M2_F*forceScaling
+        jacobian[eqs_FM2_sep,DOF_M] .= F_M2_M*forceScaling
+    else
+        # --- F_F2 --- #
+        jacobian[eqs_FF2,DOF_u] .= F_F2_u
+        jacobian[eqs_FF2,DOF_p] .= F_F2_p
+        jacobian[eqs_FF2,DOF_F] .= F_F2_F*forceScaling
+        jacobian[eqs_FF2,DOF_M] .= F_F2_M*forceScaling
+        # --- F_M2 --- #
+        jacobian[eqs_FM2,DOF_p] .= notHingedNode2Mat*F_M2_p
+        jacobian[eqs_FM2,DOF_F] .= notHingedNode2Mat*F_M2_F*forceScaling
+        jacobian[eqs_FM2,DOF_M] .= notHingedNode2Mat*F_M2_M*forceScaling
     end
-    # Compatibility equations' Jacobian entries for the element's second node
-    # --- F_F2 --- #
-    jacobian[eqs_FF2,DOF_u] .= F_F2_u
-    jacobian[eqs_FF2,DOF_p] .= F_F2_p
-    jacobian[eqs_FF2,DOF_F] .= F_F2_F*forceScaling
-    jacobian[eqs_FF2,DOF_M] .= F_F2_M*forceScaling
-    # --- F_M2 --- #
-    jacobian[eqs_FM2,DOF_p] .= notHingedNode2Mat*F_M2_p
-    jacobian[eqs_FM2,DOF_F] .= notHingedNode2Mat*F_M2_F*forceScaling
-    jacobian[eqs_FM2,DOF_M] .= notHingedNode2Mat*F_M2_M*forceScaling
 
     ## Generalized velocities' Jacobian contributions
     # --------------------------------------------------------------------------
@@ -1555,14 +1564,23 @@ function spring_loads!(model::Model,specialNode::SpecialNode)
             # Displacement and rotation of that node
             uOtherNode = otherNode.u
             pOtherNode = otherNode.p
+            # Rotation parameter scalings
+            λ,_ = rotation_parameter_scaling(p)
+            λOtherNode,_ = rotation_parameter_scaling(pOtherNode)
             # Add spring loads, resolved in basis A
             F .-= Ku * (u - uOtherNode)
-            M .-= Kp * (p - pOtherNode)
+            M .-= Kp * (p*λ - pOtherNode*λOtherNode)
+            # Pack data
+            @pack! spring = λ,λOtherNode
         # Single attachment    
         else
+            # Rotation parameter scaling
+            λ,_ = rotation_parameter_scaling(p)
             # Add spring loads, resolved in basis A
             F .-= Ku * u
-            M .-= Kp * p
+            M .-= Kp * p*λ
+            # Pack data
+            @pack! spring = λ
         end
     end
 
@@ -1762,11 +1780,11 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
 
     # Loop springs
     for spring in springs
-        @unpack hasDoubleAttachment,Ku,Kp = spring
+        @unpack hasDoubleAttachment,Ku,Kp,λ,λOtherNode = spring
         # Add translational spring Jacobian: d(-F_spring)/d(u) = Ku/forceScaling
         jacobian[eqs_Fu[1],DOF_uF] .+= Ku/forceScaling
-        # Add rotational spring Jacobian: d(-M_spring)/d(p) = Kp/forceScaling
-        jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling
+        # Add rotational spring Jacobian: d(-M_spring)/d(p) = Kp*λ/forceScaling
+        jacobian[eqs_Fp[1],DOF_pM] .+= Kp*λ/forceScaling
         # If doubly-attached, add contributions from other node's DOFs
         if hasDoubleAttachment
             @unpack nodesSpecialIDs,nodesGlobalIDs = spring
@@ -1774,8 +1792,8 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
             otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
             # Add translational spring Jacobian: d(-F_spring)/d(uOtherNode) = -Ku/forceScaling
             jacobian[eqs_Fu[1],otherNode.DOF_uF] .-= Ku/forceScaling
-            # Add rotational spring Jacobian: d(-M_spring)/d(pOtherNode) = -Kp/forceScaling
-            jacobian[eqs_Fp[1],otherNode.DOF_pM] .-= Kp/forceScaling
+            # Add rotational spring Jacobian: d(-M_spring)/d(pOtherNode) = -Kp*λOtherNode/forceScaling
+            jacobian[eqs_Fp[1],otherNode.DOF_pM] .-= Kp*λOtherNode/forceScaling
         end
     end
 
@@ -1786,7 +1804,7 @@ end
 # Computes the modal states (generalized displacements, forces, strains, velocities and momenta) of the element at midpoint and at the nodes
 function element_modal_states(element::Element,eigenvector::Vector{T},forceScaling::Float64) where T<:Union{Float64,ComplexF64}
 
-    @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,Δℓ,k,R0,S,I,f1,f2,m1,m2,R0_n1,R0_n2,R0T_n1,R0T_n2 = element
+    @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,Δℓ,k,R0,C,I,f1,f2,m1,m2,R0_n1,R0_n2,R0T_n1,R0T_n2 = element
 
     # Midpoint states 
     u = eigenvector[DOF_u]
@@ -1797,7 +1815,7 @@ function element_modal_states(element::Element,eigenvector::Vector{T},forceScali
     Ω = eigenvector[DOF_Ω]
 
     # Midpoint complementary states
-    strains = S*[F; M]
+    strains = C*[F; M]
     momenta = I*[V; Ω]
     γ = strains[1:3] 
     κ = strains[4:6]

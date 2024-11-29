@@ -7,7 +7,7 @@ EA,GA,GJ,EI = 1e6,1e6,1e6,1e5
 nElem = 20
 stiffnessMatrix = diagm([EA,GA,GA,GJ,EI,EI])
 inertiaMatrix = diagm([ρA,ρA,ρA,2*ρI,ρI,ρI])
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],hingedNodes=[div(nElem,2)+1],hingedNodesDoF=[[false,true,false]])
 
 # BCs 
 τ = 0.5

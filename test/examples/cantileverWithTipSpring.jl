@@ -5,7 +5,7 @@ L = 1
 EIy = 1e4
 θ = 30*π/180
 nElem = 50
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[isotropic_stiffness_matrix(EIy=EIy)],rotationParametrization="E321",p0=[0;θ;0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],rotationParametrization="E321",p0=[0;θ;0])
 
 # Spring
 ku = 1e4*[0; 0; 1]

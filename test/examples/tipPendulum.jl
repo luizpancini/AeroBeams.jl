@@ -15,7 +15,7 @@ nElem = 10
 stiffnessMatrix = diagm([E*A,G*A,G*A,G*J,E*I,E*I])
 inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*I,ρ*I])
 beamMass = ρ*A*L
-beam = create_Beam(name="beam",length=L,nElements=nElem,C=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,(π/2-θ₀),0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,(π/2-θ₀),0])
 
 # Pendulum's tip mass
 massRatio = 10

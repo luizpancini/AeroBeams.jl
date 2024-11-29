@@ -4,13 +4,13 @@ using AeroBeams, LinearAlgebra
 L1 = 2
 EIy1 = 1e16
 nElem1 = 10
-beam1 = create_Beam(name="beam1",length=L1,nElements=nElem1,C=[isotropic_stiffness_matrix(EIy=EIy1)])
+beam1 = create_Beam(name="beam1",length=L1,nElements=nElem1,S=[isotropic_stiffness_matrix(EIy=EIy1)])
 
 # Beam 2
 L2 = 1
 EIy2 = 1e4
 nElem2 = 20
-beam2 = create_Beam(name="beam2",length=L2,nElements=nElem2,C=[isotropic_stiffness_matrix(EIy=EIy2)],rotationParametrization="E321",p0=[0;π/2;0])
+beam2 = create_Beam(name="beam2",length=L2,nElements=nElem2,S=[isotropic_stiffness_matrix(EIy=EIy2)],rotationParametrization="E321",p0=[0;π/2;0])
 
 # Spring
 kTranslational = 1e4

@@ -21,7 +21,7 @@ colors = [:blue,:orange,:green]
 gr()
 
 # Plot normalized displacements over load steps
-plt1 = plot(xlabel="\$-u_1/L, u_3/L, -\\theta/L\$", ylabel="\$q\$ [kN]", title="Tip generalized displacements",legend=:bottomright)
+plt1 = plot(xlabel="\$-u_1/L, u_3/L, -\\theta/\\pi\$", ylabel="\$q\$ [kN]", title="Tip generalized displacements",legend=:bottomright)
 plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], mc=:black, ms=ms, label="Argyris & Symeonidis (1981)")
 for i=1:3

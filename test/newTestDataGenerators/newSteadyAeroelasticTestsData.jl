@@ -9,9 +9,25 @@ writedlm("test/newTestDataGenerators/conventionalHALEclampedSteady/x3_def.txt", 
 # Steady analysis of the Pazy wing with flared folding wing tip (FFWT)
 include("../examples/PazyFFWTsteady.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTsteady"))
-writedlm("test/newTestDataGenerators/PazyFFWTsteady/u3_of_x1.txt", u3_of_x1)
-writedlm("test/newTestDataGenerators/PazyFFWTsteady/p2_of_x1.txt", p2_of_x1)
-writedlm("test/newTestDataGenerators/PazyFFWTsteady/M2_of_x1.txt", M2_of_x1)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/u1.txt", u1)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/u3.txt", u3)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/p1.txt", p1)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/p2.txt", p2)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/M2.txt", M2)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/alpha.txt", α)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/cn.txt", cn)
+writedlm("test/newTestDataGenerators/PazyFFWTsteady/hingeBalanceM.txt", hingeBalanceM)
+
+# Steady analysis of the Pazy wing with flared folding wing tip (FFWT) and varying airspeed
+include("../examples/PazyFFWTsteadyURange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTsteadyURange"))
+writedlm("test/newTestDataGenerators/PazyFFWTsteadyURange/u1.txt", u1)
+writedlm("test/newTestDataGenerators/PazyFFWTsteadyURange/u3.txt", u3)
+writedlm("test/newTestDataGenerators/PazyFFWTsteadyURange/p1.txt", p1)
+writedlm("test/newTestDataGenerators/PazyFFWTsteadyURange/p2.txt", p2)
+writedlm("test/newTestDataGenerators/PazyFFWTsteadyURange/M2.txt", M2)
+writedlm("test/newTestDataGenerators/PazyFFWTsteadyURange/alpha.txt", α)
+writedlm("test/newTestDataGenerators/PazyFFWTsteadyURange/cn.txt", cn)
 
 # Steady analysis of the Pazy wing with varying root pitch angle
 include("../examples/PazyWingPitchRange.jl")
