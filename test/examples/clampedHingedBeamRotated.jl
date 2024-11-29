@@ -13,7 +13,8 @@ using AeroBeams, LinearAlgebra
 p_b = ypr_to_WM([0;θ;0])
 
 # Wiener-Milenkovic parameters due to hinge angle, resolved in the global (A) basis (p_A = R0 * p_b)
-p_A = rotation_tensor_E321([α;β;0]) * p_b
+R0 = rotation_tensor_E321([α;β;0])
+p_A = R0 * p_b
 
 # Beam 
 L = 1
@@ -62,20 +63,26 @@ x1 = vcat([vcat(problem.model.beams[1].elements[e].x1_n1,problem.model.beams[1].
 u1 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[1],problem.nodalStatesOverσ[end][e].u_n2[1]) for e in 1:nElem]...)
 u2 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[2],problem.nodalStatesOverσ[end][e].u_n2[2]) for e in 1:nElem]...)
 u3 = vcat([vcat(problem.nodalStatesOverσ[end][e].u_n1[3],problem.nodalStatesOverσ[end][e].u_n2[3]) for e in 1:nElem]...)
-p2_b = vcat([vcat(scaled_rotation_parameters(problem.nodalStatesOverσ[end][e].p_n1_b)[2],scaled_rotation_parameters(problem.nodalStatesOverσ[end][e].p_n2_b)[2]) for e in 1:nElem]...)
+p1_b = vcat([vcat(problem.nodalStatesOverσ[end][e].p_n1_b[1],problem.nodalStatesOverσ[end][e].p_n2_b[1]) for e in 1:nElem]...)
+p2_b = vcat([vcat(problem.nodalStatesOverσ[end][e].p_n1_b[2],problem.nodalStatesOverσ[end][e].p_n2_b[2]) for e in 1:nElem]...)
+p3_b = vcat([vcat(problem.nodalStatesOverσ[end][e].p_n1_b[3],problem.nodalStatesOverσ[end][e].p_n2_b[3]) for e in 1:nElem]...)
 F3 = vcat([vcat(problem.nodalStatesOverσ[end][e].F_n1[3],problem.nodalStatesOverσ[end][e].F_n2[3]) for e in 1:nElem]...)
 M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOverσ[end][e].M_n2[2]) for e in 1:nElem]...)
 
 # Compute rotation, displacement and balance moment at the hinge node
-Δp2_bHingeNode = 4*atand((p2_b[2*hingeNode+1]-p2_b[2*hingeNode-2])/4)
+p_bOutboard = [p1_b[2*hingeNode-1]; p2_b[2*hingeNode-1]; p3_b[2*hingeNode-1]]
+p_bInboard = [p1_b[2*hingeNode-2]; p2_b[2*hingeNode-2]; p3_b[2*hingeNode-2]]
+Δp_bHingeNode = p_bOutboard - p_bInboard
+ypr = WM_to_ypr(Δp_bHingeNode)*180/π
 u3HingeNode = u3[2*hingeNode-1]
 u3Tip = u3[end]
-hingeBalanceM2 = -problem.model.rotationConstraints[1].balanceMoment
-hingeBalanceM1 = -problem.model.rotationConstraints[2].balanceMoment
-hingeBalanceM = sqrt(hingeBalanceM1^2+hingeBalanceM2^2)
+hingeBalanceM1 = -problem.model.rotationConstraints[1].balanceMoment
+hingeBalanceM2 = -problem.model.rotationConstraints[2].balanceMoment
+hingeBalanceM3 = -problem.model.rotationConstraints[3].balanceMoment
+hingeBalanceM = sqrt(hingeBalanceM1^2+hingeBalanceM2^2+hingeBalanceM3^2)
 
 # Display results
-println("Rotation at hinge node = $Δp2_bHingeNode deg")
+println("Rotation at hinge node = $(ypr[2]) deg")
 println("Displacement at hinge node = $u3HingeNode")
 println("Displacement at tip = $u3Tip")
 println("Moment necessary to impose the constraint at hinge node = $hingeBalanceM")

@@ -899,8 +899,10 @@ Transforms Wiener-Milenkovic parameters to Euler parameters of sequence 3-2-1 (y
 function WM_to_ypr(p)
 
     R,_ = rotation_tensor_WM(p)
+
+    yaw,pitch,roll = ypr_from_rotation_tensor(R)
     
-    return ypr_from_rotation_tensor(R)
+    return [yaw; pitch; roll]
 end
 export WM_to_ypr
 

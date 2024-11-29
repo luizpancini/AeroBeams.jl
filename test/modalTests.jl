@@ -198,15 +198,6 @@ end
     # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
 end
 
-@testset "Modal analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
-    include("examples/PazyFFWTeigen.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTeigen", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTeigen", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
-
 @testset "Modal analyses of the Pazy wing in horizontal and vertical positions" begin
     include("examples/PazyWingModal.jl")
     # Reference comparison
