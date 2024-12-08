@@ -17,12 +17,13 @@
     minimumLoadFactor::Float64
     maximumLoadFactorStep::Float64
     minimumLoadFactorStep::Float64
-    ρ::Float64
+    ρ::Real
     trackingLoadSteps::Bool
     displayStatus::Bool
     minConvRateAeroJacUpdate::Real
     minConvRateJacUpdate::Real
     alwaysUpdateJacobian::Bool
+    ΔλRelaxFactor::Real
 
     # Algorithm variables
     loadFactorStep::Float64 = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
@@ -49,20 +50,28 @@ Newton-Raphson nonlinear system solver constructor
 - `minimumLoadFactor::Float64` = minimum load factor
 - `maximumLoadFactorStep::Float64` = maximum load factor step
 - `minimumLoadFactorStep::Float64` = minimum load factor step
-- `ρ::Float64` = relaxation factor for trim variables
+- `ρ::Real` = relaxation factor for trim variables
 - `trackingLoadSteps::Bool` = flag to track partial load steps solutions
 - `displayStatus::Bool` = flag to display status
 - `minConvRateAeroJacUpdate::Real` = minimum convergence rate to skip computation of aerodynamic Jacobians
 - `minConvRateJacUpdate::Real` = minimum convergence rate to skip computation of structural Jacobians
 - `alwaysUpdateJacobian::Bool` = flag to update Jacobians on every iteration
+- `ΔλRelaxFactor` = relaxation factor for update of Lagrange multipliers
 """
-function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Real=1e6,maximumRelativeError::Real=1e6,initialLoadFactor::Real=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Float64=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Real=2.0,minConvRateJacUpdate::Real=2.0,alwaysUpdateJacobian::Bool=true)
+function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Real=1e6,maximumRelativeError::Real=1e6,initialLoadFactor::Real=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Real=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Real=2.0,minConvRateJacUpdate::Real=2.0,alwaysUpdateJacobian::Bool=true,ΔλRelaxFactor::Real=1)
 
-    @assert 0.5 <= ρ <= 1 "relaxation factor (ρ) must be between 0.5 and 1.0"
+    @assert maximumIterations > 1 "maximumIterations must be greater than 1"
+    @assert desiredIterations > 1 "desiredIterations must be greater than 1"
+    @assert 0 <= initialLoadFactor <= 1 "initialLoadFactor must be between 0 and 1"
+    @assert 0 < minimumLoadFactor <= 0.5 "minimumLoadFactor must be between 0 and 0.5"
+    @assert 0 < maximumLoadFactorStep <= 1 "maximumLoadFactorStep must be between 0 and 1"
+    @assert 0 < minimumLoadFactorStep <= 1 "minimumLoadFactorStep must be between 0 and 1"
+    @assert 0.5 <= ρ <= 1 "relaxation factor for trim variables (ρ) must be between 0.5 and 1.0"
+    @assert 0 < ΔλRelaxFactor <= 1 "relaxation factor (ΔλRelaxFactor) for Lagrange multipliers update must be between 0 and 1"
     @assert minConvRateAeroJacUpdate > 1 "minConvRateAeroJacUpdate to skip calculation of aerodynamic derivatives must be greater than 1"
     @assert minConvRateJacUpdate > 1 "minConvRateJacUpdate to skip update of Jacobian matrix must be greater than 1"
 
-    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRateAeroJacUpdate=minConvRateAeroJacUpdate,minConvRateJacUpdate=minConvRateJacUpdate,alwaysUpdateJacobian=alwaysUpdateJacobian)
+    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRateAeroJacUpdate=minConvRateAeroJacUpdate,minConvRateJacUpdate=minConvRateJacUpdate,alwaysUpdateJacobian=alwaysUpdateJacobian,ΔλRelaxFactor=ΔλRelaxFactor)
 
 end
 export create_NewtonRaphson
@@ -245,9 +254,9 @@ end
 # Solves the linear system of equations at current time step and load factor
 function solve_linear_system!(problem::Problem)
 
-    @unpack x,Δx,residual,jacobian,getLinearSolution = problem
-    @unpack systemOrder,nTrimVariables,hasRotationConstraints,rotationConstraints,rotationConstraintBalanceLoadBCid,forceScaling = problem.model
-    @unpack ρ = problem.systemSolver
+    @unpack x,Δx,residual,jacobian,getLinearSolution,σ = problem
+    @unpack systemOrder,nTrimVariables,hasRotationConstraints,hasHingeAxisConstraints,rotationConstraints,hingeAxisConstraints,rotationConstraintBalanceLoadBCid,hingeAxisConstraintBalanceLoadBCid,forceScaling = problem.model
+    @unpack ρ,ΔλRelaxFactor = problem.systemSolver
 
     # Issue warning for singular Jacobian in linear problems
     if getLinearSolution && nTrimVariables == 0 && det(jacobian) ≈ 0
@@ -259,9 +268,9 @@ function solve_linear_system!(problem::Problem)
     # Trim problem
     if problem isa TrimProblem
         Δx .= -pinv(Matrix(jacobian))*residual
-    # Problem with relative rotation constraints    
-    elseif hasRotationConstraints
-        Δx,Δλ = linear_solver_with_constraints(x,jacobian,residual,rotationConstraints)
+    # Problem with rotation and/or hinge axis constraints    
+    elseif hasRotationConstraints || hasHingeAxisConstraints
+        Δx,Δλ = linear_solver_with_constraints(x,jacobian,residual,rotationConstraints,hingeAxisConstraints,problem)
     # Regular problem    
     else
         try
@@ -281,8 +290,22 @@ function solve_linear_system!(problem::Problem)
 
     # Update balance loads of rotation constraints with Lagrange multipliers increment
     for (i,constraint) in enumerate(rotationConstraints)
-        problem.model.BCs[rotationConstraintBalanceLoadBCid[i]].values[1] = constraint.balanceMoment -= Δλ[i]
+        # Set value
+        problem.model.BCs[rotationConstraintBalanceLoadBCid[i]].values[1] = constraint.balanceMoment -= Δλ[i]*ΔλRelaxFactor/σ
+        # Update BC
         update_BC_data!(problem.model.BCs[rotationConstraintBalanceLoadBCid[i]],problem.timeNow)
+    end
+
+    # Update balance loads of hinge axis constraints with Lagrange multipliers increment and rotation data across the hinge
+    for (i,constraint) in enumerate(hingeAxisConstraints)
+        # Set values
+        nλ = isnothing(constraint.ΔpValue) ? 2 : 3
+        problem.model.BCs[hingeAxisConstraintBalanceLoadBCid[i]].values[1:nλ] = constraint.balanceMoment -= Δλ[length(rotationConstraints)+i:length(rotationConstraints)+i+nλ-1]*ΔλRelaxFactor/σ
+        # Update BC
+        update_BC_data!(problem.model.BCs[hingeAxisConstraintBalanceLoadBCid[i]],problem.timeNow)
+        # Update rotation parameters vector and angle of rotation across the hinge
+        constraint.Δp = x[constraint.slaveElementGlobalDOFs] - x[constraint.masterElementGlobalDOFs]
+        constraint.Δϕ = rotation_angle_limited(constraint.Δp)
     end
 
     @pack! problem = x,Δx,residual
@@ -337,25 +360,73 @@ end
 
 
 # Solves a linear, overdetermined system with constraints
-function linear_solver_with_constraints(x,jacobian,residual,rotationConstraints)
+function linear_solver_with_constraints(x,jacobian,residual,rotationConstraints,hingeAxisConstraints,problem)
 
     # Initialize arrays of overdetermined system
     A = copy(jacobian)
     b = copy(-residual)
 
-    # Size of nominal system (without constraint)
+    # Size of nominal system (without constraints)
     N = length(b)
 
-    # Loop constraints
+    # Loop rotation constraints
     for constraint in rotationConstraints
-        @unpack masterElemMasterGlobalDOF,slaveElemSlaveGlobalDOF = constraint
+        @unpack masterGlobalDOF,slaveGlobalDOF = constraint
         # Initialize current value of Lagrange multiplier coefficients array
         c = zeros(size(A,1))
-        # Adjust arrays by adding the equation: Δx[slaveElemSlaveGlobalDOF] - Δx[masterElemMasterGlobalDOF] = 0
-        c[slaveElemSlaveGlobalDOF] = 1
-        c[masterElemMasterGlobalDOF] = -1
+        # Adjust arrays by adding the equation: Δx[slaveGlobalDOF] - Δx[masterGlobalDOF] = 0
+        c[slaveGlobalDOF] = 1
+        c[masterGlobalDOF] = -1
         A = [A c; c' 0]
         b = [b; 0]
+    end
+
+    # Loop hinge axis constraints
+    for constraint in hingeAxisConstraints
+        @unpack masterElementGlobalDOFs,slaveElementGlobalDOFs,masterElementGlobalMasterDOF,masterElementGlobalSlaveDOFs,slaveElementGlobalMasterDOF,slaveElementGlobalSlaveDOFs,initialHingeAxis,updateHingeAxis,masterDOF,slaveDOFs,masterElementGlobalID,ΔpValue = constraint
+        # Get current rotation parameters and rotation tensor (from basis b to basis B, resolved in basis A) of master element of the hinge constraint
+        @unpack p = problem.model.elements[masterElementGlobalID].states
+        @unpack R = problem.model.elements[masterElementGlobalID]
+        # Update current hinge axis vector, resolved in basis A
+        currentHingeAxis = R*initialHingeAxis
+        # Compute derivatives of normalized hinge axis components w.r.t rotation parameters (of master element)
+        ∂hingeAxis∂pMasterElem = updateHingeAxis ? ForwardDiff.jacobian(x -> hinge_axis_components(x,initialHingeAxis,masterDOF), p) : zeros(3,3)
+        # Hinge axis for computations
+        hingeAxis = updateHingeAxis ? currentHingeAxis : initialHingeAxis
+        # Loop slave DOFs and set hinge axis constraints
+        for j=1:2
+            # Initialize current value of Lagrange multiplier coefficients array
+            c = zeros(size(A,1))            
+            # Adjust arrays by adding the equation: Δx[slaveElementGlobalSlaveDOFs[j]] - Δx[masterElementGlobalSlaveDOFs[j]] - ( Δx[slaveElementGlobalMasterDOF] - Δx[masterElementGlobalMasterDOF] ) * hingeAxis[slaveDOFs[j]]/hingeAxis[masterDOF] - ( x[slaveElementGlobalMasterDOF] - x[masterElementGlobalMasterDOF] ) * ∂hingeAxis∂pMasterElem[j,:] * Δx[masterElementGlobalDOFs] = 0
+            c[slaveElementGlobalSlaveDOFs[j]] = 1
+            c[masterElementGlobalSlaveDOFs[j]] = -1
+            c[slaveElementGlobalMasterDOF] = -hingeAxis[slaveDOFs[j]]/hingeAxis[masterDOF]
+            c[masterElementGlobalMasterDOF] = hingeAxis[slaveDOFs[j]]/hingeAxis[masterDOF]
+            c[masterElementGlobalDOFs] += -(x[slaveElementGlobalMasterDOF] - x[masterElementGlobalMasterDOF]) * ∂hingeAxis∂pMasterElem[slaveDOFs[j],:]
+            A = [A c; c' 0]
+            b = [b; 0]
+        end
+        # Set rotation norm constraint, if applicable
+        if !isnothing(ΔpValue) && !iszero(ΔpValue)
+            # Initialize current value of Lagrange multiplier coefficients array
+            c = zeros(size(A,1))
+            # Adjust arrays by adding the equation: (x[slaveElementGlobalDOFs] - x[masterElementGlobalDOFs])' * (Δx[slaveElementGlobalDOFs] - Δx[masterElementGlobalDOFs]) = 0
+            # Note: sign(ΔpValue) is used to yield the correct sign on Δλ
+            c[slaveElementGlobalDOFs] = sign(ΔpValue) * (x[slaveElementGlobalDOFs] - x[masterElementGlobalDOFs])
+            c[masterElementGlobalDOFs] = -sign(ΔpValue) * (x[slaveElementGlobalDOFs] - x[masterElementGlobalDOFs])
+            A = [A c; c' 0]
+            b = [b; 0]
+        elseif !isnothing(ΔpValue) && iszero(ΔpValue)
+            # Initialize current value of Lagrange multiplier coefficients array
+            c = zeros(size(A,1))
+            # Adjust arrays by adding the equation: Δx[slaveElementGlobalDOFs] - Δx[masterElementGlobalDOFs] = 0
+            c[slaveElementGlobalDOFs] .= 1
+            c[masterElementGlobalDOFs] .= -1
+            A = [A c; c' 0]
+            b = [b; 0]
+        end
+        # Pack data
+        @pack! constraint = currentHingeAxis
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments
@@ -366,6 +437,17 @@ function linear_solver_with_constraints(x,jacobian,residual,rotationConstraints)
     return Δx,Δλ
 end
 
+# Computes the current hinge axis normalized by its reference direction (masterDOF) value
+function hinge_axis_components(p,initialHingeAxis,masterDOF)
+
+    R,_ = rotation_tensor_WM(p)
+
+    currentHingeAxis = R*initialHingeAxis
+        
+    f = currentHingeAxis/currentHingeAxis[masterDOF]
+
+    return f
+end
 
 # Saves the solution at the current load factor
 function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})

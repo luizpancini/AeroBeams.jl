@@ -2,33 +2,33 @@ using AeroBeams
 
 # Hinge node, fold angle [rad] and flare angle [rad]
 hingeNode = 13
-foldAngle = -π/2*2/2
-flareAngle = π*20/180
+flareAngle = 10*π/180
 
 # Spring stiffness
-kSpring = 0
+kSpring = 0e-4
 
 # Root pitch angle
 θ = 7*pi/180
 
-# Airspeed
-U = 50
-
 # Gravity
 g = 9.8
 
+# Airspeed
+U = 20
+
 # Pazy wing with flared folding tip
-pazyFFWT = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,p0=[0;0;θ],g=g)
+PazyFFWTsteadyCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,p0=[0;0;θ],g=g)
 
 # System solver
 σ0 = 0.5
 σstep = 0.5
 maxIter = 100
-relTol = 1e-6
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumLoadFactorStep=σstep,maximumIterations=maxIter,relativeTolerance=relTol)
+relTol = 1e-9
+ΔλRelaxFactor = 1
+NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,minimumLoadFactorStep=σstep,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
 
 # Create and solve problem
-problem = create_SteadyProblem(model=pazyFFWT,systemSolver=NR)
+problem = create_SteadyProblem(model=PazyFFWTsteadyCoast,systemSolver=NR)
 solve!(problem)
 
 # Get outputs
@@ -47,22 +47,10 @@ M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOve
 α = [problem.aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:15]
 cn = [problem.aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
 
-# Compute rotations, displacement and balance moment at the hinge node
-Δp_WMHingeNode = [p1[2*hingeNode]-p1[2*hingeNode-2]; p2[2*hingeNode]-p2[2*hingeNode-2]; p3[2*hingeNode]-p3[2*hingeNode-2]]
-R,_ = rotation_tensor_WM(Δp_WMHingeNode)
-yaw,pitch,roll = ypr_from_rotation_tensor(R,assumeNullYawInSingularity=true)
-hingeAngles = [yaw,pitch,roll]*180/π
-u3HingeNode = u3[2*hingeNode-1]
-hingeBalanceM2 = -problem.model.rotationConstraints[1].balanceMoment
-hingeBalanceM1 = -problem.model.rotationConstraints[2].balanceMoment
-hingeBalanceM3 = -problem.model.rotationConstraints[3].balanceMoment
-hingeBalanceM = sqrt(hingeBalanceM1^2+hingeBalanceM2^2+hingeBalanceM3^2)
+# Get rotation at the hinge node
+ΔϕHinge = problem.model.hingeAxisConstraints[1].Δϕ*180/π
 
 # Display results
-println("Twist rotation at hinge node = $(hingeAngles[3]) deg")
-println("OOP rotation at hinge node = $(hingeAngles[2]) deg")
-println("IP rotation at hinge node = $(hingeAngles[1]) deg")
-println("OOP displacement at hinge node = $u3HingeNode")
-println("Moment necessary to impose the hinge angle = $hingeBalanceM")
+println("Coast angle = $ΔϕHinge deg")
 
-println("Finished PazyFFWTsteady.jl")
+println("Finished PazyFFWTsteadyCoast.jl")

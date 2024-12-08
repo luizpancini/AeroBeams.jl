@@ -24,20 +24,17 @@ const I6 = Matrix(1.0*LinearAlgebra.I,6,6)
 Rounds the array or number to input tolerance (defaults to machine epsilon)
 
 # Arguments
-- `x` = array / number
+- `x` = array or number
 - `tol` = tolerance
 """
 function round_off!(x,tol=eps())
 
     if x isa Number
-        # Scale the number by dividing it by the tolerance
-        xScaled = x / tol
-        # Round the scaled value to the nearest integer
-        xScaledRounded = round(xScaled)
-        # Scale the rounded value back by multiplying by the tolerance
-        x = xScaledRounded * tol
+        x = round(x/tol)*tol
     else
-        x[abs.(x).<tol] .= 0.0
+        for i in eachindex(x)
+            x[i] = round(x[i]/tol)*tol
+        end
     end
 
     return x
@@ -104,6 +101,21 @@ function mul3(A1,A2,A3,b)
     
     return hcat(A1*b, A2*b, A3*b)
     
+end
+
+# Gets the ith component of the 3x3 identity matrix
+function a_i(i)
+
+    @assert i in [1,2,3]
+
+    if i==1
+        return a1
+    elseif i==2
+        return a2
+    elseif i==3
+        return a3
+    end
+
 end
 
 
@@ -351,9 +363,9 @@ function rotation_parameter_scaling(p)
     pNorm = norm(p)
     
     # Scale according to norm
-    if pNorm > 4.0  
-        halfRotations = round(pNorm/8.0)
-        λ = 1.0 - 8.0 * halfRotations / pNorm
+    if pNorm > 4
+        halfRotations = round(pNorm/8)
+        λ = 1 - 8 * halfRotations / pNorm
     end
     
     # Scaled parameters
@@ -737,13 +749,30 @@ function rotation_angle(p)
     # Scale rotation parameters and get number of half rotations
     _,_,halfRotations,pNorm,_ = rotation_parameter_scaling(p)
 
-    if pNorm > 0 && count(!iszero,p/pNorm) == 1 && any(x -> x == -1.0, real.(p/pNorm))
-        θ_sign = -1
-    else
-        θ_sign = 1
-    end
+    # Highest absolute value component
+    greatestComp = argmax(abs.(p))
 
-    return θ_sign * (4*atan((pNorm-8*halfRotations)/4) + 2*π*halfRotations)
+    # Sign of rotation angle
+    signal = sign(p[greatestComp])
+
+    return signal * (4*atan((pNorm-8*halfRotations)/4) + 2π*halfRotations)
+
+end
+
+
+# Computes the rotation angle (in the range -360 to 360 degrees) given the Wiener-Milenkovic rotation parameters
+function rotation_angle_limited(p)
+
+    # Scale rotation parameters and get number of half rotations
+    _,_,halfRotations,pNorm,_ = rotation_parameter_scaling(p)
+
+    # Highest absolute value component
+    greatestComp = argmax(abs.(p))
+
+    # Sign of rotation angle
+    signal = sign(p[greatestComp])
+
+    return signal * (4*atan((pNorm-8*halfRotations)/4))
 
 end
 
@@ -920,6 +949,27 @@ function ypr_to_WM(p)
     return rotation_parameters_WM(rotation_tensor_E321(p))
 end
 export ypr_to_WM
+
+
+"""
+    rotation_between_WM(p1,p2)
+
+Computes the Wiener-Milenkovic parameters describing the rotation from p1 to p2, i.e., p12 such that R2(p2) = R12(p12)*R1(p1)
+
+# Arguments
+- `p1` = initial rotation parameters
+- `p2` = final rotation parameters
+"""
+function rotation_between_WM(p1,p2)
+
+    R1,_ = rotation_tensor_WM(p1)
+    R2,_ = rotation_tensor_WM(p2)
+    R12 = R2*R1'
+    p12 = rotation_parameters_WM(R12)
+
+    return p12
+end
+export rotation_between_WM
 
 
 """

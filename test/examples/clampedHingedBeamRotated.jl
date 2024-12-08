@@ -16,12 +16,18 @@ p_b = ypr_to_WM([0;θ;0])
 R0 = rotation_tensor_E321([α;β;0])
 p_A = R0 * p_b
 
+# Aerodynamic surface (for better visualization only, no aerodynamics involved)
+airfoil = deepcopy(NACA0018)
+chord = 0.1
+normSparPos = 0.25
+surf = create_AeroSurface(airfoil=airfoil,c=chord,normSparPos=normSparPos)
+
 # Beam 
 L = 1
 EIy = 1
 nElem = 20
 hingeNode = div(nElem,2)+1
-beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingeNode],hingedNodesDoF=[[true,true,true]],rotationParametrization="E321",p0=[α;β;0])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingeNode],hingedNodesDoF=[[true,true,true]],rotationParametrization="E321",p0=[α;β;0],aeroSurface=surf)
 
 # Rotation constraints
 rotationConstraints = Vector{RotationConstraint}()
@@ -82,7 +88,7 @@ hingeBalanceM3 = -problem.model.rotationConstraints[3].balanceMoment
 hingeBalanceM = sqrt(hingeBalanceM1^2+hingeBalanceM2^2+hingeBalanceM3^2)
 
 # Display results
-println("Rotation at hinge node = $(ypr[2]) deg")
+println("Rotation at hinge node: yaw = $(ypr[1]) deg, pitch = $(ypr[2]) deg, roll = $(ypr[3])")
 println("Displacement at hinge node = $u3HingeNode")
 println("Displacement at tip = $u3Tip")
 println("Moment necessary to impose the constraint at hinge node = $hingeBalanceM")

@@ -150,8 +150,10 @@ function create_SteadyProblem(; model::Model,systemSolver::SystemSolver=create_N
         @assert length(x0) == model.systemOrder
         problem.initialStatesInput = true
         problem.x = x0*problem.σ
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
     end
 
     # Initialize system arrays with correct size
@@ -239,8 +241,10 @@ function create_TrimProblem(; model::Model,systemSolver::SystemSolver=create_New
         @assert length(x0) == model.systemOrder+model.nTrimVariables
         problem.initialStatesInput = true
         problem.x = x0*problem.σ
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
     end
 
     # Initialize system arrays with correct size
@@ -352,8 +356,10 @@ function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_Ne
         @assert length(x0) == model.systemOrder
         problem.initialStatesInput = true
         problem.x = x0*problem.σ
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
     end
 
     # Initialize system arrays
@@ -503,8 +509,10 @@ function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_
         problem.Δt = Inf64
         update_states!(problem)
         problem.Δt = Δt
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_rotation_and_hinge_axis_constraints!(problem)
         update_initial_aero_states!(problem,preInitialization=true)
     end   
 
@@ -529,7 +537,7 @@ export create_DynamicProblem
 function set_initial_states!(problem::Problem)
 
     @unpack x,model,σ,initialStatesInput = problem
-    @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling,rotationConstraints = model
+    @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling,rotationConstraints,hingeAxisConstraints = model
 
     # Skip if states were input
     if initialStatesInput
@@ -575,14 +583,49 @@ function set_initial_states!(problem::Problem)
     # Scale by initial load factor
     x *= σ
 
+    @pack! problem = x
+
+end
+
+
+# Sets the initial rotation and hinge axis constraints
+function set_initial_rotation_and_hinge_axis_constraints!(problem::Problem)
+
+    @unpack x,model = problem
+    @unpack rotationConstraints,hingeAxisConstraints = model
+
     # Set rotation constraints
     for constraint in rotationConstraints
-        @unpack masterElemMasterGlobalDOF,slaveElemSlaveGlobalDOF,value = constraint
-        x[slaveElemSlaveGlobalDOF] = x[masterElemMasterGlobalDOF] + value
+        @unpack masterGlobalDOF,slaveGlobalDOF,value = constraint
+        x[slaveGlobalDOF] = x[masterGlobalDOF] + value
+    end
+
+    # Set hinge axis constraints
+    for constraint in hingeAxisConstraints
+        @unpack masterElementGlobalDOFs,masterElementGlobalMasterDOF,masterElementGlobalSlaveDOFs,slaveElementGlobalMasterDOF,slaveElementGlobalSlaveDOFs,initialHingeAxis,updateHingeAxis,masterDOF,slaveDOFs,foldGuessValue,masterElementGlobalDOFs,slaveElementGlobalDOFs,ΔpValue = constraint
+        # Get current rotation tensor (from basis b to basis B, resolved in basis A) of master element of the hinge constraint
+        R,_ = rotation_tensor_WM(x[masterElementGlobalDOFs])
+        # Update current hinge axis vector, resolved in basis A
+        currentHingeAxis = R*initialHingeAxis
+        # Hinge axis for computations
+        hingeAxis = updateHingeAxis ? currentHingeAxis : initialHingeAxis
+        # Update initial value of master DOF on slave element with constrained or guess value, if applicable
+        if !isnothing(ΔpValue)
+            x[slaveElementGlobalMasterDOF] = x[masterElementGlobalMasterDOF] + sign(ΔpValue) * sqrt(ΔpValue^2-(x[slaveElementGlobalSlaveDOFs[1]]-x[masterElementGlobalSlaveDOFs[1]])^2-(x[slaveElementGlobalSlaveDOFs[2]]-x[masterElementGlobalSlaveDOFs[2]])^2) * hingeAxis[masterDOF]
+        elseif !isnothing(foldGuessValue)
+            x[slaveElementGlobalMasterDOF] = x[masterElementGlobalMasterDOF] + foldGuessValue
+        end
+        # Values of slave DOFs are such that rotation about the hinge axis is initially respected
+        x[slaveElementGlobalSlaveDOFs] .= x[masterElementGlobalSlaveDOFs] + (x[slaveElementGlobalMasterDOF] - x[masterElementGlobalMasterDOF]) * hingeAxis[slaveDOFs]/hingeAxis[masterDOF]
+        # Update rotation parameters vector and angle of rotation across the hinge
+        Δp = x[slaveElementGlobalDOFs] - x[masterElementGlobalDOFs]
+        Δϕ = rotation_angle_limited(Δp)
+        # Pack data
+        @pack! constraint = currentHingeAxis,Δp,Δϕ
     end
 
     @pack! problem = x
-
+    
 end
 
 
@@ -1087,6 +1130,7 @@ function solve_initial_dynamic!(problem::Problem)
     # Set initial states
     problemCopy.initialStatesInput = false
     set_initial_states!(problemCopy)
+    set_initial_rotation_and_hinge_axis_constraints!(problemCopy)
 
     # Initialize system arrays with correct size
     initialize_system_arrays!(problemCopy)

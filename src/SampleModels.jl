@@ -304,24 +304,27 @@ Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 - `GAy::Real` = shear stiffness in the x2 direction
 - `GAz::Real` = shear stiffness in the x3 direction
 - `hingeNode::Int64` = hinge node
-- `foldAngle::Real` = fold angle [rad]
+- `foldAngle::Union{Real,Nothing}` = fold angle [rad]
 - `flareAngle::Real` = flare angle [rad]
 - `kSpring::Real` = stiffness of the hinge
 - `g::Real` = local acceleration of gravity
 - `altitude::Real` = altitude
 - `airspeed::Real` = local airspeed
 """
-function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,foldAngle::Real=0,flareAngle::Real=0,kSpring::Real=1e6,g::Real=9.80665,altitude::Real=0,airspeed::Real=0)
+function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real=0,kSpring::Real=1e-4,g::Real=9.80665,altitude::Real=0,airspeed::Real=0)
 
     # Validate
     @assert 2 <= hingeNode <= 15 "hingeNode must be between 2 and 15"
     if !isnothing(foldAngle)
         @assert -π < foldAngle <= π "set foldAngle between -π and π (rad) "
     end
-    @assert 0 <= flareAngle <= π/2 "set flareAngle between 0 and π/2 (rad)"
+    @assert 0 <= flareAngle < π/4 "set flareAngle between 0 and π/4 (rad)"
     @assert kSpring >= 0
     @assert g >= 0
     @assert airspeed >= 0
+
+    # Flags
+    foldAngleIsInput = !isnothing(foldAngle)
 
     # Atmosphere
     atmosphere = standard_atmosphere(altitude)
@@ -355,38 +358,34 @@ function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy
     update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
 
     # Tip loss factor
-    τ = tip_loss_factor_Pazy(p0[3],airspeed)
+    τ = tip_loss_factor_Pazy(p0[3]*180/π,airspeed)
 
     # Aerodynamic surface
     surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=τ)
 
     # Beams 
-    beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[[flareAngle > 0; true; flareAngle > 0]])
+    beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[trues(3)])
 
-    # Hinge twist angle (arising from flare angle)
-    γ = flareAngle*foldAngle/(π/2)
+    # Hinge axis (defined in the local, undeformed beam basis)
+    localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * a2
 
-    # Equivalent Wiener-Milenkovic rotation parameters from fold and flare angles
-    p = ypr_to_WM([0,foldAngle,γ])
+    # Set the reference DOF as the greatest component of hinge axis
+    refDOF = argmax(abs.(localHingeAxis))
 
-    # Set relative rotation constraints from fold and flare angle, if applicable
-    rotationConstraints = Vector{RotationConstraint}()
-    # Rotation constraint for fold angle
-    foldAngleRotationConstraint = create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=2,slaveDOF=2,value=p[2],loadBalanceLocalNode=hingeNode+1)
-    # Add to constraints
-    push!(rotationConstraints,foldAngleRotationConstraint)
-    if flareAngle > 0
-        # Rotation constraint for twist angle originating from flare angle
-        flareAngleRotationConstraint = create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=1,slaveDOF=1,value=p[1],loadBalanceLocalNode=hingeNode+1)
-        # Rotation constraint for null IP rotation
-        IPRotationConstraint = create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=3,slaveDOF=3,value=p[3],loadBalanceLocalNode=hingeNode+1)
-        # Add to constraints
-        push!(rotationConstraints,flareAngleRotationConstraint,IPRotationConstraint)
-    end
+    # Guess value for fold (applicable only when fold angle is unknown)
+    foldGuessValue = foldAngleIsInput ? nothing : 0
+
+    # Set hinge axis constraint
+    hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1,foldGuessValue=foldGuessValue)
+
+    # Set fold angle constraint, if applicable
+    foldAngleConstraint = foldAngleIsInput ? create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=refDOF,slaveDOF=refDOF,value=4*tan(foldAngle/4)*hingeAxisConstraint.initialHingeAxis[refDOF],loadBalanceLocalNode=hingeNode+1) : Vector{RotationConstraint}()
+    
+    rotationConstraints = foldAngleIsInput ? [foldAngleConstraint] : Vector{RotationConstraint}()
 
     # OOP bending spring around hinge
     if kSpring > 0
-        spring = create_Spring(basis="A",elementsIDs=[inboardElem,outboardElem],nodesSides=[1,2],kOOPBending=kSpring)
+        spring = create_Spring(basis="A",elementsIDs=[inboardElem,outboardElem],nodesSides=[1,2],kTwist=kSpring,kIPBending=kSpring,kOOPBending=kSpring)
         add_spring_to_beams!(beams=[beam,beam],spring=spring)
     end
 
@@ -394,7 +393,7 @@ function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy
     clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
     # Wing model
-    pazyFFWT = create_Model(name="pazyFFWT",beams=[beam],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=rotationConstraints,units=create_UnitsSystem(frequency="Hz"))
+    pazyFFWT = create_Model(name="pazyFFWT",beams=[beam],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=rotationConstraints,hingeAxisConstraints=[hingeAxisConstraint],units=create_UnitsSystem(frequency="Hz"))
 
     return pazyFFWT
 end

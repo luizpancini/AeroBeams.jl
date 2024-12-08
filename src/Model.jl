@@ -25,6 +25,7 @@
     trimLoadsLinks::Vector{TrimLoadsLink}
     flapLinks::Vector{FlapLink}
     rotationConstraints::Vector{RotationConstraint}
+    hingeAxisConstraints::Vector{HingeAxisConstraint}
 
     # Secondary (outputs from model creation)
     # ---------------------------------------
@@ -47,6 +48,8 @@
     nTrimVariables::Int64 = 0
     hasRotationConstraints::Bool = false
     rotationConstraintBalanceLoadBCid::Vector{Int64} = Vector{Int64}()
+    hasHingeAxisConstraints::Bool = false
+    hingeAxisConstraintBalanceLoadBCid::Vector{Int64} = Vector{Int64}()
     mass::Real = 0
     centerOfMass::Vector{<:Real} = zeros(3)
     I::Vector{<:Real} = zeros(3)
@@ -79,11 +82,12 @@ Creates a model
 - `trimLoadsLinks::Vector{TrimLoadsLink}` = links between trim loads
 - `flapLinks::Vector{FlapLink}` = links between flapped surfaces
 - `rotationConstraints::Vector{RotationConstraint}` = rotation constraints
+- `hingeAxisConstraints::Vector{HingeAxisConstraints}` = hinge axis constraints
 """
-function create_Model(; name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Real}=zeros(3),gravityVector::Vector{<:Real}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,altitude::Union{Nothing,Real}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}())
+function create_Model(; name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Real}=zeros(3),gravityVector::Vector{<:Real}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,altitude::Union{Nothing,Real}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),rotationConstraints::Vector{RotationConstraint}=Vector{RotationConstraint}(),hingeAxisConstraints::Vector{HingeAxisConstraint}=Vector{HingeAxisConstraint}())
     
     # Initialize 
-    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,rotationConstraints=rotationConstraints)
+    self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,rotationConstraints=rotationConstraints,hingeAxisConstraints=hingeAxisConstraints)
 
     # Update  
     update_model!(self)
@@ -127,8 +131,11 @@ function update_model!(model::Model)
     # Update the global IDs of the springs' nodes
     update_spring_nodes_ids!(model)
 
-    # Initialize the balance loads for the rotation constraint
+    # Initialize the balance loads for the rotation constraints
     initialize_rotation_constraints_balance_load!(model)
+
+    # Initialize the balance loads for the hinge axis constraints
+    initialize_hinge_axis_constraints_balance_load!(model)
 
     # Set BCs on model 
     set_BCed_nodes!(model)
@@ -145,8 +152,11 @@ function update_model!(model::Model)
     # Get system indices
     get_system_indices!(model)
 
-    # Update relative rotation constraint data
-    update_relative_rotation_constraint_data!(model)
+    # Update rotation constraint data
+    update_rotation_constraint_data!(model)
+
+    # Update hinge axis constraint data
+    update_hinge_axis_constraint_data!(model)
 
     return model
 
@@ -321,7 +331,7 @@ end
 # Loads the assembly of beams into the model
 function assemble_model!(model::Model)
 
-    @unpack beams,rotationConstraints = model
+    @unpack beams,rotationConstraints,hingeAxisConstraints = model
 
     # Reset to a model empty of beams and elements
     model.beams = Vector{Beam}()
@@ -469,7 +479,7 @@ function assemble_model!(model::Model)
     nNodesTotal = maximum(vcat(elementNodes...))
 
     # Get force scaling
-    forceScaling = length(rotationConstraints) > 0 ? 1 : force_scaling(C)
+    forceScaling = ( !isempty(rotationConstraints) || !isempty(hingeAxisConstraints) ) ? 1 : force_scaling(C)
 
     @pack! model = beams,nElementsTotal,nNodesTotal,elementNodes,r_n,forceScaling
 
@@ -865,33 +875,41 @@ end
 # Initializes the balance loads on the respectively assigned rotation constraint nodes
 function initialize_rotation_constraints_balance_load!(model)
 
-    @unpack rotationConstraints,beams,BCs = model
+    @unpack rotationConstraints,BCs = model
 
     # Initialize array with IDs of the balance load BCs
     rotationConstraintBalanceLoadBCid = Vector{Int64}()
 
     # Loop rotation constraints
     for (i,rotationConstraint) in enumerate(rotationConstraints)
-        @unpack beam,loadBalanceLocalNode,slaveDOF = rotationConstraint
-        # Set load type
-        if slaveDOF == 1
-            loadType = "M1A"
-        elseif slaveDOF == 2
-            loadType = "M2A"
-        elseif slaveDOF == 3
-            loadType = "M3A"
-        end
-        # Loop beams
-        for currentBeam in beams
-            # Add balance moment to BCs and set ID of that BC
-            if currentBeam == beam
-                push!(BCs,create_BC(name=string("balanceMoment",i),beam=beam,node=loadBalanceLocalNode,types=[loadType],values=[0.0]))
-                push!(rotationConstraintBalanceLoadBCid,length(BCs))
-            end
-        end
+        @unpack beam,loadBalanceLocalNode,balanceMomentType = rotationConstraint       
+        # Add balance moment to BCs and set ID of that BC
+        push!(BCs,create_BC(name=string("balanceMoment",i),beam=beam,node=loadBalanceLocalNode,types=[balanceMomentType],values=[0.0]))
+        push!(rotationConstraintBalanceLoadBCid,length(BCs))
     end
 
     @pack! model = BCs,rotationConstraintBalanceLoadBCid
+    
+end
+
+
+# Initializes the balance loads on the respectively assigned hinge axis constraint nodes
+function initialize_hinge_axis_constraints_balance_load!(model)
+
+    @unpack hingeAxisConstraints,BCs = model
+
+    # Initialize array with IDs of the balance load BCs
+    hingeAxisConstraintBalanceLoadBCid = Vector{Int64}()
+
+    # Loop hinge axis constraints
+    for (i,hingeAxisConstraint) in enumerate(hingeAxisConstraints)
+        @unpack beam,loadBalanceLocalNode,balanceMomentTypes,balanceMoment = hingeAxisConstraint
+        # Add balance moment to BCs and set ID of that BC
+        push!(BCs,create_BC(name=string("balanceMoment",i),beam=beam,node=loadBalanceLocalNode,types=balanceMomentTypes,values=balanceMoment))
+        push!(hingeAxisConstraintBalanceLoadBCid,length(BCs))
+    end
+
+    @pack! model = BCs,hingeAxisConstraintBalanceLoadBCid
     
 end
 
@@ -1007,7 +1025,7 @@ end
 # Gets the indices (for equations and DOFs) of the system of equations
 function get_system_indices!(model::Model)
 
-    @unpack beams,elements,nNodesTotal,specialNodes,specialNodesGlobalIDs,BCedNodes,trimLoadsLinks,flapLinks,rotationConstraints = model
+    @unpack beams,elements,nNodesTotal,specialNodes,specialNodesGlobalIDs,BCedNodes,trimLoadsLinks,flapLinks = model
     
     ## Initialize flags
     #---------------------------------------------------------------------------
@@ -1352,9 +1370,9 @@ end
 
 
 # Updates the aggregate data of relative rotation constraints
-function update_relative_rotation_constraint_data!(model::Model)
+function update_rotation_constraint_data!(model::Model)
 
-    @unpack rotationConstraints,elements,systemOrder = model
+    @unpack rotationConstraints = model
 
     # Update flag for relative rotation constraints
     model.hasRotationConstraints = length(rotationConstraints) > 0
@@ -1362,23 +1380,42 @@ function update_relative_rotation_constraint_data!(model::Model)
     # Loop rotation constraints
     for constraint in rotationConstraints
         @unpack beam,masterElementLocalID,slaveElementLocalID,masterDOF,slaveDOF = constraint
-        # Initialize global IDs of elements
-        masterElementGlobalID,slaveElementGlobalID = 0,0
-        # Loop elements
-        for element in elements
-            # Set global IDs
-            if element.parent == beam && element.localID == masterElementLocalID
-                masterElementGlobalID = element.globalID
-            end
-            if element.parent == beam && element.localID == slaveElementLocalID
-                slaveElementGlobalID = element.globalID
-            end
-        end
+        # Get global IDs of elements
+        masterElementGlobalID = beam.elements[masterElementLocalID].globalID
+        slaveElementGlobalID = beam.elements[slaveElementLocalID].globalID
         # Set global DOFs
-        masterElemMasterGlobalDOF = elements[masterElementGlobalID].DOF_p[masterDOF]
-        slaveElemSlaveGlobalDOF = elements[slaveElementGlobalID].DOF_p[slaveDOF]
+        masterGlobalDOF = model.elements[masterElementGlobalID].DOF_p[masterDOF]
+        slaveGlobalDOF = model.elements[slaveElementGlobalID].DOF_p[slaveDOF]
         # Pack data
-        @pack! constraint = masterElementGlobalID,slaveElementGlobalID,masterElemMasterGlobalDOF,slaveElemSlaveGlobalDOF
+        @pack! constraint = masterGlobalDOF,slaveGlobalDOF
+    end
+
+end
+
+
+# Updates the aggregate data of hinge axis constraints
+function update_hinge_axis_constraint_data!(model::Model)
+
+    @unpack hingeAxisConstraints = model
+
+    # Update flag for hinge axis constraints
+    model.hasHingeAxisConstraints = length(hingeAxisConstraints) > 0
+
+    # Loop hinge axis constraints
+    for constraint in hingeAxisConstraints
+        @unpack beam,masterElementLocalID,slaveElementLocalID,masterDOF,slaveDOFs = constraint
+        # Get global ID of elements
+        masterElementGlobalID = beam.elements[masterElementLocalID].globalID
+        slaveElementGlobalID = beam.elements[slaveElementLocalID].globalID
+        # Set global DOFs
+        masterElementGlobalDOFs = model.elements[masterElementGlobalID].DOF_p
+        slaveElementGlobalDOFs = model.elements[slaveElementGlobalID].DOF_p
+        masterElementGlobalMasterDOF = masterElementGlobalDOFs[masterDOF]
+        masterElementGlobalSlaveDOFs = masterElementGlobalDOFs[slaveDOFs]
+        slaveElementGlobalMasterDOF = slaveElementGlobalDOFs[masterDOF]
+        slaveElementGlobalSlaveDOFs = slaveElementGlobalDOFs[slaveDOFs]
+        # Pack data
+        @pack! constraint = masterElementGlobalID,slaveElementGlobalID,masterElementGlobalMasterDOF,masterElementGlobalSlaveDOFs,slaveElementGlobalMasterDOF,slaveElementGlobalSlaveDOFs,masterElementGlobalDOFs,slaveElementGlobalDOFs
     end
 
 end
