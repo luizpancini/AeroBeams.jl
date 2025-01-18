@@ -1,8 +1,8 @@
-using AeroBeams
+using AeroBeams, LinearAlgebra
 
 # Hinge node, fold angle [rad] and flare angle [rad]
 hingeNode = 13
-foldAngle = -90*π/180
+foldAngle = -45*π/180
 flareAngle = 20*π/180
 
 # Spring stiffness
@@ -21,10 +21,10 @@ URange = collect(1:1:60)
 usePreviousSolution = true
 
 # Initialize model
-PazyFFWTsteadyURangeFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,p0=[0;0;θ],g=g)
+PazyFFWTsteadyURangeFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
 
 # System solver
-σ0 = 1/2
+σ0 = 1
 maxIter = 100
 relTol = 1e-8
 ΔλRelaxFactor = 1/2
@@ -48,15 +48,16 @@ p3 = Array{Vector{Float64}}(undef,length(URange))
 M2 = Array{Vector{Float64}}(undef,length(URange))
 α = Array{Vector{Float64}}(undef,length(URange))
 cn = Array{Vector{Float64}}(undef,length(URange))
-ΔpHinge = Array{Vector{Float64}}(undef,length(URange))
-ΔϕHinge = Array{Float64}(undef,length(URange))
+pHinge = Array{Vector{Float64}}(undef,length(URange))
+ϕHinge = Array{Float64}(undef,length(URange))
+hingeMoment = Array{Float64}(undef,length(URange))
 problem = Array{SteadyProblem}(undef,length(URange))
 
 # Loop airspeed
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s")
     # Update airspeed
-    model = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,p0=[0;0;θ],g=g,airspeed=U)
+    model = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g,airspeed=U)
     # Set initial guess solution as the one from previous airspeed
     if usePreviousSolution
         x0 = (i==1) ? zeros(0) : problem[i-1].x
@@ -76,8 +77,9 @@ for (i,U) in enumerate(URange)
     M2[i] = vcat([vcat(problem[i].nodalStatesOverσ[end][e].M_n1[2],problem[i].nodalStatesOverσ[end][e].M_n2[2]) for e in 1:15]...)
     α[i] = [problem[i].aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:15]
     cn[i] = [problem[i].aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
-    ΔpHinge[i] = problem[i].model.hingeAxisConstraints[1].Δp
-    ΔϕHinge[i] = problem[i].model.hingeAxisConstraints[1].Δϕ*180/π
+    pHinge[i] = problem[i].model.hingeAxisConstraints[1].pH
+    ϕHinge[i] = problem[i].model.hingeAxisConstraints[1].ϕ*180/π
+    hingeMoment[i] = norm(problem[i].model.hingeAxisConstraints[1].balanceMoment)
 end
 
 println("Finished PazyFFWTsteadyURangeFixedFold.jl")

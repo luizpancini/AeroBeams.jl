@@ -73,8 +73,8 @@ display(plt4)
 savefig(string(absPath,"/PazyFFWTsteadyURangeCoast_deltaphinge.pdf"))
 
 # Coast angle
-plt5 = plot(xlabel="Airspeed [m/s]", ylabel="Coast angle [deg]", ylims=[-180,180], yticks=[-180,-135,-90,-45,0,45,90,135,180])
-plot!(URange, -ΔϕHinge, lw=lw, c=:black, label=false)
+plt5 = plot(xlabel="Airspeed [m/s]", ylabel="Coast angle [deg]", ylims=[-90,90], yticks=-90:45:90)
+plot!(URange, -ϕHinge, lw=lw, c=:black, label=false)
 display(plt5)
 savefig(string(absPath,"/PazyFFWTsteadyURangeCoast_deltaphihinge.pdf"))
 

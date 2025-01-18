@@ -85,7 +85,7 @@ function solve_NewtonRaphson!(problem::Problem)
 
     # Reset converged solution flag and load factor step
     convergedPartialSolution = convergedFinalSolution = false
-    loadFactorStep = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
+    loadFactorStep = max(min(maximumLoadFactorStep,problem.σ),minimumLoadFactorStep)
     @pack! problem.systemSolver = convergedPartialSolution,convergedFinalSolution,loadFactorStep
 
     ## Load steps
@@ -94,13 +94,12 @@ function solve_NewtonRaphson!(problem::Problem)
     while !convergedFinalSolution   
         @unpack x,residual,σ = problem
         # Update loadstep
-        loadstep += 1 
+        loadstep += 1
         # Initialize iteration count and this loadstep's known states, residual and load factor
         iter = 0
         xKnown = deepcopy(x)
         residualKnown = deepcopy(residual)
-        BCsKnown = deepcopy(problem.model.BCs)
-        specialNodesKnown = deepcopy(problem.model.specialNodes)
+        modelKnown = deepcopy(problem.model)
         loadFactorKnown = loadstep == 1 ? 0.0 : deepcopy(σ)
         ϵ_abs_previous = 1
         # Reset partial convergence flag
@@ -167,13 +166,11 @@ function solve_NewtonRaphson!(problem::Problem)
             x = xKnown 
             residual = residualKnown
             σ = loadFactorKnown
-            BCs = BCsKnown
-            specialNodes = specialNodesKnown
+            model = modelKnown
             if displayStatus
                 println("Unconverged, reducing load factor and trying again...")
             end
-            @pack! problem = x,residual,σ 
-            # @pack! problem.model = BCs,specialNodes
+            @pack! problem = x,residual,σ,model
         # In case of converged partial solution    
         else
             # Update states on element level
@@ -199,12 +196,8 @@ function solve_NewtonRaphson!(problem::Problem)
                     element.aero = reset_dual_numbers(element.aero)
                 end
             end
-            # Get inertia matrix in eigen and trim problems, if applicable
-            if problem isa EigenProblem || (problem isa TrimProblem && problem.getInertiaMatrix)
-                for element in problem.model.elements
-                    element_inertia!(problem,problem.model,element)
-                end
-            end
+            # Assemble inertia matrix in eigen and trim problems, if applicable
+            assemble_inertia_matrix!(problem)
             # Update loads extrema
             update_maximum_aero_loads!(problem)
         end
@@ -225,6 +218,9 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
     if problem isa TrimProblem
         problem.jacobian .= 0
     end
+
+    # Reset spring loads' Jacobians
+    reset_spring_loads_jacobians!(problem,specialNodes)
 
     # Update states of the elements first (for better convergence with relative rotation constraints)
     for element in elements
@@ -251,11 +247,29 @@ function assemble_system_arrays!(problem::Problem,x::Vector{Float64}=problem.x)
 end
 
 
+# Assembles the inertia matrix
+function assemble_inertia_matrix!(problem::Problem)
+
+    # Assemble only for eigenproblems and trim problems, when required
+    if problem isa EigenProblem || (problem isa TrimProblem && problem.getInertiaMatrix)
+        # Get contributions from each element
+        for element in problem.model.elements
+            element_inertia!(problem,problem.model,element)
+        end
+        # Set contributions from hinge constraint equations
+        if problem.model.hasHingeAxisConstraints
+            augmented_inertia_matrix!(problem)
+        end
+    end
+
+    return nothing
+end
+
 # Solves the linear system of equations at current time step and load factor
 function solve_linear_system!(problem::Problem)
 
     @unpack x,Δx,residual,jacobian,getLinearSolution,σ = problem
-    @unpack systemOrder,nTrimVariables,hasRotationConstraints,hasHingeAxisConstraints,rotationConstraints,hingeAxisConstraints,rotationConstraintBalanceLoadBCid,hingeAxisConstraintBalanceLoadBCid,forceScaling = problem.model
+    @unpack systemOrder,nTrimVariables,hasHingeAxisConstraints,hingeAxisConstraints,hingeAxisConstraintBalanceLoadBCid,forceScaling = problem.model
     @unpack ρ,ΔλRelaxFactor = problem.systemSolver
 
     # Issue warning for singular Jacobian in linear problems
@@ -268,9 +282,9 @@ function solve_linear_system!(problem::Problem)
     # Trim problem
     if problem isa TrimProblem
         Δx .= -pinv(Matrix(jacobian))*residual
-    # Problem with rotation and/or hinge axis constraints    
-    elseif hasRotationConstraints || hasHingeAxisConstraints
-        Δx,Δλ = linear_solver_with_constraints(x,jacobian,residual,rotationConstraints,hingeAxisConstraints,problem)
+    # Problem with hinge axis constraints    
+    elseif hasHingeAxisConstraints
+        Δx,Δλ = linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisConstraints)
     # Regular problem    
     else
         try
@@ -288,24 +302,27 @@ function solve_linear_system!(problem::Problem)
     x[1:systemOrder] .+= Δx[1:systemOrder]
     x[systemOrder+1:systemOrder+nTrimVariables] .+= ρ*Δx[systemOrder+1:systemOrder+nTrimVariables]
 
-    # Update balance loads of rotation constraints with Lagrange multipliers increment
-    for (i,constraint) in enumerate(rotationConstraints)
-        # Set value
-        problem.model.BCs[rotationConstraintBalanceLoadBCid[i]].values[1] = constraint.balanceMoment -= Δλ[i]*ΔλRelaxFactor/σ
-        # Update BC
-        update_BC_data!(problem.model.BCs[rotationConstraintBalanceLoadBCid[i]],problem.timeNow)
-    end
-
     # Update balance loads of hinge axis constraints with Lagrange multipliers increment and rotation data across the hinge
     for (i,constraint) in enumerate(hingeAxisConstraints)
         # Set values
-        nλ = isnothing(constraint.ΔpValue) ? 2 : 3
-        problem.model.BCs[hingeAxisConstraintBalanceLoadBCid[i]].values[1:nλ] = constraint.balanceMoment -= Δλ[length(rotationConstraints)+i:length(rotationConstraints)+i+nλ-1]*ΔλRelaxFactor/σ
+        problem.model.BCs[hingeAxisConstraintBalanceLoadBCid[i]].values = constraint.balanceMoment -= Δλ[i:i+length(constraint.balanceMoment)-1]*ΔλRelaxFactor/σ
         # Update BC
         update_BC_data!(problem.model.BCs[hingeAxisConstraintBalanceLoadBCid[i]],problem.timeNow)
-        # Update rotation parameters vector and angle of rotation across the hinge
-        constraint.Δp = x[constraint.slaveElementGlobalDOFs] - x[constraint.masterElementGlobalDOFs]
-        constraint.Δϕ = rotation_angle_limited(constraint.Δp)
+        # Unpack constraint data
+        @unpack rotationIsFixed,initialHingeAxis,masterElementGlobalDOFs,slaveElementGlobalDOFs = constraint
+        # Current rotation parameters of master and slave elements
+        pM = x[masterElementGlobalDOFs]
+        pS = x[slaveElementGlobalDOFs]
+        # Update current hinge axis, hinge rotation parameter vector, signed magnitude (value) and hinge angle
+        currentHingeAxis = current_hinge_axis(pM,initialHingeAxis)
+        pHValue = hinge_rotation_value(pM,pS,initialHingeAxis)
+        pH = hinge_rotation_parameters(pM,pS)
+        ϕ = rotation_angle_limited(pH)
+        # Pack data
+        @pack! constraint = currentHingeAxis,pH,ϕ
+        if !rotationIsFixed
+            @pack! constraint = pHValue
+        end
     end
 
     @pack! problem = x,Δx,residual
@@ -360,94 +377,67 @@ end
 
 
 # Solves a linear, overdetermined system with constraints
-function linear_solver_with_constraints(x,jacobian,residual,rotationConstraints,hingeAxisConstraints,problem)
-
-    # Initialize arrays of overdetermined system
-    A = copy(jacobian)
-    b = copy(-residual)
+function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisConstraints)
 
     # Size of nominal system (without constraints)
-    N = length(b)
+    N = length(residual)
 
-    # Loop rotation constraints
-    for constraint in rotationConstraints
-        @unpack masterGlobalDOF,slaveGlobalDOF = constraint
-        # Initialize current value of Lagrange multiplier coefficients array
-        c = zeros(size(A,1))
-        # Adjust arrays by adding the equation: Δx[slaveGlobalDOF] - Δx[masterGlobalDOF] = 0
-        c[slaveGlobalDOF] = 1
-        c[masterGlobalDOF] = -1
-        A = [A c; c' 0]
-        b = [b; 0]
-    end
+    # Initialize augmented arrays
+    augmentedJacobian = copy(jacobian)
+    augmentedResidual = copy(residual)
 
     # Loop hinge axis constraints
     for constraint in hingeAxisConstraints
-        @unpack masterElementGlobalDOFs,slaveElementGlobalDOFs,masterElementGlobalMasterDOF,masterElementGlobalSlaveDOFs,slaveElementGlobalMasterDOF,slaveElementGlobalSlaveDOFs,initialHingeAxis,updateHingeAxis,masterDOF,slaveDOFs,masterElementGlobalID,ΔpValue = constraint
-        # Get current rotation parameters and rotation tensor (from basis b to basis B, resolved in basis A) of master element of the hinge constraint
-        @unpack p = problem.model.elements[masterElementGlobalID].states
-        @unpack R = problem.model.elements[masterElementGlobalID]
-        # Update current hinge axis vector, resolved in basis A
-        currentHingeAxis = R*initialHingeAxis
-        # Compute derivatives of normalized hinge axis components w.r.t rotation parameters (of master element)
-        ∂hingeAxis∂pMasterElem = updateHingeAxis ? ForwardDiff.jacobian(x -> hinge_axis_components(x,initialHingeAxis,masterDOF), p) : zeros(3,3)
-        # Hinge axis for computations
-        hingeAxis = updateHingeAxis ? currentHingeAxis : initialHingeAxis
-        # Loop slave DOFs and set hinge axis constraints
-        for j=1:2
-            # Initialize current value of Lagrange multiplier coefficients array
-            c = zeros(size(A,1))            
-            # Adjust arrays by adding the equation: Δx[slaveElementGlobalSlaveDOFs[j]] - Δx[masterElementGlobalSlaveDOFs[j]] - ( Δx[slaveElementGlobalMasterDOF] - Δx[masterElementGlobalMasterDOF] ) * hingeAxis[slaveDOFs[j]]/hingeAxis[masterDOF] - ( x[slaveElementGlobalMasterDOF] - x[masterElementGlobalMasterDOF] ) * ∂hingeAxis∂pMasterElem[j,:] * Δx[masterElementGlobalDOFs] = 0
-            c[slaveElementGlobalSlaveDOFs[j]] = 1
-            c[masterElementGlobalSlaveDOFs[j]] = -1
-            c[slaveElementGlobalMasterDOF] = -hingeAxis[slaveDOFs[j]]/hingeAxis[masterDOF]
-            c[masterElementGlobalMasterDOF] = hingeAxis[slaveDOFs[j]]/hingeAxis[masterDOF]
-            c[masterElementGlobalDOFs] += -(x[slaveElementGlobalMasterDOF] - x[masterElementGlobalMasterDOF]) * ∂hingeAxis∂pMasterElem[slaveDOFs[j],:]
-            A = [A c; c' 0]
-            b = [b; 0]
+        @unpack rotationIsFixed,initialHingeAxis,pHValue,masterElementGlobalDOFs,slaveElementGlobalDOFs,masterDOF,slaveDOFs,balanceMoment = constraint
+        # Current rotation parameters of master and slave elements
+        pM = x[masterElementGlobalDOFs]
+        pS = x[slaveElementGlobalDOFs]
+        # Current value of Lagrange multipliers
+        λ = -balanceMoment
+        # If hinge rotation is fixed (known)
+        if rotationIsFixed
+            # Residual and Jacobian terms
+            resC = C(pM,pS,initialHingeAxis,pHValue=pHValue)
+            Jc = zeros(3,length(augmentedResidual))
+            Jb = spzeros(length(augmentedResidual),length(augmentedResidual))
+            Jc[:,masterElementGlobalDOFs] .= ∂C_∂pM(pM,pS,initialHingeAxis,pHValue=pHValue)
+            Jc[:,slaveElementGlobalDOFs] .= ∂C_∂pS(pM,pS,initialHingeAxis,pHValue=pHValue)
+            Jb[masterElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
+            Jb[slaveElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
+            # Adjust augmented residual and Jacobian arrays by adding contributions from the constraint equations
+            augmentedJacobian = [augmentedJacobian.+Jb Jc'; Jc zeros(3,3)]
+            augmentedResidual = [augmentedResidual; resC]
+        # If the hinge rotation is not fixed (is unknown)
+        else
+            # Scaled rotation parameters of slave element
+            pSscaled = scaled_rotation_parameters(pS)
+            # Residual and Jacobian terms
+            resC = C(pM,pSscaled,initialHingeAxis,slaveDOFs=slaveDOFs)
+            Jc = zeros(2,length(augmentedResidual))
+            Jb = spzeros(length(augmentedResidual),length(augmentedResidual))
+            Jc[:,masterElementGlobalDOFs] .= ∂C_∂pM(pM,pSscaled,initialHingeAxis,slaveDOFs=slaveDOFs)
+            Jc[:,slaveElementGlobalDOFs] .= ∂C_∂pS(pM,pSscaled,initialHingeAxis,slaveDOFs=slaveDOFs)
+            Jb[masterElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pM2(pM,pSscaled,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
+            Jb[slaveElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pS2(pM,pSscaled,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
+            # Adjust augmented residual and Jacobian arrays by adding contributions from the constraint equations
+            augmentedJacobian = [augmentedJacobian.+Jb Jc'; Jc zeros(2,2)]
+            augmentedResidual = [augmentedResidual; resC]
         end
-        # Set rotation norm constraint, if applicable
-        if !isnothing(ΔpValue) && !iszero(ΔpValue)
-            # Initialize current value of Lagrange multiplier coefficients array
-            c = zeros(size(A,1))
-            # Adjust arrays by adding the equation: (x[slaveElementGlobalDOFs] - x[masterElementGlobalDOFs])' * (Δx[slaveElementGlobalDOFs] - Δx[masterElementGlobalDOFs]) = 0
-            # Note: sign(ΔpValue) is used to yield the correct sign on Δλ
-            c[slaveElementGlobalDOFs] = sign(ΔpValue) * (x[slaveElementGlobalDOFs] - x[masterElementGlobalDOFs])
-            c[masterElementGlobalDOFs] = -sign(ΔpValue) * (x[slaveElementGlobalDOFs] - x[masterElementGlobalDOFs])
-            A = [A c; c' 0]
-            b = [b; 0]
-        elseif !isnothing(ΔpValue) && iszero(ΔpValue)
-            # Initialize current value of Lagrange multiplier coefficients array
-            c = zeros(size(A,1))
-            # Adjust arrays by adding the equation: Δx[slaveElementGlobalDOFs] - Δx[masterElementGlobalDOFs] = 0
-            c[slaveElementGlobalDOFs] .= 1
-            c[masterElementGlobalDOFs] .= -1
-            A = [A c; c' 0]
-            b = [b; 0]
-        end
-        # Pack data
-        @pack! constraint = currentHingeAxis
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments
-    sol = A\b
+    sol = -augmentedJacobian\augmentedResidual
     Δx = sol[1:N]
     Δλ = sol[N+1:end]
+
+    # Pack data, if applicable
+    if problem isa EigenProblem
+        @pack! problem = augmentedJacobian
+    end
 
     return Δx,Δλ
 end
 
-# Computes the current hinge axis normalized by its reference direction (masterDOF) value
-function hinge_axis_components(p,initialHingeAxis,masterDOF)
-
-    R,_ = rotation_tensor_WM(p)
-
-    currentHingeAxis = R*initialHingeAxis
-        
-    f = currentHingeAxis/currentHingeAxis[masterDOF]
-
-    return f
-end
 
 # Saves the solution at the current load factor
 function save_load_factor_data!(problem::Problem,σ::Float64,x::Vector{Float64})

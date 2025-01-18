@@ -1,7 +1,7 @@
 using AeroBeams, Documenter, Literate
 
 # Examples to be included in the documentation
-global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALECheckedRollManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl","typicalSectionFlutterAndDivergence.jl"]
+global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALECheckedRollManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","HealyBaselineFFWTfreeFlutterAoARangeURange.jl","HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl","typicalSectionFlutterAndDivergence.jl"]
 
 # Generate .md files with Literate
 for ex in included
@@ -34,6 +34,8 @@ makedocs(;
         "Static structural analysis of composite beams" => "literate/compositeCantileverMD.md",
         "Static structural analysis of the Pazy wing" => "literate/PazyWingTorsionTest.md",
         "Steady aeroelastic analysis of the Pazy Wing" => "literate/PazyWingPitchRange.md",
+        "Flutter analysis of a wing with flared folding wingtip (FFWT)" => "literate/HealyBaselineFFWTfreeFlutterAoARangeURange.md",
+        "Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)" => "literate/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.md",
         "Flutter analysis of the Pazy wing" => "literate/PazyWingFlutterPitchRange.md",
         "Modal analysis of a rotating beam" => "literate/sweptTipRotor.md",
         "Modal analysis of a two-story frame" => "literate/twoStoryFrame.md",

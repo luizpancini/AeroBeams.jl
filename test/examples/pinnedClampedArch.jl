@@ -14,12 +14,12 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],rota
 # BCs
 λ = 8.95
 elemForce = div(nElem,2)
-hinge = create_BC(name="hinge",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
+pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
 clamp = create_BC(name="clamp",beam=beam,node=nElem+1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 force = create_BC(name="force",beam=beam,node=elemForce+1,types=["F3A"],values=[-λ*E*Iy/R^2])
 
 # Model
-pinnedClampedArch = create_Model(name="pinnedClampedArch",beams=[beam],BCs=[hinge,clamp,force],units=create_UnitsSystem(length="in",force="lbf"))
+pinnedClampedArch = create_Model(name="pinnedClampedArch",beams=[beam],BCs=[pin,clamp,force],units=create_UnitsSystem(length="in",force="lbf"))
 
 # Set system solver options
 σ0 = 0.0

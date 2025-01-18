@@ -198,6 +198,16 @@ end
     # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
 end
 
+@testset "Modal analysis of the baseline Healy free FFWT wing without gravity" begin
+    include("examples/HealyBaselineFFWTModalFree.jl")
+    # Reference comparison
+    @test freqs[1] ≈ freqsRef[1] atol=1e-2
+    @test freqs[order[2:9]] ≈ freqsRef[2:end] rtol=6e-2
+    # Self-comparison
+    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTModalFree", "freqs.txt"))
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+end
+
 @testset "Modal analyses of the Pazy wing in horizontal and vertical positions" begin
     include("examples/PazyWingModal.jl")
     # Reference comparison

@@ -1,8 +1,8 @@
-using AeroBeams
+using AeroBeams, LinearAlgebra
 
 # Hinge node, fold angle [rad] and flare angle [rad]
-hingeNode = 12
-foldAngle = -30*π/180
+hingeNode = 13
+foldAngle = -60*π/180
 flareAngle = 20*π/180
 
 # Spring stiffness
@@ -12,20 +12,20 @@ kSpring = 0e-4
 θ = 7*pi/180
 
 # Airspeed
-U = 60
+U = 50
 
 # Gravity
 g = 9.8
 
 # Pazy wing with flared folding tip
-PazyFFWTsteadyFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,p0=[0;0;θ],g=g)
+PazyFFWTsteadyFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
 
 # System solver
-σ0 = 0.5
+σ0 = 1
 maxIter = 100
-relTol = 1e-8
+relTol = 1e-6
 ΔλRelaxFactor = 1/2
-NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
 
 # Create and solve problem
 problem = create_SteadyProblem(model=PazyFFWTsteadyFixedFold,systemSolver=NR)
@@ -48,13 +48,13 @@ M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOve
 cn = [problem.aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
 
 # Compute rotations, displacement and balance moment at the hinge node
-ΔϕHinge = problem.model.hingeAxisConstraints[1].Δϕ*180/π
+ϕHinge = problem.model.hingeAxisConstraints[1].ϕ*180/π
 u3HingeNode = u3[2*hingeNode-1]
 u3Tip = u3[end]
-hingeBalanceM = norm(vcat(problem.model.rotationConstraints[1].balanceMoment,problem.model.hingeAxisConstraints[1].balanceMoment))
+hingeBalanceM = norm(problem.model.hingeAxisConstraints[1].balanceMoment)
 
 # Display results
-println("Total rotation at hinge node = $ΔϕHinge deg")
+println("Total rotation at hinge node = $ϕHinge deg")
 println("OOP displacements: at hinge node = $u3HingeNode m, at tip = $u3Tip m")
 println("Moment necessary to impose the hinge angle = $hingeBalanceM")
 

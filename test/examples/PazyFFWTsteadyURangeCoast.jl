@@ -1,11 +1,11 @@
 using AeroBeams
 
-# Hinge node, fold angle [rad] and flare angle [rad]
+# Hinge node and flare angle [rad]
 hingeNode = 13
 flareAngle = 10*π/180
 
 # Spring stiffness
-kSpring = 0e-4
+kSpring = 1e-4
 
 # Root pitch angle
 θ = 7*pi/180
@@ -17,13 +17,13 @@ g = 9.8
 URange = collect(0:1:80)
 
 # Initialize model
-PazyFFWTsteadyURangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,p0=[0;0;θ],g=g)
+PazyFFWTsteadyURangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
 
 # System solver
-σ0 = 0.75
-maxIter = 100
-relTol = 1e-9
-ΔλRelaxFactor = 0.8
+σ0 = 1
+maxIter = 200
+relTol = 1e-5
+ΔλRelaxFactor = 1/2
 NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
 
 # Fixed properties of the model
@@ -44,15 +44,15 @@ p3 = Array{Vector{Float64}}(undef,length(URange))
 M2 = Array{Vector{Float64}}(undef,length(URange))
 α = Array{Vector{Float64}}(undef,length(URange))
 cn = Array{Vector{Float64}}(undef,length(URange))
-ΔpHinge = Array{Vector{Float64}}(undef,length(URange))
-ΔϕHinge = Array{Float64}(undef,length(URange))
+pHinge = Array{Vector{Float64}}(undef,length(URange))
+ϕHinge = Array{Float64}(undef,length(URange))
 problem = Array{SteadyProblem}(undef,length(URange))
 
 # Loop airspeed
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s")
     # Update model
-    model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,p0=[0;0;θ],g=g)
+    model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
     # Set initial guess solution as the one from previous airspeed
     x0 = (i==1) ? zeros(0) : problem[i-1].x
     # Create and solve problem
@@ -68,8 +68,8 @@ for (i,U) in enumerate(URange)
     M2[i] = vcat([vcat(problem[i].nodalStatesOverσ[end][e].M_n1[2],problem[i].nodalStatesOverσ[end][e].M_n2[2]) for e in 1:15]...)
     α[i] = [problem[i].aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:15]
     cn[i] = [problem[i].aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
-    ΔpHinge[i] = scaled_rotation_parameters(problem[i].model.hingeAxisConstraints[1].Δp)
-    ΔϕHinge[i] = problem[i].model.hingeAxisConstraints[1].Δϕ*180/π
+    pHinge[i] = problem[i].model.hingeAxisConstraints[1].pH
+    ϕHinge[i] = problem[i].model.hingeAxisConstraints[1].ϕ*180/π
 end
 
 println("Finished PazyFFWTsteadyURangeCoast.jl")

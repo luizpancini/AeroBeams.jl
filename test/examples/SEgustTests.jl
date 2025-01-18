@@ -64,7 +64,7 @@ function SEgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
     initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)
 
     # Create and solve dynamic problem
-    problem = create_DynamicProblem(model=SEgustTests,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,displayProgress=false)
+    problem = create_DynamicProblem(model=SEgustTests,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,displayProgress=true)
     solve!(problem)
 
     # Unpack numerical solution

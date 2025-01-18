@@ -9,17 +9,22 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,plotUndeformed=true,plotDistLoads=true,view=(60,30),legendPos=(0.3,0.5),save=true,savePath=string(relPath,"/PazyFFWTsteadyCoast_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,plotUndeformed=true,plotDistLoads=true,view=(15,15),legendPos=(0.3,0.5),save=true,savePath=string(relPath,"/PazyFFWTsteadyCoast_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations
 lw = 2
 gr()
 
-# OOP displacement
+# Normalized deformed wingspan seen from x2-plane
 plt1 = plot((r_n1.+u1)/x1_n[end], (r_n3.+u3)/x1_n[end], lw=lw, label=false, xlims=[0,1], xlabel="Normalized spanwise position", ylabel="Normalized out-of-plane position")
 display(plt1)
-savefig(string(absPath,"/PazyFFWTsteadyCoast_u3.pdf"))
+savefig(string(absPath,"/PazyFFWTsteadyCoast_disp_x2plane.pdf"))
+
+# Normalized deformed wingspan seen from x3-plane
+plt12 = plot((r_n1.+u1)/x1_n[end], (r_n2.+u2)/x1_n[end], lw=lw, label=false, xlabel="Normalized spanwise position", ylabel="Normalized in-plane position", xlims=[0, 1])
+display(plt12)
+savefig(string(absPath,"/PazyFFWTsteadyCoast_disp_x3plane.pdf"))
 
 # p1
 plt3 = plot(x1_n/x1_n[end], p1, lw=lw, label=false, xlabel="\$x_1/L\$", ylabel="\$p_1\$")

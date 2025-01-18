@@ -265,7 +265,7 @@ function update_BC_data!(bc::BC,timeNow::Real=0)
     currentValue = (displacementsOnA + deadLoadsOnA + followerLoadsOnA) .* .!isTrim
 
     # Update current TFs for being loads on basis A (after transfer from basis b)
-    isLoad = isLoad .& vcat([x!=0 for x in R0_n * isLoadOnb[1:3]], [x!=0 for x in R0_n * isLoadOnb[4:6]]) 
+    isLoad = .! (displacementSpecifiedOnA .| vcat([x!=0 for x in R0_n * displacementSpecifiedOnb[1:3]], [x!=0 for x in R0_n * displacementSpecifiedOnb[4:6]]))
 
     # Update current TFs for being follower loads on basis A (after transfer from basis b)
     isFollower = isFollower .| vcat([x!=0 for x in R0_n * isFollowerOnb[1:3]], [x!=0 for x in R0_n * isFollowerOnb[4:6]]) 

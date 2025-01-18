@@ -17,49 +17,49 @@ lw = 2
 gr()
 
 # Normalized deformed wingspan seen from x2-plane
-plt1 = plot(xlabel="Normalized spanwise position", ylabel="Normalized out-of-plane position", xlims=[0,1])
+plt_x1x3 = plot(xlabel="Normalized spanwise position", ylabel="Normalized out-of-plane position", xlims=[0,1])
 for (i,U) in enumerate(URange)
     plot!((r_n1.+u1[i])/x1_n[end], (r_n3.+u3[i])/x1_n[end], aspect_ratio=:equal, lz=U, c=:rainbow, lw=lw, label=false, colorbar_title="Airspeed [m/s]")
 end
-display(plt1)
+display(plt_x1x3)
 savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_disp_x2plane.pdf"))
 
 # Normalized deformed wingspan seen from x1-plane
-plt11 = plot(xlabel="Normalized in-plane position", ylabel="Normalized out-of-plane position", xlims=[-0.1, 0.1])
+plt_x2x3 = plot(xlabel="Normalized in-plane position", ylabel="Normalized out-of-plane position", xlims=[-0.1, 0.1])
 for (i,U) in enumerate(URange)
     plot!((r_n2.+u2[i])/x1_n[end], (r_n3.+u3[i])/x1_n[end], aspect_ratio=:equal, lz=U, c=:rainbow, lw=lw, label=false, colorbar_title="Airspeed [m/s]")
 end
-display(plt11)
+display(plt_x2x3)
 savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_disp_x1plane.pdf"))
 
 # Normalized deformed wingspan seen from x3-plane
-plt12 = plot(xlabel="Normalized spanwise position", ylabel="Normalized in-plane position", xlims=[0, 1])
+plt_x1x2 = plot(xlabel="Normalized spanwise position", ylabel="Normalized in-plane position", xlims=[0, 1])
 for (i,U) in enumerate(URange)
     plot!((r_n1.+u1[i])/x1_n[end], (r_n2.+u2[i])/x1_n[end], aspect_ratio=:equal, lz=U, c=:rainbow, lw=lw, label=false, colorbar_title="Airspeed [m/s]")
 end
-display(plt12)
+display(plt_x1x2)
 savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_disp_x3plane.pdf"))
 
 # AoA
-plt2 = plot(xlabel="Normalized spanwise position", ylabel="\$\\alpha\$ [deg]")
+plt_aoa = plot(xlabel="Normalized spanwise position", ylabel="\$\\alpha\$ [deg]")
 for (i,U) in enumerate(URange)
     if U==0
         continue
     end
     plot!(x1_e/x1_n[end], α[i]*180/π, lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
-display(plt2)
+display(plt_aoa)
 savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_AoA.pdf"))
 
 # cn
-plt3 = plot(xlabel="Normalized spanwise position", ylabel="\$c_n\$")
+plt_cn = plot(xlabel="Normalized spanwise position", ylabel="\$c_n\$")
 for (i,U) in enumerate(URange)
     plot!(x1_e/x1_n[end], cn[i], lz=U, c=:rainbow, lw=lw, label=false,  colorbar_title="Airspeed [m/s]")
 end
-display(plt3)
+display(plt_cn)
 savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_cn.pdf"))
 
-# ΔpHinge
+# Hinge rotation parameters
 labels = ["\$\\Delta p_1\$" "\$\\Delta p_2\$" "\$\\Delta p_3\$"]
 colors = get(colorschemes[:rainbow], LinRange(0, 1, 3))
 Δp1Hinge = [ΔpHinge[i][1] for i in eachindex(URange)]
@@ -72,10 +72,16 @@ plot!(URange, Δp3Hinge, lw=lw, c=colors[3], label=labels[3])
 display(plt4)
 savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_deltaphinge.pdf"))
 
-# ΔpHinge
-plt5 = plot(xlabel="Airspeed [m/s]", ylabel="\$\\phi\$ [deg]", ylims=[-180,180], yticks=[-180,-90,0,90,180])
-plot!(URange, ΔϕHinge, lw=lw, c=:black, label=false)
-display(plt5)
-savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_deltaphihinge.pdf"))
+# Hinge angle
+plt_phi = plot(xlabel="Airspeed [m/s]", ylabel="\$\\phi\$ [deg]", ylims=[-180,180], yticks=[-180,-90,0,90,180])
+plot!(URange, ϕHinge, lw=lw, c=:black, label=false)
+display(plt_phi)
+savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_phi.pdf"))
+
+# Hinge moment
+plt_M = plot(xlabel="Airspeed [m/s]", ylabel="Hinge moment [N.m]")
+plot!(URange, hingeMoment, lw=lw, c=:black, label=false)
+display(plt_M)
+savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_M.pdf"))
 
 println("Finished PazyFFWTsteadyURangeFixedFoldPlotGenerator.jl")

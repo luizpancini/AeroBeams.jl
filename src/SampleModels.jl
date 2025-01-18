@@ -295,23 +295,27 @@ export create_Pazy
 Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 
 # Arguments
-- `p0::Vector{<:Real}` = initial rotation parameters in the Euler 3-2-1 sequence (yaw-pitch-roll)
 - `airfoil::Airfoil` = airfoil section
 - `aeroSolver::AeroSolver` = aerodynamic solver
 - `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
 - `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
-- `withTipCorrection::Bool` = flag for aerodynamic tip correction 
+- `withTipCorrection::Bool` = flag for aerodynamic tip correction
 - `GAy::Real` = shear stiffness in the x2 direction
 - `GAz::Real` = shear stiffness in the x3 direction
 - `hingeNode::Int64` = hinge node
+- `pitchAngle::Real` = pitch angle [rad]
 - `foldAngle::Union{Real,Nothing}` = fold angle [rad]
 - `flareAngle::Real` = flare angle [rad]
 - `kSpring::Real` = stiffness of the hinge
 - `g::Real` = local acceleration of gravity
 - `altitude::Real` = altitude
 - `airspeed::Real` = local airspeed
+- `flightDirection::Vector{<:Real}` = flight direction vector, resolved in basis A
+- `tipMass::Real` = tip mass for passive flutter control
+- `tipMassPosition::Vector{<:Real}` = position vector of the tip mass, relative to the spar
+- `gust::Union{Nothing,Gust}=nothing` = gust
 """
-function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real=0,kSpring::Real=1e-4,g::Real=9.80665,altitude::Real=0,airspeed::Real=0)
+function create_PazyFFWT(; airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,pitchAngle::Real=0,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real=0,kSpring::Real=1e-4,g::Real=9.80665,altitude::Real=0,airspeed::Real=0,flightDirection::Vector{<:Real}=[0;1;0],tipMass::Real=0,tipMassPosition::Vector{<:Real}=[0;0;0],gust::Union{Nothing,Gust}=nothing)
 
     # Validate
     @assert 2 <= hingeNode <= 15 "hingeNode must be between 2 and 15"
@@ -322,6 +326,7 @@ function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy
     @assert kSpring >= 0
     @assert g >= 0
     @assert airspeed >= 0
+    @assert tipMass >= 0
 
     # Flags
     foldAngleIsInput = !isnothing(foldAngle)
@@ -344,6 +349,9 @@ function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy
     # Inertia matrices
     I = inertia_matrices_Pazy()
 
+    # Tip mass
+    tipMass = PointInertia(elementID=nElem,η=tipMassPosition,mass=tipMass)
+
     # Chord
     chord = 0.0989
 
@@ -358,42 +366,34 @@ function create_PazyFFWT(; p0::Vector{<:Real}=zeros(3),airfoil::Airfoil=deepcopy
     update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
 
     # Tip loss factor
-    τ = tip_loss_factor_Pazy(p0[3]*180/π,airspeed)
+    τ = tip_loss_factor_Pazy(pitchAngle*180/π,airspeed)
 
     # Aerodynamic surface
     surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=τ)
 
     # Beams 
-    beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[trues(3)])
+    beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=[0;0;pitchAngle],aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[trues(3)],pointInertias=[tipMass])
 
     # Hinge axis (defined in the local, undeformed beam basis)
     localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * a2
 
-    # Set the reference DOF as the greatest component of hinge axis
-    refDOF = argmax(abs.(localHingeAxis))
-
-    # Guess value for fold (applicable only when fold angle is unknown)
-    foldGuessValue = foldAngleIsInput ? nothing : 0
-
     # Set hinge axis constraint
-    hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1,foldGuessValue=foldGuessValue)
-
-    # Set fold angle constraint, if applicable
-    foldAngleConstraint = foldAngleIsInput ? create_RotationConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,masterDOF=refDOF,slaveDOF=refDOF,value=4*tan(foldAngle/4)*hingeAxisConstraint.initialHingeAxis[refDOF],loadBalanceLocalNode=hingeNode+1) : Vector{RotationConstraint}()
-    
-    rotationConstraints = foldAngleIsInput ? [foldAngleConstraint] : Vector{RotationConstraint}()
+    hingeAxisConstraint = foldAngleIsInput ? create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1,pHValue=4*tan(foldAngle/4)) : create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1)
 
     # OOP bending spring around hinge
     if kSpring > 0
-        spring = create_Spring(basis="A",elementsIDs=[inboardElem,outboardElem],nodesSides=[1,2],kTwist=kSpring,kIPBending=kSpring,kOOPBending=kSpring)
+        spring = create_Spring(elementsIDs=[inboardElem,outboardElem],nodesSides=[1,2],kp=[kSpring,kSpring,kSpring])
         add_spring_to_beams!(beams=[beam,beam],spring=spring)
     end
 
     # BCs
     clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
+    # Set basis A velocity vector
+    v_A = airspeed*flightDirection/norm(flightDirection)
+
     # Wing model
-    pazyFFWT = create_Model(name="pazyFFWT",beams=[beam],BCs=[clamp],gravityVector=[0;0;-g],v_A=[0;airspeed;0],rotationConstraints=rotationConstraints,hingeAxisConstraints=[hingeAxisConstraint],units=create_UnitsSystem(frequency="Hz"))
+    pazyFFWT = create_Model(name="pazyFFWT",beams=[beam],BCs=[clamp],gravityVector=[0;0;-g],v_A=v_A,hingeAxisConstraints=[hingeAxisConstraint],gust=gust,units=create_UnitsSystem(frequency="Hz"))
 
     return pazyFFWT
 end
@@ -1105,3 +1105,301 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     return BWB
 end
 export create_BWB
+
+
+"""
+    create_HealyFFWT(; kwargs...)
+
+Creates a version of Healy's wing with flared folding wingtip (FFWT). See Healy's PhD thesis, chapter 7.
+
+# Arguments
+- `airfoil::Airfoil` = airfoil section
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
+- `withTipCorrection::Bool` = flag for aerodynamic tip correction
+- `tipLossDecayFactor::Real` = tip loss decay factor, in case withTipCorrection is true
+- `pitchAngle::Real` = root pitch angle [rad]
+- `wingtipTwist::Real` = wingtip twist angle [rad]
+- `foldAngle::Union{Real,Nothing}` = fold angle [rad]
+- `flareAngle::Real` = flare angle [rad]
+- `kSpring::Real` = stiffness of the spring around the hinge
+- `g::Real` = local acceleration of gravity
+- `altitude::Real` = altitude
+- `airspeed::Real` = local airspeed
+- `flightDirection::Vector{<:Real}` = flight direction vector, resolved on basis A
+- `nElementsInner::Int64` = number of elements for discretization of inner part of the wing
+- `nElementsFFWT::Int64` = number of elements for discretization of the wingtip
+- `gust::Union{Nothing,Gust}=nothing` = gust
+"""
+function create_HealyFFWT(; airfoil::Airfoil=deepcopy(NACA0015),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,tipLossDecayFactor::Real=Inf,pitchAngle::Real,wingtipTwist::Real=0,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real,kSpring::Real=1e-4,g::Real=9.80665,altitude::Real=0,airspeed::Real=0,flightDirection::Vector{<:Real}=[0;1;0],nElementsInner::Int64=15,nElementsFFWT::Int64=6,gust::Union{Nothing,Gust}=nothing)
+
+    # Validate
+    if !isnothing(foldAngle)
+        @assert -π < foldAngle <= π "set foldAngle between -π and π (rad) "
+    end
+    @assert 0 <= flareAngle < π/4 "set flareAngle between 0 and π/4 (rad)"
+    @assert kSpring >= 0
+    @assert g >= 0
+    @assert altitude >= 0
+    @assert airspeed >= 0
+    @assert length(flightDirection) == 3
+    @assert tipLossDecayFactor >= 0
+    @assert nElementsInner >= 8 "set at least 8 elements for inner wing"
+    @assert nElementsFFWT >= 2 "set at least 2 elements for wingtip"
+
+    # Flags
+    foldAngleIsInput = !isnothing(foldAngle)
+
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
+
+    # Wing (semi-)span [m]
+    L = 0.5
+
+    # Total number of elements
+    nElem = nElementsInner+nElementsFFWT
+
+    # Hinge normalized position over (semi-)span (See Fig. 7.3 of Healy's thesis)
+    hingePos = 365/500
+
+    # Normalized nodal positions
+    normalizedNodalPositions = unique(vcat(LinRange(0,hingePos,nElementsInner+1),LinRange(hingePos,1,nElementsFFWT+1)))
+
+    # Spar geometric and material properties
+    b = 20e-3
+    h = 4.8e-3
+    E = 70e9
+    G = 27e9
+    ρ = 2.7e3
+    A = b*h
+    Iy = b*h^3/12
+    Iz = h*b^3/12
+    J = Iy+Iz
+    Kt = 0.2
+
+    # Stiffness matrix (assume central spar stiffness along entire span)
+    S = isotropic_stiffness_matrix(EA=E*A,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz,∞=1e8)
+
+    # Central spar inertia matrix
+    I1 = inertia_matrix(ρA=ρ*A)
+
+    # Wingtip baseline inertia matrix (assume 10% of central spar's mass per unit length)
+    I2 = inertia_matrix(ρA=0.1*ρ*A)
+
+    # Chord
+    chord = 0.078
+
+    # Normalized spar position (visually assumed from Fig. 7.3)
+    normSparPos = 0.25
+
+    # Elements inboard and outboard of the hinge
+    hingeNode = nElementsInner+1
+    inboardElem = hingeNode-1
+    outboardElem = hingeNode
+
+    # Point inertias on folding wingtip (see Table 7.2 of Healy's thesis)
+    m_PI = 1e-3*[20.3; 29.6; 29.6; 23.0; 61.0]
+    x1_PI = 1e-3*[17; 155; 255; 328; 424]
+    x2_PI = 1e-3*[-12.3; -12.3; -12.3; -12.4; -13.9]
+    Ixx_PI = 1e-6*[9.1; 13.4; 13.4; 6.5; 18.9]
+    Iyy_PI = 1e-6*[8.4; 24.8; 24.8; 2.8; 116]
+    Izz_PI = 1e-6*[0.0; 0.0; 0.0; 0.0; 0.0]
+    pointInertias = Vector{PointInertia}()
+    for (m,x1,x2,Ixx,Iyy,Izz) in zip(m_PI,x1_PI,x2_PI,Ixx_PI,Iyy_PI,Izz_PI)
+        elem = findfirst(x -> x > x1, normalizedNodalPositions*L) - 1
+        push!(pointInertias,PointInertia(elementID=elem,η=[x1-normalizedNodalPositions[elem]*L,x2,0],mass=m,Ixx=Ixx,Iyy=Iyy,Izz=Izz))
+    end
+
+    # Update airfoil parameters, if applicable
+    if airfoil == deepcopy(NACA0015)
+        update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
+    end
+
+    # Twist angle distribution over wingspan (given in Fig. 7.32)
+    φ_of_x1 = x1 -> ifelse(x1<=(0.365+0.06),0.0,ifelse(x1>=0.365+0.085,wingtipTwist,wingtipTwist*(x1-0.365-0.06)/0.025))
+
+    # Aerodynamic surface
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,φ=φ_of_x1,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,updateAirfoilParameters=false)
+
+    # Wing beam
+    beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=normalizedNodalPositions,S=[S],I=vcat(fill(I1,nElementsInner),fill(I2,nElementsFFWT)),rotationParametrization="E321",p0=[0;0;pitchAngle],aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[trues(3)],pointInertias=pointInertias)
+
+    # Hinge axis (defined in the local, undeformed beam basis)
+    localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * a2
+
+    # Set hinge axis constraint
+    hingeAxisConstraint = foldAngleIsInput ? create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1,pHValue=4*tan(foldAngle/4)) : create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1)
+
+    # Spring around hinge
+    if kSpring > 0
+        spring = create_Spring(elementsIDs=[inboardElem,outboardElem],nodesSides=[1,2],kp=[kSpring,kSpring,kSpring])
+        add_spring_to_beams!(beams=[beam,beam],spring=spring)
+    end
+
+    # BCs
+    clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+
+    # Basis A velocity vector
+    v_A = airspeed*flightDirection/norm(flightDirection)
+
+    # Wing model
+    healyFFWT = create_Model(name="healyFFWT",beams=[beam],BCs=[clamp],gravityVector=[0;0;-g],v_A=v_A,hingeAxisConstraints=[hingeAxisConstraint],gust=gust,units=create_UnitsSystem(frequency="Hz"))
+
+    return healyFFWT
+end
+export create_HealyFFWT
+
+
+"""
+    create_HealyBaselineFFWT(; kwargs...)
+
+Creates a version of Healy's baseline wing with flared folding wingtip (FFWT). See Healy's PhD thesis, chapter 3.
+
+# Arguments
+- `airfoil::Airfoil` = airfoil section
+- `aeroSolver::AeroSolver` = aerodynamic solver
+- `gustLoadsSolver::GustAeroSolver` = indicial gust loads solver
+- `derivationMethod::DerivationMethod` = method for aerodynamic derivatives
+- `withTipCorrection::Bool` = flag for aerodynamic tip correction
+- `tipLossDecayFactor::Real` = tip loss decay factor, in case withTipCorrection is true
+- `hingeConfiguration::String` = hinge hingeConfiguration ("free" or "locked")
+- `flareAngle::Real` = flare angle [rad]
+- `pitchAngle::Real` = root pitch angle [rad]
+- `foldAngle::Union{Real,Nothing}` = fold angle [rad]
+- `kSpringHinge::Real` = stiffness of the rotational spring around the hinge for folding (combination of OOP bending and twist)
+- `kIPBendingHinge::Real` = stiffness of the rotational spring around the hinge for in-plane bending
+- `altitude::Real` = altitude
+- `airspeed::Real` = local airspeed
+- `g::Real` = local acceleration of gravity
+- `nElementsInner::Int64` = number of elements for discretization of inner part of the wing
+- `nElementsFFWT::Int64` = number of elements for discretization of the wingtip
+- `gust::Union{Nothing,Gust}=nothing` = gust
+"""
+function create_HealyBaselineFFWT(; airfoil::Airfoil=deepcopy(flatPlate),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,tipLossDecayFactor::Real=10,hingeConfiguration::String,flareAngle::Real=15*π/180,pitchAngle::Real=0,foldAngle::Union{Real,Nothing}=nothing,kSpringHinge::Real=1e-4,kIPBendingHinge::Real=kSpringHinge,altitude::Real=0,airspeed::Real=0,g::Real=9.80665,nElementsInner::Int64=16,nElementsFFWT::Int64=4,gust::Union{Nothing,Gust}=nothing)
+
+    # Validate
+    @assert hingeConfiguration in ["free","locked"] " set 'hingeConfiguration' as 'free' or 'locked'"
+    if !isnothing(foldAngle)
+        @assert -π < foldAngle <= π "set foldAngle between -π and π (rad) "
+    end
+    @assert altitude >= 0
+    @assert airspeed >= 0
+    @assert tipLossDecayFactor >= 0
+    @assert g >= 0
+    @assert kSpringHinge >= 0
+    @assert kIPBendingHinge >= 0
+    @assert nElementsInner >= 8 "set at least 8 elements for inner wing"
+    @assert nElementsFFWT >= 2 "set at least 2 elements for wingtip"
+
+    # Flags
+    foldAngleIsInput = !isnothing(foldAngle)
+
+    # Atmosphere
+    atmosphere = standard_atmosphere(altitude)
+
+    # Wing (semi-)span [m]
+    L = 1
+
+    # Total number of elements
+    nElem = nElementsInner+nElementsFFWT
+
+    # Hinge normalized position over (semi-)span (See Fig. 3.1 of Healy's thesis)
+    hingePos = 0.8
+
+    # Normalized nodal positions
+    normalizedNodalPositions = unique(vcat(LinRange(0,hingePos,nElementsInner+1),LinRange(hingePos,1,nElementsFFWT+1)))
+
+    # Spar geometric and material properties
+    b = 30e-3
+    h = 4e-3
+    E = 193e9
+    G = 76e9
+    ρ = 8e3
+    A = b*h
+    Iy = b*h^3/12
+    Iz = h*b^3/12
+    J = Iy+Iz
+
+    # Stiffness correction factors (assumed)
+    KOOP = 1.15
+    KIP = 1
+    Kt = 0.065
+
+    # Central spar stiffness matrix
+    S1 = isotropic_stiffness_matrix(EA=E*A,GJ=G*J*Kt,EIy=E*Iy*KOOP,EIz=E*Iz*KIP,∞=1e8)
+
+    # Wingtip stiffness matrix
+    S2 = 1*S1
+
+    # Central spar inertia matrix
+    I1 = inertia_matrix(ρA=ρ*A)
+
+    # Wingtip baseline inertia matrix (assume 1% of central spar's mass per unit length)
+    I2 = inertia_matrix(ρA=0.01*ρ*A)
+
+    # Elements inboard and outboard of the hinge
+    hingeNode = nElementsInner+1
+    inboardElem = hingeNode-1
+    outboardElem = hingeNode
+
+    # Point inertias on folding wingtip (see Table 3.2 of Healy's thesis)
+    m_PI = 1e-3*[75; 75; 75; 75; 75; 56; 167]
+    x1_PI = 1e-3*[70; 210; 350; 490; 630; 767; 887]
+    x2_PI = -1e-3*[21; 21; 21; 21; 21; 17; 22]
+    Ixx_PI = 1e-6*[73; 73; 73; 73; 73; 32; 122]
+    Iyy_PI = 1e-6*[82; 82; 82; 82; 82; 26; 942]
+    Izz_PI = 1e-6*[151; 151; 151; 151; 151; 56; 1057]
+    pointInertias = Vector{PointInertia}()
+    for (m,x1,x2,Ixx,Iyy,Izz) in zip(m_PI,x1_PI,x2_PI,Ixx_PI,Iyy_PI,Izz_PI)
+        elem = findfirst(x -> x > x1, normalizedNodalPositions*L) - 1
+        push!(pointInertias,PointInertia(elementID=elem,η=[x1-normalizedNodalPositions[elem]*L,x2,0],mass=m,Ixx=Ixx,Iyy=Iyy,Izz=Izz))
+    end
+
+    # Chord
+    chord = 0.12
+
+    # Normalized spar position (visually assumed from Fig. 7.3)
+    normSparPos = 0.25
+
+    # Update airfoil parameters, if applicable
+    if airfoil == deepcopy(flatPlate)
+        update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
+    end
+
+    # Aerodynamic surface
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,updateAirfoilParameters=false)
+
+    # Hinged node and DOFs
+    hingedNodes = hingeConfiguration == "free" ? [hingeNode] : Vector{Int64}()
+    hingedNodesDoF = hingeConfiguration == "free" ? [trues(3)] : [falses(3)]
+
+    # Beam
+    beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=normalizedNodalPositions,rotationParametrization="E321",p0=[0;0;pitchAngle],S=vcat(fill(S1,nElementsInner),fill(S2,nElementsFFWT)),I=vcat(fill(I1,nElementsInner),fill(I2,nElementsFFWT)),hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,pointInertias=pointInertias,aeroSurface=surf)
+
+    # Hinge axis (defined in the local, undeformed beam basis)
+    localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * a2
+
+    # Hinge axis constraint
+    hingeAxisConstraints = Vector{HingeAxisConstraint}()
+    if hingeConfiguration == "free"
+        if foldAngleIsInput
+            push!(hingeAxisConstraints,create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1,pHValue=4*tan(foldAngle/4)))
+        else
+            push!(hingeAxisConstraints,create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1))
+        end
+    end
+
+    # Spring around hinge
+    spring = create_Spring(elementsIDs=[inboardElem,outboardElem],nodesSides=[1,2],kp=[kSpringHinge,kSpringHinge,kIPBendingHinge])
+    add_spring_to_beams!(beams=[beam,beam],spring=spring)
+
+    # BCs
+    clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+
+    # Beam model
+    healyBaselineFFWT = create_Model(name="healyBaselineFFWT",beams=[beam],BCs=[clamp],v_A=[0;airspeed;0],gravityVector=[0;0;-g],hingeAxisConstraints=hingeAxisConstraints,gust=gust,units=create_UnitsSystem(frequency="Hz"))
+
+    return healyBaselineFFWT
+end
+export create_HealyBaselineFFWT

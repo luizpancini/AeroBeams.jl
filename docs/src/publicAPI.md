@@ -55,6 +55,7 @@ add_loads_to_beam!
 add_initial_displacements_and_velocities_to_beam!
 add_springs_to_beam!
 add_spring_to_beams!
+remove_all_springs_from_beams!
 ```
 
 ### Creating a gust
@@ -85,6 +86,11 @@ set_motion_basis_A!
 PointInertia
 ```
 
+### Creating a hinge axis constraint
+```@docs
+create_HingeAxisConstraint
+```
+
 ### Creating and solving a problem
 ```@docs
 InitialVelocitiesUpdateOptions
@@ -94,11 +100,6 @@ create_EigenProblem
 create_DynamicProblem
 solve!
 solve_eigen!
-```
-
-### Creating a rotation constraint
-```@docs
-create_RotationConstraint
 ```
 
 ### Creating a sample model
@@ -113,6 +114,8 @@ create_TDWing
 create_Helios
 create_conventional_HALE
 create_BWB
+create_HealyFFWT
+create_HealyBaselineFFWT
 ```
 
 ### Creating a spring
@@ -141,15 +144,19 @@ inertia_matrix
 rotation_tensor_E321
 rotation_tensor_E313
 rotation_tensor_WM
+scaled_rotation_parameters
+rotation_angle
+rotation_angle_limited
 rotation_parameters_WM
 rotation_parameters_Rodrigues
-scaled_rotation_parameters
 ypr_from_rotation_tensor
 quaternion_from_rotation_tensor
 WM_to_ypr
 ypr_to_WM
+rotation_between_WM
 mode_tracking
 get_FFT_and_PSD
+Newton_solver
 ```
 
 ### Visualizing the results
