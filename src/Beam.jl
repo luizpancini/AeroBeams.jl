@@ -715,3 +715,21 @@ function add_spring_to_beams!(; beams::Vector{Beam},spring::Spring)
 
 end
 export add_spring_to_beams!
+
+
+"""
+    remove_all_springs_from_beam!(; beams::Vector{Beam})
+
+Removes all springs attached to the beams
+
+# Keyword arguments
+- `beams::Vector{Beam}`
+"""
+function remove_all_springs_from_beams!(; beams::Vector{Beam})
+
+    for beam in beams
+        beam.springs = Vector{Spring}()
+    end
+
+end
+export remove_all_springs_from_beams!

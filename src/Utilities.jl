@@ -24,20 +24,17 @@ const I6 = Matrix(1.0*LinearAlgebra.I,6,6)
 Rounds the array or number to input tolerance (defaults to machine epsilon)
 
 # Arguments
-- `x` = array / number
+- `x` = array or number
 - `tol` = tolerance
 """
 function round_off!(x,tol=eps())
 
     if x isa Number
-        # Scale the number by dividing it by the tolerance
-        xScaled = x / tol
-        # Round the scaled value to the nearest integer
-        xScaledRounded = round(xScaled)
-        # Scale the rounded value back by multiplying by the tolerance
-        x = xScaledRounded * tol
+        x = round(x/tol)*tol
     else
-        x[abs.(x).<tol] .= 0.0
+        for i in eachindex(x)
+            x[i] = round(x[i]/tol)*tol
+        end
     end
 
     return x
@@ -104,6 +101,21 @@ function mul3(A1,A2,A3,b)
     
     return hcat(A1*b, A2*b, A3*b)
     
+end
+
+# Gets the ith component of the 3x3 identity matrix
+function a_i(i)
+
+    @assert i in [1,2,3]
+
+    if i==1
+        return a1
+    elseif i==2
+        return a2
+    elseif i==3
+        return a3
+    end
+
 end
 
 
@@ -347,13 +359,13 @@ function rotation_parameter_scaling(p)
     λ = 1.0
     halfRotations = 0
     
-    # Norm of the unscaled/extended parameters vector
+    # Norm of the extended parameters vector
     pNorm = norm(p)
     
     # Scale according to norm
-    if pNorm > 4.0  
-        halfRotations = round(pNorm/8.0)
-        λ = 1.0 - 8.0 * halfRotations / pNorm
+    if pNorm > 4
+        halfRotations = round(pNorm/8)
+        λ = 1 - 8 * halfRotations / pNorm
     end
     
     # Scaled parameters
@@ -370,7 +382,7 @@ end
 """
     scaled_rotation_parameters(p)
 
-Returns the scaled Wiener-Milenkovic rotation parameters
+Returns the scaled (extended) Wiener-Milenkovic rotation parameters
 
 # Arguments
 - `p` = rotation parameters
@@ -731,21 +743,54 @@ function force_scaling(S)
 end
 
 
-# Computes the rotation angle given the Wiener-Milenkovic rotation parameters
+"""
+    rotation_angle(p)
+
+Computes the rotation angle given the Wiener-Milenkovic rotation parameters
+
+# Arguments
+- `p` = rotation parameters
+"""
 function rotation_angle(p)
 
     # Scale rotation parameters and get number of half rotations
     _,_,halfRotations,pNorm,_ = rotation_parameter_scaling(p)
 
-    if pNorm > 0 && count(!iszero,p/pNorm) == 1 && any(x -> x == -1.0, real.(p/pNorm))
-        θ_sign = -1
-    else
-        θ_sign = 1
-    end
+    # Highest absolute value component
+    greatestComp = argmax(abs.(p))
 
-    return θ_sign * (4*atan((pNorm-8*halfRotations)/4) + 2*π*halfRotations)
+    # Sign of rotation angle
+    signal = sign(p[greatestComp])
+
+    return signal * (4*atan((pNorm-8*halfRotations)/4) + 2π*halfRotations)
 
 end
+export rotation_angle
+
+
+"""
+    rotation_angle_limited(p)
+
+Computes the rotation angle (in the range -360 to 360 degrees) given the Wiener-Milenkovic rotation parameters
+
+# Arguments
+- `p` = rotation parameters
+"""
+function rotation_angle_limited(p)
+
+    # Scale rotation parameters and get number of half rotations
+    _,_,halfRotations,pNorm,_ = rotation_parameter_scaling(p)
+
+    # Highest absolute value component
+    greatestComp = argmax(abs.(p))
+
+    # Sign of rotation angle
+    signal = sign(p[greatestComp])
+
+    return signal * (4*atan((pNorm-8*halfRotations)/4))
+
+end
+export rotation_angle_limited
 
 
 """
@@ -772,7 +817,7 @@ function rotation_parameters_WM(R)
 
     # Wiener-Milenkovic rotation parameters
     p = 2/ν*e
-    
+
     return p
 end
 export rotation_parameters_WM
@@ -923,6 +968,41 @@ export ypr_to_WM
 
 
 """
+    rotation_between_WM(p1,p2)
+
+Computes the Wiener-Milenkovic parameters describing the rotation from p1 to p2, i.e., p12 such that R2(p2) = R12(p12)*R1(p1)
+
+# Arguments
+- `p1` = initial rotation parameters
+- `p2` = final rotation parameters
+"""
+function rotation_between_WM(p1,p2)
+
+    # Rotation tensors
+    R1,_ = rotation_tensor_WM(p1)
+    R2,_ = rotation_tensor_WM(p2)
+    R12 = R2*R1'
+
+    # Rotation parameters vector
+    p12 = rotation_parameters_WM(R12)
+
+    # Check consistency: true rotation parameters might actually be -p12 (since rotations of ϕ about axis n or -ϕ about axis -n are equal)
+    R12_check1,_ = rotation_tensor_WM(p12)
+    R12_check2,_ = rotation_tensor_WM(-p12)
+    check1 = norm(R12_check1.-R12)
+    check2 = norm(R12_check2.-R12)
+
+    # Select correct rotation parameters vector (the one for which norm(R12.-R12_check) = 0)
+    if check2 < check1
+        p12 = -p12
+    end
+
+    return p12
+end
+export rotation_between_WM
+
+
+"""
     mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
 Applies mode tracking based on eigenvectors match
@@ -954,7 +1034,7 @@ function mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}
     # Loop over control parameter
     for c = 2:N
         # Skip if eigenvectors are undefined
-        if all(isnan,eigenvectors[c])
+        if all(isnan,eigenvectors[c]) || all(isnan,eigenvectors[c-1])
             continue
         end
         # Mode matching index matrix: eigenvector alignment
@@ -1061,3 +1141,64 @@ function get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::AbstractFloat
     return f,yFFT,yPSD
 end
 export get_FFT_and_PSD
+
+
+"""
+    Newton_solver(f::Function, x0::AbstractArray; absTol::Real=1e-9, relTol::Real=1e-9, maxIter::Int=50)
+
+Solves a nonlinear algebraic system of equations \$( f(x) = 0 \$) using the Newton-Raphson method.
+
+# Arguments
+- `f::Function`: the nonlinear system of equations to solve. Must return a vector of residuals for a given `x`.
+- `x0::AbstractArray`: initial guess for the solution.
+
+# Keyword arguments
+- `absTol::Real`: absolute tolerance for convergence (default: `1e-9`).
+- `relTol::Real`: relative tolerance for convergence (default: `1e-9`).
+- `maxIter::Int`: maximum number of iterations allowed (default: `50`).
+
+# Returns
+- `x::AbstractArray`: the solution vector, if convergence is achieved.
+- `converged::Bool`: `true` if the solution converged within the given tolerances, `false` otherwise.
+
+"""
+function Newton_solver(f::Function, x0::AbstractArray; absTol::Real=1e-9, relTol::Real=1e-9, maxIter::Int=50)
+
+    # Validate inputs
+    @assert length(x0) == length(f(x0)) "The size of x0 must match the output dimension of f(x)"
+
+    # Define the Jacobian function using ForwardDiff
+    J(x) = ForwardDiff.jacobian(f, x)
+
+    # Initialize variables
+    x = deepcopy(x0)               # Current solution estimate
+    converged = false              # Convergence flag
+    iter = 0                       # Iteration counter
+    ϵabs = ϵrel = Inf              # Initial error values
+
+    # Main Newton-Raphson iteration loop
+    while !converged && iter < maxIter
+        # Update number of iterations
+        iter += 1
+        # Compute residual and Jacobian
+        res = f(x)
+        jac = J(x)
+        # Check if Jacobian is singular
+        if det(jac) ≈ 0
+            error("Jacobian matrix is singular at iteration $iter.")
+        end
+        # Solve for the Newton step
+        Δx = -jac \ res
+        # Update solution
+        x += Δx
+        # Compute convergence metrics
+        ϵabs = norm(res, Inf)  # Absolute residual norm
+        ϵrel = norm(Δx ./ x, Inf)  # Relative solution change
+        # Check convergence
+        converged = ϵabs < absTol || ϵrel < relTol
+    end
+
+    # Return solution and convergence status
+    return x, converged
+end
+export Newton_solver

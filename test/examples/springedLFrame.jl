@@ -13,8 +13,8 @@ nElem2 = 20
 beam2 = create_Beam(name="beam2",length=L2,nElements=nElem2,S=[isotropic_stiffness_matrix(EIy=EIy2)],rotationParametrization="E321",p0=[0;π/2;0])
 
 # Spring
-kTranslational = 1e4
-spring = create_Spring(basis="b",elementsIDs=[div(nElem1,2),nElem2],nodesSides=[2,2],kTranslational=kTranslational)
+kSpring = 1e4
+spring = create_Spring(basis="b",elementsIDs=[div(nElem1,2),nElem2],nodesSides=[2,2],ku=[kSpring,kSpring,kSpring])
 add_spring_to_beams!(beams=[beam1,beam2],spring=spring)
 
 # BCs

@@ -150,8 +150,10 @@ function create_SteadyProblem(; model::Model,systemSolver::SystemSolver=create_N
         @assert length(x0) == model.systemOrder
         problem.initialStatesInput = true
         problem.x = x0*problem.σ
+        set_initial_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_hinge_axis_constraints!(problem)
     end
 
     # Initialize system arrays with correct size
@@ -239,8 +241,10 @@ function create_TrimProblem(; model::Model,systemSolver::SystemSolver=create_New
         @assert length(x0) == model.systemOrder+model.nTrimVariables
         problem.initialStatesInput = true
         problem.x = x0*problem.σ
+        set_initial_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_hinge_axis_constraints!(problem)
     end
 
     # Initialize system arrays with correct size
@@ -281,6 +285,8 @@ export create_TrimProblem
     residual::Vector{Float64} = zeros(0)
     jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
     inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    augmentedJacobian::SparseMatrixCSC{Float64,Int64} = jacobian
+    augmentedInertia::SparseMatrixCSC{Float64,Int64} = inertia
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
@@ -352,16 +358,19 @@ function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_Ne
         @assert length(x0) == model.systemOrder
         problem.initialStatesInput = true
         problem.x = x0*problem.σ
+        set_initial_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_hinge_axis_constraints!(problem)
     end
 
     # Initialize system arrays
     @assert size(jacobian) == size(inertia) "jacobian and inertia matrices must have the same size"
     if !isempty(jacobian)
-        @assert size(jacobian) == (model.systemOrder,model.systemOrder) "size of the input jacobian does not correspond to the number of states of the model"
-        problem.jacobian = jacobian
-        problem.inertia = inertia
+        N = model.systemOrder + length(model.hingeAxisConstraints)
+        @assert size(jacobian) == (N,N) "size of the input jacobian does not correspond to the number of states of the model"
+        problem.jacobian = problem.augmentedJacobian = jacobian
+        problem.inertia = problem.augmentedInertia = inertia
     else
         initialize_system_arrays!(problem)
     end
@@ -503,8 +512,10 @@ function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_
         problem.Δt = Inf64
         update_states!(problem)
         problem.Δt = Δt
+        set_initial_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
+        set_initial_hinge_axis_constraints!(problem)
         update_initial_aero_states!(problem,preInitialization=true)
     end   
 
@@ -529,7 +540,7 @@ export create_DynamicProblem
 function set_initial_states!(problem::Problem)
 
     @unpack x,model,σ,initialStatesInput = problem
-    @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling,rotationConstraints = model
+    @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling,hingeAxisConstraints = model
 
     # Skip if states were input
     if initialStatesInput
@@ -575,14 +586,43 @@ function set_initial_states!(problem::Problem)
     # Scale by initial load factor
     x *= σ
 
-    # Set rotation constraints
-    for constraint in rotationConstraints
-        @unpack masterElemMasterGlobalDOF,slaveElemSlaveGlobalDOF,value = constraint
-        x[slaveElemSlaveGlobalDOF] = x[masterElemMasterGlobalDOF] + value
+    @pack! problem = x
+
+end
+
+
+# Sets the initial rotation and hinge axis constraints
+function set_initial_hinge_axis_constraints!(problem::Problem)
+
+    @unpack x = problem
+    @unpack hingeAxisConstraints = problem.model
+
+    # Set hinge axis constraints
+    for constraint in hingeAxisConstraints
+        @unpack initialHingeAxis,pHGuessValue,pHValue,masterElementGlobalDOFs,slaveElementGlobalDOFs = constraint
+        # Set rotation parameters vectors of master and slave elements
+        pM = x[masterElementGlobalDOFs]
+        pS = x[slaveElementGlobalDOFs]
+        # Initial value of hinge rotation (signed magnitude) value: either constrained (if input), or guessed (if input), or assumed zero (otherwise)
+        if !isnothing(pHValue)
+            pHValueInitial = pHValue
+        elseif !isnothing(pHGuessValue)
+            pHValue = pHValueInitial = pHGuessValue
+        else
+            pHValue = pHValueInitial = 0
+        end
+        # Update initial value of slave element rotation
+        x[slaveElementGlobalDOFs] = pS = pS_from_pM_and_pHValue(pM,initialHingeAxis,pHValueInitial)
+        # Update current hinge axis (resolved in basis A), rotation parameters vector and angle of rotation across the hinge
+        currentHingeAxis = current_hinge_axis(pM,initialHingeAxis)
+        pH = hinge_rotation_parameters(pM,pS)
+        ϕ = rotation_angle_limited(pH)
+        # Pack data
+        @pack! constraint = currentHingeAxis,pH,ϕ,pHValue
     end
 
     @pack! problem = x
-
+    
 end
 
 
@@ -611,6 +651,11 @@ Solves a problem
 - problem::Problem
 """
 function solve!(problem::Problem)
+
+    # Check limitation
+    if typeof(problem) in [TrimProblem, DynamicProblem]
+        @assert isempty(problem.model.hingeAxisConstraints) "hinge axis constraints not implemented yet for trim or dynamic problems"
+    end
 
     # Precompute distributed loads
     precompute_distributed_loads!(problem)
@@ -738,18 +783,21 @@ function solve_steady!(problem::Problem)
 
     @unpack getLinearSolution,systemSolver = problem
 
+    # Check if linear or nonlinear solution is required
     if getLinearSolution
+        # Linear solution
+        # Set full load factor
         problem.σ = 1.0
+        # Solve linear system and update states
         assemble_system_arrays!(problem)
         solve_linear_system!(problem)
         update_states!(problem)
-        if problem isa EigenProblem || (problem isa TrimProblem && problem.getInertiaMatrix)
-            for element in problem.model.elements
-                element_inertia!(problem,problem.model,element)
-            end
-        end
+        # Assemble inertia matrix in eigen and trim problems, if applicable
+        assemble_inertia_matrix!(problem)
+        # Save data
         save_load_factor_data!(problem,problem.σ,problem.x)
     else
+        # Nonlinear solution
         if typeof(systemSolver) == NewtonRaphson
             solve_NewtonRaphson!(problem)
         end
@@ -769,6 +817,13 @@ Solves an eigenproblem
 function solve_eigen!(problem::EigenProblem)
 
     @unpack jacobian,inertia,frequencyFilterLimits,nModes = problem
+    @unpack hasHingeAxisConstraints = problem.model
+
+    # Set Jacobian and inertia matrices as augmented matrices, if applicable
+    if hasHingeAxisConstraints
+        jacobian = problem.augmentedJacobian
+        inertia = problem.augmentedInertia
+    end
        
     ## Process eigenvalues and eigenvectors
     #---------------------------------------------------------------------------
@@ -1087,6 +1142,7 @@ function solve_initial_dynamic!(problem::Problem)
     # Set initial states
     problemCopy.initialStatesInput = false
     set_initial_states!(problemCopy)
+    set_initial_hinge_axis_constraints!(problemCopy)
 
     # Initialize system arrays with correct size
     initialize_system_arrays!(problemCopy)
@@ -1186,7 +1242,7 @@ function update_initial_velocities!(problem::Problem)
         update_BC_data!(BC,timeNow)
     end   
     # Set default system solver (with reduced relative tolerance and large number of maximum iterations)
-    problem.systemSolver = create_NewtonRaphson(maximumIterations=200,relativeTolerance=1e-10)
+    problem.systemSolver = create_NewtonRaphson(maximumIterations=200,relativeTolerance=problem.systemSolver.relativeTolerance,displayStatus=problem.systemSolver.displayStatus)
     # Initial displacements, sectional velocities and displacement's rates
     disp0 = [[e.states.u; e.states.p] for e in elements]
     vel0 = [[e.states.V; e.states.Ω] for e in elements]
@@ -1273,7 +1329,7 @@ function update_initial_velocities!(problem::Problem)
     timeEndTimeStep = timeNow + Δt
     problem.systemSolver = systemSolverOriginal
 
-    @pack! problem = timeVector,Δt,timeNow,indexBeginTimeStep,indexEndTimeStep,timeBeginTimeStep,timeEndTimeStep,model
+    @pack! problem = timeVector,Δt,timeNow,indexBeginTimeStep,indexEndTimeStep,timeBeginTimeStep,timeEndTimeStep
 end
 
 
@@ -1550,10 +1606,13 @@ end
 # Solves the current time step
 function solve_time_step!(problem::Problem)
 
+    # Check if linear or nonlinear solution is required
     if problem.getLinearSolution
+        # Linear
         solve_linear_system!(problem)
         problem.systemSolver.convergedFinalSolution = true
     else
+        # Nonlinear
         if typeof(problem.systemSolver) == NewtonRaphson
             solve_NewtonRaphson!(problem)
         end

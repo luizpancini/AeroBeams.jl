@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra
+ using AeroBeams, LinearAlgebra
 
 # Hinge angle
 θ = π/4
@@ -10,9 +10,8 @@ nElem = 20
 hingeNode = div(nElem,2)+1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingeNode],hingedNodesDoF=[[false,true,false]])
 
-# Rotation constraint
-rotationConstraints = Vector{RotationConstraint}()
-push!(rotationConstraints,create_RotationConstraint(beam=beam,masterElementLocalID=hingeNode-1,slaveElementLocalID=hingeNode,masterDOF=2,slaveDOF=2,value=4*tan(θ/4),loadBalanceLocalNode=hingeNode+1))
+# Hinge axis constraint
+hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=hingeNode-1,slaveElementLocalID=hingeNode,localHingeAxis=[0;1;0],loadBalanceLocalNode=hingeNode+1,pHValue=4*tan(θ/4))
 
 # BCs
 Fₕ = -1
@@ -26,7 +25,7 @@ tipForce = create_BC(name="tipForce",beam=beam,node=nElem+1,types=["Ff3A"],value
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
 # Model
-clampedHingedBeam = create_Model(name="clampedHingedBeam",beams=[beam],BCs=[clamp,hingeForce,tipForce],rotationConstraints=rotationConstraints)
+clampedHingedBeam = create_Model(name="clampedHingedBeam",beams=[beam],BCs=[clamp,hingeForce,tipForce],hingeAxisConstraints=[hingeAxisConstraint])
 
 # System solver
 σ0 = 0.5
@@ -52,12 +51,12 @@ F3 = vcat([vcat(problem.nodalStatesOverσ[end][e].F_n1[3],problem.nodalStatesOve
 M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOverσ[end][e].M_n2[2]) for e in 1:nElem]...)
 
 # Compute rotation, displacement and balance moment at the hinge node
-Δp2HingeNode = 4*atand((p2[2*hingeNode+1]-p2[2*hingeNode-2])/4)
+ϕHingeNode = problem.model.hingeAxisConstraints[1].ϕ*180/π
 u3HingeNode = u3[2*hingeNode-1]
-hingeBalanceM2 = -problem.model.rotationConstraints[1].balanceMoment
+hingeBalanceM2 = -problem.model.hingeAxisConstraints[1].balanceMoment
 
 # Display results
-println("Rotation at hinge node = $Δp2HingeNode deg")
+println("Rotation at hinge node = $ϕHingeNode deg")
 println("Displacement at hinge node = $u3HingeNode")
 println("Moment necessary to impose the constraint at hinge node = $hingeBalanceM2")
 

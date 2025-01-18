@@ -658,6 +658,7 @@ end
     c::Real
     normSparPos::Float64
     Λ::Real
+    φ::Real
     Rw::Matrix{Float64}
     RwT::Matrix{Float64}
     RwR0::Matrix{Float64}
@@ -753,7 +754,8 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     b = c/2
     normSparPos = aeroSurface.normSparPos isa Real ? aeroSurface.normSparPos : aeroSurface.normSparPos(x1)
     Λ = aeroSurface.Λ isa Real ? aeroSurface.Λ : aeroSurface.Λ(x1)
-    Rw = rotation_tensor_E321([-Λ; 0; -airfoil.attachedFlowParameters.α₀N])
+    φ = aeroSurface.φ isa Real ? aeroSurface.φ : aeroSurface.φ(x1)
+    Rw = rotation_tensor_E321([-Λ; 0; φ-airfoil.attachedFlowParameters.α₀N])
     RwT = Matrix(Rw')
     RwR0 = Rw*R0
     RwR0T = Matrix(RwR0')
@@ -764,11 +766,6 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
         normFlapPos = 1.0
     end
     flapped = normFlapPos < 1 ? true : false
-
-    # Validate
-    @assert c > 0 "element chord must be positive"
-    @assert -π/2 < Λ < π/2 "element sweep angle too large (input must be in radians and smaller than π/2)"
-    @assert 0 < normSparPos < 1 "element normSparPos must be between 0 and 1"
 
     # Set aerodynamic solvers and number of aerodynamic states
     solver = aeroSurface.solver
@@ -844,7 +841,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     # TF for small angle of attack approximations
     smallAngles = aeroSurface.smallAngles
 
-    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,linearPitchPlungeStatesRange=linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange=nonlinearPitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,linearGustStatesRange=linearGustStatesRange,nonlinearGustStatesRange=nonlinearGustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection,smallAngles=smallAngles)
+    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,linearPitchPlungeStatesRange=linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange=nonlinearPitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,linearGustStatesRange=linearGustStatesRange,nonlinearGustStatesRange=nonlinearGustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,φ=φ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection,smallAngles=smallAngles)
 end
 
 

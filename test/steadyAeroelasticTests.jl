@@ -9,46 +9,90 @@
     @test x3_def ≈ x3_def_ atol=SELFatol
 end
 
-@testset "Steady analysis of the Pazy wing with flared folding wing tip (FFWT)" begin
-    include("examples/PazyFFWTsteady.jl")
+@testset "Steady analysis of the baseline Healy free FFWT wing with varying root pitch and airspeed" begin
+    include("examples/HealyBaselineFFWTsteadyAoARangeURangeCoast.jl")
     # Self-comparison
-    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "u1.txt"))
-    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "u3.txt"))
-    p1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "p1.txt"))
-    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "p2.txt"))
-    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "M2.txt"))
-    α_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "alpha.txt"))
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "cn.txt"))
-    hingeBalanceM_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteady", "hingeBalanceM.txt"))[1]
-    @test u1 ≈ u1_ atol=SELFatol
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p1 ≈ p1_ atol=SELFatol
-    @test p2 ≈ p2_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
-    @test α ≈ α_ atol=SELFatol
-    @test cn ≈ cn_ atol=SELFatol
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTsteadyAoARangeURangeCoast", "phiHinge.txt"))
+    u3Hinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTsteadyAoARangeURangeCoast", "u3Hinge.txt"))
+    M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTsteadyAoARangeURangeCoast", "M2root.txt"))
+    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+    @test u3Hinge ≈ u3Hinge_ atol=SELFatol
+    @test M2root ≈ M2root_ atol=SELFatol
+end
+
+@testset "Steady analysis of the Healy FFWT wing with varying flare angle and root pitch angle" begin
+    include("examples/HealyFFWTsteadyFlareRangeAoARangeCoast.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyFlareRangeAoARangeCoast", "phiHinge.txt"))
+    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+end
+
+@testset "Steady analysis of the Healy FFWT wing with varying flare angle, root pitch angle and airspeed" begin
+    include("examples/HealyFFWTsteadyFlareRangeURangeAoARangeCoast.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyFlareRangeURangeAoARangeCoast", "phiHinge.txt"))
+    @test hcat(ϕHinge...)' ≈ ϕHinge_ atol=SELFatol
+end
+
+@testset "Steady analysis of the Healy FFWT wing with varying wingtip twist, root pitch angle and sideslip angle" begin
+    include("examples/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast", "phiHinge.txt"))
+    @test isapprox(hcat(ϕHinge...)', ϕHinge_, atol=SELFatol, nans=true)
+end
+
+@testset "Steady analysis of the Pazy wing with a coasting FFWT" begin
+    include("examples/PazyFFWTsteadyCoast.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyCoast", "phiHinge.txt"))[1]
+    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+end
+
+@testset "Steady analysis of the Pazy wing with a FFWT at a fixed fold angle" begin
+    include("examples/PazyFFWTsteadyFixedFold.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyFixedFold", "phiHinge.txt"))[1]
+    hingeBalanceM_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyFixedFold", "hingeBalanceM.txt"))[1]
+    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
     @test hingeBalanceM ≈ hingeBalanceM_ atol=SELFatol
 end
 
-@testset "Steady analysis of the Pazy wing with flared folding wing tip (FFWT) and varying airspeed" begin
-    include("examples/PazyFFWTsteadyURange.jl")
+@testset "Steady analysis of the Pazy wing with a coasting FFWT, at varying airspeed and root pitch angle" begin
+    include("examples/PazyFFWTsteadyURangeAoARangeCoast.jl")
     # Self-comparison
-    u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "u1.txt"))
-    u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "u3.txt"))
-    p1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "p1.txt"))
-    p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "p2.txt"))
-    M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "M2.txt"))
-    α_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "alpha.txt"))
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURange", "cn.txt"))
-    @test vcat(u1'...) ≈ u1_ atol=SELFatol
-    @test vcat(u3'...) ≈ u3_ atol=SELFatol
-    @test vcat(p1'...) ≈ p1_ atol=SELFatol
-    @test vcat(p2'...) ≈ p2_ atol=SELFatol
-    @test vcat(M2'...) ≈ M2_ atol=SELFatol
-    @test vcat(α'...) ≈ α_ atol=SELFatol
-    @test vcat(cn'...) ≈ cn_ atol=SELFatol
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURangeAoARangeCoast", "phiHinge.txt"))
+    @test isapprox(ϕHinge, ϕHinge_, atol=SELFatol, nans=true)
 end
 
+@testset "Steady analysis of the Pazy wing with a coasting FFWT, at varying airspeed" begin
+    include("examples/PazyFFWTsteadyURangeCoast.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURangeCoast", "phiHinge.txt"))
+    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+end
+
+@testset "Steady analysis of the Pazy wing with a FFWT at a fixed fold angle, at varying airspeed" begin
+    include("examples/PazyFFWTsteadyURangeFixedFold.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURangeFixedFold", "phiHinge.txt"))
+    hingeMoment_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyURangeFixedFold", "hingeMoment.txt"))
+    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+    @test hingeMoment ≈ hingeMoment_ atol=SELFatol
+end
+
+@testset "Steady analysis of the Pazy wing with varying root pitch angle" begin
+    include("examples/PazyWingPitchRange.jl")
+    # Self-comparison
+    tip_AoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_AoA.txt"))
+    tip_OOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_OOP.txt"))
+    tip_IP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_IP.txt"))
+    tip_twist_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_twist.txt"))
+    # @test filter(!isnan,tip_AoA) ≈ filter(!isnan,tip_AoA_) atol=SELFatol
+    @test tip_OOP ≈ tip_OOP_ atol=SELFatol
+    @test tip_IP ≈ tip_IP_ atol=SELFatol
+    @test tip_twist ≈ tip_twist_ atol=SELFatol
+end
+ 
 @testset "Steady analysis of the Pazy wing with varying root pitch angle" begin
     include("examples/PazyWingPitchRange.jl")
     # Self-comparison

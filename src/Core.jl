@@ -1383,6 +1383,24 @@ function element_inertia!(problem::Problem,model::Model,element::Element)
 end
 
 
+# Sets the augmented inertia matrix (in case there are hinge axis constraints)
+function augmented_inertia_matrix!(problem::Problem)
+
+    @unpack augmentedJacobian,inertia = problem
+    @unpack systemOrder = problem.model
+
+    # Size of augmented system
+    N = size(augmentedJacobian,1)
+
+    # Set augmented inertia matrix
+    augmentedInertia = spzeros(N,N)
+    augmentedInertia[1:systemOrder,1:systemOrder] = inertia
+
+    @pack! problem = augmentedInertia
+
+end
+
+
 # Updates the nodal states of the element
 function element_nodal_states!(element::Element)
 
@@ -1556,7 +1574,7 @@ function spring_loads!(model::Model,specialNode::SpecialNode)
     # Loop springs
     for spring in springs
         @unpack hasDoubleAttachment,Ku,Kp = spring
-        # Double attachment
+        # Double attachment springs
         if hasDoubleAttachment
             @unpack nodesSpecialIDs,nodesGlobalIDs = spring
             # Node of other attachment
@@ -1564,23 +1582,30 @@ function spring_loads!(model::Model,specialNode::SpecialNode)
             # Displacement and rotation of that node
             uOtherNode = otherNode.u
             pOtherNode = otherNode.p
-            # Rotation parameter scalings
-            λ,_ = rotation_parameter_scaling(p)
-            λOtherNode,_ = rotation_parameter_scaling(pOtherNode)
-            # Add spring loads, resolved in basis A
-            F .-= Ku * (u - uOtherNode)
-            M .-= Kp * (p*λ - pOtherNode*λOtherNode)
+            # Generalized spring displacements, resolved in basis A (Δp is scaled by rotation_between_WM(pOtherNode,p))
+            Δu = u - uOtherNode
+            Δp = rotation_between_WM(pOtherNode,p)
+            # Spring loads, resolved in basis A
+            Fs = - Ku * Δu
+            Ms = - Kp * Δp
+            # Add spring loads to nodal loads
+            F .+= Fs
+            M .+= Ms
             # Pack data
-            @pack! spring = λ,λOtherNode
-        # Single attachment    
+            @pack! spring = Fs,Ms,Δu,Δp
+        # Single attachment springs  
         else
-            # Rotation parameter scaling
-            λ,_ = rotation_parameter_scaling(p)
-            # Add spring loads, resolved in basis A
-            F .-= Ku * u
-            M .-= Kp * p*λ
+            # Generalized spring displacements, resolved in basis A (Δp must be scaled)
+            Δu = u
+            Δp = scaled_rotation_parameters(p)
+            # Spring loads, resolved in basis A
+            Fs = - Ku * Δu
+            Ms = - Kp * Δp
+            # Add spring loads to nodal loads
+            F .+= Fs
+            M .+= Ms
             # Pack data
-            @pack! spring = λ
+            @pack! spring = Fs,Ms,Δu,Δp
         end
     end
 
@@ -1682,7 +1707,7 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
 
     @unpack jacobian = problem
     @unpack forceScaling = model
-    @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,hasSprings,springs = specialNode
+    @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,springs = specialNode
 
     # Check if the node is BC'ed
     if !isempty(BCs)
@@ -1695,9 +1720,9 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
         jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
     end
 
-    # Add spring loads' contributions, if applicable
-    if hasSprings
-        jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,springs)
+    # Add spring loads' contributions
+    for spring in springs
+        jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
     end
 
     @pack! problem = jacobian
@@ -1776,28 +1801,182 @@ end
 
 
 # Adds the contributions of the spring loads to the Jacobian matrix
-function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,springs)
+function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
 
-    # Loop springs
-    for spring in springs
-        @unpack hasDoubleAttachment,Ku,Kp,λ,λOtherNode = spring
-        # Add translational spring Jacobian: d(-F_spring)/d(u) = Ku/forceScaling
-        jacobian[eqs_Fu[1],DOF_uF] .+= Ku/forceScaling
-        # Add rotational spring Jacobian: d(-M_spring)/d(p) = Kp*λ/forceScaling
-        jacobian[eqs_Fp[1],DOF_pM] .+= Kp*λ/forceScaling
-        # If doubly-attached, add contributions from other node's DOFs
-        if hasDoubleAttachment
-            @unpack nodesSpecialIDs,nodesGlobalIDs = spring
-            # Node of other attachment
-            otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
-            # Add translational spring Jacobian: d(-F_spring)/d(uOtherNode) = -Ku/forceScaling
-            jacobian[eqs_Fu[1],otherNode.DOF_uF] .-= Ku/forceScaling
-            # Add rotational spring Jacobian: d(-M_spring)/d(pOtherNode) = -Kp*λOtherNode/forceScaling
-            jacobian[eqs_Fp[1],otherNode.DOF_pM] .-= Kp*λOtherNode/forceScaling
-        end
+    @unpack hasDoubleAttachment,Ku,Kp,nodesSpecialIDs,nodesGlobalIDs = spring
+
+    # Double attachment springs
+    if hasDoubleAttachment
+        # Node of other attachment
+        otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
+        # Rotation of that node and DOF indices
+        pOtherNode = otherNode.p
+        DOF_uF_otherNode = otherNode.DOF_uF
+        DOF_pM_otherNode = otherNode.DOF_pM
+        # Add translational spring Jacobians (if node's displacements are not prescribed): ∂(-F_spring)/∂(u) = Ku/forceScaling and ∂(-F_spring)/∂(uOtherNode) = -Ku/forceScaling
+        jacobian[eqs_Fu[1],DOF_uF] .+= Ku/forceScaling * Diagonal(.!uIsPrescribed)
+        jacobian[eqs_Fu[1],DOF_uF_otherNode] .+= -Ku/forceScaling * Diagonal(.!otherNode.uIsPrescribed)
+        # Derivative of spring rotation with respect to rotation of each of its attachment nodes
+        Δp_p = ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p)
+        Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
+        # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
+        jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
+        jacobian[eqs_Fp[1],DOF_pM_otherNode] .+= Kp/forceScaling * Δp_pOtherNode * Diagonal(.!otherNode.pIsPrescribed)
+    # Single attachment springs        
+    else
+        # Add translational spring Jacobian (if node's displacements are not prescribed): ∂(-F_spring)/∂(u) = Ku/forceScaling
+        jacobian[eqs_Fu[1],DOF_uF] .+= Ku/forceScaling * Diagonal(.!uIsPrescribed)
+        # Add rotational spring Jacobian (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp*λ/forceScaling
+        λ,_,_ = rotation_parameter_scaling(p)
+        jacobian[eqs_Fp[1],DOF_pM] .+= Kp*λ/forceScaling * Diagonal(.!pIsPrescribed)
     end
 
     return jacobian
+end
+
+
+# Resets Jacobians associated with spring loads
+function reset_spring_loads_jacobians!(problem::Problem,specialNodes)
+
+    @unpack jacobian = problem
+
+    # Loop special nodes
+    for specialNode in specialNodes
+        @unpack springs,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM = specialNode
+        # Loop springs
+        for spring in springs
+            @unpack hasDoubleAttachment,Ku,Kp,nodesSpecialIDs,nodesGlobalIDs = spring
+            # Double attachment springs
+            if hasDoubleAttachment
+                # Node of other attachment
+                otherNode = globalID == nodesGlobalIDs[1] ? specialNodes[nodesSpecialIDs[2]] : specialNodes[nodesSpecialIDs[1]]
+                # DOF indices of that node
+                DOF_uF_otherNode = otherNode.DOF_uF
+                DOF_pM_otherNode = otherNode.DOF_pM
+                # Reset Jacobians
+                jacobian[eqs_Fu[1],DOF_uF] .= zeros(3,3)
+                jacobian[eqs_Fu[1],DOF_uF_otherNode] .= zeros(3,3)
+                jacobian[eqs_Fp[1],DOF_pM] .= zeros(3,3)
+                jacobian[eqs_Fp[1],DOF_pM_otherNode] .= zeros(3,3)
+            # Single attachment springs        
+            else
+                # Reset Jacobians
+                jacobian[eqs_Fu[1],DOF_uF] .= zeros(3,3)
+                jacobian[eqs_Fp[1],DOF_pM] .= zeros(3,3)
+            end
+        end
+    end
+
+    @pack! problem = jacobian
+
+end
+
+
+# Computes the hinge rotation parameters, given the master and slave rotation parameters (pM and pS)
+function hinge_rotation_parameters(pM,pS)
+
+    # Master and slave rotation tensors
+    RM,_ = rotation_tensor_WM(pM)
+    RS,_ = rotation_tensor_WM(pS)
+
+    # Hinge rotation tensor
+    RH = RS*RM'
+
+    # Hinge rotation tensor and associated parameters
+    pH = rotation_parameters_WM(RH)
+
+    return pH
+end
+
+
+# Computes the hinge rotation parameters, given the master element rotation parameters (pM), the initial hinge axis (n₀), and the rotation magnitude (pHValue)
+function hinge_rotation_parameters_from_hinge_rotation(pM,n₀,pHValue)
+
+    # Master element rotation tensor
+    RM,_ = rotation_tensor_WM(pM)
+
+    # Hinge rotation parameters
+    pH = pHValue * RM * n₀
+
+    return pH
+end
+
+
+# Computes the current hinge axis
+function current_hinge_axis(pM,initialHingeAxis)
+
+    # Rotation tensor from basis b to basis B of master element
+    RM,_ = rotation_tensor_WM(pM)
+
+    # Current hinge axis (resolved in basis A)
+    return RM * initialHingeAxis
+end
+
+
+# Computes the magnitude of the rotation, given the rotation parameters of the master and slave elements (pM and pS) and the initial hinge axis
+function hinge_rotation_value(pM,pS,initialHingeAxis)
+
+    # Current hinge axis
+    RM,_ = rotation_tensor_WM(pM)
+    currentHingeAxis = RM*initialHingeAxis
+
+    # Hinge rotation parameters vector
+    pH = hinge_rotation_parameters(pM,pS)
+
+    # Hinge rotation value (signed magnitude)
+    pHValue = dot(pH,currentHingeAxis)
+
+    return pHValue
+end
+
+
+# Computes the slave rotation parameters, given the master rotation parameters (pM), the initial hinge axis (n₀), and the rotation magnitude (pHValue)
+function pS_from_pM_and_pHValue(pM,n₀,pHValue)
+
+    # Rotation tensor from basis b to basis B of master element
+    RM,_ = rotation_tensor_WM(pM)
+
+    # Current hinge rotation axis
+    n = RM*n₀
+
+    # Hinge rotation parameters and associated rotation tensor
+    pH = pHValue*n
+    RH,_ = rotation_tensor_WM(pH)
+
+    # Slave element rotation tensor and associated parameters
+    RS = RH*RM
+    pS = rotation_parameters_WM(RS)
+
+    return pS
+end
+
+
+# Hinge constraint equations residual
+function C(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
+    c = isnothing(pHValue) ? hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,hinge_rotation_value(pM,pS,initialHingeAxis)) : hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,pHValue)
+    if isnothing(slaveDOFs)
+        return c
+    else
+        return c[slaveDOFs]
+    end
+end
+
+
+# Jacobian functions of constraint equations w.r.t. system states
+function ∂C_∂pM(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
+    return ForwardDiff.jacobian(x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM)
+end
+function ∂C_∂pS(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
+    return ForwardDiff.jacobian(x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS)
+end
+
+
+# Constraint Hessian functions
+function ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
+    return ForwardDiff.jacobian(x -> ∂C_∂pM(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM)
+end
+function ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
+    return ForwardDiff.jacobian(x -> ∂C_∂pS(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS)
 end
 
 

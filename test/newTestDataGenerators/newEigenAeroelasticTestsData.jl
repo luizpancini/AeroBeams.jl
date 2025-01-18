@@ -32,6 +32,49 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/GolandWingFlutter"))
 writedlm("test/newTestDataGenerators/GolandWingFlutter/freqs.txt", freqs)
 writedlm("test/newTestDataGenerators/GolandWingFlutter/damps.txt", damps)
 
+# Flutter analysis of the baseline Healy free FFWT wing with tip loss, root pitch and airspeed as the varying parameters
+include("../examples/HealyBaselineFFWTfreeFlutterAoARangeURange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyBaselineFFWTfreeFlutterAoARangeURange"))
+for (i,τ) in enumerate(τRange)
+    for (j,θ) in enumerate(θRange)
+        writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTfreeFlutterAoARangeURange/freqs",i,j,".txt"), hcat(freqs[i,j,:]...)')
+        writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTfreeFlutterAoARangeURange/damps",i,j,".txt"), hcat(damps[i,j,:]...)')
+    end
+end
+
+# Flutter analysis of the baseline Healy free FFWT wing with flare angle and airspeed as the varying parameters
+include("../examples/HealyBaselineFFWTfreeFlutterFlareRangeURange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyBaselineFFWTfreeFlutterFlareRangeURange"))
+for (i,Λ) in enumerate(ΛRange)
+    writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTfreeFlutterFlareRangeURange/freqs",i,".txt"), hcat(freqs[i,:]...)')
+    writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTfreeFlutterFlareRangeURange/damps",i,".txt"), hcat(damps[i,:]...)')
+end
+
+# Flutter analysis of the baseline Healy locked FFWT wing with airspeed as the varying parameters
+include("../examples/HealyBaselineFFWTlockedFlutterURange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyBaselineFFWTlockedFlutterURange"))
+writedlm("test/newTestDataGenerators/HealyBaselineFFWTlockedFlutterURange/freqs.txt", freqs)
+writedlm("test/newTestDataGenerators/HealyBaselineFFWTlockedFlutterURange/damps.txt", damps)
+
+# Flutter analysis of the Healy FFWT wing with sideslip angle as the varying parameter
+include("../examples/HealyFFWTflutterSideslipRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyFFWTflutterSideslipRange"))
+writedlm("test/newTestDataGenerators/HealyFFWTflutterSideslipRange/freqs.txt", freqs)
+writedlm("test/newTestDataGenerators/HealyFFWTflutterSideslipRange/damps.txt", damps)
+
+# Flutter analysis of the Healy FFWT wing with airspeed as the varying parameter
+include("../examples/HealyFFWTflutterURange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyFFWTflutterURange"))
+writedlm("test/newTestDataGenerators/HealyFFWTflutterURange/freqs.txt", freqs)
+writedlm("test/newTestDataGenerators/HealyFFWTflutterURange/damps.txt", damps)
+
+# Flutter analysis of the Pazy FFWT wing with airspeed as the varying parameter
+include("../examples/PazyFFWTflutterURange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTflutterURange"))
+writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/freqs.txt", freqs)
+writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/damps.txt", damps)
+writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/phiHinge.txt", ϕHinge)
+
 # Flutter analysis of the Helios flying-wing in free flight with payload and structural stiffness as the varying parameters
 include("../examples/heliosFlutterPLambdaRange.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/heliosFlutterPLambdaRange"))

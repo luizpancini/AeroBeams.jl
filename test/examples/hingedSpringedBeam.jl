@@ -12,8 +12,8 @@ midElem = div(nElem,2)
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EA=EA,EIy=EIy)],hingedNodes=[midElem+1],hingedNodesDoF=[[false,true,false]])
 
 # Spring
-kOOPBending = 1e5
-spring = create_Spring(basis="A",elementsIDs=[midElem,midElem+1],nodesSides=[1,2],kOOPBending=kOOPBending)
+kSpring = 1e5
+spring = create_Spring(elementsIDs=[midElem,midElem+1],nodesSides=[1,2],kp=[0,kSpring,0])
 add_spring_to_beams!(beams=[beam,beam],spring=spring)
 
 # BCs
