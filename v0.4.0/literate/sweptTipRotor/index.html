@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Modal analysis of a rotating beam · AeroBeams.jl</title><meta name="title" content="Modal analysis of a rotating beam · AeroBeams.jl"/><meta property="og:title" content="Modal analysis of a rotating beam · AeroBeams.jl"/><meta property="twitter:title" content="Modal analysis of a rotating beam · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/sweptTipRotor/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/sweptTipRotor/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/sweptTipRotor/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../conventionalHALEmodel/">Creating a HALE aircraft model</a></li><li><a class="tocitem" href="../OMCgustTests/">Gust response of an airfoil section</a></li><li><a class="tocitem" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section</a></li><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../HealyBaselineFFWTfreeFlutterAoARangeURange/">Flutter analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/">Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li class="is-active"><a class="tocitem" href>Modal analysis of a rotating beam</a></li><li><a class="tocitem" href="../twoStoryFrame/">Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li><a class="tocitem" href="../heliosTrim/">Trimming a flying-wing HALE</a></li><li><a class="tocitem" href="../BWBflutter/">Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li><li><a class="tocitem" href="../conventionalHALECheckedRollManeuver/">Coordinated turn maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Modal analysis of a rotating beam</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Modal analysis of a rotating beam</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/sweptTipRotor.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Modal-analysis-of-a-rotating-beam"><a class="docs-heading-anchor" href="#Modal-analysis-of-a-rotating-beam">Modal analysis of a rotating beam</a><a id="Modal-analysis-of-a-rotating-beam-1"></a><a class="docs-heading-anchor-permalink" href="#Modal-analysis-of-a-rotating-beam" title="Permalink"></a></h1><p>This example illustrates how to set up a modal (eigen) analysis, using a swept-tip rotor. We will investigate the vibration modes of this rotor at several rotating speeds and several angles of the tip. This problem was proposed by <a href="https://doi.org/10.2514/6.1995-1174">Hodges, Shang and Cesnik</a>, based on the experiments of <a href="https://doi.org/10.4050/JAHS.41.29">Epps and Chandra</a>.</p><p><img src="../../assets/sweptTipRotor.png" alt/></p><p><em>Geometry of the swept-tip rotor</em> by <a href="https://doi.org/10.2514/6.1995-1174">Hodges, Shang and Cesnik</a></p><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>The code for this example is available <a href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/sweptTipRotor.jl">here</a>.</p></div></div><h3 id="Problem-setup"><a class="docs-heading-anchor" href="#Problem-setup">Problem setup</a><a id="Problem-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-setup" title="Permalink"></a></h3><p>To set up the problem, we need to define the geometric and material properties of the beams, to later create them. We also define the number of elements for each beam, the number of vibration modes to extract and the ranges for the angular velocity and the tip angle. Notice that the beam is clamped at a position <code>r0</code> relative to the axis of rotation, which is input to the function <a href="../../publicAPI/#AeroBeams.create_Model"><code>create_Model</code></a> through the argument <code>initialPosition</code>. Moreover, the model assembly assumes by default that all the beams given by the <code>beams</code> argument are connected in sequence (<em>e.g.</em>, the first node of <code>tipBeam</code> is the same as the last of <code>baseBeam</code>).</p><pre><code class="language-julia hljs">using AeroBeams
+
+# Geometric properties
+L1,L2 = 31.5,6.0
+b,H = 1,0.063
+A,Iy,Iz = b*H,b*H^3/12,H*b^3/12
+J = Is = Iy + Iz
+Ksy,Ksz,Kt = 5/6,1/14.625,1/65.852
+r0 = [2.5; 0.0; 0.0]
+
+# Material properties (aluminum)
+E = 1.06e7
+G = E/(2*(1+0.325))
+ρ = 2.51e-4
+
+# Seciontal stiffness and inertia matrices
+S = isotropic_stiffness_matrix(EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)
+I = inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz,ρIs=ρ*Is)
+
+# Discretization variables
+nElemBeam1 = 20
+nElemBeam2 = 10
+
+# Range of angular velocity [rad/s]
+ωRange = 2π/60*[0,500,750]
+
+# Range of beam tip angles [rad]
+tipAngleRange = π/180*collect(0:2.5:45)
+
+# Number of modes
+nModes = 8
+
+# Beam frame
+baseBeam = create_Beam(name=&quot;baseBeam&quot;,length=L1,nElements=nElemBeam1,S=[S],I=[I])
+tipBeam = create_Beam(name=&quot;tipBeam&quot;,length=L2,nElements=nElemBeam2,S=[isotropic_stiffness_matrix(∞=1e12,EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)],I=[I],rotationParametrization=&quot;E321&quot;)
+
+# BCs
+clamp = create_BC(name=&quot;clamp&quot;,beam=baseBeam,node=1,types=[&quot;u1A&quot;,&quot;u2A&quot;,&quot;u3A&quot;,&quot;p1A&quot;,&quot;p2A&quot;,&quot;p3A&quot;],values=[0,0,0,0,0,0])
+
+# Create model
+sweptTipRotor = create_Model(name=&quot;sweptTipRotor&quot;,beams=[baseBeam,tipBeam],BCs=[clamp],initialPosition=r0,units=create_UnitsSystem(length=&quot;in&quot;,force=&quot;lbf&quot;,frequency=&quot;Hz&quot;))
+
+# Initialize outputs
+numFreqs = Matrix{Vector{Float64}}(undef,length(ωRange),length(tipAngleRange))</code></pre><h3 id="Solving-the-problem"><a class="docs-heading-anchor" href="#Solving-the-problem">Solving the problem</a><a id="Solving-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-the-problem" title="Permalink"></a></h3><p>We now solve an eigenproblem at each combination of tip angle and angular velocity, and extract the modal frequencies. Notice that we set the angular velocity of the entire model through the angular velocity of basis <span>$\mathcal{A}$</span>, using the variable <code>ω_A</code>. AeroBeams will automatically solve the steady problem to find the deformed state of the model, and then perform an eigen-analysis around that state.</p><pre><code class="language-julia hljs"># Loop over sweep variables
+for (i,ω) in enumerate(ωRange)
+    # Set angular velocity of basis A
+    sweptTipRotor.ω_A = [0; 0; ω]
+    # Loop tip angles
+    for (j,tipAngle) in enumerate(tipAngleRange)
+        # Update tipBeam angle with tip angle
+        tipBeam.p0[1] = -tipAngle
+        update_beam!(tipBeam)
+        # Update model
+        sweptTipRotor.beams = [baseBeam,tipBeam]
+        update_model!(sweptTipRotor)
+        # Create and solve eigenproblem
+        global problem = create_EigenProblem(model=sweptTipRotor,nModes=nModes)
+        solve!(problem)
+        # Get outputs
+        numFreqs[i,j] = problem.frequenciesOscillatory
+    end
+end</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>We begin by loading the experimental values by <a href="https://doi.org/10.4050/JAHS.41.29">Epps and Chandra</a>.</p><pre><code class="language-julia hljs"># Experimental values
+expTipAngles = [0, 15, 30, 45]
+expFreqs1 = [1.4 1.8 1.7 1.6; 10.2 10.1 10.2 10.2; 14.8 14.4 14.9 14.7]
+expFreqs2 = [10.3 10.2 10.4 10.4; 25.2 25.2 23.7 21.6; 36.1 34.8 30.7 26.1]
+expFreqs3 = [27.7 27.2 26.6 24.8; 47.0 44.4 39.3 35.1; 62.9 55.9 48.6 44.8]
+expFreqs4 = [95.4 87.5 83.7 78.8; 106.6 120.1 122.6 117.7; 132.7 147.3 166.2 162.0]</code></pre><p>Now we plot the evolution of the modal frequencies with the tip angle for the range of angular velocities. The numerical results agree well with the experimental ones, and match those described by <a href="https://doi.org/10.2514/6.1995-1174">Hodges, Shang and Cesnik</a> and <a href="https://doi.org/10.1016/j.compstruct.2012.04.007">Yu and Blair</a>.</p><pre><code class="language-julia hljs">using Plots, ColorSchemes
+gr()
+colors = get(colorschemes[:darkrainbow], LinRange(0, 1, length(ωRange)))
+
+# 1st bending mode
+plt1 = plot(xlabel=&quot;Tip sweep angle [deg]&quot;, ylabel=&quot;Frequency [Hz]&quot;, title=&quot;1st bending&quot;, legend=(0.15,0.4))
+plot!([NaN],[NaN], lc=:black, lw=2, label=&quot;AeroBeams&quot;)
+scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label=&quot;Epps &amp; Chandra (1996)&quot;)
+for (i,ω) in enumerate(ωRange)
+    mode = 1
+    ωRPM = round(Int,ω/(2*π/60))
+    numFreqs1 = [numFreqs[i,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
+    plot!(tipAngleRange*180/π,numFreqs1, lc=colors[i], lw=2, label=false)
+    scatter!(expTipAngles,expFreqs1[i,:], mc=colors[i], ms=4, msw=0, label=false)
+    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=4, msw=0, label=&quot;\$\\omega\$ = $ωRPM rpm&quot;)
+end
+
+# 2nd bending
+plt2 = plot(xlabel=&quot;Tip sweep angle [deg]&quot;, ylabel=&quot;Frequency [Hz]&quot;, title=&quot;2nd bending&quot;, legend=(0.15,0.4))
+plot!([NaN],[NaN], lc=:black, lw=2, label=&quot;AeroBeams&quot;)
+scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label=&quot;Epps &amp; Chandra (1996)&quot;)
+for (i,ω) in enumerate(ωRange)
+    mode = i &lt; 3 ? 2 : 3
+    ωRPM = round(Int,ω/(2*π/60))
+    numFreqs2 = [numFreqs[i,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
+    plot!(tipAngleRange*180/π,numFreqs2, lc=colors[i], lw=2, label=false)
+    scatter!(expTipAngles,expFreqs2[i,:], mc=colors[i], ms=4, msw=0, label=false)
+    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=4, msw=0, label=&quot;\$\\omega\$ = $ωRPM rpm&quot;)
+end
+
+# 3rd bending mode
+plt3 = plot(xlabel=&quot;Tip sweep angle [deg]&quot;, ylabel=&quot;Frequency [Hz]&quot;, title=&quot;3rd bending&quot;, legend=:topright)
+plot!([NaN],[NaN], lc=:black, lw=2, label=&quot;AeroBeams&quot;)
+scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label=&quot;Epps &amp; Chandra (1996)&quot;)
+for (i,ω) in enumerate(ωRange)
+    mode = 4
+    ωRPM = round(Int,ω/(2*π/60))
+    numFreqs3 = [numFreqs[i,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
+    plot!(tipAngleRange*180/π,numFreqs3, lc=colors[i], lw=2, label=false)
+    scatter!(expTipAngles,expFreqs3[i,:], mc=colors[i], ms=4, msw=0, label=false)
+    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=4, msw=0, label=&quot;\$\\omega\$ = $ωRPM rpm&quot;)
+end
+
+# Coupled bending-torsion modes at ω = 750 rpm
+plt4 = plot(xlabel=&quot;Tip sweep angle [deg]&quot;, ylabel=&quot;Frequency [Hz]&quot;, title=&quot;Coupled bending-torsion at \$\\omega\$ = 750 rpm&quot;, legend=(0.1,0.99))
+plot!([NaN],[NaN], lc=:black, lw=2, label=&quot;AeroBeams&quot;)
+scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label=&quot;Epps &amp; Chandra (1996)&quot;)
+modes = [5,6,7]
+modeLabels = [&quot;1T/5B&quot;,&quot;5B/1T&quot;,&quot;4B/1T&quot;]
+for (i,ω) in enumerate(ωRange)
+    ωRPM = round(Int,ω/(2π/60))
+    if i == 3
+        numFreqsCoupled = zeros(length(tipAngleRange))
+        for j in 1:size(numFreqs, 2)
+            mode = tipAngleRange[j]*180/π &gt;= 20 ? 8 : 7
+            numFreqsCoupled[j] = numFreqs[end,j][mode]/(2π)
+        end
+    else
+        mode = modes[i]
+        numFreqsCoupled = [numFreqs[end,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
+    end
+    plot!(tipAngleRange*180/π,numFreqsCoupled, c=colors[i], lw=2, label=false)
+    scatter!(expTipAngles,expFreqs4[i,:], c=colors[i], ms=4, msw=0, label=false)
+    plot!([NaN], [NaN], lc=colors[i], mc=colors[i], lw=2, ms=4, msw=0, label=modeLabels[i])
+end</code></pre><p><img src="../sweptTipRotor_1B.svg" alt/> <img src="../sweptTipRotor_2B.svg" alt/> <img src="../sweptTipRotor_3B.svg" alt/> <img src="../sweptTipRotor_TB.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../PazyWingFlutterPitchRange/">« Flutter analysis of the Pazy wing</a><a class="docs-footer-nextpage" href="../twoStoryFrame/">Modal analysis of a two-story frame »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Sunday 19 January 2025 17:31">Sunday 19 January 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

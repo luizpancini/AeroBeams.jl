@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Flutter and divergence of a typical aeroelastic section · AeroBeams.jl</title><meta name="title" content="Flutter and divergence of a typical aeroelastic section · AeroBeams.jl"/><meta property="og:title" content="Flutter and divergence of a typical aeroelastic section · AeroBeams.jl"/><meta property="twitter:title" content="Flutter and divergence of a typical aeroelastic section · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/typicalSectionFlutterAndDivergence/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/typicalSectionFlutterAndDivergence/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/typicalSectionFlutterAndDivergence/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../conventionalHALEmodel/">Creating a HALE aircraft model</a></li><li><a class="tocitem" href="../OMCgustTests/">Gust response of an airfoil section</a></li><li class="is-active"><a class="tocitem" href>Flutter and divergence of a typical aeroelastic section</a></li><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../HealyBaselineFFWTfreeFlutterAoARangeURange/">Flutter analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/">Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li><a class="tocitem" href="../sweptTipRotor/">Modal analysis of a rotating beam</a></li><li><a class="tocitem" href="../twoStoryFrame/">Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li><a class="tocitem" href="../heliosTrim/">Trimming a flying-wing HALE</a></li><li><a class="tocitem" href="../BWBflutter/">Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li><li><a class="tocitem" href="../conventionalHALECheckedRollManeuver/">Coordinated turn maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Flutter and divergence of a typical aeroelastic section</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Flutter and divergence of a typical aeroelastic section</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/typicalSectionFlutterAndDivergence.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Flutter-and-divergence-of-a-typical-aeroelastic-section"><a class="docs-heading-anchor" href="#Flutter-and-divergence-of-a-typical-aeroelastic-section">Flutter and divergence of a typical aeroelastic section</a><a id="Flutter-and-divergence-of-a-typical-aeroelastic-section-1"></a><a class="docs-heading-anchor-permalink" href="#Flutter-and-divergence-of-a-typical-aeroelastic-section" title="Permalink"></a></h1><p>This example illustrates how to set up a flutter/divergence analysis of a 2-DOF typical aeroelastic section. The typical section used was defined by <a href="https://doi.org/10.1017/CBO9780511997112">Hodges and Pierce</a>.</p><p><img src="../../assets/typicalSection.svg" alt/> <em>Typical section</em></p><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>The code for this example is available <a href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/typicalSectionFlutterAndDivergence.jl">here</a>.</p></div></div><h3 id="Problem-setup"><a class="docs-heading-anchor" href="#Problem-setup">Problem setup</a><a id="Problem-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-setup" title="Permalink"></a></h3><p>Let&#39;s begin by setting up the variables of our problem: we&#39;ll model the 2-DOF (pitch and plunge) typical section, which is a two-dimensional idealization, by setting up a rigid wing supported by displacement and rotation springs. We leverage the function <a href="../../publicAPI/#AeroBeams.typical_section_data"><code>typical_section_data</code></a> to extract the typical section parameters.</p><pre><code class="language-julia hljs">using AeroBeams, LinearInterpolations, DelimitedFiles
+
+# Aerodynamic solver
+aeroSolver = Inflow(6)
+
+# Derivation method
+derivationMethod = FD(nothing)
+
+# Atmosphere
+altitude = 0
+atmosphere = standard_atmosphere(altitude)
+ρ = atmosphere.ρ
+
+# Given typical section data
+typicalSectionName = &quot;HP-1&quot;
+airfoil = deepcopy(flatPlate)
+a,e,μ,rα²,σ,ωα,c = typical_section_data(typicalSectionName)
+
+# Derived typical section data: semichord, mass per unit length, pitching inertia, distance from elastic axis to mass axis, plunge stiffness and pitch stiffness
+b = c/2
+m = μ * π*ρ*b^2
+Iα = rα²*m*b^2
+e2 = -(e-a)*b
+kh = m*(σ*ωα)^2
+kα = Iα*ωα^2
+
+# Number of elements for the wing (the results are independent of it)
+nElem = 2</code></pre><p>We now create the aerodynamic surface to be attached to the wing&#39;s beam, the attachment springs, and the rigid beam of the wing. Two sliding journals (allowing only pitch and plunge motion) are added at the wingtips, further removing any elastic effects of the beam.</p><pre><code class="language-julia hljs"># Aerodynamic surface
+surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=c,normSparPos=(a+1)/2,updateAirfoilParameters=false)
+
+# Attachment springs (in pitch and plunge)
+springs = create_Spring(elementsIDs=[1],nodesSides=[2],ku=kh*[0;0;1],kp=kα*[1;0;0])
+
+# Rigid wing
+L = 1
+∞ = 1e15
+wing = create_Beam(name=&quot;wing&quot;,length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=m,ρIs=Iα,e2=e2)],aeroSurface=surf,springs=[springs])
+
+# BCs
+journal1 = create_BC(name=&quot;journal-1&quot;,beam=wing,node=1,types=[&quot;u1A&quot;,&quot;u2A&quot;,&quot;p2A&quot;,&quot;p3A&quot;],values=[0,0,0,0])
+journal2 = create_BC(name=&quot;journal-2&quot;,beam=wing,node=nElem+1,types=[&quot;u1A&quot;,&quot;u2A&quot;,&quot;p2A&quot;,&quot;p3A&quot;],values=[0,0,0,0])</code></pre><p>The model consists of the beam and boundary conditions. We also select the airspeed range for analysis, the number of oscillatory modes to be extracted and initialize the outputs.</p><pre><code class="language-julia hljs"># Model
+typicalSectionFlutterAndDivergence = create_Model(name=&quot;typicalSectionFlutterAndDivergence&quot;,beams=[wing],BCs=[journal1,journal2])
+
+# Airspeed range
+URange = collect(5:1:80)
+
+# Number of oscillatory modes
+nModes = 2
+
+# Pre-allocate memory and initialize output arrays
+untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
+untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
+untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
+problem = Array{EigenProblem}(undef,length(URange))</code></pre><h3 id="Problem-solution"><a class="docs-heading-anchor" href="#Problem-solution">Problem solution</a><a id="Problem-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-solution" title="Permalink"></a></h3><p>We&#39;re now ready to solve the eigenproblem at each airspeed value.</p><pre><code class="language-julia hljs"># Sweep airspeed
+for (i,U) in enumerate(URange)
+    # Update airspeed on model
+    set_motion_basis_A!(model=typicalSectionFlutterAndDivergence,v_A=[0;U;0])
+    # Create and solve eigenproblem
+    problem[i] = create_EigenProblem(model=typicalSectionFlutterAndDivergence,nModes=nModes,frequencyFilterLimits=[1e-3,1e3])
+    solve!(problem[i])
+    # Frequencies, dampings and eigenvectors
+    untrackedFreqs[i] = problem[i].frequenciesOscillatory
+    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-8)
+    untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
+end</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>The first post-processing step is to use the built-in mode tracking algorithm to enhance our chances of correctly tracking the oscillatory modes. We then set arrays for the frequecies and dampings of each mode, and find the flutter onset and offset (actually absent in this case) speeds. To identify the divergence, we have to look at the damping of the non-oscillatory (zero-frequency) modes.</p><pre><code class="language-julia hljs"># Apply mode tracking
+freqs,damps,_ = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+
+# Separate frequencies and damping ratios by mode
+modeFrequencies = Array{Vector{Float64}}(undef,nModes)
+modeDampings = Array{Vector{Float64}}(undef,nModes)
+for mode in 1:nModes
+    modeFrequencies[mode] = [freqs[i][mode] for i in eachindex(URange)]
+    modeDampings[mode] = [damps[i][mode] for i in eachindex(URange)]
+end
+
+# Flutter speed and flutter frequency
+flutterOnsetSpeed = [Float64[] for _ in 1:nModes]
+flutterOnsetFreq = [Float64[] for _ in 1:nModes]
+flutterOffsetSpeed = [Float64[] for _ in 1:nModes]
+flutterOffsetFreq = [Float64[] for _ in 1:nModes]
+for mode in 1:nModes
+    # Flutter onset
+    iOnset = 1 .+ findall(i -&gt; modeDampings[mode][i] &lt; 0 &amp;&amp; modeDampings[mode][i+1] &gt; 0, 1:length(modeDampings[mode])-1)
+    if isempty(iOnset) || isempty(filter!(x-&gt;x!=1,iOnset))
+        continue
+    end
+    for i in iOnset
+        push!(flutterOnsetSpeed[mode],interpolate(modeDampings[mode][i-1:i],URange[i-1:i],0))
+        push!(flutterOnsetFreq[mode],interpolate(modeDampings[mode][i-1:i],modeFrequencies[mode][i-1:i],0))
+    end
+    # Flutter offset
+    iOffset = 1 .+ findall(i -&gt; modeDampings[mode][i] &gt; 0 &amp;&amp; modeDampings[mode][i+1] &lt; 0, 1:length(modeDampings[mode])-1)
+    if isempty(iOffset)
+        continue
+    end
+    for i in iOffset
+        push!(flutterOffsetSpeed[mode],interpolate(-modeDampings[mode][i-1:i],URange[i-1:i],0))
+        push!(flutterOffsetFreq[mode],interpolate(-modeDampings[mode][i-1:i],modeFrequencies[mode][i-1:i],0))
+    end
+end
+
+# Damping of non-oscillatory modes
+dampingsNonOscillatory = [problem[i].dampingsNonOscillatory for i in eachindex(URange)]</code></pre><p>We also load a reference solution obtained using the <span>$p$</span> method for stability analysis using the unsteady aerodynamic theory of <a href="https://doi.org/10.2514/3.46718">Peters et al.</a>, as proposed in problem 5.7 of <a href="https://doi.org/10.1017/CBO9780511997112">Hodges and Pierce</a>.</p><pre><code class="language-julia hljs"># Load reference data
+freqsRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/typicalSectionFlutterAndDivergence/freqs.txt&quot;)
+dampsRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/typicalSectionFlutterAndDivergence/damps.txt&quot;)</code></pre><p>We&#39;ll visualize the results through the V-g-f diagrams, <em>i.e.</em>, the evolution of the frequencies and dampings (both normalized by the <em>in vacuo</em> pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly! Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be found in spite of it.</p><pre><code class="language-julia hljs">using Plots, ColorSchemes
+gr()
+
+# Plot configurations
+modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes+1))
+modeLabels = [&quot;Plunge&quot; &quot;Pitch&quot;]
+lw = 3
+ms = 2
+
+# Frequency plot
+plt11 = plot(ylabel=&quot;Frequency ratio&quot;, ylims=[0,1.01])
+for mode in 1:nModes
+    plot!(URange, modeFrequencies[mode]/ωα, c=modeColors[mode], lw=lw,  label=false)
+end
+for r in 2:axes(freqsRef, 1)[end]
+    plot!(freqsRef[1,:], freqsRef[r,:], ls=:dash, c=modeColors[end], lw=1, label=false)
+end
+# Damping plot
+plt12 = plot(xlabel=&quot;Airspeed [m/s]&quot;, ylabel=&quot;Damping Ratio&quot;, ylims=[-0.15,0.15],legend=:topleft)
+for i in eachindex(URange)
+    for j in eachindex(dampingsNonOscillatory[i])
+        scatter!([URange[i]], [dampingsNonOscillatory[i][j]/ωα], c=:black, ms=ms, msw=0, label=false)
+    end
+end
+scatter!([NaN], [NaN], c=:black, ms=ms, msw=0, label=&quot;Non-oscillatory&quot;)
+for mode in 1:nModes
+    plot!(URange, modeDampings[mode]/ωα, c=modeColors[mode], lw=lw, label=modeLabels[mode])
+end
+for r in 2:axes(dampsRef, 1)[end]
+    plot!(dampsRef[1,:], dampsRef[r,:], ls=:dash, c=modeColors[end], lw=1, label=false)
+end
+plot!([NaN], [NaN], ls=:dash, c=modeColors[end], lw=1, label=&quot;\$p\$ method&quot;)
+plt1 = plot(plt11,plt12, layout=(2,1))</code></pre><p><img src="../typicalSectionFlutter_Vgf.svg" alt/></p><p>Finally, we show the numerical values of the nondimensional flutter speed and frequency</p><pre><code class="language-julia hljs"># Compute nondimensional flutter speed and frequency
+flutterSpeedAll = vcat(flutterOnsetSpeed...)
+flutterFreqAll = vcat(flutterOnsetFreq...)
+ind = argmin(flutterSpeedAll)
+flutterSpeed = flutterSpeedAll[ind]
+flutterFreq = flutterFreqAll[ind]
+println(&quot;Nondimensional flutter speed = $(flutterSpeed/(b*ωα))&quot;)
+println(&quot;Nondimensional flutter frequency = $(flutterFreq/ωα)&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Nondimensional flutter speed = 2.1727435217205477
+Nondimensional flutter frequency = 0.6533722973173984</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../OMCgustTests/">« Gust response of an airfoil section</a><a class="docs-footer-nextpage" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Sunday 19 January 2025 17:31">Sunday 19 January 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
