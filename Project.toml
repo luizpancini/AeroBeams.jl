@@ -1,7 +1,7 @@
 name = "AeroBeams"
 uuid = "4684ee71-20c3-4c77-8fc5-ebacc9f0342e"
 authors = ["Luiz Pancini <luizpancini@usp.br"]
-version = "0.4.0"
+version = "0.5.0"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"

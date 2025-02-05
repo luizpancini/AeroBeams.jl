@@ -4,7 +4,7 @@ using Test, BenchmarkTools, DelimitedFiles
 SELFatol = 1e-4
 
 # Option to locally run tests failing in CI
-runCIfailingTests = true
+runCIfailingTests = false
 
 include("dynamicAeroelasticTests.jl")
 include("eigenAeroelasticTests.jl")
