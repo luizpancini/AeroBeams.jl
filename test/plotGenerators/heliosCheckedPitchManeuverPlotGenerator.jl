@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotDistLoads=false,plotFrequency=5,plotLimits=[(-30,30),(0,600),(-20,20)],save=true,savePath=string(relPath,"/heliosCheckedPitchManeuver_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotDistLoads=false,plotFrequency=5,plotLimits=([-30,30],[0,600],[-20,20]),save=true,savePath=string(relPath,"/heliosCheckedPitchManeuver_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

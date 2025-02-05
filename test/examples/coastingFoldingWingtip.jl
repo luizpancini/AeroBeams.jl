@@ -18,8 +18,11 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_m
 flareAngle = 20*π/180
 localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * AeroBeams.a2
 
+# Solution method for hinge constraint
+solutionMethod = "appliedMoment"
+
 # Hinge axis
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=midElem,slaveElementLocalID=midElem+1,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingedNode+1)
+hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,beam=beam,localHingeAxis=localHingeAxis)
 
 # Spring
 kSpring = 1e-4
@@ -37,11 +40,10 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 coastingFoldingWingtip = create_Model(name="coastingFoldingWingtip",beams=[beam],BCs=[clamp],hingeAxisConstraints=[hingeAxisConstraint])
 
 # System solver
-σ0 = 1
+σ0 = 0.1
 maxIter = 100
-relTol = 1e-4
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Create and solve problem
 problem = create_SteadyProblem(model=coastingFoldingWingtip,systemSolver=NR)

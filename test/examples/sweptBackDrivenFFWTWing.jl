@@ -28,7 +28,7 @@ inboardElem = outboardElem-1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingeNode],hingedNodesDoF=[[true,true,true]],rotationParametrization="E321",p0=[Λ;0;0],aeroSurface=surf)
 
 # Hinge axis constraint
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=inboardElem,slaveElementLocalID=outboardElem,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1,pHValue=4*tan(θ/4))
+hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,localHingeAxis=localHingeAxis,pHValue=4*tan(θ/4))
 
 # BCs
 Fₜ = -1e-1
@@ -46,8 +46,7 @@ sweptBackDrivenFFWTWing = create_Model(name="sweptBackDrivenFFWTWing",beams=[bea
 σ0 = 1
 maxIter = 100
 relTol = 1e-8
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Create and solve the problem
 problem = create_SteadyProblem(model=sweptBackDrivenFFWTWing,systemSolver=NR)

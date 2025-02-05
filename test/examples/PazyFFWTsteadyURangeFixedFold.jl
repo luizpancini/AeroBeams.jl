@@ -2,7 +2,7 @@ using AeroBeams, LinearAlgebra
 
 # Hinge node, fold angle [rad] and flare angle [rad]
 hingeNode = 13
-foldAngle = -45*π/180
+foldAngle = -30*π/180
 flareAngle = 20*π/180
 
 # Spring stiffness
@@ -12,7 +12,7 @@ kSpring = 0
 θ = 7*pi/180
 
 # Gravity
-g = 9.8
+g = 9.80665
 
 # Airspeed range
 URange = collect(1:1:60)
@@ -26,9 +26,8 @@ PazyFFWTsteadyURangeFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=fo
 # System solver
 σ0 = 1
 maxIter = 100
-relTol = 1e-8
-ΔλRelaxFactor = 1/2
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-6
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Fixed properties of the model
 elemNodes = vcat([vcat(PazyFFWTsteadyURangeFixedFold.elements[e].nodesGlobalID) for e in 1:15]...)

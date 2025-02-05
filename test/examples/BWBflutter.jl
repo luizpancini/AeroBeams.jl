@@ -24,7 +24,7 @@ aeroSolver = Indicial()
 h = 0e3
 
 ## Airspeed range
-URange = collect(30:5:160)
+URange = collect(30:2:160)
 
 ## Number of vibration modes
 nModes = 8
@@ -60,7 +60,7 @@ spring2 = create_Spring(elementsIDs=[3],nodesSides=[2],ku=ku,kp=kp)
 ## Sweep airspeed range
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s") #src
-    ## The first step of the solution is to trim the aircraft at that flight condition (combination of altitude and airspeed). We leverage the built-in function in AeroBeams to create our model for trim problem.
+    ## The first step of the solution is to trim the aircraft at that flight condition (combination of altitude and airspeed). We leverage the built-in function in AeroBeams to create our model for the trim problem.
     BWBtrim = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h,airspeed=U)
 
     ## Next, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
@@ -92,7 +92,7 @@ for (i,U) in enumerate(URange)
     update_model!(BWBeigen)
 
     ## Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1.0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia)
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1.0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
 
     ## The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution

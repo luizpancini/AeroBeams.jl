@@ -17,8 +17,7 @@ kIPBendingHinge = 1e12
 σ0 = 1
 maxIter = 100
 relTol = 1e-9
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Model
 HealyBaselineFFWTModalFree = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
@@ -41,4 +40,4 @@ order = [1,2,4,5,6,8,9,10,11]
 ϵ_rel = freqs[order]./freqsRef .- 1.0
 println("Relative frequency errors: $ϵ_rel")
 
-println("Finished HealyFFWTBeamModal.jl")
+println("Finished HealyBaselineFFWTModalFree.jl")

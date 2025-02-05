@@ -17,6 +17,9 @@ nElementsFFWT = 4
 withTipCorrection = true
 tipLossDecayFactor = 12
 
+# Solution method for hinge constraint
+solutionMethod = "appliedMoment"
+
 # System solver
 σ0 = 1
 maxIter = 50
@@ -40,7 +43,7 @@ for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U=$U m/s")
     # Update model
-    model =  create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+    model =  create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
     # Create and solve problem
     problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2,Inf])
     solve!(problem[i])

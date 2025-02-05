@@ -1,12 +1,15 @@
 using AeroBeams, LinearAlgebra
 
+# Solution method for constraint
+solutionMethod = "appliedMoment"
+
 # Hinge node, fold angle [rad] and flare angle [rad]
-hingeNode = 13
-foldAngle = -60*π/180
+hingeNode = 12
+foldAngle = -30*π/180
 flareAngle = 20*π/180
 
 # Spring stiffness
-kSpring = 0e-4
+kSpring = 1e-4
 
 # Root pitch angle
 θ = 7*pi/180
@@ -15,17 +18,16 @@ kSpring = 0e-4
 U = 50
 
 # Gravity
-g = 9.8
+g = 9.80665
 
 # Pazy wing with flared folding tip
-PazyFFWTsteadyFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
+PazyFFWTsteadyFixedFold = create_PazyFFWT(solutionMethod=solutionMethod,hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
 
 # System solver
-σ0 = 1
-maxIter = 100
+σ0 = 0.75
+maxIter = 200
 relTol = 1e-6
-ΔλRelaxFactor = 1/2
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Create and solve problem
 problem = create_SteadyProblem(model=PazyFFWTsteadyFixedFold,systemSolver=NR)

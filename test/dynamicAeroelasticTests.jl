@@ -27,6 +27,17 @@ end
     @test Δu3 ≈ Δu3_ atol=SELFatol
 end
 
+@testset "Dynamic analysis of the baseline Healy FFWT wing under a series of one-minus-cosine gusts" begin
+    include("examples/HealyBaselineFFWTOMCGustFloating.jl")
+    # Self-comparison
+    for (i,ω) in enumerate(ωRange)
+        M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("M2root_omega",ω,".txt")))
+        ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("fold_omega",ω,".txt")))
+        @test M2root[i] ≈ M2root_ atol=SELFatol
+        @test ϕ[i] ≈ ϕ_ atol=SELFatol
+    end
+end
+
 @testset "Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver" begin
     include("examples/heliosCheckedPitchManeuver.jl")
     # Self-comparison

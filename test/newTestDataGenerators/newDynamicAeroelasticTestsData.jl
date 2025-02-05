@@ -18,6 +18,14 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/conventionalHALECheckedRollMane
 writedlm("test/newTestDataGenerators/conventionalHALECheckedRollManeuver/wingAoA.txt", wingAoA)
 writedlm("test/newTestDataGenerators/conventionalHALECheckedRollManeuver/Deltau3.txt", Δu3)
 
+# Dynamic analysis of the baseline Healy FFWT wing under a series of one-minus-cosine gusts
+include("../examples/HealyBaselineFFWTOMCGustFloating.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyBaselineFFWTOMCGustFloating"))
+for (i,ω) in enumerate(ωRange)
+    writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTOMCGustFloating/M2root_omega",ω,".txt"),M2root[i])
+    writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTOMCGustFloating/fold_omega",ω,".txt"),ϕ[i])
+end
+
 # Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver
 include("../examples/heliosCheckedPitchManeuver.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/heliosCheckedPitchManeuver"))

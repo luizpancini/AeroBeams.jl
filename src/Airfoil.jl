@@ -69,6 +69,20 @@
             cm₀Rng =  1e-3*[ -1.0;   2.0;   2.0;   1.0]
             cmαRng =       [  0.0;   0.0;   0.0;   0.0]
             cnαRng =  2π/β*[  1.0;   1.0;   1.0;   1.0]
+        elseif name in ["VERTOL23010"]
+            # Bound Mach and corresponding compressibility factor
+            Ma = max(0.001,min(0.3,Ma))
+            β = sqrt(1-Ma^2) 
+            # Mach-dependent parameters
+            MaRng  =       [  0.001;     0.3]
+            α₀NRng = π/180*[    1.0;     1.0]
+            ϵₙRng =        [    0.7;     0.7]
+            ϵₘRng =        [   0.96;    0.96]
+            ηRng =         [   0.95;    0.95]
+            cd₀Rng =  1e-2*[    1.0;     1.0] 
+            cm₀Rng =  1e-2*[   -1.2;    -1.2]
+            cmαRng =       [  -0.00;   -0.00]
+            cnαRng =  2π/β*[   1.0;    1.0]    
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -688,6 +702,97 @@ end
             zmRng =                [1.72;     1.72]
             # Fixed parameters
             λbWMat = Diagonal([1.0; 1.0])
+        elseif name in ["VERTOL23010"]
+            # Bound Mach and corresponding compressibility factor
+            Ma = max(0.2,min(0.6,Ma))
+            β = sqrt(1-Ma^2)
+            # Mach-dependent parameters
+            MaRng  =       [0.2;   0.4;   0.6]
+            α₀NRng =     π/180*[0.7;     0.7;      0.7]    
+            αds₀Rng =    π/180*[20.0;    17.0;     20.0]   
+            αₛₛRng =     π/180*[14.5;    13.5;     17.0]   
+            α1₀NRng =    π/180*[14.5;    14.0;     8.0]
+            α1₀MRng =    π/180*[14.5;    13.5;     8.0]
+            α1₀TRng =    π/180*[14.5;    14.0;     8.0]
+            βσ1NRng =          [0.00;    0.00;    0.00]
+            βσ1TRng =          [0.00;    0.00;    0.00]        
+            βσ2NRng =          [0.00;    0.00;    0.00]         
+            βS2NlprRng =        [0.00;    0.00;    0.00]   
+            βS2TlprRng =        [0.00;    0.00;    0.00]    
+            βS1NuRng =          [0.00;    0.00;    0.00]       
+            βS1MuRng =          [0.00;    0.00;    0.00]        
+            βS1TuRng =          [0.00;    0.00;    0.00]       
+            βS1NdRng =          [0.00;    0.00;    0.00]           
+            βS1MdRng =          [0.00;    0.00;    0.00]      
+            βS1TdRng =          [0.00;    0.00;    0.00]
+            βS2NuRng =          [0.00;    0.00;    0.00]
+            βS2MuRng =          [0.00;    0.00;    0.00]
+            βS2TuRng =          [0.00;    0.00;    0.00]                 
+            βS2NdRng =          [0.00;    0.00;    0.00] 
+            βS2MdRng =          [0.00;    0.00;    0.00]         
+            βS2TdRng =          [0.00;    0.00;    0.00]       
+            γLSRng =            [14.5;    14.0;     8.0]
+            δα₀Rng= π/180*[1.5;     0.9;      2.0]    
+            δα₁Rng= π/180*[1.5;     5.0;      2.0]      
+            ϵₙRng =              [0.70;    0.70;    0.70]  
+            ϵₘRng =              [0.96;    0.96;    0.96]   
+            ηRng =                 [0.10;    0.35;     0.10] 
+            κ₀Rng =             [3.37;    3.37;    3.37]
+            κ₁Rng =             [0.45;    0.45;    0.45]
+            κ₂Rng =             [0.20;    0.14;     0.20]
+            κ₃Rng =             [2.00;    2.00;    2.00]
+            λ₁Rng =            [50;       50;       50]
+            λ₂Rng =            [0.7;     0.7;     0.7]
+            μv₂Rng =               [1.00;    1.00;    1.00]
+            ν₁Rng =                [0.8;     0.85;     1.5]    
+            ν₂Rng =                [1.0;     1.45;     1.0]
+            ν₃Rng =                [0.25;    0.25;     0.25]
+            ν₄Rng =                [0.50;    0.50;    0.50]
+            ν₅Rng =                [1.00;    1.00;    1.00]
+            χuRng =               [0.00;   0.00;    0.00]
+            χdRng =               [0.00;   0.00;    0.00]
+            ξRng =                  [0.00;    0.00;    0.00]
+            ζₐRng =              [0.00;    0.00;    0.00]
+            cd₀Rng =           1e-2*[1.0;     1.0;     1.0]  
+            cm₀Rng =           1e-2*[0.0;    -0.0;    -0.0]
+            cnαRng =        2*π/β*[1.0;   1.0;   1.0]  
+            dtRng =         π/180*[0.0;     0.0;      0.0]    
+            dmRng =         π/180*[0.0;     0.0;      0.0] 
+            E₀Rng =                  [1.0;     1.0;     1.0]  
+            E₁Rng =                  [0.30;    0.30;     0.30]
+            f₀NRng =                [0.000;   0.000;   0.000]
+            f₀MRng =                [0.000;   0.000;   0.000]
+            f₀TRng =                [0.000;   0.000;   0.000]
+            fbNRng =                [0.80;    0.80;    0.80]
+            fbMRng =                [0.80;    0.80;    0.80]
+            fbTRng =                [0.80;    0.80;    0.80]
+            gᵥRng =                 [1.5;     0.5;      1.5] 
+            gᵥ₂Rng =                [1.00;    1.00;    1.00]
+            K₀Rng =             1e-3*[0.0;     0.0;     0.0]
+            K₁Rng =                  [-0.100; -0.123;   -0.080]
+            K₂Rng =                  [0.020;   0.032;   -0.020]   
+            r₀Rng =             1e-2*[1.00;    2.64;    1.60]  
+            S1NRng =         π/180*[1.5;     1.67;      3.0]
+            S1MRng =         π/180*[1.5;     1.67;      3.0]
+            S1TRng =         π/180*[1.5;     1.67;      3.0]
+            S2NRng =         π/180*[2.0;     1.30;      4.5]
+            S2MRng =         π/180*[2.0;     1.30;      4.5]
+            S2TRng =         π/180*[2.0;     1.30;      4.5]
+            TaRng =                  [2.0;     2.5;      1.5]    
+            TfRng =                  [3.0;     3.5;      3.0]
+            TgRng =             5*TaRng    
+            TvRng =                  [5.0;     6.0;      5.0] 
+            Tv₂Rng =                 [5.0;     6.0;      5.0]
+            VmRng =                  [0.35;    0.40;     0.35]
+            VtRng =                  [0.16;    0.24;    0.23]
+            Vn₁Rng =                 [1.5;     0.70;     0.50]   
+            Vn₂Rng =                 [1.0;     0.45;     0.10]
+            Vn₃Rng =                 [0.00;    0.00;    0.00] 
+            ztdRng =               [1.25;    1.5;      1.2]
+            ztuRng =               [0.00;    0.00;    0.00]
+            zmRng =                [0.5;     3.0;      0.5]
+            # Fixed parameters
+            λbWMat = Diagonal([2.5; 0.8])    
         elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -970,7 +1075,7 @@ end
             TpRng = [1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.8; 2.0; 2.5; 3.0; 3.3; 4.3]
             Tv₀Rng = [6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 4.0]
             TvLRng = [4.0; 5.0; 5.0; 5.0; 5.0; 5.0; 5.0; 9.0; 9.0; 9.0; 9.0; 9.0; 9.0]
-        elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","NACA23012A","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
+        elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","NACA23012A","VERTOL23010","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
             β = sqrt(1-Ma^2) 
@@ -1144,6 +1249,18 @@ end
             else
                 error("Unavailable flap site ID")
             end
+        elseif name in ["VERTOL23010"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.0
+                cmδ = -0.25
+                cnδ =  1.0
+            else
+                error("Unavailable flap site ID")
+            end    
         else
             error("Airfoil not listed")
         end
@@ -1497,6 +1614,58 @@ function get_airfoil_coordinates(name::String)
                 1.2290e-02  -1.2260e-02
                 4.3600e-03  -6.8100e-03
                         0            0]
+    elseif name in ["VERTOL23010"]
+        coords = [1.000000  0.000000
+                0.949997  0.005670
+                0.899993  0.011540
+                0.849990  0.017010
+                0.799986  0.022980
+                0.749983  0.028150
+                0.699980  0.033720
+                0.649976  0.039490
+                0.599973  0.044660
+                0.549970  0.049330
+                0.499968  0.053700
+                0.449965  0.057470
+                0.399964  0.060540
+                0.349962  0.063010
+                0.299961  0.064980
+                0.249960  0.065950
+                0.199960  0.066220
+                0.149961  0.064190
+                0.124963  0.061275
+                0.099966  0.057060
+                0.074969  0.051445
+                0.049974  0.042830
+                0.029980  0.033118
+                0.019984  0.027012
+                0.009988  0.019206
+                0.000000  0.000000
+                0.010009 -0.015094
+                0.020010 -0.017588
+                0.030011 -0.018982
+                0.050012 -0.020570
+                0.075013 -0.022655
+                0.100015 -0.024740
+                0.125016 -0.026825
+                0.150017 -0.029110
+                0.200019 -0.032680
+                0.250021 -0.035350
+                0.300022 -0.036820
+                0.350022 -0.037090
+                0.400022 -0.036760
+                0.450021 -0.035530
+                0.500020 -0.033800
+                0.550019 -0.031470
+                0.600017 -0.028740
+                0.650015 -0.025410
+                0.700013 -0.022180
+                0.750011 -0.018550
+                0.800009 -0.014920
+                0.850007 -0.011190
+                0.900004 -0.007560
+                0.950002 -0.003830
+                1.000000  0.000000]                        
     else
         error("Airfoil coordinates not listed")
     end
@@ -1529,11 +1698,11 @@ export Airfoil
 Airfoil constructor
 
 # Arguments
-- `name::String` = name of the airfoil
-- `Re::Real` = Reynolds number
-- `Ma::Real` = Mach number
-- `U::Real` = relative airspeed
-- `b::Real` = semichord
+- `name::String`: name of the airfoil
+- `Re::Real`: Reynolds number
+- `Ma::Real`: Mach number
+- `U::Real`: relative airspeed
+- `b::Real`: semichord
 """
 function create_Airfoil(; name::String,Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
@@ -1554,12 +1723,12 @@ export create_Airfoil
 Airfoil constructor (with a trailing-edge flap) 
 
 # Arguments
-- `name::String` = name of the airfoil
-- `flapSiteID::Int64` = flap site ID
-- `Re::Real` = Reynolds number
-- `Ma::Real` = Mach number
-- `U::Real` = relative airspeed
-- `b::Real` = semichord
+- `name::String`: name of the airfoil
+- `flapSiteID::Int64`: flap site ID
+- `Re::Real`: Reynolds number
+- `Ma::Real`: Mach number
+- `U::Real`: relative airspeed
+- `b::Real`: semichord
 """
 function create_flapped_Airfoil(; name::String,flapSiteID::Int64,Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
@@ -1583,10 +1752,10 @@ Updates the airfoil parameters
 - `airfoil::Airfoil`
 
 # Keyword arguments
-- `Re::Real` = Reynolds number
-- `Ma::Real` = Mach number
-- `U::Real` = reference relative airspeed
-- `b::Real` = reference semichord
+- `Re::Real`: Reynolds number
+- `Ma::Real`: Mach number
+- `U::Real`: reference relative airspeed
+- `b::Real`: reference semichord
 """
 function update_Airfoil_params!(airfoil::Airfoil; Re::Real=0,Ma::Real=0,U::Real,b::Real)
 
@@ -1605,8 +1774,9 @@ NACA0006 = create_Airfoil(name="NACA0006")
 NACA0012 = create_Airfoil(name="NACA0012")
 NACA0015 = create_Airfoil(name="NACA0015")
 NACA0018 = create_Airfoil(name="NACA0018")
+VERTOL23010 = create_Airfoil(name="VERTOL23010")
 NACA23012A = create_Airfoil(name="NACA23012A")
 HeliosWingAirfoil = create_Airfoil(name="HeliosWingAirfoil")
 HeliosPodAirfoil = create_Airfoil(name="HeliosPodAirfoil")
 BWBAirfoil = create_Airfoil(name="BWBAirfoil")
-export flatPlate, NACA0002, NACA0006, NACA0012, NACA0015, NACA0018, NACA23012A, HeliosWingAirfoil, HeliosPodAirfoil, BWBAirfoil
+export flatPlate, NACA0002, NACA0006, NACA0012, NACA0015, NACA0018, NACA23012A, VERTOL23010, HeliosWingAirfoil, HeliosPodAirfoil, BWBAirfoil

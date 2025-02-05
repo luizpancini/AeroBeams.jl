@@ -7,25 +7,28 @@
 
     # Primary (inputs to hinge axis constraint creation)
     beam::Beam
-    masterElementLocalID::Int64
-    slaveElementLocalID::Int64
     localHingeAxis::Vector{<:Real}
-    loadBalanceLocalNode::Int64
     pHValue::Union{Real,Nothing}
-    pHGuessValue::Union{Real,Nothing}
+    solutionMethod::String
 
     # Secondary (outputs from hinge axis constraint creation)
     rotationIsFixed::Bool
     initialHingeAxis::Vector{Float64}
     currentHingeAxis::Vector{Float64}
+    masterElementLocalID::Int64
+    slaveElementLocalID::Int64
     masterDOF::Int64
     slaveDOFs::Vector{Int64}
     masterElementGlobalID::Int64
     slaveElementGlobalID::Int64
     masterElementGlobalDOFs::Vector{Int64}
     slaveElementGlobalDOFs::Vector{Int64}
+    balanceMomentNode::Int64
     balanceMoment::Vector{Float64}
     balanceMomentDirections::Vector{String}
+    balanceMomentBCID::Int64
+    λ::Vector{Float64}
+    Jc::Matrix{Float64}
     pH::Vector{Float64}
     ϕ::Real
 
@@ -39,22 +42,26 @@ export HingeAxisConstraint
 Hinge axis constraint constructor
 
 # Keyword arguments
-- `beam::Beam` = beam
-- `masterElementLocalID::Int64` = local ID of the master (reference) element
-- `slaveElementLocalID::Int64` = local ID of the slave element
-- `localHingeAxis::Vector{<:Real}` = three-element vector defining the hinge axis, resolved in the undeformed (b) basis of the beam
-- `loadBalanceLocalNode::Int64` = local node of the beam where to set the balance load (i.e., the moment necessary to enforce the constraint)
-- `pHValue::Union{Real,Nothing}` = constrained value for the rotation at the hinge
-- `pHGuessValue::Union{Real,Nothing}` = initial guess value for the rotation at the hinge (in case it is unknonwn)
+- `beam::Beam`: beam
+- `localHingeAxis::Vector{<:Real}`: three-element vector defining the hinge axis, resolved in the undeformed (b) basis of the beam
+- `pHValue::Union{Real,Nothing}`: constrained value for the rotation at the hinge
+- `solutionMethod::String`: solution method for the constraint ("addedResidual" or "appliedMoment")
 """
-function create_HingeAxisConstraint(; beam::Beam,masterElementLocalID::Int64,slaveElementLocalID::Int64,localHingeAxis::Vector{<:Real},loadBalanceLocalNode::Int64,pHValue::Union{Real,Nothing}=nothing,pHGuessValue::Union{Real,Nothing}=nothing)
+function create_HingeAxisConstraint(; beam::Beam,localHingeAxis::Vector{<:Real},pHValue::Union{Real,Nothing}=nothing,solutionMethod::String="appliedMoment")
 
     # Validate
-    @assert masterElementLocalID <= beam.nElements "beam does not have 'masterElementLocalID' elements"
-    @assert slaveElementLocalID <= beam.nElements "beam does not have 'slaveElementLocalID' elements"
+    @assert solutionMethod in ["addedResidual", "appliedMoment"] "set solutionMethod as 'addedResidual' or 'appliedMoment'"
+    @assert (!isempty(beam.hingedNodes) && length(beam.hingedNodes) == 1) "beam must have one hinged node"
     @assert length(localHingeAxis) == 3 "specify localHingeAxis as a three-element vector"
     @assert norm(localHingeAxis) > 0 "localHingeAxis can't be a null vector"
-    @assert !(!isnothing(pHValue) && !isnothing(pHGuessValue)) "if pHValue is input, do not input pHGuessValue (and vice-versa)"
+
+    # Set local IDs of master and slave elements
+    hingeNode = beam.hingedNodes[1]
+    masterElementLocalID = hingeNode-1
+    slaveElementLocalID = hingeNode
+
+    # Set ID of the node where the balance loads will be applied, in case solutionMethod is "appliedMoment"
+    balanceMomentNode = hingeNode+1
 
     # TF for hinge rotation magnitude being known (fixed)
     rotationIsFixed = !isnothing(pHValue)
@@ -66,12 +73,11 @@ function create_HingeAxisConstraint(; beam::Beam,masterElementLocalID::Int64,sla
     currentHingeAxis = initialHingeAxis = beam.R0*localHingeAxis
 
     # Set master (free) and slave DOFs in case of unknonwn hinge rotation
+    slaveDOFs = [1,2,3]
     if rotationIsFixed
         masterDOF = 0
-        slaveDOFs = zeros(Int64,2)
     else
         masterDOF = argmax(abs.(initialHingeAxis))
-        slaveDOFs = [1,2,3]
         popat!(slaveDOFs,masterDOF)
     end
 
@@ -81,14 +87,47 @@ function create_HingeAxisConstraint(; beam::Beam,masterElementLocalID::Int64,sla
     # Initialize global DOFs (updated later on model assembly)
     masterElementGlobalDOFs, slaveElementGlobalDOFs = zeros(Int64,3), zeros(Int64,3)
 
-    # Initialize the balance moment vector (moment necessary to enforce the constraint) and corresponding directions
+    # Initialize the balance moment vector (moment necessary to enforce the constraint)
     balanceMoment = rotationIsFixed ? zeros(3) : zeros(2)
     balanceMomentDirections = rotationIsFixed ? ["M1A","M2A","M3A"] : ifelse(masterDOF==1,["M2A","M3A"],ifelse(masterDOF==2,["M1A","M3A"],["M1A","M2A"]))
+
+    # Initialize ID of the BC corresponding to the balance moment
+    balanceMomentBCID = 0
+
+    # Initialize the array of Lagrange multipliers
+    λ = balanceMoment
+
+    # Initialize Jacobian matrix of the constraint (size is updated later on model assembly)
+    Jc = zeros(0,0)
 
     # Initialize vector of rotation parameters across the hinge, resolved in basis A, and angle of rotation [rad]
     pH, ϕ = zeros(3), 0.0
 
-    return HingeAxisConstraint(beam=beam,masterElementLocalID=masterElementLocalID,slaveElementLocalID=slaveElementLocalID,localHingeAxis=localHingeAxis,loadBalanceLocalNode=loadBalanceLocalNode,pHValue=pHValue,pHGuessValue=pHGuessValue,rotationIsFixed=rotationIsFixed,initialHingeAxis=initialHingeAxis,currentHingeAxis=currentHingeAxis,masterDOF=masterDOF,slaveDOFs=slaveDOFs,masterElementGlobalID=masterElementGlobalID, slaveElementGlobalID=slaveElementGlobalID,masterElementGlobalDOFs=masterElementGlobalDOFs,slaveElementGlobalDOFs=slaveElementGlobalDOFs,balanceMoment=balanceMoment,balanceMomentDirections=balanceMomentDirections,pH=pH,ϕ=ϕ)
+    return HingeAxisConstraint(beam=beam,localHingeAxis=localHingeAxis,pHValue=pHValue,solutionMethod=solutionMethod,rotationIsFixed=rotationIsFixed,initialHingeAxis=initialHingeAxis,currentHingeAxis=currentHingeAxis,masterElementLocalID=masterElementLocalID,slaveElementLocalID=slaveElementLocalID,masterDOF=masterDOF,slaveDOFs=slaveDOFs,masterElementGlobalID=masterElementGlobalID, slaveElementGlobalID=slaveElementGlobalID,masterElementGlobalDOFs=masterElementGlobalDOFs,slaveElementGlobalDOFs=slaveElementGlobalDOFs,balanceMomentNode=balanceMomentNode,balanceMoment=balanceMoment,balanceMomentDirections=balanceMomentDirections,balanceMomentBCID=balanceMomentBCID,λ=λ,Jc=Jc,pH=pH,ϕ=ϕ)
 
 end
 export create_HingeAxisConstraint
+
+
+#
+# mutable struct HingeAxisConstraintData
+
+#     HingeAxisConstraintData composite type
+
+# Fields
+# `balanceMoment::Vector{Float64}`: balance moment vector around the hinge, resolved in basis A
+# `pH::Vector{Float64}`: hinge rotation parameters, resolved in basis A
+# `ϕ::Real`: hinge angle
+#
+mutable struct HingeAxisConstraintData
+    
+    # Fields
+    balanceMoment::Vector{Float64}
+    pH::Vector{Float64}
+    ϕ::Real
+
+    # Constructor
+    function HingeAxisConstraintData(balanceMoment,pH,ϕ)
+        return new(balanceMoment,pH,ϕ)
+    end
+end

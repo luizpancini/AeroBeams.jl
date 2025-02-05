@@ -93,7 +93,7 @@ u3_hinge = [problem.nodalStatesOverTime[i][div(nElem,2)].u_n2[3] for i in 1:leng
 #md # Finaly, we may visualize the motion of the beam using the function [`plot_dynamic_deformation`](@ref plot_dynamic_deformation) with the appropriate inputs. It correlates well with the one displayed by [Simo and Vu-Quoc](https://doi.org/10.1115/1.3171871).
 ## Animation
 #md @suppress begin #hide
-#md plot_dynamic_deformation(problem,refBasis="I",plotFrequency=1,plotLimits=[(0,2*L),(-L,0),(-L/2,L/2)],save=true,savePath="/docs/build/literate/flyingScissors_motion.gif")
+#md plot_dynamic_deformation(problem,refBasis="I",plotFrequency=1,plotLimits=([0,2*L],[-L/2,L/2],[-L,0]),save=true,savePath="/docs/build/literate/flyingScissors_motion.gif")
 #md nothing #hide
 #md end #hide
 #md # ![](flyingScissors_motion.gif)

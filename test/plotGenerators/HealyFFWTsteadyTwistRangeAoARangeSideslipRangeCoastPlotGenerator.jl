@@ -9,11 +9,35 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot configurations
+plotTitle = false
 colors = cgrad(:rainbow, length(θRange), categorical=true)
+ts = 10
+fs = 16
 lw = 2
 ms = 6
 msw = 0
 gr()
+
+# p1 at highest airspeed
+plt_p1 = plot(xlabel="\$x_1/L\$", ylabel="\$p_1\$")
+for (i,φ) in enumerate(φRange)
+    plot!(x1_n/x1_n[end], p1[i], lw=lw, label="\$\\phi = $(round(φ*180/π,digits=1)) \\degree\$")
+end
+display(plt_p1)
+
+# p2 at highest airspeed
+plt_p2 = plot(xlabel="\$x_1/L\$", ylabel="\$p_2\$")
+for (i,φ) in enumerate(φRange)
+    plot!(x1_n/x1_n[end], p2[i], lw=lw, label="\$\\phi = $(round(φ*180/π,digits=1)) \\degree\$")
+end
+display(plt_p2)
+
+# p3 at highest airspeed
+plt_p3 = plot(xxlabel="\$x_1/L\$", ylabel="\$p_3\$")
+for (i,φ) in enumerate(φRange)
+    plot!(x1_n/x1_n[end], p3[i], lw=lw, label="\$\\phi = $(round(φ*180/π,digits=1)) \\degree\$")
+end
+display(plt_p3)
 
 # Coast angle vs sideslip angle for each AoA, for several wingtip twist angles
 for (i,φ) in enumerate(φRange)
@@ -60,17 +84,23 @@ for (i,φ) in enumerate(φRange)
         aoa12_exp = phi9_aoa12_exp
         aoa12_num = phi9_aoa12_num
     end
-    plt = plot(xlabel="Sideslip angle [deg]", ylabel="Coast angle [deg]", title="Wingtip twist = \$ $(round(Int,φ*180/π)) \\degree\$", xlims=[-10,30], ylims=[-150,150], yticks=-150:30:150)
+    plt = plot(xlabel="Sideslip angle [deg]", ylabel="Coast angle [deg]", xlims=[-10,30], ylims=[-150,150], yticks=-150:30:150, tickfont=font(ts), guidefont=font(fs))
     if i==1
         plot!(legendfontsize=7, legend=:topleft)
     else
         plot!(legend=false)
     end
-    scatter!([NaN],[NaN], mc=:black, ms=ms, msw=msw, label="Healy (2023) - Exp.")
-    plot!([NaN],[NaN], lc=:black, ls=:dash, lw=lw, label="Healy (2023) - Num.")
+    if plotTitle
+        plot!(title="Wingtip twist = \$ $(round(Int,φ*180/π)) \\degree\$")
+    end
+    scatter!([NaN],[NaN], mc=:black, ms=ms, msw=msw, label="Exp. - Healy (2023)")
+    plot!([NaN],[NaN], lc=:black, ls=:dash, lw=lw, label="Num. - Healy (2023)")
     plot!([NaN],[NaN], lc=:black, ls=:solid, lw=lw, label="AeroBeams")
     for (j,θ) in enumerate(θRange)
-        plot!(βRange*180/π, -ϕHinge[i,j,:], lw=lw, ls=:solid, c=colors[j], label="\$\\theta = $(round(Int,θ*180/π)) \\degree\$")
+        plot!([NaN], [NaN], lw=lw, ls=:solid, ms=ms, msw=msw, c=colors[j], label="\$\\theta = $(round(Int,θ*180/π)) \\degree\$")
+    end
+    for (j,θ) in enumerate(θRange)
+        plot!(βRange*180/π, -ϕHinge[i,j,:], lw=lw, ls=:solid, c=colors[j], label=false)
         if j==1
             plot!(aoam3_num[1,:], aoam3_num[2,:], lw=lw, ls=:dash, c=colors[j], label=false)
             scatter!(aoam3_exp[1,:], aoam3_exp[2,:], ms=ms, msw=msw, c=colors[j], label=false)

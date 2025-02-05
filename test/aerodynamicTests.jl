@@ -83,6 +83,15 @@ end
     end
 end
 
+@testset "Dynamic analysis of a harmonically plunging airfoil, using the dynamic stall model" begin
+    include("examples/plungingAirfoil.jl")
+    # Self-comparison
+    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoil", "cn.txt"))
+    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoil", "cm.txt"))
+    @test cn ≈ cn_ atol=SELFatol
+    @test cm ≈ cm_ atol=SELFatol
+end
+
 @testset "Dynamic analysis of an airfoil section sinusoidally surging (facing a time-varying freestream)" begin
     include("examples/timeVaryingFreestream.jl")
     # Loop normalized airspeed amplitude

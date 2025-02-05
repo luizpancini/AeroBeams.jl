@@ -24,14 +24,16 @@ nElementsFFWT = 4
 
 # Tip loss options (assumed, since Healy's analysis uses DLM for aerodynamic)
 withTipCorrection = true
-tipLossDecayFactor = 10
+tipLossDecayFactor = 12
+
+# Solution method for hinge constraint
+solutionMethod = "appliedMoment"
 
 # System solver
 σ0 = 1
 maxIter = 100
-relTol = 1e-6
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Number of modes
 nModes = 5
@@ -54,9 +56,7 @@ for (i,Λ) in enumerate(ΛRange)
         # Display progress
         println("Solving for Λ=$(round(Int,Λ*180/π)) deg, U=$U m/s")
         # Update model
-        model = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
-        # Set initial guess solution as the one from previous airspeed angle
-        x0 = (j>1 && problem[i,j-1].systemSolver.convergedFinalSolution) ? problem[i,j-1].x : zeros(0)
+        model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
         # Create and solve problem
         problem[i,j] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2*U,Inf])
         solve!(problem[i,j])

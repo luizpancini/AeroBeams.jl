@@ -77,6 +77,12 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
     end
 end
 
+# Dynamic analysis of a harmonically plunging airfoil, using the dynamic stall model
+include("../examples/plungingAirfoil.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/plungingAirfoil"))
+writedlm("test/newTestDataGenerators/plungingAirfoil/cn.txt", cn)
+writedlm("test/newTestDataGenerators/plungingAirfoil/cm.txt", cm)
+
 # Dynamic analysis of an airfoil section sinusoidally surging (facing a time-varying freestream)
 include("../examples/timeVaryingFreestream.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/timeVaryingFreestream"))

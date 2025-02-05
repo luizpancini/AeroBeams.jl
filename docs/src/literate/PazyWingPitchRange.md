@@ -13,7 +13,7 @@ This example illustrates how to set up a steady aeroelastic analysis, using the 
     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/PazyWingPitchRange.jl).
 
 ### Problem setup
-Let's begin by setting the variables of our problem. In this example we will analyze the displacements and twist of the clamped wing under several combinations of root pitch angle and airspeed, which are defined by the arrays `θRange` and `URange`. Notice that we bring into scope some fixed geometrical and discretization properties of the wing's beam through the function [`geometrical_properties_Pazy`](@ref geometrical_properties_Pazy).
+Let's begin by setting the variables of our problem. In this example we will analyze the displacements and twist of the clamped wing under several combinations of root pitch angle and airspeed, which are defined by the arrays `θRange` and `URange`. The wing was tested with a balance mass of 0.01 kg attached to its tip store, at a position of 0.01 m behind the trailing-edge. Notice that we bring into scope some fixed geometrical and discretization properties of the wing's beam through the function [`geometrical_properties_Pazy`](@ref geometrical_properties_Pazy).
 
 ````@example PazyWingPitchRange
 using AeroBeams, DelimitedFiles
@@ -27,8 +27,15 @@ derivationMethod = AD()
 # Flag for upright position
 upright = true
 
+# Gravity
+g = -9.80665
+
 # Fixed geometrical and discretization properties
 nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+
+# Tip mass (0.01 kg, 0.01 m behind the trailing-edge)
+tipMass = 0.01
+ξtipMass = [0; -chord*(1-normSparPos)-0.01; 0]
 
 # Root angle (in degrees) and airspeed ranges
 θRange = [3; 5; 7]
@@ -51,7 +58,7 @@ for (i,θ) in enumerate(θRange)
     # Sweep airspeed
     for (j,U) in enumerate(URange)
         # Update model
-        PazyWingPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,upright=upright,θ=θ*π/180,airspeed=U)
+        PazyWingPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,upright=upright,θ=θ*π/180,airspeed=U,g=g,tipMass=tipMass,ξtipMass=ξtipMass)
         # Create and solve problem
         global problem = create_SteadyProblem(model=PazyWingPitchRange)
         solve!(problem)
@@ -77,10 +84,14 @@ tip_u3VsU_rootPitch5_Exp = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/t
 tip_u3VsU_rootPitch5_UMNAST = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/tip_u3VsU_rootPitch5_UMNAST.txt")
 tip_u3VsU_rootPitch7_Exp = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/tip_u3VsU_rootPitch7_Exp.txt")
 tip_u3VsU_rootPitch7_UMNAST = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/tip_u3VsU_rootPitch7_UMNAST.txt")
+tip_thetaVsU_rootPitch5_Exp = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/tip_thetaVsU_rootPitch5_Exp.txt")
+tip_thetaVsU_rootPitch5_UMNAST = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/tip_thetaVsU_rootPitch5_UMNAST.txt")
+tip_thetaVsU_rootPitch7_Exp = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/tip_thetaVsU_rootPitch7_Exp.txt")
+tip_thetaVsU_rootPitch7_UMNAST = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/tip_thetaVsU_rootPitch7_UMNAST.txt")
 nothing #hide
 ````
 
-We can now plot the outputs as a function of airspeed for each of the root pitch angles. The following "experimental" results were taken from Figure 33 of the paper by [Avin et al.](https://doi.org/10.2514/1.J060621). The correlation with the experimental data is good.
+We can now plot the outputs as a function of airspeed for each of the root pitch angles. The following "experimental" results were taken from Figure 33 of the paper by [Avin et al.](https://doi.org/10.2514/1.J060621). Note that the experimental twist angle was actually estimated by [Riso and Cesnik](https://doi.org/10.2514/6.2022-2313) using the diffence between the leading- and trailing-edge out-of-plane displacements of [Avin et al.](https://doi.org/10.2514/1.J060621). The correlation with the experimental data and the reference numerical solution is very good.
 
 ````@example PazyWingPitchRange
 using Suppressor #hide
@@ -92,15 +103,15 @@ colors = get(colorschemes[:rainbow], LinRange(0, 1, length(θRange)))
 # Tip midchord OOP displacement vs. airspeed
 plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP displacement [% semispan]", xlims=[URange[1],URange[end]], ylims=[0,50], legend=:topleft)
 plot!([NaN], [NaN], c=:black, lw=2, ls=:solid, label="AeroBeams")
-plot!([NaN], [NaN], c=:black, lw=2, ls=:dash, label="UM/NAST")
+plot!([NaN], [NaN], c=:black, lw=2, ls=:dashdot, label="UM/NAST")
 scatter!([NaN], [NaN], c=:black, ms=4, label="Experimental")
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_OOP[i,:]/L*100, c=colors[i], lw=2, ls=:solid, label="θ = $θ deg")
     if θ==5
-        plot!(tip_u3VsU_rootPitch5_UMNAST[1,:], tip_u3VsU_rootPitch5_UMNAST[2,:], lw=2, ls=:dash, c=colors[i], label=false)
+        plot!(tip_u3VsU_rootPitch5_UMNAST[1,:], tip_u3VsU_rootPitch5_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_u3VsU_rootPitch5_Exp[1,:], tip_u3VsU_rootPitch5_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
     elseif θ==7
-        plot!(tip_u3VsU_rootPitch7_UMNAST[1,:], tip_u3VsU_rootPitch7_UMNAST[2,:], lw=2, ls=:dash, c=colors[i], label=false)
+        plot!(tip_u3VsU_rootPitch7_UMNAST[1,:], tip_u3VsU_rootPitch7_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_u3VsU_rootPitch7_Exp[1,:], tip_u3VsU_rootPitch7_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
     end
 end
@@ -111,6 +122,13 @@ nothing #hide
 plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[URange[1],URange[end]], legend=:topleft)
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_twist[i,:], c=colors[i], lw=2, label="θ = $θ deg")
+    if θ==5
+        plot!(tip_thetaVsU_rootPitch5_UMNAST[1,:], tip_thetaVsU_rootPitch5_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
+        scatter!(tip_thetaVsU_rootPitch5_Exp[1,:], tip_thetaVsU_rootPitch5_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
+    elseif θ==7
+        plot!(tip_thetaVsU_rootPitch7_UMNAST[1,:], tip_thetaVsU_rootPitch7_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
+        scatter!(tip_thetaVsU_rootPitch7_Exp[1,:], tip_thetaVsU_rootPitch7_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
+    end
 end
 savefig("PazyWingPitchRange_tipTwist.svg") #hide
 nothing #hide

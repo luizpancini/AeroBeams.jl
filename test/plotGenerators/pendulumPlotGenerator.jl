@@ -14,7 +14,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,plotFrequency=1,plotLimits=[(-L,L),(-L,0),(0,L)],save=true,savePath=string(relPath,"/pendulum_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,plotFrequency=1,plotLimits=([-L,L],[-L,L],[-L,0]),save=true,savePath=string(relPath,"/pendulum_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

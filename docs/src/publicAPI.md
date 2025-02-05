@@ -167,4 +167,5 @@ plot_steady_outputs
 plot_mode_shapes
 plot_dynamic_deformation
 plot_time_outputs
+plot_snapshots
 ```

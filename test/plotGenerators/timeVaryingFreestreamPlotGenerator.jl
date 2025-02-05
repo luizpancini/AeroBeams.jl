@@ -8,9 +8,6 @@ relPath = "/test/outputs/figures/timeVaryingFreestream"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
 
-# Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,showScale=false,plotAeroSurf=false,plotLimits=[(0,L),(-L/2,L/2),(-L/2,L/2)],save=true,savePath=string(relPath,"/timeVaryingFreestream_deformation.gif"),displayProgress=true)
-
 # Plot configurations
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(λᵤRange)))
 lw = 2

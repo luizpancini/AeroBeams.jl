@@ -26,9 +26,8 @@ HealyFFWTsteadyFlareRangeAoARangeCoast = create_HealyFFWT(flareAngle=0,kSpring=k
 # System solver
 σ0 = 1
 maxIter = 200
-relTol = 1e-6
-ΔλRelaxFactor = 1/2
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Fixed properties of the model
 elemNodes = vcat([vcat(HealyFFWTsteadyFlareRangeAoARangeCoast.elements[e].nodesGlobalID) for e in 1:15]...)

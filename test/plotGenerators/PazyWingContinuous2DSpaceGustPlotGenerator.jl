@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,plotLimits=[(-L/2,L/2),(-L/2,L/2),(0,L)],save=true,savePath=string(relPath,"/PazyWingContinuous2DSpaceGust_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/PazyWingContinuous2DSpaceGust_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

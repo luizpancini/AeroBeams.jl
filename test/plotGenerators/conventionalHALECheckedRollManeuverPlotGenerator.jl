@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotDistLoads=false,plotFrequency=10,plotLimits=[(-200,20),(-10,200),(-50,50)],save=true,savePath=string(relPath,"/conventionalHALECheckedRollManeuver_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotDistLoads=false,plotFrequency=10,plotLimits=([-200,20],[-10,200],[-50,50]),save=true,savePath=string(relPath,"/conventionalHALECheckedRollManeuver_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

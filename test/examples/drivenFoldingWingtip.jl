@@ -21,8 +21,11 @@ foldAngle = 90*π/180
 flareAngle = 30*π/180
 localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * AeroBeams.a2
 
+# Solution method for hinge constraint
+solutionMethod = "appliedMoment"
+
 # Hinge axis
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=midElem,slaveElementLocalID=midElem+1,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingedNode+1,pHValue=4*tan(foldAngle/4))
+hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,beam=beam,localHingeAxis=localHingeAxis,pHValue=4*tan(foldAngle/4))
 
 # BCs
 qᵢ = -1e0
@@ -38,8 +41,7 @@ drivenFoldingWingtip = create_Model(name="drivenFoldingWingtip",beams=[beam],BCs
 σ0 = 1
 maxIter = 100
 relTol = 1e-8
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Create and solve problem
 problem = create_SteadyProblem(model=drivenFoldingWingtip,systemSolver=NR)

@@ -14,7 +14,7 @@ kSpring = 1e-4
 g = 9.8
 
 # Airspeed range
-URange = collect(0:1:80)
+URange = collect(10:1:80)
 
 # Initialize model
 PazyFFWTsteadyURangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
@@ -22,9 +22,8 @@ PazyFFWTsteadyURangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flare
 # System solver
 σ0 = 1
 maxIter = 200
-relTol = 1e-5
-ΔλRelaxFactor = 1/2
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Fixed properties of the model
 elemNodes = vcat([vcat(PazyFFWTsteadyURangeCoast.elements[e].nodesGlobalID) for e in 1:15]...)

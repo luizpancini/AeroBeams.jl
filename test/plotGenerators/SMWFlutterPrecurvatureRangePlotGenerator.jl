@@ -1,7 +1,7 @@
 using Plots, ColorSchemes
 
 # Run the script
-# include("../examples/SMWFlutterPrecurvatureRange.jl")
+include("../examples/SMWFlutterPrecurvatureRange.jl")
 
 # Set paths
 relPath = "/test/outputs/figures/SMWFlutterPrecurvatureRange"

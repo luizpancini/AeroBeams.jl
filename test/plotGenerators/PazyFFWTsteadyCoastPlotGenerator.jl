@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,plotUndeformed=true,plotDistLoads=true,view=(15,15),legendPos=(0.3,0.5),save=true,savePath=string(relPath,"/PazyFFWTsteadyCoast_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,plotUndeformed=true,plotDistLoads=true,view=(0,0),legendPos=(0.3,0.5),save=true,savePath=string(relPath,"/PazyFFWTsteadyCoast_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations

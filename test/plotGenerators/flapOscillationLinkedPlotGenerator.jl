@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,plotLimits=[(0,2*L),(-L,L),(-L,L)],save=true,savePath=string(relPath,"/flapOscillationLinked_deformation.gif"),displayProgress=true,plotAeroSurf=false)
+plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,plotLimits=([0,2*L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/flapOscillationLinked_deformation.gif"),displayProgress=true,plotAeroSurf=false)
 
 # Plot configurations
 lw = 2

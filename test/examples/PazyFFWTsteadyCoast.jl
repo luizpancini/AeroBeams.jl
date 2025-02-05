@@ -8,23 +8,25 @@ flareAngle = 30*π/180
 kSpring = 1e-4
 
 # Root pitch angle
-θ = 3*π/180
+θ = 7*π/180
 
 # Gravity
 g = 9.8
 
 # Airspeed
-U = 50
+U = 60
+
+# Solution method for constraint
+solutionMethod = "appliedMoment"
 
 # Pazy wing with flared folding tip
-PazyFFWTsteadyCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
+PazyFFWTsteadyCoast = create_PazyFFWT(solutionMethod=solutionMethod,hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
 
 # System solver
 σ0 = 1
 maxIter = 100
-relTol = 1e-5
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Create and solve problem
 problem = create_SteadyProblem(model=PazyFFWTsteadyCoast,systemSolver=NR)

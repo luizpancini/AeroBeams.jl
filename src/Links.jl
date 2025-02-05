@@ -26,8 +26,8 @@ end
 Trim loads link constructor (a link between trim loads so that they are equal)
 
 # Keyword arguments
-- `masterBC::BC` = master BC
-- `slaveBCs::Vector{BC}` = slave BCs
+- `masterBC::BC`: master BC
+- `slaveBCs::Vector{BC}`: slave BCs
 """
 function create_TrimLoadsLink(; masterBC::BC,slaveBCs::Vector{BC})
 
@@ -82,9 +82,9 @@ end
 Flap link constructor (a link between flapped surfaces)
 
 # Keyword arguments
-- `masterBeam::Beam` = beam of the master surface
-- `slaveBeams::Vector{Beam}` = beams of the slave surfaces
-- `δMultipliers::Vector{<:Real}` = multiplication factors of flap deflection in slave surfaces relative to the master surface
+- `masterBeam::Beam`: beam of the master surface
+- `slaveBeams::Vector{Beam}`: beams of the slave surfaces
+- `δMultipliers::Vector{<:Real}`: multiplication factors of flap deflection in slave surfaces relative to the master surface
 """
 function create_FlapLink(; masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Real}=ones(length(slaveBeams)))
 

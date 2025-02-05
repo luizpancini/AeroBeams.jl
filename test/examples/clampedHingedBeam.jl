@@ -11,7 +11,7 @@ hingeNode = div(nElem,2)+1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingeNode],hingedNodesDoF=[[false,true,false]])
 
 # Hinge axis constraint
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=hingeNode-1,slaveElementLocalID=hingeNode,localHingeAxis=[0;1;0],loadBalanceLocalNode=hingeNode+1,pHValue=4*tan(θ/4))
+hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,localHingeAxis=[0;1;0],pHValue=4*tan(θ/4))
 
 # BCs
 Fₕ = -1

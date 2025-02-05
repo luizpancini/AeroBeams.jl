@@ -9,13 +9,13 @@ Plots the undeformed assembly of beams in the model
 - `model::Model`
 
 # Keyword arguments
-- `view::Tuple{<:Number,<:Number}` = view angles
-- `equalAspectRatio::Bool` = flag to set equal aspect ratio plot
-- `plotNodes::Bool` = flag to plot nodes
-- `nodesColor=:black` = color of nodes
-- `linesColor=:black` = color of lines (beams)
+- `view::Tuple{Real,Real}`: view angles
+- `equalAspectRatio::Bool`: flag to set equal aspect ratio plot
+- `plotNodes::Bool`: flag to plot nodes
+- `nodesColor=:black`: color of nodes
+- `linesColor=:black`: color of lines (beams)
 """
-function plot_undeformed_assembly(model::Model; view::Tuple{Int64,Int64}=(45,45),equalAspectRatio::Bool=true,plotNodes::Bool=true,nodesColor=:black,linesColor=:black)
+function plot_undeformed_assembly(model::Model; view::Tuple{Real,Real}=(45,45),equalAspectRatio::Bool=true,plotNodes::Bool=true,nodesColor=:black,linesColor=:black)
 
     # Set backend
     gr()
@@ -71,29 +71,32 @@ export plot_undeformed_assembly
 Plots the initial and final deformed states for the model in the given problem
 
 # Arguments
-- `problem::Problem` = problem
+- `problem::Problem`: problem
 
 # Keyword arguments
-- `plotBCs::Bool` = flag to plot BCs
-- `plotDistLoads::Bool` = flag to plot distributed loads (includes gravitational and aerodynamic loads)
-- `view::Union{Nothing,Tuple{Real,Real}}` = view angles
-- `scale::Number` = displacements and rotations scale
-- `lw::Number` = linewidth
-- `colorUndef` = color for undeformed assembly
-- `colorDef` = color for deformed assembly
-- `grid::Bool` = flag for grid
-- `legendPos` = legend position
-- `tolPlane::Number` = displacement tolerance to plot as plane
-- `plotAeroSurf` = flag to plot aerodynamic surfaces
-- `surfα::Float64` = transparency factor of aerodynamic surfaces 
-- `ΔuDef::Vector{<:Number}` = displacement vector for first node of deformed assembly relative to the undeformed one
-- `plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}` = plot axis limits    
-- `showScale::Bool` = flag to show scale on plot
-- `scalePos::Vector{<:Number}` = position of scale on plot
-- `save::Bool` = flag to save the figure
-- `savePath::String` = relative path on which to save the figure
+- `interactive::Bool`: flag for interactive plot
+- `plotBCs::Bool`: flag to plot BCs
+- `plotDistLoads::Bool`: flag to plot distributed loads (includes gravitational and aerodynamic loads)
+- `view::Union{Nothing,Tuple{Real,Real}}`: view angles
+- `scale::Real`: displacements and rotations scale
+- `lw::Real`: linewidth
+- `colorUndef`: color for undeformed assembly
+- `colorDef`: color for deformed assembly
+- `plotGrid::Bool`: flag to plot grid
+- `legendPos`: legend position
+- `tolPlane::Real`: displacement tolerance to plot as plane
+- `plotAeroSurf::Bool`: flag to plot aerodynamic surfaces
+- `surfα::Float64`: transparency factor of aerodynamic surfaces 
+- `ΔuDef::Vector{<:Real}`: displacement vector for first node of deformed assembly relative to the undeformed one
+- `σ2plot::Vector{<:Real}`: (tentative) load factors to plot  
+- `partialLoadStepsLineStyle::Symbol`: linestyle for partial load steps
+- `plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}`: plot axis limits    
+- `showScale::Bool`: flag to show scale on plot
+- `scalePos::Vector{<:Real}`: position of scale on plot
+- `save::Bool`: flag to save the figure
+- `savePath::String`: relative path on which to save the figure
 """
-function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,plotUndeformed::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Number}=zeros(3),plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf") where {T1<:Real,T2<:Real}
+function plot_steady_deformation(problem::Problem; interactive::Bool=false,plotBCs::Bool=true,plotUndeformed::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotGrid::Bool=true,legendPos=:best,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,ΔuDef::Vector{<:Real}=zeros(3),σ2plot::Vector{<:Real}=[1],partialLoadStepsLineStyle::Symbol=:dot,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -102,20 +105,29 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,plotUndefo
     @assert tolPlane > 0
     @assert 0 < surfα <= 1
     @assert length(ΔuDef) == 3
+    if !isnothing(plotLimits)
+        @assert all((plotLimits[a][1] < plotLimits[a][2]) for a in 1:3)
+    end
 
     # Set backend
-    pyplot()
+    if interactive
+        plotlyjs()
+    else
+        pyplot()
+    end
 
     # Unpack
     @unpack elements,nElementsTotal,units = problem.model
 
     # Initialize plot
-    plt = plot(grid=grid)
+    plt = plot(grid=plotGrid,legend=legendPos)
     if plotUndeformed
         plot!([NaN],[NaN], c=colorUndef, lw=lw, label="Undeformed")
     end
     plot!([NaN],[NaN], c=colorDef, lw=lw, label="Deformed")
-    plot!(legend=legendPos)
+
+    # Initialize TF for plane plot
+    isPlane = isnothing(view)
 
     # Initialize arrays
     x1Undef = Array{Vector{Float64}}(undef,nElementsTotal)
@@ -129,112 +141,133 @@ function plot_steady_deformation(problem::Problem; plotBCs::Bool=true,plotUndefo
     defAirfoilCoords_n1 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
     defAirfoilCoords_n2 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
 
-    # Loop over elements
-    for (e,element) in enumerate(elements)     
-        @unpack r_n1,r_n2,nodalStates,aero = element
-        @unpack u_n1,u_n2,p_n1,p_n2 = nodalStates
-        # Set undeformed coordinates
-        x1Undef[e] = [r_n1[1]; r_n2[1]]
-        x2Undef[e] = [r_n1[2]; r_n2[2]]
-        x3Undef[e] = [r_n1[3]; r_n2[3]]
-        # Set deformed coordinates
-        x1Def[e] = x1Undef[e] .+ scale*[u_n1[1]; u_n2[1]] .+ ΔuDef[1]
-        x2Def[e] = x2Undef[e] .+ scale*[u_n1[2]; u_n2[2]] .+ ΔuDef[2]
-        x3Def[e] = x3Undef[e] .+ scale*[u_n1[3]; u_n2[3]] .+ ΔuDef[3]
-        # Skip elements without aero surfaces, or if those are not to be plotted
-        if !plotAeroSurf || isnothing(aero)
-            undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e],defAirfoilCoords_n1[e],defAirfoilCoords_n2[e] = nothing,nothing,nothing,nothing
-            continue
+    # Loop load factors to plot
+    for (i,σapprox) in enumerate(σ2plot)
+        # Find the closest available saved load factor
+        σindex = argmin(abs.(problem.savedσ .- σapprox))
+        # Set linestyle
+        ls = i == length(σ2plot) ? :solid : partialLoadStepsLineStyle
+        # Loop over elements
+        for (e,element) in enumerate(elements) 
+            @unpack r_n1,r_n2,aero = element
+            @unpack u_n1,u_n2,p_n1,p_n2 = problem.nodalStatesOverσ[σindex][e]
+            # Set undeformed coordinates
+            x1Undef[e] = [r_n1[1]; r_n2[1]]
+            x2Undef[e] = [r_n1[2]; r_n2[2]]
+            x3Undef[e] = [r_n1[3]; r_n2[3]]
+            # Set deformed coordinates
+            x1Def[e] = x1Undef[e] .+ scale*[u_n1[1]; u_n2[1]] .+ ΔuDef[1]
+            x2Def[e] = x2Undef[e] .+ scale*[u_n1[2]; u_n2[2]] .+ ΔuDef[2]
+            x3Def[e] = x3Undef[e] .+ scale*[u_n1[3]; u_n2[3]] .+ ΔuDef[3]
+            # Skip elements without aero surfaces, or if those are not to be plotted
+            if !plotAeroSurf || isnothing(aero)
+                undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e],defAirfoilCoords_n1[e],defAirfoilCoords_n2[e] = nothing,nothing,nothing,nothing
+                continue
+            end
+            # Rotation tensors
+            R_n1,_ = rotation_tensor_WM(scale*p_n1)
+            R_n2,_ = rotation_tensor_WM(scale*p_n2)
+            # Undeformed nodal airfoil coordinates
+            undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
+            # Deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r) and add scaled displacements (+scale*u))
+            defAirfoilCoords_n1[e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ ΔuDef
+            defAirfoilCoords_n2[e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ ΔuDef
         end
-        # Rotation tensors
-        R_n1,_ = rotation_tensor_WM(scale*p_n1)
-        R_n2,_ = rotation_tensor_WM(scale*p_n2)
-        # Undeformed nodal airfoil coordinates
-        undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
-        # Deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r) and add scaled displacements (+scale*u))
-        defAirfoilCoords_n1[e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ ΔuDef
-        defAirfoilCoords_n2[e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ ΔuDef
-    end
 
-    # Set TFs for plane views
-    x1Plane = maximum(abs.(vcat(x1Def...))) < tolPlane ? true : false
-    x2Plane = maximum(abs.(vcat(x2Def...))) < tolPlane ? true : false
-    x3Plane = maximum(abs.(vcat(x3Def...))) < tolPlane ? true : false
+        # Set TFs for plane views
+        x1Plane = maximum(abs.(vcat(x1Def...))) < tolPlane ? true : false
+        x2Plane = maximum(abs.(vcat(x2Def...))) < tolPlane ? true : false
+        x3Plane = maximum(abs.(vcat(x3Def...))) < tolPlane ? true : false
 
-    # Plot undeformed and deformed beam assemblies according to view
-    if isnothing(view)
-        if x1Plane
-            plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
-            if plotUndeformed
-                plot!(x2Undef, x3Undef, color=colorUndef,lw=lw,label=false)
+        # Plot undeformed and deformed beam assemblies according to view
+        if isnothing(view)
+            if x1Plane
+                plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                if plotUndeformed && i==1
+                    plot!(x2Undef, x3Undef, color=colorUndef,lw=lw,label=false)
+                end
+                plot!(x2Def, x3Def, color=colorDef,aspect_ratio=:equal,lw=lw,ls=ls,label=false)
+            elseif x2Plane
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                if plotUndeformed && i==1
+                    plot!(x1Undef, x3Undef, color=colorUndef,lw=lw,label=false)
+                end
+                plot!(x1Def, x3Def, color=colorDef,aspect_ratio=:equal,lw=lw,ls=ls,label=false)
+            elseif x3Plane
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
+                if plotUndeformed && i==1
+                    plot!(x1Undef, x2Undef, color=colorUndef,lw=lw,label=false)
+                end
+                plot!(x1Def, x2Def, color=colorDef,aspect_ratio=:equal,lw=lw,ls=ls,label=false)
+            else
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+                if plotUndeformed && i==1
+                    plot!(x1Undef, x2Undef, x3Undef, camera=(45,45),color=colorUndef,lw=lw,label=false)
+                end
+                plot!(x1Def, x2Def, x3Def, camera=(45,45),color=colorDef,lw=lw,ls=ls,label=false)
             end
-            plot!(x2Def, x3Def, color=colorDef,aspect_ratio=:equal,lw=lw,label=false)
-        elseif x2Plane
-            plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
-            if plotUndeformed
-                plot!(x1Undef, x3Undef, color=colorUndef,lw=lw,label=false)
-            end
-            plot!(x1Def, x3Def, color=colorDef,aspect_ratio=:equal,lw=lw,label=false)
-        elseif x3Plane
-            plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
-            if plotUndeformed
-                plot!(x1Undef, x2Undef, color=colorUndef,lw=lw,label=false)
-            end
-            plot!(x1Def, x2Def, color=colorDef,aspect_ratio=:equal,lw=lw,label=false)
         else
             plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
-            if plotUndeformed
-                plot!(x1Undef, x2Undef, x3Undef, camera=(45,45),color=colorUndef,lw=lw,label=false)
+            if plotUndeformed && i==1
+                plot!(x1Undef, x2Undef, x3Undef, camera=view,color=colorUndef,lw=lw,label=false)
             end
-            plot!(x1Def, x2Def, x3Def, camera=(45,45),color=colorDef,lw=lw,label=false)
+            plot!(x1Def, x2Def, x3Def, camera=view,color=colorDef,lw=lw,ls=ls,label=false)
         end
-    else
-        plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
-        if plotUndeformed
-            plot!(x1Undef, x2Undef, x3Undef, camera=view,color=colorUndef,lw=lw,label=false)
+
+        # Plot aerodynamic surfaces, if applicable
+        for e in 1:nElementsTotal
+            if isnothing(defAirfoilCoords_n1[e])
+                continue
+            end
+            # Plot undeformed aerodynamic surfaces
+            if plotUndeformed
+                Xu = [undefAirfoilCoords_n1[e][1,:] undefAirfoilCoords_n2[e][1,:]]
+                Yu = [undefAirfoilCoords_n1[e][2,:] undefAirfoilCoords_n2[e][2,:]]
+                Zu = [undefAirfoilCoords_n1[e][3,:] undefAirfoilCoords_n2[e][3,:]]
+                surface!(Xu,Yu,Zu, color=palette([colorUndef,colorUndef],2), colorbar=false, alpha=surfα)
+            end
+            # Plot deformed aerodynamic surfaces
+            Xd = [defAirfoilCoords_n1[e][1,:] defAirfoilCoords_n2[e][1,:]]
+            Yd = [defAirfoilCoords_n1[e][2,:] defAirfoilCoords_n2[e][2,:]]
+            Zd = [defAirfoilCoords_n1[e][3,:] defAirfoilCoords_n2[e][3,:]]
+            surface!(Xd,Yd,Zd, color=palette([colorDef,colorDef],2), colorbar=false, alpha=surfα)
         end
-        plot!(x1Def, x2Def, x3Def, camera=view,color=colorDef,lw=lw,label=false)
-    end
 
-    # Plot aerodynamic surfaces, if applicable
-    for e in 1:nElementsTotal
-        if isnothing(defAirfoilCoords_n1[e])
-            continue
+        # Plot distributed loads (including aerodynamic and gravitational), if applicable
+        if plotDistLoads
+            plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,1,σindex=σindex)
         end
-        # Plot undeformed aerodynamic surfaces
-        if plotUndeformed
-            Xu = [undefAirfoilCoords_n1[e][1,:] undefAirfoilCoords_n2[e][1,:]]
-            Yu = [undefAirfoilCoords_n1[e][2,:] undefAirfoilCoords_n2[e][2,:]]
-            Zu = [undefAirfoilCoords_n1[e][3,:] undefAirfoilCoords_n2[e][3,:]]
-            surface!(Xu,Yu,Zu, color=palette([colorUndef,colorUndef],2), colorbar=false, alpha=surfα)
+
+        # Plot generalized displacements and concentrated loads, if applicable
+        if plotBCs
+            plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,0,1,σindex=σindex)
         end
-        # Plot deformed aerodynamic surfaces
-        Xd = [defAirfoilCoords_n1[e][1,:] defAirfoilCoords_n2[e][1,:]]
-        Yd = [defAirfoilCoords_n1[e][2,:] defAirfoilCoords_n2[e][2,:]]
-        Zd = [defAirfoilCoords_n1[e][3,:] defAirfoilCoords_n2[e][3,:]]
-        surface!(Xd,Yd,Zd, color=palette([colorDef,colorDef],2), colorbar=false, alpha=surfα)
-    end
 
-    # Plot distributed loads (including aerodynamic and gravitational), if applicable
-    if plotDistLoads
-        plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,1)
-    end
+        # Update TF for plane plot
+        isPlane = isnothing(view) && (x1Plane || x2Plane || x3Plane)
 
-    # Plot generalized displacements and concentrated loads, if applicable
-    if plotBCs
-        plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,0,1)
-    end
+        # Compute plot limits
+        plotMax = max(maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
+        plotMin = min(minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
 
-    # Initialize TF for plane plot
-    isPlane = isnothing(view) && (x1Plane || x2Plane || x3Plane)
+        # Set plot limits
+        if isPlane
+            if isnothing(plotLimits)
 
-    # Compute plot limits
-    plotMax = max(maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
-    plotMin = min(minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
-
-    # Set the same plot extrema across all axis (equal aspect ratio), if applicable
-    if !isPlane
-        plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+            elseif x1Plane
+                plot!(xlims=plotLimits[2],ylims=plotLimits[3])
+            elseif x2Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[3])
+            elseif x3Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2])
+            end
+        else
+            if isnothing(plotLimits)
+                plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+            else
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2],zlims=plotLimits[3])
+            end
+        end
     end
 
     # Plot scale, if applicable
@@ -264,19 +297,19 @@ export plot_steady_deformation
 Plots outputs of a steady problem
 
 # Arguments
-- `problem::Problem` = problem
+- `problem::Problem`: problem
 
 # Keyword arguments
-- `outputs::Vector{String}` = list of outputs
-- `beamGroups` = list of beams in each group for which arclengths are concatenated
-- `lw::Number` = linewidth
-- `colorScheme` = color scheme
-- `legendPos` = legend position
-- `save::Bool` = flag to save figures
-- `saveFolder::String` = relative path of folder where to save figures
-- `figureExtension::String` = figure extension
+- `outputs::Vector{String}`: list of outputs
+- `beamGroups`: list of beams in each group for which arclengths are concatenated
+- `lw::Real`: linewidth
+- `colorScheme`: color scheme
+- `legendPos`: legend position
+- `save::Bool`: flag to save figures
+- `saveFolder::String`: relative path of folder where to save figures
+- `figureExtension::String`: figure extension
 """
-function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Number=1,colorScheme=:rainbow,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
+function plot_steady_outputs(problem::Problem; outputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],beamGroups=1:length(problem.model.beams),lw::Real=1,colorScheme=:rainbow,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
 
     # Validate
     validOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3","V","V1","V2","V3","Ω","Ω1","Ω2","Ω3","γ","γ1","γ2","γ3","κ","κ1","κ2","κ3","P","P1","P2","P3","H","H1","H2","H3","α","cn","cm","ct","cl","cd"]
@@ -657,34 +690,35 @@ end
 
 
 """
-    plot_mode_shapes(problem::Problem; kwargs...)
+    plot_mode_shapes(problem::EigenProblem; kwargs...)
 
-Plots the mode shapes of the model in the given problem
+Plots the mode shapes of the model in the given eigenproblem
 
 # Arguments
-- `problem::Problem` = problem
+- `problem::EigenProblem`: problem
 
 # Keyword arguments
-- `plotBCs::Bool` = flag to plot BCs
-- `view::Union{Nothing,Tuple{Real,Real}}` = view angles
-- `nModes::Union{Nothing,Int64}` = number of modes to plot
-- `scale::Number` = displacements and rotations scale
-- `frequencyLabel::String` = option for frequency label (only frequency or frequency and damping)
-- `lw::Number` = linewidth
-- `colorSteady` = color for steadily deformed assembly
-- `modalColorScheme` = color scheme for mode shapes
-- `grid::Bool` = flag for grid
-- `legendPos` = legend position
-- `tolPlane::Number` = displacement tolerance to plot as plane
-- `plotAeroSurf` = flag to plot aerodynamic surfaces
-- `surfα::Float64` = transparency factor of aerodynamic surfaces 
-- `save::Bool` = flag to save the figure
-- `savePath::String` = relative path on which to save the figure
+- `plotBCs::Bool`: flag to plot BCs
+- `view::Union{Nothing,Tuple{Real,Real}}`: view angles
+- `nModes::Union{Nothing,Int64}`: number of modes to plot
+- `scale::Real`: displacements and rotations scale
+- `frequencyLabel::String`: option for frequency label
+- `lw::Real`: linewidth
+- `colorSteady`: color for steadily deformed assembly
+- `modalColorScheme`: color scheme for mode shapes
+- `plotAxes::Bool`: flag to plot axes
+- `plotGrid::Bool`: flag to plot grid
+- `legendPos`: legend position
+- `tolPlane::Real`: displacement tolerance to plot as plane
+- `plotAeroSurf`: flag to plot aerodynamic surfaces
+- `surfα::Float64`: transparency factor of aerodynamic surfaces 
+- `save::Bool`: flag to save the figure
+- `savePath::String`: relative path on which to save the figure
 """
-function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Number=1,frequencyLabel::String="frequency&damping",lw::Number=1,colorSteady=:black,modalColorScheme=:jet1,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Real=1,frequencyLabel::String="frequency&damping",lw::Real=1,colorSteady=:black,modalColorScheme=:jet1,plotAxes::Bool=true,plotGrid::Bool=true,legendPos=:best,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
-    @assert problem isa EigenProblem
+    @assert frequencyLabel in ["frequency", "frequency&damping"]
     @assert lw > 0
     @assert tolPlane > 0
     @assert 0 < surfα <= 1
@@ -701,7 +735,7 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
     freqs = problem.frequenciesOscillatory 
 
     # Set mode colors
-    modeColors = nModes == 1 ? get(colorschemes[modalColorScheme], LinRange(0,1,nModes+1)) : get(colorschemes[modalColorScheme], LinRange(0,1,nModes))
+    modeColors = cgrad(modalColorScheme, nModes, categorical=true)
 
     # Set frequency multiplier
     if units.frequency == "rad/s"
@@ -713,13 +747,13 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
     end
 
     # Initialize plot
-    plt = plot(grid=grid)
-    plot!([NaN],[NaN], c=colorSteady, lw=lw, label="Steady", legend=legendPos)
+    plt = plot(grid=plotGrid,axis=plotAxes,legend=legendPos)
+    plot!([NaN],[NaN], c=colorSteady, lw=lw, label="Steady")
     for m in 1:nModes
         if frequencyLabel == "frequency"
-            label = string("Mode $(m): ω = $(round(γ*freqs[m],sigdigits=3)) ", units.frequency)
+            label = string("Mode $(m): ω = $(round(γ*freqs[m],digits=2)) ", units.frequency)
         elseif frequencyLabel == "frequency&damping"
-            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],sigdigits=3))i ", units.frequency)
+            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],digits=2))i ", units.frequency)
         end
         plot!([NaN],[NaN], c=modeColors[m], lw=lw, label=label)
     end
@@ -808,32 +842,41 @@ function plot_mode_shapes(problem::Problem; plotBCs::Bool=true,view::Union{Nothi
         # Plot steady and modal beam assemblies according to view
         if isnothing(view)
             if x1Plane
-                plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                if plotAxes
+                    plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                end
                 plot!(x2Steady, x3Steady, color=colorSteady,lw=lw,label=false)
                 plot!(x2Modal[m,:], x3Modal[m,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
             elseif x2Plane
-                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                if plotAxes
+                    plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                end
                 plot!(x1Steady, x3Steady, color=colorSteady,lw=lw,label=false)
                 plot!(x1Modal[m,:], x3Modal[m,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
             elseif x3Plane
-                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
+                if plotAxes
+                    plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
+                end
                 plot!(x1Steady, x2Steady, color=colorSteady,lw=lw,label=false)
                 plot!(x1Modal[m,:], x2Modal[m,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
             else
-                view = (45,45)
-                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
-                plot!(x1Steady, x2Steady, x3Steady, camera=view,color=colorSteady,lw=lw,label=false)
-                plot!(x1Modal[m,:], x2Modal[m,:], x3Modal[m,:], camera=view,color=modeColors[m],lw=lw,label=false)
+                if plotAxes
+                    plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+                end
+                plot!(x1Steady, x2Steady, x3Steady, camera=(45,45),color=colorSteady,lw=lw,label=false)
+                plot!(x1Modal[m,:], x2Modal[m,:], x3Modal[m,:],color=modeColors[m],lw=lw,label=false)
             end
         else
-            plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+            if plotAxes
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+            end
             plot!(x1Steady, x2Steady, x3Steady, camera=view,color=colorSteady,lw=lw,label=false)
             plot!(x1Modal[m,:], x2Modal[m,:], x3Modal[m,:], camera=view,color=modeColors[m],lw=lw,label=false)
         end
 
         # Plot generalized displacements and concentrated loads, if applicable
         if plotBCs && m==1
-            plt = plot_BCs!(plt,problem,x1Steady,x2Steady,x3Steady,x1Plane,x2Plane,x3Plane,view,0,1)
+            plt = plot_BCs!(plt,problem,x1Steady,x2Steady,x3Steady,x1Plane,x2Plane,x3Plane,view,0,1,σindex=length(problem.savedσ))
         end
 
         # Plot aerodynamic surfaces, if applicable
@@ -872,44 +915,43 @@ export plot_mode_shapes
 
 
 """
-    plot_dynamic_deformation(problem::Problem; kwargs...)
+    plot_dynamic_deformation(problem::DynamicProblem; kwargs...)
 
 Plots the animated deformation of the model in the given problem
 
 # Arguments
-- `problem::Problem` = problem
+- `problem::DynamicProblem`: problem
 
 # Keyword arguments
-- `refBasis::String` = reference observer basis for plot
-- `plotFrequency::Int64` = frequency of time steps to plot
-- `plotUndeformed::Bool` = flag to plot undeformed assembly
-- `plotBCs::Bool` = flag to plot BCs
-- `plotDistLoads::Bool` = flag to plot distributed loads (includes gravitational and aerodynamic loads)
-- `view::Union{Nothing,Tuple{Real,Real}}` = view angles
-- `fps::Number` = frame rate for gif
-- `scale::Number` = displacements and rotations scale
-- `frequencyLabel::String` = option for frequency label (only frequency or frequency and damping)
-- `lw::Number` = linewidth
-- `colorUndef` = color for undeformed assembly
-- `colorDef` = color for deformed assembly
-- `grid::Bool` = flag for grid
-- `legendPos` = legend position
-- `tolPlane::Number` = displacement tolerance to plot as plane
-- `plotAeroSurf` = flag to plot aerodynamic surfaces
-- `surfα::Float64` = transparency factor of aerodynamic surfaces 
-- `plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}` = plot axis limits
-- `save::Bool` = flag to save the figure
-- `savePath::String` = relative path on which to save the figure
-- `showScale::Bool` = flag to show scale on plot
-- `showTimeStamp::Bool` = flag to show time stamp on plot
-- `scalePos::Vector{<:Number}` = position of scale on plot
-- `timeStampPos::Vector{<:Number}` = position of time stamp on plot
-- `displayProgress::Bool` = flag to display progress of gif creation
+- `refBasis::String`: reference observer basis for plot
+- `plotFrequency::Int64`: frequency of time steps to plot
+- `plotUndeformed::Bool`: flag to plot undeformed assembly
+- `plotBCs::Bool`: flag to plot BCs
+- `plotDistLoads::Bool`: flag to plot distributed loads (includes gravitational and aerodynamic loads)
+- `view::Union{Nothing,Tuple{Real,Real}}`: view angles
+- `fps::Real`: frame rate for gif
+- `scale::Real`: displacements and rotations scale
+- `frequencyLabel::String`: option for frequency label (only frequency or frequency and damping)
+- `lw::Real`: linewidth
+- `colorUndef`: color for undeformed assembly
+- `colorDef`: color for deformed assembly
+- `plotGrid::Bool`: flag to plot grid
+- `legendPos`: legend position
+- `tolPlane::Real`: displacement tolerance to plot as plane
+- `plotAeroSurf`: flag to plot aerodynamic surfaces
+- `surfα::Float64`: transparency factor of aerodynamic surfaces 
+- `plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}`: plot axis limits
+- `save::Bool`: flag to save the figure
+- `savePath::String`: relative path on which to save the figure
+- `showScale::Bool`: flag to show scale on plot
+- `showTimeStamp::Bool`: flag to show time stamp on plot
+- `scalePos::Vector{<:Real}`: position of scale on plot
+- `timeStampPos::Vector{<:Real}`: position of time stamp on plot
+- `displayProgress::Bool`: flag to display progress of gif creation
 """
-function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Number=30,scale::Number=1,lw::Number=1,colorUndef=:black,colorDef=:blue,grid::Bool=true,legendPos=:best,tolPlane::Number=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Vector{Tuple{T1,T2}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Number}=[0.1;0.05;0.05],timeStampPos::Vector{<:Number}=[0.5;0.05;0.05],displayProgress::Bool=false) where {T1<:Number,T2<:Number}
+function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Real=30,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotGrid::Bool=true,legendPos=:best,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Real}=[0.1;0.05;0.05],timeStampPos::Vector{<:Real}=[0.5;0.05;0.05],displayProgress::Bool=false)
 
     # Validate
-    @assert problem isa DynamicProblem
     @assert refBasis in ["I","A"]
     @assert plotFrequency >= 1
     @assert scale > 0
@@ -921,7 +963,6 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
     @assert length(scalePos) == 3
     @assert length(timeStampPos) == 3
     if !isnothing(plotLimits)
-        @assert length(plotLimits) == 3
         @assert all((plotLimits[a][1] < plotLimits[a][2]) for a in 1:3)
     end
 
@@ -933,7 +974,7 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
     @unpack elements,nElementsTotal,units,u_A,R_A_ofTime = problem.model
 
     # Initialize plot
-    plt = plot(grid=grid)
+    plt = plot(grid=plotGrid)
 
     # Initialize arrays
     x1Undef = Array{Vector{Float64}}(undef,nElementsTotal)
@@ -964,10 +1005,8 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
         undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
     end
 
-    # Initialize plot limits, if applicable
-    if isnothing(plotLimits)
-        plotMin = plotMax = 0
-    end
+    # Initialize plot limits
+    plotMin = plotMax = 0
 
     # Loop over time
     anim = @animate for t=1:plotFrequency:length(timeVector)
@@ -1102,17 +1141,30 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
 
         # Plot distributed loads (including aerodynamic), if applicable
         if plotDistLoads
-            # Plot distributed loads (including aerodynamic)
             plt = plot_distributed_loads!(plt,problem,x1Def[t,:],x2Def[t,:],x3Def[t,:],x1Plane,x2Plane,x3Plane,view,t)
         end
 
-        # Set the same plot extrema across all axis (equal aspect ratio), if applicable
-        if isnothing(plotLimits)
-            plotMax = max(plotMax,maximum(reduce(vcat, x1Def[t,:])),maximum(reduce(vcat, x2Def[t,:])),maximum(reduce(vcat, x3Def[t,:])),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
-            plotMin = min(plotMin,minimum(reduce(vcat, x1Def[t,:])),minimum(reduce(vcat, x2Def[t,:])),minimum(reduce(vcat, x3Def[t,:])),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
-            plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+        # Plot extrema
+        plotMax = max(plotMax,maximum(reduce(vcat, x1Def[t,:])),maximum(reduce(vcat, x2Def[t,:])),maximum(reduce(vcat, x3Def[t,:])),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
+        plotMin = min(plotMin,minimum(reduce(vcat, x1Def[t,:])),minimum(reduce(vcat, x2Def[t,:])),minimum(reduce(vcat, x3Def[t,:])),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
+
+        # Set plot limits
+        if isPlane
+            if isnothing(plotLimits)
+
+            elseif x1Plane
+                plot!(xlims=plotLimits[2],ylims=plotLimits[3])
+            elseif x2Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[3])
+            elseif x3Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2])
+            end
         else
-            plot!(xlims=[plotLimits[1][1],plotLimits[1][2]],ylims=[plotLimits[2][1],plotLimits[2][2]],zlims=[plotLimits[3][1],plotLimits[3][2]])
+            if isnothing(plotLimits)
+                plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+            else
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2],zlims=plotLimits[3])
+            end
         end
 
         # Plot time stamp, if applicable
@@ -1131,7 +1183,17 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
             end
             # Display time stamp
             if isPlane
-                annotate!(XPos, YPos, text("Time: $(roundedTime) s", 8))
+                if x1Plane
+                    a = YPos
+                    b = ZPos
+                elseif x2Plane
+                    a = XPos
+                    b = ZPos
+                elseif x3Plane
+                    a = XPos
+                    b = YPos
+                end
+                annotate!(a, b, text("Time: $(roundedTime) s", 8))
             else
                 plot!([NaN], [NaN], c=:white, lw=0, label="Time: $(roundedTime) s")
             end
@@ -1152,7 +1214,17 @@ function plot_dynamic_deformation(problem::Problem; refBasis::String="A", plotFr
             # Display scale
             scaleString = "Scale: $(string(scale))×"
             if isPlane
-                annotate!(XPos, YPos, text(scaleString, 8))
+                if x1Plane
+                    a = YPos
+                    b = ZPos
+                elseif x2Plane
+                    a = XPos
+                    b = ZPos
+                elseif x3Plane
+                    a = XPos
+                    b = YPos
+                end
+                annotate!(a, b, text(scaleString, 8))
             else
                 plot!([NaN], [NaN], c=:white, lw=0, label=scaleString)
             end
@@ -1183,27 +1255,268 @@ export plot_dynamic_deformation
 
 
 """
+    plot_snapshots(problem::DynamicProblem; kwargs...)
+
+Plots the deformed states for the model in the given dynamic problem at specified time instances (snapshots)
+
+# Arguments
+- `problem::DynamicProblem`: problem
+
+# Keyword arguments
+- `refBasis::String`: reference observer basis for plot
+- `plotBCs::Bool`: flag to plot BCs
+- `plotDistLoads::Bool`: flag to plot distributed loads (includes gravitational and aerodynamic loads)
+- `view::Union{Nothing,Tuple{Real,Real}}`: view angles
+- `scale::Real`: displacements and rotations scale
+- `lw::Real`: linewidth
+- `ls::Symbol`= line style
+- `color`: color
+- `plotAxes::Bool`: flag to plot axes
+- `plotGrid::Bool`: flag to plot grid
+- `tolPlane::Real`: displacement tolerance to plot as plane
+- `plotAeroSurf::Bool`: flag to plot aerodynamic surfaces
+- `surfα::Float64`: transparency factor of aerodynamic surfaces
+- `snapshots::Vector{<:Real}`: (tentative) time instances to plot    
+- `plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}`: plot axis limits    
+- `showScale::Bool`: flag to show scale on plot
+- `scalePos::Vector{<:Real}`: position of scale on plot
+- `save::Bool`: flag to save the figure
+- `savePath::String`: relative path on which to save the figure
+"""
+function plot_snapshots(problem::DynamicProblem; refBasis::String="A",plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Real=1,lw::Real=1,ls::Symbol=:dash,color=:black,plotAxes::Bool=true,plotGrid::Bool=true,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,snapshots::Vector{<:Real},plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+
+    # Validate
+    @assert refBasis in ["I","A"]
+    @assert snapshots[1] >= problem.timeVector[1] "initial snapshot is out of the time range"
+    @assert snapshots[end] <= problem.timeVector[end] "final snapshot is out of the time range"
+    @assert snapshots == sort(snapshots) "snapshots must be in ascending order"
+    @assert scale > 0
+    @assert lw > 0
+    @assert tolPlane > 0
+    @assert 0 < surfα <= 1
+    if !isnothing(plotLimits)
+        @assert all((plotLimits[a][1] < plotLimits[a][2]) for a in 1:3)
+    end
+
+    # Set backend
+    pyplot()
+
+    # Unpack
+    @unpack timeVector,sizeOfTime = problem
+    @unpack elements,nElementsTotal,units,u_A,R_A_ofTime = problem.model
+
+    # Initialize plot
+    plt = plot(grid=plotGrid,axis=plotAxes)
+
+    # Initialize TF for plane plot
+    isPlane = isnothing(view)
+
+    # Initialize plot extrema
+    plotMax = plotMin = 0
+
+    # Initialize arrays
+    x1Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+    x2Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+    x3Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+    x1Def = Array{Vector{Float64}}(undef,nElementsTotal)
+    x2Def = Array{Vector{Float64}}(undef,nElementsTotal)
+    x3Def = Array{Vector{Float64}}(undef,nElementsTotal)
+    undefAirfoilCoords_n1 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+    undefAirfoilCoords_n2 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+    defAirfoilCoords_n1 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+    defAirfoilCoords_n2 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
+
+    # Compute undeformed assembly variables
+    for (e,element) in enumerate(elements)     
+        @unpack r_n1,r_n2,nodalStates,aero = element
+        @unpack u_n1,u_n2,p_n1,p_n2 = nodalStates
+        # Set undeformed coordinates
+        x1Undef[e] = [r_n1[1]; r_n2[1]]
+        x2Undef[e] = [r_n1[2]; r_n2[2]]
+        x3Undef[e] = [r_n1[3]; r_n2[3]]
+        # Skip elements without aero surfaces, or if those are not to be plotted
+        if !plotAeroSurf || isnothing(aero)
+            undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = nothing,nothing
+            continue
+        end
+        # Undeformed nodal airfoil coordinates
+        undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
+    end
+
+    # Loop snapshots to plot
+    for (i,tsnap) in enumerate(snapshots)
+
+        # Find the closest available saved snapshot
+        t = argmin(abs.(problem.savedTimeVector .- tsnap))
+
+        # Set current time
+        timeNow = timeVector[t]
+
+        # Set current displacement vector and rotation tensor from basis A to reference basis (either basis I or A)
+        if refBasis == "I"
+            uRefNow = u_A(timeNow)
+            R = R_A_ofTime[t]'
+        elseif refBasis == "A"
+            uRefNow = zeros(3)
+            R = I3
+        end
+
+        # Loop over elements
+        for (e,element) in enumerate(elements)     
+            @unpack r_n1,r_n2,aero = element
+            u_n1 = problem.nodalStatesOverTime[t][e].u_n1
+            u_n2 = problem.nodalStatesOverTime[t][e].u_n2
+            # Set deformed nodal position vectors
+            posNode1 = [x1Undef[e][1]+scale*u_n1[1]; x2Undef[e][1]+scale*u_n1[2]; x3Undef[e][1]+scale*u_n1[3]]
+            posNode2 = [x1Undef[e][2]+scale*u_n2[1]; x2Undef[e][2]+scale*u_n2[2]; x3Undef[e][2]+scale*u_n2[3]]
+            # Set deformed coordinates (including movement of reference basis) 
+            x1Def[e] = uRefNow[1] .+ [(R*posNode1)[1]; (R*posNode2)[1]]
+            x2Def[e] = uRefNow[2] .+ [(R*posNode1)[2]; (R*posNode2)[2]]
+            x3Def[e] = uRefNow[3] .+ [(R*posNode1)[3]; (R*posNode2)[3]]
+        end
+
+        # Set TFs for plane views
+        x1Plane = maximum(abs.(vcat(x1Def...))) < tolPlane ? true : false
+        x2Plane = maximum(abs.(vcat(x2Def...))) < tolPlane ? true : false
+        x3Plane = maximum(abs.(vcat(x3Def...))) < tolPlane ? true : false
+
+        # Plot undeformed and deformed beam assemblies according to view
+        if isnothing(view)
+            if x1Plane
+                plot!(x2Def, x3Def, color=color,ls=ls,aspect_ratio=:equal,lw=lw,label=false)
+                if plotAxes
+                    plot(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                end
+            elseif x2Plane
+                plot!(x1Def, x3Def, color=color,ls=ls,aspect_ratio=:equal,lw=lw,label=false)
+                if plotAxes
+                    plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                end
+            elseif x3Plane
+                plot!(x1Def, x2Def, color=color,ls=ls,aspect_ratio=:equal,lw=lw,label=false)
+                if plotAxes
+                    plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
+                end
+            else
+                plot!(x1Def, x2Def, x3Def, camera=(45,45),color=color,ls=ls,lw=lw,label=false)
+                if plotAxes
+                    plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+                end
+            end
+        else
+            plot!(x1Def, x2Def, x3Def, camera=view,color=color,ls=ls,lw=lw,label=false)
+            if plotAxes
+                plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+            end
+        end
+
+        # Initialize TF for plane plot
+        isPlane = isnothing(view) && (x1Plane || x2Plane || x3Plane)
+
+        # Plot aerodynamic surfaces, if applicable
+        for (e,element) in enumerate(elements)
+            if isnothing(undefAirfoilCoords_n1[e])
+                continue
+            end
+            # Update flag
+            isPlane = false
+            # Unpack
+            @unpack r_n1,r_n2,aero = element
+            u_n1 = problem.nodalStatesOverTime[t][e].u_n1
+            u_n2 = problem.nodalStatesOverTime[t][e].u_n2
+            p_n1 = problem.nodalStatesOverTime[t][e].p_n1
+            p_n2 = problem.nodalStatesOverTime[t][e].p_n2
+            # Rotation tensors
+            R_n1,_ = rotation_tensor_WM(scale*p_n1)
+            R_n2,_ = rotation_tensor_WM(scale*p_n2)
+            # Deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in reference basis (R*R_n*), then throw back to initial position (+r) and add scaled displacements (+scale*u))
+            defAirfoilCoords_n1[e] = R*R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ uRefNow
+            defAirfoilCoords_n2[e] = R*R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ uRefNow
+            # Current coordinates
+            Xd = [defAirfoilCoords_n1[e][1,:] defAirfoilCoords_n2[e][1,:]]
+            Yd = [defAirfoilCoords_n1[e][2,:] defAirfoilCoords_n2[e][2,:]]
+            Zd = [defAirfoilCoords_n1[e][3,:] defAirfoilCoords_n2[e][3,:]]
+            # Plot deformed aerodynamic surfaces
+            surface!(Xd,Yd,Zd, color=palette([color,color],2), colorbar=false, alpha=surfα)
+        end
+
+        # Plot BCs (generalized displacements and concentrated loads), if applicable
+        if plotBCs
+            plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,timeNow,t)
+        end
+
+        # Plot distributed loads (including aerodynamic), if applicable
+        if plotDistLoads
+            plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,t)
+        end
+
+        # Plot extrema
+        plotMax = max(plotMax,maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
+        plotMin = min(plotMin,minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
+
+        # Set plot limits
+        if isPlane
+            if isnothing(plotLimits)
+
+            elseif x1Plane
+                plot!(xlims=plotLimits[2],ylims=plotLimits[3])
+            elseif x2Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[3])
+            elseif x3Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2])
+            end
+        else
+            if isnothing(plotLimits)
+                plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+            else
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2],zlims=plotLimits[3])
+            end
+        end
+    end
+
+    # Plot scale, if applicable
+    if showScale
+        # Display scale
+        scaleString = "Deformation scale: $(string(scale))×"
+        if isPlane
+            annotate!(scalePos[1], scalePos[2], text(scaleString, 8))
+        else
+            plot!([NaN], [NaN], c=:white, lw=0, label=scaleString)
+        end
+    end
+
+    # Save, if applicable
+    if save
+        savefig(string(pwd(),savePath))
+    end
+
+    return plt
+end
+export plot_snapshots
+
+
+"""
     plot_time_outputs(problem::Problem; kwargs...)
 
 Plots outputs of a dynamic problem
 
 # Arguments
-- `problem::Problem` = problem
+- `problem::Problem`: problem
 
 # Keyword arguments
 - nodes::Vector{Tuple{Int64,Int64}} = global IDs of nodes for which to plot
 - elements::Vector{Int64} = global IDs of elements for which to plot
 - nodalOutputs::Vector{String} = nodal outputs to plot
-- `elementalOutputs::Vector{String}` = elemental outputs to plot
-- `lw::Number` = linewidth
-- `colorScheme` = color scheme
-- `showLegend::Bool` = flag to show legend
-- `legendPos` = legend position
-- `save::Bool` = flag to save figures
-- `saveFolder::String` = relative path of folder where to save figures
-- `figureExtension::String` = figure extension
+- `elementalOutputs::Vector{String}`: elemental outputs to plot
+- `lw::Real`: linewidth
+- `colorScheme`: color scheme
+- `showLegend::Bool`: flag to show legend
+- `legendPos`: legend position
+- `save::Bool`: flag to save figures
+- `saveFolder::String`: relative path of folder where to save figures
+- `figureExtension::String`: figure extension
 """
-function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=Vector{Tuple{Int64,Int64}}(),elements::Vector{Int64}=Vector{Int64}(),nodalOutputs::Vector{String}=["u","p","F","M"],elementalOutputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],lw::Number=1,colorScheme=:rainbow,showLegend::Bool=true,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
+function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=Vector{Tuple{Int64,Int64}}(),elements::Vector{Int64}=Vector{Int64}(),nodalOutputs::Vector{String}=["u","p","F","M"],elementalOutputs::Vector{String}=["u","p","F","M","V","Ω","α","cn","cm","ct","cl","cd"],lw::Real=1,colorScheme=:rainbow,showLegend::Bool=true,legendPos=:best,save::Bool=false,saveFolder::String="/test/outputs/figures/",figureExtension::String=".pdf")
 
     # Validate
     validNodalOutputs = ["u","u1","u2","u3","p","p1","p2","p3","F","F1","F2","F3","M","M1","M2","M3"]
@@ -2052,12 +2365,12 @@ function get_undeformed_airfoil_coords(element::Element)
     N = length(Y)
 
     # Nodal chords and normalized spar positions
-    if c isa Number
+    if c isa Real
         c1 = c2 = c
     else
         c1,c2 = c(x1_n1),c(x1_n2)
     end
-    if normSparPos isa Number
+    if normSparPos isa Real
         normSparPos1 = normSparPos2 = normSparPos
     else
         normSparPos1,normSparPos2 = normSparPos(x1_n1),normSparPos(x1_n2)
@@ -2097,9 +2410,14 @@ end
 
 
 # Plots all boundary conditions at the current time
-function plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,timeNow,tIndNow)
+function plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,timeNow,tIndNow; σindex=nothing)
 
     @unpack BCs = problem.model
+
+    # Set σindex for steady problems
+    if typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem] && isnothing(σindex)
+        σindex = length(problem.savedσ)
+    end
     
     # Loop BCs
     for BC in BCs
@@ -2117,7 +2435,7 @@ function plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,ti
         if problem isa DynamicProblem
             R_n,_ = localNode == 1 ? rotation_tensor_WM(problem.nodalStatesOverTime[tIndNow][eGlobalID].p_n1) : rotation_tensor_WM(problem.nodalStatesOverTime[tIndNow][eGlobalID].p_n2)
         else
-            R_n,_ = localNode == 1 ? rotation_tensor_WM(element.nodalStates.p_n1) : rotation_tensor_WM(element.nodalStates.p_n2)
+            R_n,_ = localNode == 1 ? rotation_tensor_WM(problem.nodalStatesOverσ[σindex][eGlobalID].p_n1) : rotation_tensor_WM(problem.nodalStatesOverσ[σindex][eGlobalID].p_n2)
         end
         # Position where BC is applied
         P2 = [x1Def[eGlobalID][localNode]; x2Def[eGlobalID][localNode]; x3Def[eGlobalID][localNode]]
@@ -2298,10 +2616,15 @@ end
 
 
 # Plots all distributed loads at the current time
-function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,tIndNow)
+function plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,tIndNow; σindex=nothing)
 
     @unpack timeNow,maxAeroForce,maxAeroMoment = problem
     @unpack gravityVector,elements = problem.model
+
+    # Set σindex for steady problems
+    if typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem] && isnothing(σindex)
+        σindex = length(problem.savedσ)
+    end
 
     # Loop elements
     for (e,element) in enumerate(elements)
@@ -2341,9 +2664,9 @@ function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,
                 R_n1,_ = rotation_tensor_WM(p_n1)
                 R_n2,_ = rotation_tensor_WM(p_n2)
             else
-                @unpack R = element
-                @unpack p_n1,p_n2 = element.nodalStates
-                R_e = R
+                @unpack p_n1,p_n2 = problem.nodalStatesOverσ[σindex][e]
+                @unpack p = problem.elementalStatesOverσ[σindex][e]
+                R_e,_ = rotation_tensor_WM(p)
                 R_n1,_ = rotation_tensor_WM(p_n1)
                 R_n2,_ = rotation_tensor_WM(p_n2)
             end
@@ -2482,9 +2805,9 @@ function plot_distributed_loads!(plt,problem::Problem,x1Def,x2Def,x3Def,x1Plane,
                 cn = problem.aeroVariablesOverTime[tIndNow][globalID].aeroCoefficients.cn
                 cm = problem.aeroVariablesOverTime[tIndNow][globalID].aeroCoefficients.cm
             else
-                ct = problem.aeroVariablesOverσ[end][globalID].aeroCoefficients.ct
-                cn = problem.aeroVariablesOverσ[end][globalID].aeroCoefficients.cn
-                cm = problem.aeroVariablesOverσ[end][globalID].aeroCoefficients.cm
+                ct = problem.aeroVariablesOverσ[σindex][globalID].aeroCoefficients.ct
+                cn = problem.aeroVariablesOverσ[σindex][globalID].aeroCoefficients.cn
+                cm = problem.aeroVariablesOverσ[σindex][globalID].aeroCoefficients.cm
             end
             # Mormalized values of aerodynamic loads
             ctNorm = ct / maxAeroForce

@@ -29,11 +29,11 @@ end
 Creates a sharp-edged gust
 
 # Keyword arguments
-- `initialTime::Real` = time when the gust begins
-- `duration::Real` = duration of the gust
-- `convectiveVelocity::Real` = convective velocity of the gust (in longitudinal direction)
-- `verticalVelocity::Real` = peak "vertical" velocity of the gust (in lift direction)
-- `p::Vector{<:Real}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `initialTime::Real`: time when the gust begins
+- `duration::Real`: duration of the gust
+- `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
+- `verticalVelocity::Real`: peak "vertical" velocity of the gust (in lift direction)
+- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
 function create_SharpEdgedGust(; initialTime::Real=0,duration::Real=Inf,convectiveVelocity::Real=0,verticalVelocity::Real,p::Vector{<:Real}=zeros(3))
 
@@ -87,11 +87,11 @@ end
 Creates a one-minus-cosine gust
 
 # Keyword arguments
-- `initialTime::Real` = time when the gust begins
-- `duration::Real` = duration of the gust
-- `convectiveVelocity::Real` = convective velocity of the gust (in longitudinal direction)
-- `verticalVelocity::Real` = peak "vertical" velocity of the gust (in lift direction)
-- `p::Vector{<:Real}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `initialTime::Real`: time when the gust begins
+- `duration::Real`: duration of the gust
+- `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
+- `verticalVelocity::Real`: peak "vertical" velocity of the gust (in lift direction)
+- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
 function create_OneMinusCosineGust(; initialTime::Real=0,duration::Real,convectiveVelocity::Real=0,verticalVelocity::Real,p::Vector{<:Real}=zeros(3))
 
@@ -155,20 +155,20 @@ end
 Creates a continuous 1D gust
 
 # Keyword arguments
-- `spectrum::String` = spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
-- `generationMethod::String` = method for generation of gust velocity ("sinusoids" or "whiteNoise")
-- `initialTime::Real` = time when the gust begins
-- `duration::Real` = duration of the gust
-- `generationDuration::Real` = duration of the gust considered for its generation
-- `L::Real` = turbulence length scale [m]
-- `ωmin::Real` = minimum frequency of the PSD [rad/s]
-- `ωmax::Real` = maximum frequency of the PSD [rad/s]
-- `Uref::Real` = reference airspeed
-- `convectiveVelocity::Real` = convective velocity of the gust (in longitudinal direction)
-- `σ::Real` = turbulence intensity (RMS) of "vertical" gust velocity component
-- `p::Vector{<:Real}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
-- `seed::Int64` = seed for random numbers generation (reproducibility)
-- `plotPSD::Bool` = flag to plot the PSD
+- `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
+- `generationMethod::String`: method for generation of gust velocity ("sinusoids" or "whiteNoise")
+- `initialTime::Real`: time when the gust begins
+- `duration::Real`: duration of the gust
+- `generationDuration::Real`: duration of the gust considered for its generation
+- `L::Real`: turbulence length scale [m]
+- `ωmin::Real`: minimum frequency of the PSD [rad/s]
+- `ωmax::Real`: maximum frequency of the PSD [rad/s]
+- `Uref::Real`: reference airspeed
+- `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
+- `σ::Real`: turbulence intensity (RMS) of "vertical" gust velocity component
+- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `seed::Int64`: seed for random numbers generation (reproducibility)
+- `plotPSD::Bool`: flag to plot the PSD
 """
 function create_Continuous1DGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Real=0,duration::Real,generationDuration::Real=duration,L::Real=762,ωmin::Real=0,ωmax::Real=200π,Uref::Real,convectiveVelocity::Real=0,σ::Real,p::Vector{<:Real}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
 
@@ -288,13 +288,13 @@ end
 Creates a discrete space gust
 
 # Keyword arguments
-- `type::String` = type of gust
-- `length::Real` = length of the gust (in longitudinal direction)
-- `width::Real` = width of the gust (in spanwise direction)
-- `convectiveVelocity::Real` = convective velocity of the gust (in longitudinal direction)
-- `verticalVelocity::Real` = peak "vertical" velocity of the gust (in lift direction)
-- `c0::Vector{<:Real}` = position vector of the front of the gust, resolved in the inertial basis
-- `p::Vector{<:Real}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `type::String`: type of gust
+- `length::Real`: length of the gust (in longitudinal direction)
+- `width::Real`: width of the gust (in spanwise direction)
+- `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
+- `verticalVelocity::Real`: peak "vertical" velocity of the gust (in lift direction)
+- `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
+- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
 function create_DiscreteSpaceGust(; type::String,length::Real,width::Real,convectiveVelocity::Real=0,verticalVelocity::Real,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3))
 
@@ -376,14 +376,14 @@ end
 Creates a continuous 1D space gust
 
 # Keyword arguments
-- `spectrum::String` = spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
-- `length::Real` = length of the gust (in longitudinal direction)
-- `N::Int64` = number of nodes for length discretization
-- `L::Real` = turbulence length scale
-- `σ::Real` = turbulence intensity (RMS) of "vertical" gust velocity component
-- `c0::Vector{<:Real}` = position vector of the front of the gust, resolved in the inertial basis
-- `p::Vector{<:Real}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
-- `seed::Int64` = seed for random numbers generation (reproducibility)
+- `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
+- `length::Real`: length of the gust (in longitudinal direction)
+- `N::Int64`: number of nodes for length discretization
+- `L::Real`: turbulence length scale
+- `σ::Real`: turbulence intensity (RMS) of "vertical" gust velocity component
+- `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
+- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `seed::Int64`: seed for random numbers generation (reproducibility)
 """
 function create_Continuous1DSpaceGust(; spectrum::String,length::Real,N::Int64=1001,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int64=123456)
 
@@ -503,16 +503,16 @@ end
 Creates a continuous 2D space gust
 
 # Keyword arguments
-- `spectrum::String` = spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
-- `length::Real` = length of the gust (in longitudinal direction)
-- `width::Real` = width of the gust (in lateral direction)
-- `Nx::Int64` = number of nodes for length discretization
-- `Ny::Int64` = number of nodes for width discretization
-- `L::Real` = turbulence length scale
-- `σ::Real` = turbulence intensity (RMS) of "vertical" gust velocity component
-- `c0::Vector{<:Real}` = position vector of the front of the gust, resolved in the inertial basis
-- `p::Vector{<:Real}` = Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
-- `seed::Int64` = seed for random numbers generation (reproducibility)
+- `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
+- `length::Real`: length of the gust (in longitudinal direction)
+- `width::Real`: width of the gust (in lateral direction)
+- `Nx::Int64`: number of nodes for length discretization
+- `Ny::Int64`: number of nodes for width discretization
+- `L::Real`: turbulence length scale
+- `σ::Real`: turbulence intensity (RMS) of "vertical" gust velocity component
+- `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
+- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `seed::Int64`: seed for random numbers generation (reproducibility)
 """
 function create_Continuous2DSpaceGust(; spectrum::String,length::Real,width::Real,Nx::Int64=101,Ny::Int64=101,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int64=123456)
 

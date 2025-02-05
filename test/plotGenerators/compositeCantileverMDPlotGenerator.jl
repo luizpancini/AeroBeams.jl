@@ -10,18 +10,20 @@ mkpath(absPath)
 
 # Plot configurations
 labels = ["\$-u_1\$" "\$u_2\$" "\$-u_3\$"]
-xLabel = "\$-u_1, u_2, -u_3\$ [m]"
+xLabel = "Displacements [m]"
 yLabel = "Load [grams]"
 colors = [:blue,:orange,:green]
+ts = 10
+fs = 16
 lw = 2
 ms = 5
 msw = 0
 gr()
 
 # Beam 1, θ=0⁰
-plt11 = plot(xlabel=xLabel, ylabel=yLabel, title="Beam 1, \$\\theta=0^{\\degree}\$")
+plt11 = plot(xlabel=xLabel, ylabel=yLabel, tickfont=font(ts), guidefont=font(fs), legendfontsize=9)
 plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label=" Experimental")
+scatter!([NaN], [NaN], mc=:black, ms=ms, label="Exp. - Minguet & Dugundji (1990)")
 for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
@@ -35,11 +37,11 @@ display(plt11)
 savefig(string(absPath,"/compositeCantileverMD_b1th0.pdf"))
 
 # Beam 1, θ=45⁰
-plt12 = plot(xlabel=xLabel, ylabel=yLabel, title="Beam 1, \$\\theta=45^{\\degree}\$")
-plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="  Experimental")
+plt12 = plot(xlabel=xLabel, ylabel=yLabel, tickfont=font(ts), guidefont=font(fs), legendfontsize=9)
+plot!([NaN], [NaN], lc=:black, lw=lw, label=false)
+scatter!([NaN], [NaN], mc=:black, ms=ms, label=false)
 for i=1:3
-    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
+    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=false)
 end
 for (x, c) in zip([-u1_500mm[1,2], u2_500mm[1,2], -u3_500mm[1,2]], colors)
     plot!(x, σVector[1,2]*W/g*1e3, c=c, lw=lw, label=false)
@@ -51,9 +53,9 @@ display(plt12)
 savefig(string(absPath,"/compositeCantileverMD_b1th45.pdf"))
 
 # Beam 2, θ=0⁰
-plt21 = plot(xlabel=xLabel, ylabel=yLabel, title="Beam 2, \$\\theta=0^{\\degree}\$")
+plt21 = plot(xlabel=xLabel, ylabel=yLabel, tickfont=font(ts), guidefont=font(fs), legendfontsize=9)
 plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="  Experimental")
+scatter!([NaN], [NaN], mc=:black, ms=ms, label="Exp. - Minguet & Dugundji (1990)")
 for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
@@ -67,11 +69,11 @@ display(plt21)
 savefig(string(absPath,"/compositeCantileverMD_b2th0.pdf"))
 
 # Beam 2, θ=45⁰
-plt22 = plot(xlabel=xLabel, ylabel=yLabel, title="Beam 2, \$\\theta=45^{\\degree}\$")
-plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="  Experimental")
+plt22 = plot(xlabel=xLabel, ylabel=yLabel, tickfont=font(ts), guidefont=font(fs), legendfontsize=9)
+plot!([NaN], [NaN], lc=:black, lw=lw, label=false)
+scatter!([NaN], [NaN], mc=:black, ms=ms, label=false)
 for i=1:3
-    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
+    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=false)
 end
 for (x, c) in zip([-u1_500mm[2,2], u2_500mm[2,2], -u3_500mm[2,2]], colors)
     plot!(x, σVector[2,2]*W/g*1e3, c=c, lw=lw, label=false)
@@ -84,9 +86,9 @@ display(plt22)
 savefig(string(absPath,"/compositeCantileverMD_b2th45.pdf"))
 
 # Beam 3, θ=0⁰
-plt31 = plot(xlabel=xLabel, ylabel=yLabel, title="Beam 3, \$\\theta=0^{\\degree}\$")
+plt31 = plot(xlabel=xLabel, ylabel=yLabel, tickfont=font(ts), guidefont=font(fs), legendfontsize=9)
 plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="  Experimental")
+scatter!([NaN], [NaN], mc=:black, ms=ms, label="Exp. - Minguet & Dugundji (1990)")
 for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
@@ -100,11 +102,11 @@ display(plt31)
 savefig(string(absPath,"/compositeCantileverMD_b3th0.pdf"))
 
 # Beam 3, θ=45⁰
-plt32 = plot(xlabel=xLabel, ylabel=yLabel, title="Beam 3, \$\\theta=45^{\\degree}\$")
-plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], mc=:black, ms=ms, label="  Experimental")
+plt32 = plot(xlabel=xLabel, ylabel=yLabel, tickfont=font(ts), guidefont=font(fs), legendfontsize=9)
+plot!([NaN], [NaN], lc=:black, lw=lw, label=false)
+scatter!([NaN], [NaN], mc=:black, ms=ms, label=false)
 for i=1:3
-    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
+    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=false)
 end
 for (x, c) in zip([-u1_500mm[3,2], u2_500mm[3,2], -u3_500mm[3,2]], colors)
     plot!(x, σVector[3,2]*W/g*1e3, c=c, lw=lw, label=false)

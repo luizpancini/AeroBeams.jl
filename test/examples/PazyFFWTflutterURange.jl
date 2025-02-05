@@ -1,13 +1,13 @@
 using AeroBeams
 
-# Option for fixed or free hinge (fold) angle
-fixedFoldAngle = false
-
 # Airspeed range [m/s]
 URange = collect(1:1:60)
 
 # Hinge node
 hingeNode = 13
+
+# Fold angle [rad]
+foldAngle = nothing
 
 # Flare angle [rad]
 Λ = 10*π/180
@@ -18,9 +18,6 @@ hingeNode = 13
 # Sideslip angle [rad]
 β = 0*π/180
 
-# Fold angle [rad], if applicable
-γ = 0*π/180
-
 # Tip mass [kg] and its position [m]
 tipMass = 10e-3
 ηtipMass = 1e-3*[0;50;0]
@@ -28,12 +25,14 @@ tipMass = 10e-3
 # Spring stiffness [Nm/rad] (as kSpring → ∞, the hingeless behavior is obtained, as expected!)
 kSpring = 1e-4
 
+# Solution method for hinge constraint
+solutionMethod = "appliedMoment"
+
 # System solver
 σ0 = 1
 maxIter = 100
 relTol = 1e-6
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Number of modes
 nModes = 5
@@ -53,7 +52,7 @@ for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U=$U m/s")
     # Update model
-    model = fixedFoldAngle ? create_PazyFFWT(hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,foldAngle=γ,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,tipMassPosition=ηtipMass) : create_PazyFFWT(hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,tipMassPosition=ηtipMass)
+    model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,foldAngle=foldAngle,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,tipMassPosition=ηtipMass)
     # Set initial guess solution as the one from previous sideslip angle
     x0 = (i>1 && problem[i-1].systemSolver.convergedFinalSolution) ? problem[i-1].x : zeros(0)
     # Create and solve problem

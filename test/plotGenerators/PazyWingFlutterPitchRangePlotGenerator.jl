@@ -1,7 +1,7 @@
 using Plots
 
 # Run the script
-# include("../examples/PazyWingFlutterPitchRange.jl")
+include("../examples/PazyWingFlutterPitchRange.jl")
 
 # Set paths
 relPath = "/test/outputs/figures/PazyWingFlutterPitchRange"
@@ -9,6 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot configurations
+ts = 10
+fs = 16
 lw = 2
 ms = 10
 msw = 0
@@ -18,7 +20,7 @@ gr()
 mode2plot = 3
 x1 = [flutterOnsetSpeedsOfMode[i,mode2plot][1] for i in eachindex(θRange)]
 x2 = [flutterOffsetSpeedsOfMode[i,mode2plot][1] for i in eachindex(θRange)]
-plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root pitch angle [deg]", xlims=[0,90], ylims=[0,7.25], xticks=collect(0:15:90), yticks=collect(0:1:7), legend=:bottomleft)
+plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root pitch angle [deg]", xlims=[0,90], ylims=[0,7.25], xticks=collect(0:15:90), yticks=collect(0:1:7), legend=:bottomleft, tickfont=font(ts), guidefont=font(fs), legendfontsize=10)
 plot!(Shape(vcat(x1,reverse(x2[3:end]),97,100),vcat(θRange,reverse(θRange))), fillcolor = plot_color(:red, 0.25), lw=lw, label="AeroBeams flutter region")
 scatter!(flutterOnsetVelUp, rootPitchVelUp, shape=:rtriangle, mc=:red, ms=ms, msw=msw, label="Test onset up")
 scatter!(flutterOffsetVelUp, rootPitchVelUp, shape=:rtriangle, mc=:green, ms=ms, msw=msw, label="Test offset up")
@@ -34,7 +36,7 @@ x1 = [flutterOnsetDispOfMode[i,mode2plot][1] for i in eachindex(θRange)]
 x2 = [flutterOffsetDispOfMode[i,mode2plot][1] for i in eachindex(θRange)]
 y1 = [flutterOnsetSpeedsOfMode[i,mode2plot][1] for i in eachindex(θRange)]
 y2 = [flutterOffsetSpeedsOfMode[i,mode2plot][1] for i in eachindex(θRange)]
-plt2 = plot(xlabel="Tip OOP displacement [% semispan]", ylabel="Airspeed [m/s]", xlims=[0,32], ylims=[30,90], xticks=collect(0:5:30), yticks=collect(30:10:90), legend=:bottomleft)
+plt2 = plot(xlabel="Tip OOP displacement [% semispan]", ylabel="Airspeed [m/s]", xlims=[0,32], ylims=[30,90], xticks=collect(0:5:30), yticks=collect(30:10:90), legend=:bottomleft, tickfont=font(ts), guidefont=font(fs), legendfontsize=10)
 plot!(Shape(vcat(x1,reverse(x2[3:end]),22,22,0),vcat(y1,reverse(y2[3:end]),97,100,90)), fillcolor = plot_color(:red, 0.25), lw=lw, label="AeroBeams flutter region")
 for (n,ind) in enumerate(indθ2plot)
     θ = θ2plot[n]

@@ -9,40 +9,78 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=1,view=(30,30),plotDistLoads=false,save=true,savePath=string(relPath,"/PazyFFWTOMCGustFloating_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,refBasis="A",plotFrequency=50,fps=30,view=(30,30),plotDistLoads=false,save=true,savePath=string(relPath,"/PazyFFWTOMCGustFloating_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2
 gr()
 
-# Tip displacement
-plt1 = plot(xlabel="Time [s]", ylabel="Tip OOP disp")
-plot!(t, tipOOP, color=:black, lw=lw, label=false)
-display(plt1)
-savefig(string(absPath,"/PazyFFWTOMCGustFloating_disp.pdf"))
+# Steady p1
+plt_p1 = plot(xlabel="\$x_1/L\$", ylabel="Steady \$p_1\$")
+plot!(x1/L, p1, c=:black, lw=lw, label=false)
+display(plt_p1)
+savefig(string(absPath,"/PazyFFWTOMCGustFloating_p1.pdf"))
 
-# Tip AoA
-plt2 = plot(xlabel="Time [s]", ylabel="Tip angle of attack [deg]")
-plot!(t, tipAoA*180/π, color=:black, lw=lw, label=false)
-display(plt2)
+# Steady p2
+plt_p2 = plot(xlabel="\$x_1/L\$", ylabel="Steady \$p_2\$")
+plot!(x1/L, p2, c=:black, lw=lw, label=false)
+display(plt_p2)
+savefig(string(absPath,"/PazyFFWTOMCGustFloating_p2.pdf"))
+
+# Steady p3
+plt_p3 = plot(xlabel="\$x_1/L\$", ylabel="Steady \$p_3\$")
+plot!(x1/L, p3, c=:black, lw=lw, label=false)
+display(plt_p3)
+savefig(string(absPath,"/PazyFFWTOMCGustFloating_p3.pdf"))
+
+# Steady cn over span
+plt_scn = plot(xlabel="\$x_1/L\$", ylabel="Steady \$c_n\$")
+plot!(x1_e/L, steady_cn_over_span, c=:black, lw=lw, label=false)
+display(plt_scn)
+savefig(string(absPath,"/PazyFFWTOMCGustFloating_scn.pdf"))
+
+# Tip displacement
+plt_tipOOP = plot(xlabel="Time [s]", ylabel="Tip OOP disp. [m]")
+plot!(t, tipOOP, c=:black, lw=lw, label=false)
+display(plt_tipOOP)
+savefig(string(absPath,"/PazyFFWTOMCGustFloating_tipdisp.pdf"))
+
+# Root OOP bending moment increment
+plt_ΔM2root = plot(xlabel="Time [s]", ylabel="ΔWRBM [N.m]")
+plot!(t, -(M2_root .- M2_root[1]), c=:black, lw=lw, label=false)
+display(plt_ΔM2root)
+savefig(string(absPath,"/PazyFFWTOMCGustFloating_DeltaM2root.pdf"))
+
+# AoA
+plt_aoa = plot(xlabel="Time [s]", ylabel="Angle of attack [deg]")
+plot!(t, root_αₑ*180/π, lw=lw, label="Root")
+plot!(t, tqSpan_αₑ*180/π, lw=lw, label="3/4-span")
+plot!(t, tip_αₑ*180/π, lw=lw, label="Tip")
+display(plt_aoa)
 savefig(string(absPath,"/PazyFFWTOMCGustFloating_AoA.pdf"))
 
-# 3/4-span cn
-plt3 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_n\$")
-plot!(t, tqSpan_cn, color=:black, lw=lw, label=false)
-display(plt3)
+# cn
+plt_cn = plot(xlabel="Time [s]", ylabel="\$c_n\$")
+plot!(t, root_cn, lw=lw, label="Root")
+plot!(t, tqSpan_cn, lw=lw, label="3/4-span")
+plot!(t, tip_cn, lw=lw, label="Tip")
+display(plt_cn)
 savefig(string(absPath,"/PazyFFWTOMCGustFloating_cn.pdf"))
 
-# 3/4-span cm
-plt4 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_m\$")
-plot!(t, tqSpan_cm, color=:black, lw=lw, label=false)
-display(plt4)
+# cm
+plt_cm = plot(xlabel="Time [s]", ylabel="\$c_m\$")
+plot!(t, root_cm, lw=lw, label="Root")
+plot!(t, tqSpan_cm, lw=lw, label="3/4-span")
+plot!(t, tip_cm, lw=lw, label="Tip")
+display(plt_cm)
 savefig(string(absPath,"/PazyFFWTOMCGustFloating_cm.pdf"))
 
 # 3/4-span ct
-plt5 = plot(xlabel="Time [s]", ylabel="3/4-span \$c_t\$")
-plot!(t, tqSpan_ct, color=:black, lw=lw, label=false)
-display(plt5)
+plt_ct = plot(xlabel="Time [s]", ylabel="\$c_t\$")
+plot!(t, root_ct, lw=lw, label="Root")
+plot!(t, tqSpan_ct, lw=lw, label="3/4-span")
+plot!(t, tip_ct, lw=lw, label="Tip")
+display(plt_ct)
 savefig(string(absPath,"/PazyFFWTOMCGustFloating_ct.pdf"))
 
 # Aero states at 3/4-span
@@ -52,11 +90,11 @@ tqsχ_ = Array{Vector{Float64}}(undef,nAeroStates)
 for i in 1:nAeroStates
     tqsχ_[i] = [tqsχ[tt][i] for tt in 1:length(t)]
 end
-plt6 = plot(xlabel="Time [s]", ylabel="")
+plt_aeroStates = plot(xlabel="Time [s]", ylabel="")
 for i in 1:nAeroStates
     plot!(t, tqsχ_[i], c=colors[i], lw=lw, label="\$\\chi $(i)\$")
 end
-display(plt6)
+display(plt_aeroStates)
 savefig(string(absPath,"/PazyFFWTOMCGustFloating_states.pdf"))
 
 println("Finished PazyFFWTOMCGustFloatingPlotGenerator.jl")

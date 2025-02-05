@@ -45,7 +45,7 @@ end
 Atmosphere constructor based on the International Standard Atmosphere (https://en.wikipedia.org/wiki/International_Standard_Atmosphere)
 
 # Arguments
-- `altitude::Real`
+- `altitude::Real`: altitude
 """
 function standard_atmosphere(altitude::Real)
 

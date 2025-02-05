@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,scale=1/δ,plotLimits=[(0,L),(-0.25,0.25),(0,1)],save=true,savePath=string(relPath,"/biclampedBeam_deformation.gif"))
+plot_dynamic_deformation(problem,scale=1/δ,plotLimits=([0,L],[-0.25,0.25],[0,1]),save=true,savePath=string(relPath,"/biclampedBeam_deformation.gif"))
 
 # Plot configurations
 lw = 2

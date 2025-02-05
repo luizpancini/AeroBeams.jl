@@ -15,7 +15,7 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 tipForce = create_BC(name="tipForce",beam=beam,node=nElem+1,types=["Ff3A"],values=[F])
 
 # Model
-curvedCantileverStaticFollower = create_Model(name="curvedCantileverStaticFollower",beams=[beam],BCs=[clamp,tipForce])
+curvedCantileverStaticFollower = create_Model(name="curvedCantileverStaticFollower",beams=[beam],BCs=[clamp,tipForce],units=create_UnitsSystem(length="in",force="lbf"))
 
 # Set system solver options
 σ0 = 0.0

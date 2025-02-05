@@ -27,8 +27,7 @@ tipLossDecayFactor = 10
 σ0 = 1
 maxIter = 100
 relTol = 1e-8
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Number of modes
 nModes = 3

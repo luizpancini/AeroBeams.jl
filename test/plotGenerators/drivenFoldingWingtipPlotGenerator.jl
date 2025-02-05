@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,plotUndeformed=true,plotDistLoads=true,view=(30,15),save=true,savePath=string(relPath,"/drivenFoldingWingtip_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,plotUndeformed=true,plotDistLoads=true,view=(0,0),save=true,savePath=string(relPath,"/drivenFoldingWingtip_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations

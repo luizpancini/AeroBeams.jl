@@ -117,7 +117,7 @@ Finaly, we may visualize the motion of the beam using the function [`plot_dynami
 ````@example flyingScissors
 # Animation
 @suppress begin #hide
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=1,plotLimits=[(0,2*L),(-L,0),(-L/2,L/2)],save=true,savePath="/docs/build/literate/flyingScissors_motion.gif")
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=1,plotLimits=([0,2*L],[-L/2,L/2],[-L,0]),save=true,savePath="/docs/build/literate/flyingScissors_motion.gif")
 nothing #hide
 end #hide
 ````

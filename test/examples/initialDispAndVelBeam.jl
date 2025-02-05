@@ -164,7 +164,7 @@ Vdot3_quarter_analytic = -δ*ω2^2*cos.(ω2*t)*sin(2π*1/4) + -σ*ω2*sin.(ω2*t
 #md # Finally, we can visualize the motion of the beam using the function [`plot_dynamic_deformation`](@ref plot_dynamic_deformation) with the appropriate inputs.
 ## Animation
 #md @suppress begin #hide
-#md plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;-0.05;0],timeStampPos=[0.5;-0.05;0],plotFrequency=1,plotLimits=[(0,L),(-L/2,L/2),(-L,L)],save=true,savePath="/docs/build/literate/initialDispAndVelBeam_motion.gif")
+#md plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;-0.05;0],timeStampPos=[0.5;-0.05;0],plotFrequency=1,plotLimits=([0,L],[-L/2,L/2],[-L/3,L/3]),save=true,savePath="/docs/build/literate/initialDispAndVelBeam_motion.gif")
 #md nothing #hide
 #md end #hide
 #md # ![](initialDispAndVelBeam_motion.gif)

@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=5,showScale=false,timeStampPos=[0.1;-0.05;0],plotLimits=[(-L,L),(-L,L),(0,L)],save=true,savePath=string(relPath,"/spinupRobotArm_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=5,showScale=false,timeStampPos=[0.1;-0.05;0],plotLimits=([-L,L],[-L,L],[0,L]),save=true,savePath=string(relPath,"/spinupRobotArm_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

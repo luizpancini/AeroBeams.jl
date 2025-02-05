@@ -24,8 +24,8 @@ const I6 = Matrix(1.0*LinearAlgebra.I,6,6)
 Rounds the array or number to input tolerance (defaults to machine epsilon)
 
 # Arguments
-- `x` = array or number
-- `tol` = tolerance
+- `x`: array or number
+- `tol`: tolerance
 """
 function round_off!(x,tol=eps())
 
@@ -60,7 +60,7 @@ export rms
 Computes the skew-symmetric matrix associated with a three-element vector
 
 # Arguments
-- `v` = vector
+- `v`: vector
 """
 function tilde(v)
     return [  0.0  -v[3]   v[2]
@@ -76,7 +76,7 @@ export tilde
 Computes the axial part of a 3x3 matrix
 
 # Arguments
-- `R` = matrix
+- `R`: matrix
 """
 function axial(R)
     return 1/2*[R[3,2]-R[2,3]; R[1,3]-R[3,1]; R[2,1]-R[1,2]]
@@ -125,17 +125,17 @@ end
 Creates a 6x6 sectional stiffness matrix for a cross-section made of isotropic material
 
 # Arguments
-- `∞` = value for rigid properties
-- `EA` = axial stiffness
-- `GAy` = shear stiffness in the x2 direction
-- `GAz` = shear stiffness in the x3 direction
-- `GJ` = torsional stiffness
-- `EIy` = bending stiffness in the x2 direction
-- `EIz` = bending stiffness in the x3 direction
-- `t2` = offset from reference line to tension center in the x2 direction
-- `t3` = offset from reference line to tension center in the x3 direction
-- `s2` = offset from reference line to shear center in the x2 direction
-- `s3` = offset from reference line to shear center in the x3 direction
+- `∞`: value for rigid properties
+- `EA`: axial stiffness
+- `GAy`: shear stiffness in the x2 direction
+- `GAz`: shear stiffness in the x3 direction
+- `GJ`: torsional stiffness
+- `EIy`: bending stiffness in the x2 direction
+- `EIz`: bending stiffness in the x3 direction
+- `t2`: offset from reference line to tension center in the x2 direction
+- `t3`: offset from reference line to tension center in the x3 direction
+- `s2`: offset from reference line to shear center in the x2 direction
+- `s3`: offset from reference line to shear center in the x3 direction
 """
 function isotropic_stiffness_matrix(; ∞=1e16,EA=∞,GAy=∞,GAz=∞,GJ=∞,EIy=∞,EIz=∞,t2=0,t3=0,s2=0,s3=0)
 
@@ -167,13 +167,13 @@ export isotropic_stiffness_matrix
 Creates a 6x6 sectional inertia matrix
 
 # Arguments
-- `ρA` = mass per unit length
-- `ρIy` = mass moment of inertia per unit length about the x2-axis
-- `ρIz` = mass moment of inertia per unit length about the x3-axis
-- `ρIs` = mass moment of inertia per unit length about the x1-axis
-- `ρIyz` = mass product of inertia per unit length
-- `e2` = offset from reference line to center of gravity in the x2 direction
-- `e3` = offset from reference line to center of gravity in the x3 direction
+- `ρA`: mass per unit length
+- `ρIy`: mass moment of inertia per unit length about the x2-axis
+- `ρIz`: mass moment of inertia per unit length about the x3-axis
+- `ρIs`: mass moment of inertia per unit length about the x1-axis
+- `ρIyz`: mass product of inertia per unit length
+- `e2`: offset from reference line to center of gravity in the x2 direction
+- `e3`: offset from reference line to center of gravity in the x3 direction
 """
 function inertia_matrix(; ρA=0,ρIy=0,ρIz=0,ρIs=ρIy+ρIz,ρIyz=0,e2=0,e3=0)
 
@@ -247,7 +247,7 @@ end
 Computes the rotation tensor according to Euler parameters sequence 3-2-1
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function rotation_tensor_E321(p)
 
@@ -279,7 +279,7 @@ export rotation_tensor_E321
 Computes the rotation tensor according to Euler parameters sequence 3-1-3
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function rotation_tensor_E313(p)
 
@@ -311,7 +311,7 @@ export rotation_tensor_E313
 Computes the rotation tensor according to Wiener-Milenkovic parameters
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function rotation_tensor_WM(p)
 
@@ -385,7 +385,7 @@ end
 Returns the scaled (extended) Wiener-Milenkovic rotation parameters
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function scaled_rotation_parameters(p)
 
@@ -749,7 +749,7 @@ end
 Computes the rotation angle given the Wiener-Milenkovic rotation parameters
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function rotation_angle(p)
 
@@ -774,7 +774,7 @@ export rotation_angle
 Computes the rotation angle (in the range -360 to 360 degrees) given the Wiener-Milenkovic rotation parameters
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function rotation_angle_limited(p)
 
@@ -799,7 +799,7 @@ export rotation_angle_limited
 Computes the Wiener-Milenkovic rotation parameters given a rotation tensor
 
 # Arguments
-- `R` = rotation tensor
+- `R`: rotation tensor
 """
 function rotation_parameters_WM(R)
 
@@ -829,7 +829,7 @@ export rotation_parameters_WM
 Computes the Rodrigues rotation parameters given a rotation tensor
 
 # Arguments
-- `R` = rotation tensor
+- `R`: rotation tensor
 """
 function rotation_parameters_Rodrigues(R)
 
@@ -859,12 +859,12 @@ export rotation_parameters_Rodrigues
 Computes the Euler angles from the sequence 3-2-1 (yaw, pitch, roll) given the rotation tensor
 
 # Arguments
-- `R` = rotation tensor
+- `R`: rotation tensor
 
 # Keyword arguments
-- `ϵround` = tolerance for rounding off elements of R to zero
-- `ϵsingularity` = tolerance to consider singular case 
-- `assumeNullYawInSingularity` = flag to assume zero yaw angle in singularity
+- `ϵround`: tolerance for rounding off elements of R to zero
+- `ϵsingularity`: tolerance to consider singular case 
+- `assumeNullYawInSingularity`: flag to assume zero yaw angle in singularity
 """
 function ypr_from_rotation_tensor(R; ϵround=1e-10,ϵsingularity=1e-3,assumeNullYawInSingularity=true)
 
@@ -903,7 +903,7 @@ export ypr_from_rotation_tensor
 Computes the quaternion (Euler parameters) given a rotation tensor. Derived from Bauchau's book section 13.3.4. 
 
 # Arguments
-- `R` = rotation tensor
+- `R`: rotation tensor
 """
 function quaternion_from_rotation_tensor(R)
 
@@ -939,7 +939,7 @@ export quaternion_from_rotation_tensor
 Transforms Wiener-Milenkovic parameters to Euler parameters of sequence 3-2-1 (yaw, pitch, roll)
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function WM_to_ypr(p)
 
@@ -958,7 +958,7 @@ export WM_to_ypr
 Transforms Euler parameters of sequence 3-2-1 (yaw, pitch, roll) to Wiener-Milenkovic parameters
 
 # Arguments
-- `p` = rotation parameters
+- `p`: rotation parameters
 """
 function ypr_to_WM(p)
 
@@ -973,8 +973,8 @@ export ypr_to_WM
 Computes the Wiener-Milenkovic parameters describing the rotation from p1 to p2, i.e., p12 such that R2(p2) = R12(p12)*R1(p1)
 
 # Arguments
-- `p1` = initial rotation parameters
-- `p2` = final rotation parameters
+- `p1`: initial rotation parameters
+- `p2`: final rotation parameters
 """
 function rotation_between_WM(p1,p2)
 
@@ -1008,10 +1008,10 @@ export rotation_between_WM
 Applies mode tracking based on eigenvectors match
 
 # Arguments
-- `controlParam::Vector{<:Real}` = vector of control parameter
-- `freqs::Array{Vector{Float64}}` = frequencies vector
-- `damps::Array{Vector{Float64}}` = dampings vector
-- `eigenvectors::Array{Matrix{ComplexF64}}` = complex-valued eigenvectors
+- `controlParam::Vector{<:Real}`: vector of control parameter
+- `freqs::Array{Vector{Float64}}`: frequencies vector
+- `damps::Array{Vector{Float64}}`: dampings vector
+- `eigenvectors::Array{Matrix{ComplexF64}}`: complex-valued eigenvectors
 """
 function mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
 
@@ -1098,11 +1098,11 @@ end
 Computes the FFT and PSD of signal y(t)
 
 # Arguments
-- `t::Vector{<:Real}` = time signal
-- `y::Vector{<:Real}` = quantity signal
+- `t::Vector{<:Real}`: time signal
+- `y::Vector{<:Real}`: quantity signal
 
 # Keyword arguments
-- `tol::AbstractFloat` = tolerance for time signal being equally spaced
+- `tol::AbstractFloat`: tolerance for time signal being equally spaced
 """
 function get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::AbstractFloat=1e3*eps())
     

@@ -62,13 +62,13 @@ savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_cn.pdf"))
 # Hinge rotation parameters
 labels = ["\$\\Delta p_1\$" "\$\\Delta p_2\$" "\$\\Delta p_3\$"]
 colors = get(colorschemes[:rainbow], LinRange(0, 1, 3))
-Δp1Hinge = [ΔpHinge[i][1] for i in eachindex(URange)]
-Δp2Hinge = [ΔpHinge[i][2] for i in eachindex(URange)]
-Δp3Hinge = [ΔpHinge[i][3] for i in eachindex(URange)]
+p1Hinge = [pHinge[i][1] for i in eachindex(URange)]
+p2Hinge = [pHinge[i][2] for i in eachindex(URange)]
+p3Hinge = [pHinge[i][3] for i in eachindex(URange)]
 plt4 = plot(xlabel="Airspeed [m/s]", ylabel="\$\\Delta p\$")
-plot!(URange, Δp1Hinge, lw=lw, c=colors[1], label=labels[1])
-plot!(URange, Δp2Hinge, lw=lw, c=colors[2], label=labels[2])
-plot!(URange, Δp3Hinge, lw=lw, c=colors[3], label=labels[3])
+plot!(URange, p1Hinge, lw=lw, c=colors[1], label=labels[1])
+plot!(URange, p2Hinge, lw=lw, c=colors[2], label=labels[2])
+plot!(URange, p3Hinge, lw=lw, c=colors[3], label=labels[3])
 display(plt4)
 savefig(string(absPath,"/PazyFFWTsteadyURangeFixedFold_deltaphinge.pdf"))
 

@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=2,plotLimits=[(0,2*L),(-L,0),(-L/2,L/2)],save=true,savePath=string(relPath,"/flyingScissors_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=2,plotLimits=([0,2*L],[-L/2,L/2],[-L,0]),save=true,savePath=string(relPath,"/flyingScissors_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

@@ -23,7 +23,6 @@
     minConvRateAeroJacUpdate::Real
     minConvRateJacUpdate::Real
     alwaysUpdateJacobian::Bool
-    ΔλRelaxFactor::Real
 
     # Algorithm variables
     loadFactorStep::Float64 = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
@@ -40,25 +39,24 @@ end
 Newton-Raphson nonlinear system solver constructor
 
 # Keyword arguments
-- `absoluteTolerance::Float64` = absolute convergence tolerance
-- `relativeTolerance::Float64` = relative convergence tolerance
-- `maximumIterations::Int64` = maximum number of iterations
-- `desiredIterations::Int64` = desired number of iterations
-- `maximumAbsoluteError::Real` = maximum absolute error for divergence detection
-- `maximumRelativeError::Real` = maximum relative error for divergence detection
-- `initialLoadFactor::Real` = initial load factor
-- `minimumLoadFactor::Float64` = minimum load factor
-- `maximumLoadFactorStep::Float64` = maximum load factor step
-- `minimumLoadFactorStep::Float64` = minimum load factor step
-- `ρ::Real` = relaxation factor for trim variables
-- `trackingLoadSteps::Bool` = flag to track partial load steps solutions
-- `displayStatus::Bool` = flag to display status
-- `minConvRateAeroJacUpdate::Real` = minimum convergence rate to skip computation of aerodynamic Jacobians
-- `minConvRateJacUpdate::Real` = minimum convergence rate to skip computation of structural Jacobians
-- `alwaysUpdateJacobian::Bool` = flag to update Jacobians on every iteration
-- `ΔλRelaxFactor` = relaxation factor for update of Lagrange multipliers
+- `absoluteTolerance::Float64`: absolute convergence tolerance
+- `relativeTolerance::Float64`: relative convergence tolerance
+- `maximumIterations::Int64`: maximum number of iterations
+- `desiredIterations::Int64`: desired number of iterations
+- `maximumAbsoluteError::Real`: maximum absolute error for divergence detection
+- `maximumRelativeError::Real`: maximum relative error for divergence detection
+- `initialLoadFactor::Real`: initial load factor
+- `minimumLoadFactor::Float64`: minimum load factor
+- `maximumLoadFactorStep::Float64`: maximum load factor step
+- `minimumLoadFactorStep::Float64`: minimum load factor step
+- `ρ::Real`: relaxation factor for trim variables
+- `trackingLoadSteps::Bool`: flag to track partial load steps solutions
+- `displayStatus::Bool`: flag to display status
+- `minConvRateAeroJacUpdate::Real`: minimum convergence rate to skip computation of aerodynamic Jacobians
+- `minConvRateJacUpdate::Real`: minimum convergence rate to skip computation of structural Jacobians
+- `alwaysUpdateJacobian::Bool`: flag to update Jacobians on every iteration
 """
-function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Real=1e6,maximumRelativeError::Real=1e6,initialLoadFactor::Real=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Real=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Real=2.0,minConvRateJacUpdate::Real=2.0,alwaysUpdateJacobian::Bool=true,ΔλRelaxFactor::Real=1)
+function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Real=1e6,maximumRelativeError::Real=1e6,initialLoadFactor::Real=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Real=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Real=2.0,minConvRateJacUpdate::Real=2.0,alwaysUpdateJacobian::Bool=true)
 
     @assert maximumIterations > 1 "maximumIterations must be greater than 1"
     @assert desiredIterations > 1 "desiredIterations must be greater than 1"
@@ -67,11 +65,10 @@ function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeToleranc
     @assert 0 < maximumLoadFactorStep <= 1 "maximumLoadFactorStep must be between 0 and 1"
     @assert 0 < minimumLoadFactorStep <= 1 "minimumLoadFactorStep must be between 0 and 1"
     @assert 0.5 <= ρ <= 1 "relaxation factor for trim variables (ρ) must be between 0.5 and 1.0"
-    @assert 0 < ΔλRelaxFactor <= 1 "relaxation factor (ΔλRelaxFactor) for Lagrange multipliers update must be between 0 and 1"
     @assert minConvRateAeroJacUpdate > 1 "minConvRateAeroJacUpdate to skip calculation of aerodynamic derivatives must be greater than 1"
     @assert minConvRateJacUpdate > 1 "minConvRateJacUpdate to skip update of Jacobian matrix must be greater than 1"
 
-    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRateAeroJacUpdate=minConvRateAeroJacUpdate,minConvRateJacUpdate=minConvRateJacUpdate,alwaysUpdateJacobian=alwaysUpdateJacobian,ΔλRelaxFactor=ΔλRelaxFactor)
+    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRateAeroJacUpdate=minConvRateAeroJacUpdate,minConvRateJacUpdate=minConvRateJacUpdate,alwaysUpdateJacobian=alwaysUpdateJacobian)
 
 end
 export create_NewtonRaphson
@@ -265,12 +262,13 @@ function assemble_inertia_matrix!(problem::Problem)
     return nothing
 end
 
+
 # Solves the linear system of equations at current time step and load factor
 function solve_linear_system!(problem::Problem)
 
-    @unpack x,Δx,residual,jacobian,getLinearSolution,σ = problem
-    @unpack systemOrder,nTrimVariables,hasHingeAxisConstraints,hingeAxisConstraints,hingeAxisConstraintBalanceLoadBCid,forceScaling = problem.model
-    @unpack ρ,ΔλRelaxFactor = problem.systemSolver
+    @unpack x,Δx,residual,jacobian,getLinearSolution,σ,timeNow = problem
+    @unpack systemOrder,nTrimVariables,hasHingeAxisConstraints,hingeAxisConstraints,forceScaling = problem.model
+    @unpack ρ = problem.systemSolver
 
     # Issue warning for singular Jacobian in linear problems
     if getLinearSolution && nTrimVariables == 0 && det(jacobian) ≈ 0
@@ -302,14 +300,18 @@ function solve_linear_system!(problem::Problem)
     x[1:systemOrder] .+= Δx[1:systemOrder]
     x[systemOrder+1:systemOrder+nTrimVariables] .+= ρ*Δx[systemOrder+1:systemOrder+nTrimVariables]
 
-    # Update balance loads of hinge axis constraints with Lagrange multipliers increment and rotation data across the hinge
+    # Update hinge constraint data
     for (i,constraint) in enumerate(hingeAxisConstraints)
-        # Set values
-        problem.model.BCs[hingeAxisConstraintBalanceLoadBCid[i]].values = constraint.balanceMoment -= Δλ[i:i+length(constraint.balanceMoment)-1]*ΔλRelaxFactor/σ
-        # Update BC
-        update_BC_data!(problem.model.BCs[hingeAxisConstraintBalanceLoadBCid[i]],problem.timeNow)
-        # Unpack constraint data
-        @unpack rotationIsFixed,initialHingeAxis,masterElementGlobalDOFs,slaveElementGlobalDOFs = constraint
+        @unpack solutionMethod,rotationIsFixed,initialHingeAxis,masterElementGlobalDOFs,slaveElementGlobalDOFs,slaveDOFs,balanceMomentBCID,balanceMoment,λ,Jc = constraint
+        # Update Lagrange multipliers
+        λ += Δλ[i:i+length(λ)-1]
+        # Update balance moment
+        balanceMoment = -Jc[:,slaveElementGlobalDOFs[slaveDOFs]]'*λ/σ
+        # Update BCs, if applicable
+        if solutionMethod == "appliedMoment"
+            problem.model.BCs[balanceMomentBCID].values = balanceMoment
+            update_BC_data!(problem.model.BCs[balanceMomentBCID],timeNow)
+        end
         # Current rotation parameters of master and slave elements
         pM = x[masterElementGlobalDOFs]
         pS = x[slaveElementGlobalDOFs]
@@ -319,13 +321,13 @@ function solve_linear_system!(problem::Problem)
         pH = hinge_rotation_parameters(pM,pS)
         ϕ = rotation_angle_limited(pH)
         # Pack data
-        @pack! constraint = currentHingeAxis,pH,ϕ
+        @pack! constraint = currentHingeAxis,pH,ϕ,λ,balanceMoment
         if !rotationIsFixed
             @pack! constraint = pHValue
         end
     end
-
-    @pack! problem = x,Δx,residual
+    
+    @pack! problem = x,Δx
 
     return true
 
@@ -388,12 +390,10 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
 
     # Loop hinge axis constraints
     for constraint in hingeAxisConstraints
-        @unpack rotationIsFixed,initialHingeAxis,pHValue,masterElementGlobalDOFs,slaveElementGlobalDOFs,masterDOF,slaveDOFs,balanceMoment = constraint
+        @unpack solutionMethod,rotationIsFixed,initialHingeAxis,pHValue,masterElementGlobalDOFs,slaveElementGlobalDOFs,slaveDOFs,λ = constraint
         # Current rotation parameters of master and slave elements
         pM = x[masterElementGlobalDOFs]
         pS = x[slaveElementGlobalDOFs]
-        # Current value of Lagrange multipliers
-        λ = -balanceMoment
         # If hinge rotation is fixed (known)
         if rotationIsFixed
             # Residual and Jacobian terms
@@ -404,14 +404,13 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
             Jc[:,slaveElementGlobalDOFs] .= ∂C_∂pS(pM,pS,initialHingeAxis,pHValue=pHValue)
             Jb[masterElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
             Jb[slaveElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
-            # Adjust augmented residual and Jacobian arrays by adding contributions from the constraint equations
-            augmentedJacobian = [augmentedJacobian.+Jb Jc'; Jc zeros(3,3)]
-            augmentedResidual = [augmentedResidual; resC]
+            Jb[masterElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
+            Jb[slaveElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
         # If the hinge rotation is not fixed (is unknown)
         else
             # Scaled rotation parameters of slave element
             pSscaled = scaled_rotation_parameters(pS)
-            # Residual and Jacobian terms
+            # Residual and Jacobian terms of the constraint
             resC = C(pM,pSscaled,initialHingeAxis,slaveDOFs=slaveDOFs)
             Jc = zeros(2,length(augmentedResidual))
             Jb = spzeros(length(augmentedResidual),length(augmentedResidual))
@@ -419,10 +418,18 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
             Jc[:,slaveElementGlobalDOFs] .= ∂C_∂pS(pM,pSscaled,initialHingeAxis,slaveDOFs=slaveDOFs)
             Jb[masterElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pM2(pM,pSscaled,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
             Jb[slaveElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pS2(pM,pSscaled,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
-            # Adjust augmented residual and Jacobian arrays by adding contributions from the constraint equations
-            augmentedJacobian = [augmentedJacobian.+Jb Jc'; Jc zeros(2,2)]
-            augmentedResidual = [augmentedResidual; resC]
+            Jb[masterElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
+            Jb[slaveElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
         end
+        # Update residual of nominal system, if applicable
+        if solutionMethod == "addedResidual"
+            residual .+= Jc'*λ
+        end
+        # Adjust augmented residual and Jacobian arrays by adding contributions from the constraint equations
+        augmentedJacobian = [jacobian.+Jb Jc'; Jc zeros(size(Jc,1),size(Jc,1))]
+        augmentedResidual = [residual; resC]
+        # Pack data
+        @pack! constraint = Jc
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments
@@ -430,7 +437,8 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     Δx = sol[1:N]
     Δλ = sol[N+1:end]
 
-    # Pack data, if applicable
+    # Pack data (updated residual and augmented Jacobian)
+    @pack! problem = residual
     if problem isa EigenProblem
         @pack! problem = augmentedJacobian
     end

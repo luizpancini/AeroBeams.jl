@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,plotFrequency=5,view=(30,30),plotLimits=[(0,L),(0,L),(-L/2,L/2)],save=true,savePath=string(relPath,"/elbowFrame_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,plotFrequency=5,view=(30,30),plotLimits=([0,L],[0,L],[-L/2,L/2]),save=true,savePath=string(relPath,"/elbowFrame_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 y = [u3_elbow, u3_tip]

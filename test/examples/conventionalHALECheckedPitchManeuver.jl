@@ -146,7 +146,7 @@ airspeed = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowVelocitiesAn
 
 #md # Let's also visualize the complete motion of the aircraft (rigid + elastic) through the view of an inertial observer. For that, we use the [`plot_dynamic_deformation`](@ref plot_dynamic_deformation) function with the appropriate arguments.
 #md @suppress begin #hide
-#md plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotBCs=false,plotDistLoads=false,plotFrequency=10,plotLimits=[(-20,20),(-10,250),(-20,20)],save=true,savePath="/docs/build/literate/conventionalHALECheckedPitchManeuver_motion.gif")
+#md plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotBCs=false,plotDistLoads=false,plotFrequency=10,plotLimits=([-20,20],[-10,250],[-20,20]),save=true,savePath="/docs/build/literate/conventionalHALECheckedPitchManeuver_motion.gif")
 #md nothing #hide
 #md end #hide
 #md # ![](conventionalHALECheckedPitchManeuver_motion.gif)

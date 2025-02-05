@@ -34,11 +34,11 @@ export Spring
 Creates a spring
 
 # Keyword arguments
-- `basis::String` = basis on which stiffnesses are defined ("b" or "A")
-- `elementsIDs::Vector{Int64}` = local IDs of the element(s)' node(s) to which the spring is attached
-- `nodesSides::Vector{Int64}` = sides (1 or 2) of the node(s) to which the spring is attached
-- `ku::Vector{<:Real}` = translational stiffness vector, resolved in basis A
-- `kp::Vector{<:Real}` = rotational stiffness vector, resolved in basis A
+- `basis::String`: basis on which stiffnesses are defined ("b" or "A")
+- `elementsIDs::Vector{Int64}`: local IDs of the element(s)' node(s) to which the spring is attached
+- `nodesSides::Vector{Int64}`: sides (1 or 2) of the node(s) to which the spring is attached
+- `ku::Vector{<:Real}`: translational stiffness vector, resolved in basis A
+- `kp::Vector{<:Real}`: rotational stiffness vector, resolved in basis A
 """
 function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Real}=zeros(3),kp::Vector{<:Real}=zeros(3))
 

@@ -4,13 +4,13 @@
 #     ElementalStates composite type
 
 # Fields
-# - `u::Vector{T}` = displacements resolved in basis A
-# - `p::Vector{T}` = rotation parameters resolved in basis A
-# - `F::Vector{T}` = sectional forces resolved in basis B
-# - `M::Vector{T}` = sectional moments resolved in basis B
-# - `V::Vector{T}` = sectional velocities resolved in basis B
-# - `Ω::Vector{T}` = sectional angular velocities resolved in basis B
-# - `χ::Vector{T}` = aerodynamic states
+# - `u::Vector{T}`: displacements resolved in basis A
+# - `p::Vector{T}`: rotation parameters resolved in basis A
+# - `F::Vector{T}`: sectional forces resolved in basis B
+# - `M::Vector{T}`: sectional moments resolved in basis B
+# - `V::Vector{T}`: sectional velocities resolved in basis B
+# - `Ω::Vector{T}`: sectional angular velocities resolved in basis B
+# - `χ::Vector{T}`: aerodynamic states
 #
 mutable struct ElementalStates{T<:Union{Float64,ComplexF64}}
     
@@ -39,10 +39,10 @@ end
 #     ComplementaryElementalStates composite type
 
 # Fields
-# - `γ::Vector{T}` = force strains resolved in basis b
-# - `κ::Vector{T}` = moment strains resolved in basis b
-# - `P::Vector{T}` = linear momenta resolved in basis B
-# - `H::Vector{T}` = angular momenta resolved in basis B
+# - `γ::Vector{T}`: force strains resolved in basis b
+# - `κ::Vector{T}`: moment strains resolved in basis b
+# - `P::Vector{T}`: linear momenta resolved in basis B
+# - `H::Vector{T}`: angular momenta resolved in basis B
 #
 mutable struct ComplementaryElementalStates{T<:Union{Float64,ComplexF64}}
     
@@ -68,11 +68,11 @@ end
 #     ElementalStatesRates composite type
 
 # Fields
-# - `udot::Vector{Float64}` = displacements time derivative
-# - `pdot::Vector{Float64}` = rotation parameters time derivative
-# - `Vdot::Vector{Float64}` = sectional velocities time derivative
-# - `Ωdot::Vector{Float64}` = sectional angular velocities time derivative
-# - `χdot::Vector{Float64}` = aerodynamic states time derivative
+# - `udot::Vector{Float64}`: displacements time derivative
+# - `pdot::Vector{Float64}`: rotation parameters time derivative
+# - `Vdot::Vector{Float64}`: sectional velocities time derivative
+# - `Ωdot::Vector{Float64}`: sectional angular velocities time derivative
+# - `χdot::Vector{Float64}`: aerodynamic states time derivative
 #
 mutable struct ElementalStatesRates
     
@@ -101,8 +101,8 @@ end
 #     ComplementaryElementalStatesRates composite type
 
 # Fields
-# - `Pdot::Vector{Float64}` = linear momenta time derivative
-# - `Hdot::Vector{Float64}` = angular momenta time derivative
+# - `Pdot::Vector{Float64}`: linear momenta time derivative
+# - `Hdot::Vector{Float64}`: angular momenta time derivative
 #
 mutable struct ComplementaryElementalStatesRates
     
@@ -126,20 +126,20 @@ end
 #     NodalStates composite type
 
 # Fields
-# - `u_n1::Vector{T}` = displacements of node 1 resolved in basis A
-# - `u_n2::Vector{T}` = displacements of node 2 resolved in basis A
-# - `p_n1::Vector{T}` = rotation parameters of node 1 resolved in basis A
-# - `p_n2::Vector{T}` = rotation parameters of node 2 resolved in basis A
-# - `u_n1_b::Vector{T}` = displacements of node 1 resolved in basis b
-# - `u_n2_b::Vector{T}` = displacements of node 2 resolved in basis b
-# - `p_n1_b::Vector{T}` = rotation parameters of node 1 resolved in basis b
-# - `p_n2_b::Vector{T}` = rotation parameters of node 2 resolved in basis b
-# - `F_n1::Vector{T}` = sectional forces of node 1 resolved in basis B
-# - `F_n2::Vector{T}` = sectional forces of node 2 resolved in basis B
-# - `M_n1::Vector{T}` = sectional moments of node 1 resolved in basis B
-# - `M_n2::Vector{T}` = sectional moments of node 2 resolved in basis B
-# - `θ_n1::T` = rotation angle of node 1
-# - `θ_n2::T` = rotation angle of node 2
+# - `u_n1::Vector{T}`: displacements of node 1 resolved in basis A
+# - `u_n2::Vector{T}`: displacements of node 2 resolved in basis A
+# - `p_n1::Vector{T}`: rotation parameters of node 1 resolved in basis A
+# - `p_n2::Vector{T}`: rotation parameters of node 2 resolved in basis A
+# - `u_n1_b::Vector{T}`: displacements of node 1 resolved in basis b
+# - `u_n2_b::Vector{T}`: displacements of node 2 resolved in basis b
+# - `p_n1_b::Vector{T}`: rotation parameters of node 1 resolved in basis b
+# - `p_n2_b::Vector{T}`: rotation parameters of node 2 resolved in basis b
+# - `F_n1::Vector{T}`: sectional forces of node 1 resolved in basis B
+# - `F_n2::Vector{T}`: sectional forces of node 2 resolved in basis B
+# - `M_n1::Vector{T}`: sectional moments of node 1 resolved in basis B
+# - `M_n2::Vector{T}`: sectional moments of node 2 resolved in basis B
+# - `θ_n1::T`: rotation angle of node 1
+# - `θ_n2::T`: rotation angle of node 2
 #
 mutable struct NodalStates{T<:Union{Float64,ComplexF64}}
     
@@ -175,16 +175,16 @@ end
 #     Resultants composite type
 
 # Fields
-# - `F_u1::Vector{Float64}` = first node translational equilibrium equation resultant
-# - `F_u2::Vector{Float64}` = second node translational equilibrium equation resultant
-# - `F_p1::Vector{Float64}` = first node rotational equilibrium equation resultant
-# - `F_p2::Vector{Float64}` = second node rotational equilibrium equation resultant
-# - `F_F1::Vector{Float64}` = first node translational compatibility equation resultant
-# - `F_F2::Vector{Float64}` = second node translational compatibility equation resultant
-# - `F_M1::Vector{Float64}` = first node rotational compatibility equation resultant
-# - `F_M2::Vector{Float64}` = second node rotational compatibility equation resultant
-# - `F_V::Vector{Float64}` = midpoint linear velocity-displacement compatibility equation resultant
-# - `F_Ω::Vector{Float64}` = midpoint angular velocity-displacement compatibility equation resultant
+# - `F_u1::Vector{Float64}`: first node translational equilibrium equation resultant
+# - `F_u2::Vector{Float64}`: second node translational equilibrium equation resultant
+# - `F_p1::Vector{Float64}`: first node rotational equilibrium equation resultant
+# - `F_p2::Vector{Float64}`: second node rotational equilibrium equation resultant
+# - `F_F1::Vector{Float64}`: first node translational compatibility equation resultant
+# - `F_F2::Vector{Float64}`: second node translational compatibility equation resultant
+# - `F_M1::Vector{Float64}`: first node rotational compatibility equation resultant
+# - `F_M2::Vector{Float64}`: second node rotational compatibility equation resultant
+# - `F_V::Vector{Float64}`: midpoint linear velocity-displacement compatibility equation resultant
+# - `F_Ω::Vector{Float64}`: midpoint angular velocity-displacement compatibility equation resultant
 mutable struct Resultants
     
     # Fields

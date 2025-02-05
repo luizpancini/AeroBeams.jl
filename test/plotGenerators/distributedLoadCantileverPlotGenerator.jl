@@ -9,10 +9,12 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot deformed state
-deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/distributedLoadCantilever_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,plotLimits=([-0.5,1],[-1,1],[-0.2,0.6]),save=true,savePath=string(relPath,"/distributedLoadCantilever_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations
+ts = 10
+fs = 16
 lw = 2
 ms = 4
 msw = 0
@@ -21,7 +23,7 @@ colors = [:blue,:orange,:green]
 gr()
 
 # Plot normalized displacements over load steps
-plt1 = plot(xlabel="\$-u_1/L, u_3/L, -\\theta/\\pi\$", ylabel="\$q\$ [kN]", title="Tip generalized displacements",legend=:bottomright)
+plt1 = plot(xlabel="Tip generalized displacements", ylabel="\$q\$ [kip]",legend=:bottomright, tickfont=font(ts), guidefont=font(fs), legendfontsize=8)
 plot!([NaN], [NaN], lc=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], mc=:black, ms=ms, label="Argyris & Symeonidis (1981)")
 for i=1:3

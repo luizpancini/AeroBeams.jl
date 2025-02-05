@@ -46,7 +46,6 @@
     skipValidationMotionBasisA::Bool = false
     nTrimVariables::Int64 = 0
     hasHingeAxisConstraints::Bool = false
-    hingeAxisConstraintBalanceLoadBCid::Vector{Int64} = Vector{Int64}()
     mass::Real = 0
     centerOfMass::Vector{<:Real} = zeros(3)
     I::Vector{<:Real} = zeros(3)
@@ -61,24 +60,24 @@ export Model
 Creates a model
 
 # Keyword arguments
-- `name::String` = name of the model
-- `units::create_UnitsSystem` = units system
-- `beams::Vector{Beam}` = beams in the assembly
-- `initialPosition::Vector{<:Real}` = initial position vector of the first node of the first beam, resolved in the inertial frame I
-- `gravityVector::Vector{<:Real}` = gravity vector
-- `BCs::Vector{BC}` = boundary condtions
-- `p_A0::Vector{Float64}` = initial rotation parameters that bring basis I to basis A
-- `u_A::Union{Vector{<:Real},<:Function,Nothing}` = displacement of basis A relative to basis I
-- `v_A::Union{Vector{<:Real},<:Function,Nothing}` = velocity of basis A relative to basis I
-- `ω_A::Union{Vector{<:Real},<:Function,Nothing}` = angular velocity of basis A relative to basis I
-- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}` = acceleration of basis A relative to basis I
-- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
-- `altitude::Union{Nothing,Real}` = altidude
-- `atmosphere::Union{Nothing,Atmosphere}` = atmosphere
-- `gust::Union{Nothing,Gust}` = gust
-- `trimLoadsLinks::Vector{TrimLoadsLink}` = links between trim loads
-- `flapLinks::Vector{FlapLink}` = links between flapped surfaces
-- `hingeAxisConstraints::Vector{HingeAxisConstraints}` = hinge axis constraints
+- `name::String`: name of the model
+- `units::create_UnitsSystem`: units system
+- `beams::Vector{Beam}`: beams in the assembly
+- `initialPosition::Vector{<:Real}`: initial position vector of the first node of the first beam, resolved in the inertial frame I
+- `gravityVector::Vector{<:Real}`: gravity vector
+- `BCs::Vector{BC}`: boundary condtions
+- `p_A0::Vector{Float64}`: initial rotation parameters that bring basis I to basis A
+- `u_A::Union{Vector{<:Real},<:Function,Nothing}`: displacement of basis A relative to basis I
+- `v_A::Union{Vector{<:Real},<:Function,Nothing}`: velocity of basis A relative to basis I
+- `ω_A::Union{Vector{<:Real},<:Function,Nothing}`: angular velocity of basis A relative to basis I
+- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}`: acceleration of basis A relative to basis I
+- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}`: angular acceleration of basis A relative to basis I
+- `altitude::Union{Nothing,Real}`: altidude
+- `atmosphere::Union{Nothing,Atmosphere}`: atmosphere
+- `gust::Union{Nothing,Gust}`: gust
+- `trimLoadsLinks::Vector{TrimLoadsLink}`: links between trim loads
+- `flapLinks::Vector{FlapLink}`: links between flapped surfaces
+- `hingeAxisConstraints::Vector{HingeAxisConstraint}`: hinge axis constraints
 """
 function create_Model(; name::String="",units::UnitsSystem=create_UnitsSystem(),beams::Vector{Beam},initialPosition::Vector{<:Real}=zeros(3),gravityVector::Vector{<:Real}=zeros(3),BCs::Vector{BC}=Vector{BC}(),p_A0::Vector{Float64}=zeros(3),u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,altitude::Union{Nothing,Real}=nothing,atmosphere::Union{Nothing,Atmosphere}=nothing,gust::Union{Nothing,Gust}=nothing,trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),flapLinks::Vector{FlapLink}=Vector{FlapLink}(),hingeAxisConstraints::Vector{HingeAxisConstraint}=Vector{HingeAxisConstraint}())
     
@@ -127,7 +126,7 @@ function update_model!(model::Model)
     # Update the global IDs of the springs' nodes
     update_spring_nodes_ids!(model)
 
-    # Initialize the balance loads for the hinge axis constraints
+    # Initialize the balance loads for the hinge axis constraints, if applicable
     initialize_hinge_axis_constraints_balance_load!(model)
 
     # Set BCs on model 
@@ -145,7 +144,7 @@ function update_model!(model::Model)
     # Get system indices
     get_system_indices!(model)
 
-    # Update hinge axis constraint data
+    # Update hinge axis constraint assembly data
     update_hinge_axis_constraint_data!(model)
 
     return model
@@ -862,23 +861,22 @@ function update_initial_conditions!(model::Model)
 end
 
 
-# Initializes the balance loads on the respectively assigned hinge axis constraint nodes
-function initialize_hinge_axis_constraints_balance_load!(model)
-
-    @unpack hingeAxisConstraints,BCs = model
-
-    # Initialize array with IDs of the balance load BCs
-    hingeAxisConstraintBalanceLoadBCid = Vector{Int64}()
+# Initializes the balance loads on the assigned nodes of the hinge axis constraints
+function initialize_hinge_axis_constraints_balance_load!(model::Model)
 
     # Loop hinge axis constraints
-    for (i,hingeAxisConstraint) in enumerate(hingeAxisConstraints)
-        @unpack beam,loadBalanceLocalNode,balanceMoment,balanceMomentDirections = hingeAxisConstraint
-        # Add balance moment to BCs and set ID of that BC
-        push!(BCs,create_BC(name=string("balanceMoment",i),beam=beam,node=loadBalanceLocalNode,types=balanceMomentDirections,values=balanceMoment))
-        push!(hingeAxisConstraintBalanceLoadBCid,length(BCs))
+    for (i,constraint) in enumerate(model.hingeAxisConstraints)
+        @unpack solutionMethod,beam,balanceMomentNode,balanceMoment,balanceMomentDirections,balanceMomentBCID = constraint
+        # Skip if solutionMethod is not "appliedMoment"
+        if solutionMethod != "appliedMoment"
+            continue
+        end
+        # Update ID
+        balanceMomentBCID = length(model.BCs)+1
+        @pack! constraint = balanceMomentBCID
+        # Add to BCs
+        push!(model.BCs, create_BC(name=string("balanceMoment",i),beam=beam,node=balanceMomentNode,types=balanceMomentDirections,values=balanceMoment))
     end
-
-    @pack! model = BCs,hingeAxisConstraintBalanceLoadBCid
     
 end
 
@@ -1338,7 +1336,7 @@ function get_system_indices!(model::Model)
 end
 
 
-# Updates the aggregate data of hinge axis constraints
+# Updates the assembly data of hinge axis constraints
 function update_hinge_axis_constraint_data!(model::Model)
 
     @unpack hingeAxisConstraints = model
@@ -1368,12 +1366,12 @@ end
 Sets the motion of basis A into the model
 
 # Keyword arguments
-- `model::Model` = model
-- `u_A::Union{Vector{<:Real},<:Function,Nothing}` = displacement of basis A relative to basis I
-- `v_A::Union{Vector{<:Real},<:Function,Nothing}` = velocity of basis A relative to basis I
-- `ω_A::Union{Vector{<:Real},<:Function,Nothing}` = angular velocity of basis A relative to basis I
-- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}` = acceleration of basis A relative to basis I
-- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}` = angular acceleration of basis A relative to basis I
+- `model::Model`: model
+- `u_A::Union{Vector{<:Real},<:Function,Nothing}`: displacement of basis A relative to basis I
+- `v_A::Union{Vector{<:Real},<:Function,Nothing}`: velocity of basis A relative to basis I
+- `ω_A::Union{Vector{<:Real},<:Function,Nothing}`: angular velocity of basis A relative to basis I
+- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}`: acceleration of basis A relative to basis I
+- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}`: angular acceleration of basis A relative to basis I
 """
 function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing)
 

@@ -14,23 +14,25 @@ display(deformationPlot)
 
 # Plot configurations
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(θRange)))
+ts = 10
+fs = 16
 lw = 2
 ms = 3
 msw = 0
 gr()
 
 # Tip midchord OOP displacement vs. airspeed for root several pitch angles 
-plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP displacement [% semispan]", xlims=[0,60], ylims=[0,50])
+plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP disp. [% semispan]", xlims=[0,60], ylims=[0,50], tickfont=font(ts), guidefont=font(fs), legend=:topleft, legendfontsize=10)
 plot!([NaN], [NaN], c=:black, lw=lw, ls=:solid, label="AeroBeams")
-plot!([NaN], [NaN], c=:black, lw=lw, ls=:dash, label="UM/NAST")
-scatter!([NaN], [NaN], c=:black, ms=ms, label="Exp.")
+plot!([NaN], [NaN], c=:black, lw=lw, ls=:dashdot, label="UM/NAST VLM - Riso & Cesnik (2022)")
+scatter!([NaN], [NaN], c=:black, ms=ms, label="Exp. - Avin et al. (2022)")
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_OOP[i,:]/L*100, c=colors[i], lw=lw, ls=:solid, label="θ = $θ deg")
     if θ==5
-        plot!(tip_u3VsU_rootPitch5_UMNAST[1,:], tip_u3VsU_rootPitch5_UMNAST[2,:], lw=lw, ls=:dash, c=colors[i], label=false)
+        plot!(tip_u3VsU_rootPitch5_UMNAST[1,:], tip_u3VsU_rootPitch5_UMNAST[2,:], lw=lw, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_u3VsU_rootPitch5_Exp[1,:], tip_u3VsU_rootPitch5_Exp[2,:], mc=colors[i], ms=ms, msw=msw, label=false)
     elseif θ==7
-        plot!(tip_u3VsU_rootPitch7_UMNAST[1,:], tip_u3VsU_rootPitch7_UMNAST[2,:], lw=lw, ls=:dash, c=colors[i], label=false)
+        plot!(tip_u3VsU_rootPitch7_UMNAST[1,:], tip_u3VsU_rootPitch7_UMNAST[2,:], lw=lw, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_u3VsU_rootPitch7_Exp[1,:], tip_u3VsU_rootPitch7_Exp[2,:], mc=colors[i], ms=ms, msw=msw, label=false)
     end
 end
@@ -38,25 +40,32 @@ display(plt1)
 savefig(string(absPath,"/PazyWingPitchRange_tipOOP.pdf"))
 
 # Tip twist vs. airspeed for root several pitch angles 
-plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[0,60])
+plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[0,60], tickfont=font(ts), guidefont=font(fs))
 for (i,θ) in enumerate(θRange)
-    plot!(URange, tip_twist[i,:], c=colors[i], lw=lw, label="θ = $θ deg")
+    plot!(URange, tip_twist[i,:], c=colors[i], lw=lw, label=false)
+    if θ==5
+        plot!(tip_thetaVsU_rootPitch5_UMNAST[1,:], tip_thetaVsU_rootPitch5_UMNAST[2,:], lw=lw, ls=:dashdot, c=colors[i], label=false)
+        scatter!(tip_thetaVsU_rootPitch5_Exp[1,:], tip_thetaVsU_rootPitch5_Exp[2,:], mc=colors[i], ms=ms, msw=msw, label=false)
+    elseif θ==7
+        plot!(tip_thetaVsU_rootPitch7_UMNAST[1,:], tip_thetaVsU_rootPitch7_UMNAST[2,:], lw=lw, ls=:dashdot, c=colors[i], label=false)
+        scatter!(tip_thetaVsU_rootPitch7_Exp[1,:], tip_thetaVsU_rootPitch7_Exp[2,:], mc=colors[i], ms=ms, msw=msw, label=false)
+    end
 end
 display(plt2)
 savefig(string(absPath,"/PazyWingPitchRange_tipTwist.pdf"))
 
 # Tip AoA vs. airspeed for root several pitch angles 
-plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip AoA [deg]", xlims=[0,60])
+plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip AoA [deg]", xlims=[0,60], tickfont=font(ts), guidefont=font(fs))
 for (i,θ) in enumerate(θRange)
-    plot!(URange, tip_AoA[i,:], c=colors[i], lw=lw, label="θ = $θ deg")
+    plot!(URange, tip_AoA[i,:], c=colors[i], lw=lw, label=false)
 end
 display(plt3)
 savefig(string(absPath,"/PazyWingPitchRange_tipAoA.pdf"))
 
 # Tip in-plane displacement vs. airspeed for root several pitch angles 
-plt4 = plot(xlabel="Airspeed [m/s]", ylabel="Tip IP displacement [% semispan]", xlims=[0,60])
+plt4 = plot(xlabel="Airspeed [m/s]", ylabel="Tip IP disp. [% semispan]", xlims=[0,60], tickfont=font(ts), guidefont=font(fs))
 for (i,θ) in enumerate(θRange)
-    plot!(URange, tip_IP[i,:]/L*100, c=colors[i], lw=lw, label="θ = $θ deg")
+    plot!(URange, tip_IP[i,:]/L*100, c=colors[i], lw=lw, label=false)
 end
 display(plt4)
 savefig(string(absPath,"/PazyWingPitchRange_tipIP.pdf"))

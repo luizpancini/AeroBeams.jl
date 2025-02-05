@@ -15,7 +15,7 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 add_loads_to_beam!(beam,loadTypes=["ff_b_of_x1t"],loadFuns=[(x1,t)->[0; 0; q]])
 
 # Model
-distributedLoadCantilever = create_Model(name="distributedLoadCantilever",beams=[beam],BCs=[clamp])
+distributedLoadCantilever = create_Model(name="distributedLoadCantilever",beams=[beam],BCs=[clamp],units=create_UnitsSystem(length="in",force="lbf"))
 
 # Set system solver options
 σ0 = 0

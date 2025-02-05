@@ -9,7 +9,11 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=10,plotLimits=[(0,2*L),(-L,0),(-L/2,L/2)],save=true,savePath=string(relPath,"/flyingSpaghetti2D_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,refBasis="I",plotFrequency=10,plotLimits=([0,2*L],[-L/2,L/2],[-L,0]),save=true,savePath=string(relPath,"/flyingSpaghetti2D_deformation.gif"),displayProgress=true)
+
+# Snapshots
+plt_snap = plot_snapshots(problem,refBasis="I",plotBCs=false,plotAxes=false,plotGrid=false,snapshots=vcat(0:0.5:7.5),plotLimits=([0,2*L],[-L/2,L/2],[-L,0]),save=true,savePath=string(relPath,"/flyingSpaghetti2D_snapshots.pdf"))
+display(plt_snap)
 
 # Plot configurations
 labels = ["\$u_1/L\$" "\$u_3/L\$"]

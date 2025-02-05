@@ -42,15 +42,14 @@ nElementsFFWT = 5
 withTipCorrection = true
 tipLossDecayFactor = 10
 
-## Initialize model
-HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast = create_HealyFFWT(flareAngle=0,kSpring=kSpring,pitchAngle=0,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+## Solution method for constraint
+solutionMethod = "addedResidual"
 
 ## System solver
 σ0 = 1
 maxIter = 200
 relTol = 1e-6
-ΔλRelaxFactor = 1/2
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 ## Initialize outputs
 ϕHinge = Array{Float64}(undef,length(φRange),length(θRange),length(βRange))
@@ -68,7 +67,7 @@ for (i,φ) in enumerate(φRange)
         for (k,β) in enumerate(βRange)
             println("Solving for φ=$(round(Int,φ*180/π)) deg, θ=$(round(Int,θ*180/π)) deg, β=$(round(Int,β*180/π)) deg") #src
             ## Update model
-            model = create_HealyFFWT(flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,wingtipTwist=φ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β);cos(β);0])
+            model = create_HealyFFWT(solutionMethod=solutionMethod,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,wingtipTwist=φ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β);cos(β);0])
             ## Set initial guess solution as the one from previous sideslip angle
             x0 = (k>1 && problem[i,j,k-1].systemSolver.convergedFinalSolution) ? problem[i,j,k-1].x : zeros(0)
             ## Create and solve problem
@@ -78,10 +77,10 @@ for (i,φ) in enumerate(φRange)
 #md            end #hide
             converged = problem[i,j,k].systemSolver.convergedFinalSolution
             ## Get outputs, if converged
-            ϕHinge[i,j,k] = converged ? problem[i,j,k].model.hingeAxisConstraints[1].ϕ*180/π : NaN
-            ## Skip remaining sideslip angles, if unconverged
-            if !converged
-                ϕHinge[i,j,k+1:end] .= NaN
+            ϕHinge[i,j,k] = problem[i,j,k].model.hingeAxisConstraints[1].ϕ*180/π
+            ## Skip remaining sideslip angles, if unconverged or if solution for hinge angle has jumped
+            if !converged || (k > 1 && ϕHinge[i,j,k]*ϕHinge[i,j,k-1] < 0)
+                ϕHinge[i,j,k:end] .= NaN
                 break
             end
         end

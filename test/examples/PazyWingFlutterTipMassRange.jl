@@ -32,7 +32,7 @@ _,_,chord,normSparPos = geometrical_properties_Pazy()
 # Set tip mass and its position ranges, airspeed range, and initialize outputs
 configurations = [1; 2; 3]
 tipMassRange = [0; 0.01; 0.01]
-tipMassPosRange = [0; chord*(1-normSparPos); -chord*normSparPos]
+tipMassPosRange = [0; chord*normSparPos; -chord*(1-normSparPos)]
 URange = collect(0:0.5:100)
 untrackedFreqs = Array{Vector{Float64}}(undef,3,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,3,length(URange))

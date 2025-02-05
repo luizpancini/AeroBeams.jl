@@ -275,8 +275,10 @@ function effective_angle_of_attack!(element::Element,χ,δNow)
     @unpack Uₜ,UₜGust = element.aero.flowVelocitiesAndRates
     if typeof(solver) in [QuasiSteady,Indicial,Inflow]
         @unpack ϵₙ = airfoil.attachedFlowParameters
-    else
+    elseif typeof(solver) in [BLi]
         @unpack ϵₙ = airfoil.parametersBLi
+    elseif typeof(solver) in [BLo]
+        @unpack ϵₙ = airfoil.parametersBLo    
     end
 
     # Effective normalwash: pitch-plunge-induced, flap-induced, gust-induced, and total
@@ -397,9 +399,9 @@ end
 # Computes the effective (unsteady) pitch-plunge-induced normalwash
 function pitch_plunge_effective_normalwash(element::Element,χ)
 
-    @unpack solver,linearPitchPlungeStatesRange,b = element.aero
-    @unpack Uᵢ,UₙTQC = element.aero.flowVelocitiesAndRates
-    @unpack βₚ² = element.aero.flowParameters
+    @unpack solver,linearPitchPlungeStatesRange = element.aero
+    @unpack UₙTQC = element.aero.flowVelocitiesAndRates
+    @unpack Θ = element.aero.flowParameters
     if typeof(solver) in [QuasiSteady,Indicial,Inflow]
         @unpack cnα = element.aero.airfoil.attachedFlowParameters
     elseif typeof(solver) in [BLi]
@@ -418,7 +420,7 @@ function pitch_plunge_effective_normalwash(element::Element,χ)
         wₑp = UₙTQC-1/2*dot(bₚ,χ[linearPitchPlungeStatesRange])  
     elseif typeof(solver) == BLo
         @unpack a1b1a2b2 = solver
-        wₑp = Uᵢ/b*βₚ²*dot(a1b1a2b2,χ[1:2])
+        wₑp = Θ*dot(a1b1a2b2,χ[1:2])
     end
 
     return wₑp
@@ -428,7 +430,14 @@ end
 # Computes the effective (unsteady) flap-induced normalwash
 function flap_effective_normalwash(element::Element,χ,δNow)
 
-    @unpack flapStatesRange = element.aero
+    @unpack solver,flapStatesRange = element.aero
+    if typeof(solver) in [QuasiSteady,Indicial,Inflow]
+        @unpack cnα = element.aero.airfoil.attachedFlowParameters
+    elseif typeof(solver) in [BLi]
+        @unpack cnα = element.aero.airfoil.parametersBLi
+    elseif typeof(solver) == BLo
+        @unpack cnα = element.aero.airfoil.parametersBLo    
+    end
 
     # Skip if there are no flap states
     if isnothing(flapStatesRange)
@@ -439,7 +448,7 @@ function flap_effective_normalwash(element::Element,χ,δNow)
     wFlap = flap_normalwash(element,δNow)
 
     # Effective flap-induced normalwash
-    wₑf = wFlap-sum(χ[flapStatesRange])
+    wₑf = wFlap-sum(χ[flapStatesRange])/cnα
 
     return wₑf
 end
@@ -455,6 +464,19 @@ function flap_normalwash(element::Element,δNow)
     wFlap = Th[10]/π*Uᵢ*δNow+b*Th[17]*δdotNow
   
     return wFlap
+end
+
+
+# Computes the time rate of the instantaneous flap-induced normalwash
+function flap_normalwash_rate(element::Element,δNow)
+
+    @unpack b,δdotNow,δddotNow = element.aero
+    @unpack Th = element.aero.flapLoadsSolver
+    @unpack Uᵢ,Uᵢdot = element.aero.flowVelocitiesAndRates
+
+    wdotFlap = Th[18]*(Uᵢ*δdotNow+Uᵢdot*δNow)+b*Th[17]*δddotNow
+
+    return wdotFlap
 end
 
 
@@ -480,32 +502,72 @@ function gust_effective_normalwash(element::Element,χ)
 end
 
 
-# Computes the time rate of the instantaneous flap-induced normalwash
-function flap_normalwash_rate(element::Element,δNow)
+# Computes the time rate of the normal force coefficient slope, cnα
+function cnα_rate(element::Element)
 
-    @unpack b,δdotNow,δddotNow = element.aero
-    @unpack Th = element.aero.flapLoadsSolver
+    @unpack solver = element.aero
+    @unpack Ma,βₚ,βₚ² = element.aero.flowParameters
     @unpack Uᵢ,Uᵢdot = element.aero.flowVelocitiesAndRates
+    if typeof(solver) in [QuasiSteady,Indicial,Inflow]
+        @unpack cnα = element.aero.airfoil.attachedFlowParameters
+    elseif typeof(solver) in [BLi]
+        @unpack cnα = element.aero.airfoil.parametersBLi
+    elseif typeof(solver) == BLo
+        @unpack cnα = element.aero.airfoil.parametersBLo    
+    end
 
-    wdotFlap = Th[18]*(Uᵢ*δdotNow+Uᵢdot*δNow)+b*Th[17]*δddotNow
+    # Time derivative of cnα (assuming it scales with 1/βₚ)
+    βₚdot = -Uᵢ*Uᵢdot/((Uᵢ/Ma)^2*βₚ)
+    cnαdot = cnα*βₚdot/βₚ^2
 
-    return wdotFlap
+    return cnαdot
 end
 
 
 # Computes the time rate of the product of cnα by UₙTQC
 function cnαUₙTQC_rate(element::Element)
 
-    @unpack Ma,βₚ,βₚ² = element.aero.flowParameters
-    @unpack Uᵢ,Uᵢdot,UₙTQC,UₙdotTQC = element.aero.flowVelocitiesAndRates
-    @unpack cnα = element.aero.airfoil.attachedFlowParameters
+    @unpack solver = element.aero
+    @unpack UₙTQC,UₙdotTQC = element.aero.flowVelocitiesAndRates
+    if typeof(solver) in [QuasiSteady,Indicial,Inflow]
+        @unpack cnα = element.aero.airfoil.attachedFlowParameters
+    elseif typeof(solver) in [BLi]
+        @unpack cnα = element.aero.airfoil.parametersBLi
+    elseif typeof(solver) == BLo
+        @unpack cnα = element.aero.airfoil.parametersBLo    
+    end
 
-    # Time derivative of cnα (assuming it scales with 1/βₚ)
-    βₚdot = -Uᵢ*Uᵢdot/((Uᵢ/Ma)^2*βₚ)
-    cnαdot = cnα*βₚdot/βₚ^2
+    # Time derivative of cnα
+    cnαdot = cnα_rate(element)
 
     # Time derivative of the product cnα * UₙTQC
     return cnα*UₙdotTQC+cnαdot*UₙTQC
+end
+
+
+# Computes the time rate of the product of cnα by wFlap
+function cnαwFlap_rate(element::Element,δNow)
+
+    @unpack solver = element.aero
+    if typeof(solver) in [QuasiSteady,Indicial,Inflow]
+        @unpack cnα = element.aero.airfoil.attachedFlowParameters
+    elseif typeof(solver) in [BLi]
+        @unpack cnα = element.aero.airfoil.parametersBLi
+    elseif typeof(solver) == BLo
+        @unpack cnα = element.aero.airfoil.parametersBLo    
+    end
+
+    # Quasi-steady flap-induced normalwash
+    wFlap = flap_normalwash(element,δNow)
+
+    # Time derivative of wFlap
+    wdotFlap = flap_normalwash_rate(element,δNow)
+
+    # Time derivative of cnα
+    cnαdot = cnα_rate(element)
+
+    # Time derivative of the product cnα * wFlap
+    return cnα*wdotFlap+cnαdot*wFlap
 end
 
 
@@ -544,11 +606,11 @@ function attached_flow_state_matrices!(element::Element,δNow)
     # Flap-induced flow states
     if !isnothing(flapStatesRange)
         @unpack AWf,bWfMat = element.aero.flapLoadsSolver
-        # Get flap normalwash rate
-        wdotFlap = flap_normalwash_rate(element,δNow)
+        # Get the rate of cnαwFlap
+        cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
         A[flapStatesRange,flapStatesRange] .= -Θ*bWfMat
-        B[flapStatesRange] .= wdotFlap*AWf
+        B[flapStatesRange] .= cnαwdotFlap*AWf
     end
 
     # Gust-induced flow states
@@ -1194,7 +1256,7 @@ function BLi_ct!(element::Element,δNow)
     stallOnsetRatioT = abs(αlag)/α1₀T
 
     # Circulatory component - separated flow
-    ctF = -cd₀/cos(αₑ) + (1-η*RD^2) * cnα * (αₑ)^2 * f2primeT^(1/2+ stallOnsetRatioT + E₀*RD*S*(1-Ts)*R*abs(stallOnsetRatio)^(1/2)*(!upstroke))
+    ctF = -cd₀/cos(αₑ) + (1-η*RD^2) * cnα * sin(αₑ)^2 * f2primeT^(1/2+ stallOnsetRatioT + E₀*RD*S*(1-Ts)*R*abs(stallOnsetRatio)^(1/2)*(!upstroke))
     if stallOnsetRatioT > 1
         ctF -= E₁ * (1-RD^3) * min(1, stallOnsetRatioT^3-1)
     end
@@ -1254,14 +1316,14 @@ function BLi_state_matrices!(element::Element,δNow)
     B[linearPitchPlungeStatesRange] .= cnαUₙTQCdot*AW
     B[nonlinearPitchPlungeStatesRange] .= tmpB
 
-    # Flap-induced flow state matrices
+    # Flap-induced flow states
     if !isnothing(flapStatesRange)
         @unpack AWf,bWfMat = element.aero.flapLoadsSolver
-        # Get flap normalwash rate
-        wdotFlap = flap_normalwash_rate(element,δNow)
+        # Get the rate of cnαwFlap
+        cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
         A[flapStatesRange,flapStatesRange] .= -Θ*bWfMat
-        B[flapStatesRange] .= wdotFlap*AWf
+        B[flapStatesRange] .= cnαwdotFlap*AWf
     end
 
     # Gust-induced flow state matrices
@@ -1727,14 +1789,14 @@ function BLo_state_matrices!(element::Element,δNow)
     B[12] = cvdotP
     B[13] = cvdotN
 
-    # Flap-induced flow state matrices
+    # Flap-induced flow states
     if !isnothing(flapStatesRange)
         @unpack AWf,bWfMat = element.aero.flapLoadsSolver
-        # Get flap normalwash rate
-        wdotFlap = flap_normalwash_rate(element,δNow)
+        # Get the rate of cnαwFlap
+        cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
         A[flapStatesRange,flapStatesRange] .= -Θ*bWfMat
-        B[flapStatesRange] .= wdotFlap*AWf
+        B[flapStatesRange] .= cnαwdotFlap*AWf
     end
 
     # Gust-induced flow state matrices

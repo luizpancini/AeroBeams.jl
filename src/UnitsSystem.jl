@@ -22,11 +22,11 @@ end
 Creates a system composed of length, force, angle, frequency and mass units (this is only for plotting purposes and does not influence calculations)
 
 # Keyword arguments
-- `length::String` = length unit
-- `force::String` = force unit
-- `angle::String` = angle unit
-- `frequency::String` = frequency unit
-- `mass::String` = mass unit
+- `length::String`: length unit
+- `force::String`: force unit
+- `angle::String`: angle unit
+- `frequency::String`: frequency unit
+- `mass::String`: mass unit
 """
 function create_UnitsSystem(; length::String="m",force::String="N",angle::String="rad",frequency::String="rad/s",mass::String="kg")
 

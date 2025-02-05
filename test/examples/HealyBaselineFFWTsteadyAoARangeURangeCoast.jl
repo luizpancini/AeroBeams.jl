@@ -1,5 +1,8 @@
 using AeroBeams, DelimitedFiles
 
+# Solution method for constraint
+solutionMethod = "addedResidual"
+
 # Hinge configuration
 hingeConfiguration = "free"
 
@@ -7,7 +10,7 @@ hingeConfiguration = "free"
 θRange = π/180*[2.5; 5.0; 7.5]
 
 # Airspeed Range
-URange = vcat(0:1:40)
+URange = vcat(1:1:40)
 
 # Flare angle [rad]
 Λ = 15*π/180
@@ -18,26 +21,26 @@ g = 9.80665
 # Discretization
 nElementsInner = 16
 nElementsFFWT = 4
+nElem = nElementsInner + nElementsFFWT
 
 # Tip loss options (assumed, since Healy's analysis uses DLM for aerodynamic)
 withTipCorrection = true
 tipLossDecayFactor = 12
 
 # Initialize model
-HealyBaselineFFWTsteadyAoARangeURangeCoast = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,flareAngle=Λ,pitchAngle=0,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+HealyBaselineFFWTsteadyAoARangeURangeCoast = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,pitchAngle=0,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
 
 # System solver
 σ0 = 1
 maxIter = 200
-relTol = 1e-6
-ΔλRelaxFactor = 1/2
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Fixed properties of the model
 hingeNode = nElementsInner+1
 L = HealyBaselineFFWTsteadyAoARangeURangeCoast.beams[1].length
-chords = [HealyBaselineFFWTsteadyAoARangeURangeCoast.beams[1].elements[e].aero.c for e in 1:15]
-Δℓs = [HealyBaselineFFWTsteadyAoARangeURangeCoast.beams[1].elements[e].Δℓ for e in 1:15]
+chords = [HealyBaselineFFWTsteadyAoARangeURangeCoast.beams[1].elements[e].aero.c for e in 1:nElem]
+Δℓs = [HealyBaselineFFWTsteadyAoARangeURangeCoast.beams[1].elements[e].Δℓ for e in 1:nElem]
 ρ = HealyBaselineFFWTsteadyAoARangeURangeCoast.atmosphere.ρ
 
 # Initialize outputs
@@ -54,17 +57,15 @@ for (i,θ) in enumerate(θRange)
         println("Solving for θ = $(round(θ*180/π,digits=1)) deg, U = $U m/s")
         # Update model
         model = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
-        # Set initial guess solution as the one from previous airspeed
-        x0 = (j==1) ? zeros(0) : problem[i,j-1].x
         # Create and solve problem
-        problem[i,j] = create_SteadyProblem(model=model,systemSolver=NR,x0=x0)
+        problem[i,j] = create_SteadyProblem(model=model,systemSolver=NR)
         solve!(problem[i,j])
         # Get outputs
         u3Hinge[i,j] = problem[i,j].nodalStatesOverσ[end][nElementsInner].u_n2[3]
         M2root[i,j] = problem[i,j].nodalStatesOverσ[end][1].M_n1[2]
-        α = [problem[i,j].aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:15]
-        cn = [problem[i,j].aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
-        ct = [problem[i,j].aeroVariablesOverσ[end][e].aeroCoefficients.ct for e in 1:15]
+        α = [problem[i,j].aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:nElem]
+        cn = [problem[i,j].aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:nElem]
+        ct = [problem[i,j].aeroVariablesOverσ[end][e].aeroCoefficients.ct for e in 1:nElem]
         cl = @. cn*cos(α) + ct*sin(α)
         lift[i,j] = sum(1/2*ρ*U^2*chords.*Δℓs.*cl)
         ϕHinge[i,j] = problem[i,j].model.hingeAxisConstraints[1].ϕ*180/π

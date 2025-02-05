@@ -68,13 +68,6 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/HealyFFWTflutterURange"))
 writedlm("test/newTestDataGenerators/HealyFFWTflutterURange/freqs.txt", freqs)
 writedlm("test/newTestDataGenerators/HealyFFWTflutterURange/damps.txt", damps)
 
-# Flutter analysis of the Pazy FFWT wing with airspeed as the varying parameter
-include("../examples/PazyFFWTflutterURange.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTflutterURange"))
-writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/freqs.txt", freqs)
-writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/damps.txt", damps)
-writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/phiHinge.txt", ϕHinge)
-
 # Flutter analysis of the Helios flying-wing in free flight with payload and structural stiffness as the varying parameters
 include("../examples/heliosFlutterPLambdaRange.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/heliosFlutterPLambdaRange"))
@@ -100,6 +93,13 @@ include("../examples/heliosWingFlutter.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/heliosWingFlutter"))
 writedlm("test/newTestDataGenerators/heliosWingFlutter/freqs.txt", freqs)
 writedlm("test/newTestDataGenerators/heliosWingFlutter/damps.txt", damps)
+
+# Flutter analysis of the Pazy FFWT wing with airspeed as the varying parameter
+include("../examples/PazyFFWTflutterURange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTflutterURange"))
+writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/freqs.txt", freqs)
+writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/damps.txt", damps)
+writedlm("test/newTestDataGenerators/PazyFFWTflutterURange/phiHinge.txt", ϕHinge)
 
 # Flutter analysis of the Pazy wing
 include("../examples/PazyWingFlutter.jl")

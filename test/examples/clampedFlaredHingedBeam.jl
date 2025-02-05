@@ -21,7 +21,7 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_m
 
 # Hinge axis constraint (defined in the local, undeformed beam basis)
 localHingeAxis = rotation_tensor_E321([-Λ; 0; 0]) * [0; 1; 0]
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=hingeNode-1,slaveElementLocalID=hingeNode,localHingeAxis=localHingeAxis,loadBalanceLocalNode=hingeNode+1)
+hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,localHingeAxis=localHingeAxis)
 
 # BCs
 Fᵢ = 1e-2

@@ -9,7 +9,7 @@
 #md #     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/HealyBaselineFFWTfreeFlutterAoARangeURange.jl).
 
 # ### Problem setup
-# Let's begin by setting the variables of our problem. In this example we will analyze the coasting angle and stability of the free FFWT under several root pitch angles. The flare angle of the wingtip is of 15 degrees, and the airspeed is varied. The influence of three-dimensional aerodynamic effects is investigated through the tip loss factor, for which two values are assumed (one leading to some tip loss, and another leading to no tip loss). The hinge is assumed as a universal joint (allowing movement about the three axes), but the restriction of the in-plane bending DOF is modeled through a stiff spring with value `kIPBendingHinge`. Only the flutter mechanism arising from the interaction of the first two modes (the wingtip flapping mode and the first OOP bending mode) are analyzed.
+# Let's begin by setting the variables of our problem. In this example we will analyze the coasting angle and stability of the free FFWT under several root pitch angles. The flare angle of the wingtip is of 15 degrees, and the airspeed is varied. The influence of three-dimensional aerodynamic effects is investigated through the tip loss factor, for which two values are assumed (one leading to some tip loss, and another leading to no tip loss). The hinge is assumed as a universal joint (allowing movement about the three axes), but the restriction of the in-plane bending DOF is modeled through a stiff spring with value `kIPBendingHinge`. We select the `addedResidual` as the method for the solution of the hinge constraint. Only the flutter mechanism arising from the interaction of the first two modes (the wingtip flapping mode and the first OOP bending mode) are analyzed.
 using AeroBeams, DelimitedFiles
 
 ## Hinge configuration
@@ -22,7 +22,7 @@ hingeConfiguration = "free"
 θRange = π/180*[0,3,6]
 
 ## Airspeed range [m/s]
-URange = collect(1:0.5:40)
+URange = collect(1:1:40)
 
 ## Flare angle
 Λ = 15*π/180
@@ -37,15 +37,17 @@ kIPBendingHinge = 1e1
 nElementsInner = 16
 nElementsFFWT = 4
 
-## Tip loss TF
+## Tip loss flag
 withTipCorrection = true
+
+## Solution method for constraint
+solutionMethod = "addedResidual"
 
 ## System solver
 σ0 = 1
-maxIter = 200
-relTol = 1e-5
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+maxIter = 100
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 ## Number of modes
 nModes = 2
@@ -64,7 +66,7 @@ problem = Array{EigenProblem}(undef,length(τRange),length(θRange),length(URang
 #md nothing #hide
 
 # ### Solving the problem
-# In the following loops, we create new model instances for each combination of tip loss decay factor, pitch angle and airspeed, create and solve the eigen problem, and then extract the coasting angle of the FFWT (`ϕHinge`) and the frequencies, dampings and eigenvectors. The model creation process is streamlined with the function [`create_HealyBaselineFFWT`](@ref create_HealyBaselineFFWT), taking the appropriate inputs. For nonzero pitch angles, the algorithm fails to converge at low airspeed values.
+# In the following loops, we create new model instances for each combination of tip loss decay factor, pitch angle and airspeed, create and solve the eigen problem, and then extract the coasting angle of the FFWT (`ϕHinge`) and the frequencies, dampings and eigenvectors. The model creation process is streamlined with the function [`create_HealyBaselineFFWT`](@ref create_HealyBaselineFFWT), taking the appropriate inputs.
 #md using Suppressor #hide
 ## Sweep tip loss factor
 for (i,τ) in enumerate(τRange)
@@ -72,12 +74,14 @@ for (i,τ) in enumerate(τRange)
     for (j,θ) in enumerate(θRange)
         ## Sweep airspeed
         for (k,U) in enumerate(URange)
-            ## Display progress
+            ## Display progress #src
             println("Solving for τ=$τ, θ=$(round(Int,θ*180/π)) deg, U=$U m/s") #src
             ## Update model
-            model = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=τ,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+            model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=τ,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+            ## Initial guess solution as the one at previous airspeed
+            x0 = (k > 1 && problem[i,j,k-1].systemSolver.convergedFinalSolution) ? problem[i,j,k-1].x : zeros(0)
             ## Create and solve problem
-            problem[i,j,k] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2*U,Inf])
+            problem[i,j,k] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2*U,Inf],x0=x0)
 #md         @suppress begin #hide
                 solve!(problem[i,j,k])
 #md         end #hide
@@ -146,7 +150,7 @@ damp2_VLM = matrices[:damp2_VLM]
 
 #md nothing #hide
 
-#md # We can now plot the coasting (fold) angle of the FFWT and the evolution of the frequencies and dampings of the modes of vibration as functions of airspeed for each root pitch angle. The following reference results were taken from Fig. 3.32 of [Healy's PhD Thesis](https://research-information.bris.ac.uk/ws/portalfiles/portal/388426634/Final_Copy_2024_01_23_Healy_F_PhD_Redacted.pdf). Healy's numerical method is composed of a Rayleigh-Ritz structural model coupled to a vortex-lattice method (VLM) or strip-theory (ST) method for aerodynamics, with the flared folding wingtip being modeled as a point inertia connected to the inner wing via a hinge. The behavior of the fold angle is accurately captured, and the correlation of the frequencies and dampings with the reference data is fair, although AeroBeams predicts smaller dampings, and consequently, sooner flutter onset.
+#md # We can now plot the coasting (fold) angle of the FFWT and the evolution of the frequencies and dampings of the modes of vibration as functions of airspeed for each root pitch angle. The following reference results were taken from Fig. 3.32 of [Healy's PhD Thesis](https://research-information.bris.ac.uk/ws/portalfiles/portal/388426634/Final_Copy_2024_01_23_Healy_F_PhD_Redacted.pdf). Healy's numerical method is composed of a Rayleigh-Ritz structural model coupled to a vortex-lattice method (VLM) or strip-theory (ST) method for aerodynamics, with the flared folding wingtip being modeled as a point inertia connected to the inner wing via a hinge. The behavior of the fold angle is captured with reasonable accuracy, and the correlation of the frequencies and dampings with the reference data is fair, although AeroBeams predicts smaller dampings, and consequently, sooner flutter onset.
 #md using Plots, ColorSchemes
 #md gr()
 #md ENV["GKSwstype"] = "100" #hide
@@ -174,15 +178,15 @@ damp2_VLM = matrices[:damp2_VLM]
 #md savefig("HealyBaselineFFWTfreeFlutterAoARangeURange_fold_tipLoss1.svg")
 
 ## V-g-f - without tip loss
-#md range = 1:45
+#md range2plot = 1:findfirst(x -> x >= 22, URange)
 #md plt31 = plot(ylabel="Frequency [Hz]", xlims=[0,30], ylims=[0,5], title="Without tip loss", legend=:bottomright)
 #md plt32 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,30], ylims=[-0.5,0.25], legend=:bottomleft)
 #md plot!(plt31, [NaN],[NaN], lc=:black, ls=:dash, lw=lw, label="Healy (2023) - ST")
 #md plot!(plt31, [NaN],[NaN], lc=:black, ls=:solid, lw=lw, label="AeroBeams")
 #md for (j,θ) in enumerate(θRange)
 #md     for mode in 1:nModes
-#md         plot!(plt31, URange[range], modeFrequencies[2,j,mode][range]/(2*π), c=colors[j], lw=lw, label=false)
-#md         plot!(plt32, URange[range], modeDampingRatios[2,j,mode][range], c=colors[j], lw=lw, label=false)
+#md         plot!(plt31, URange[range2plot], modeFrequencies[2,j,mode][range2plot]/(2*π), c=colors[j], lw=lw, label=false)
+#md         plot!(plt32, URange[range2plot], modeDampingRatios[2,j,mode][range2plot], c=colors[j], lw=lw, label=false)
 #md     end
 #md     plot!(plt31, freq1_ST[2*j-1,:], freq1_ST[2*j,:], c=colors[j], ls=:dash, lw=lw, label=false)
 #md     plot!(plt31, freq2_ST[2*j-1,:], freq2_ST[2*j,:], c=colors[j], ls=:dash, lw=lw, label=false)

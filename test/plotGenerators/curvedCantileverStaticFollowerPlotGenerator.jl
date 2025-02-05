@@ -9,19 +9,21 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,save=true,savePath=string(relPath,"/curvedCantileverStaticFollower_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,interactive=false,σ2plot=vcat(0.2:0.2:1),legendPos=(0.5,0.6),view=(135,15),save=true,savePath=string(relPath,"/curvedCantileverStaticFollower_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations
 colors = [:blue,:green,:orange]
 labels = ["\$-u_1\$" "\$u_2\$" "\$u_3\$"]
+ts = 10
+fs = 16
 lw = 2
 ms = 3
 msw = 0
 gr()
 
 # Plot normalized tip displacements over load steps
-plt1 = plot(xlabel="\$F\$ [lb]", ylabel="\$-u_1, u_2, u_3\$ [in]", title="Tip displacements", xticks=collect(0:500:F), yticks=collect(-60:20:80))
+plt1 = plot(xlabel="\$F\$ [lb]", ylabel="Tip displacements [in]", xlims=[0,3000], xticks=collect(0:500:F), yticks=collect(-60:20:80), legend_position=(0.45, 0.4), tickfont=font(ts), guidefont=font(fs), legendfontsize=10)
 plot!([NaN], [NaN], lc=:black,  lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], mc=:black, ms=ms, label="Simo & Vu-Quoc (1986)")
 for i=1:3

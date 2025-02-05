@@ -166,7 +166,7 @@ Let's also visualize the complete motion of the aircraft (rigid + elastic) throu
 
 ````@example conventionalHALECheckedPitchManeuver
 @suppress begin #hide
-plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotBCs=false,plotDistLoads=false,plotFrequency=10,plotLimits=[(-20,20),(-10,250),(-20,20)],save=true,savePath="/docs/build/literate/conventionalHALECheckedPitchManeuver_motion.gif")
+plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(30,15),plotBCs=false,plotDistLoads=false,plotFrequency=10,plotLimits=([-20,20],[-10,250],[-20,20]),save=true,savePath="/docs/build/literate/conventionalHALECheckedPitchManeuver_motion.gif")
 nothing #hide
 end #hide
 ````

@@ -1,7 +1,7 @@
 using AeroBeams, Documenter, Literate
 
 # Examples to be included in the documentation
-global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALECheckedRollManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","HealyBaselineFFWTfreeFlutterAoARangeURange.jl","HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl","typicalSectionFlutterAndDivergence.jl"]
+global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALECheckedRollManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","HealyBaselineFFWTfreeFlutterAoARangeURange.jl","HealyBaselineFFWTOMCGustFloating.jl","HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl","typicalSectionFlutterAndDivergence.jl"]
 
 # Generate .md files with Literate
 for ex in included
@@ -41,6 +41,7 @@ makedocs(;
         "Modal analysis of a two-story frame" => "literate/twoStoryFrame.md",
         "Motion of a simply supported beam under initial conditions" => "literate/initialDispAndVelBeam.md",
         "Dynamic analysis of an articulated beam" => "literate/flyingScissors.md",
+        "Gust response of a wing with flared folding wingtip (FFWT)" => "literate/HealyBaselineFFWTOMCGustFloating.md",
         "Trimming a flying-wing HALE" => "literate/heliosTrim.md",
         "Flutter of a Blended-Wing-Body" => "literate/BWBflutter.md",
         "Pitch maneuver of a HALE aircraft" => "literate/conventionalHALECheckedPitchManeuver.md",

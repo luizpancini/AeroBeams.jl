@@ -197,7 +197,7 @@ Finally, we can visualize the motion of the beam using the function [`plot_dynam
 ````@example initialDispAndVelBeam
 # Animation
 @suppress begin #hide
-plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;-0.05;0],timeStampPos=[0.5;-0.05;0],plotFrequency=1,plotLimits=[(0,L),(-L/2,L/2),(-L,L)],save=true,savePath="/docs/build/literate/initialDispAndVelBeam_motion.gif")
+plot_dynamic_deformation(problem,scale=1/δ/10,scalePos=[0.15;-0.05;0],timeStampPos=[0.5;-0.05;0],plotFrequency=1,plotLimits=([0,L],[-L/2,L/2],[-L/3,L/3]),save=true,savePath="/docs/build/literate/initialDispAndVelBeam_motion.gif")
 nothing #hide
 end #hide
 ````

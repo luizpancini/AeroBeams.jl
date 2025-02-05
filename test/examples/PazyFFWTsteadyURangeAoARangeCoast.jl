@@ -8,13 +8,13 @@ flareAngle = 20*π/180
 kSpring = 1e-4
 
 # Gravity
-g = 9.8
+g = 9.80665
 
 # Root pitch angle range
 θRange = π/180*[0,3,5,7]
 
 # Airspeed range
-URange = collect(1:1:80)
+URange = collect(5:1:80)
 
 # Initialize model
 PazyFFWTsteadyURangeAoARangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
@@ -22,9 +22,8 @@ PazyFFWTsteadyURangeAoARangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAng
 # System solver
 σ0 = 1
 maxIter = 100
-relTol = 1e-5
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-6
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Fixed properties of the model
 elemNodes = vcat([vcat(PazyFFWTsteadyURangeAoARangeCoast.elements[e].nodesGlobalID) for e in 1:15]...)
@@ -58,22 +57,22 @@ for (i,θ) in enumerate(θRange)
         # Set initial guess solution as the one from previous airspeed
         x0 = (j==1) ? zeros(0) : problem[i,j-1].x
         # Create and solve problem
-        problem[i,j] = create_SteadyProblem(model=model,systemSolver=NR)
+        problem[i,j] = create_SteadyProblem(model=model,systemSolver=NR,x0=x0)
         solve!(problem[i,j])
         # Get TF for converged solution
         converged = problem[i,j].systemSolver.convergedFinalSolution
         # Get outputs
-        u1[i,j] = converged ? vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[1],problem[i,j].nodalStatesOverσ[end][e].u_n2[1]) for e in 1:15]...) : fill(NaN64,30)
-        u2[i,j] = converged ? vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[2],problem[i,j].nodalStatesOverσ[end][e].u_n2[2]) for e in 1:15]...) : fill(NaN64,30)
-        u3[i,j] = converged ? vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[3],problem[i,j].nodalStatesOverσ[end][e].u_n2[3]) for e in 1:15]...) : fill(NaN64,30)
-        p1[i,j] = converged ? vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].p_n1[1],problem[i,j].nodalStatesOverσ[end][e].p_n2[1]) for e in 1:15]...) : fill(NaN64,30)
-        p2[i,j] = converged ? vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].p_n1[2],problem[i,j].nodalStatesOverσ[end][e].p_n2[2]) for e in 1:15]...) : fill(NaN64,30)
-        p3[i,j] = converged ? vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].p_n1[3],problem[i,j].nodalStatesOverσ[end][e].p_n2[3]) for e in 1:15]...) : fill(NaN64,30)
-        M2[i,j] = converged ? vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].M_n1[2],problem[i,j].nodalStatesOverσ[end][e].M_n2[2]) for e in 1:15]...) : fill(NaN64,30)
-        α[i,j] = converged ? [problem[i,j].aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:15] : fill(NaN64,15)
-        cn[i,j] = converged ? [problem[i,j].aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15] : fill(NaN64,15)
-        pHinge[i,j] = converged ? problem[i,j].model.hingeAxisConstraints[1].pH : fill(NaN64,3)
-        ϕHinge[i,j] = converged ? problem[i,j].model.hingeAxisConstraints[1].ϕ*180/π : NaN64
+        u1[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[1],problem[i,j].nodalStatesOverσ[end][e].u_n2[1]) for e in 1:15]...)
+        u2[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[2],problem[i,j].nodalStatesOverσ[end][e].u_n2[2]) for e in 1:15]...)
+        u3[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[3],problem[i,j].nodalStatesOverσ[end][e].u_n2[3]) for e in 1:15]...)
+        p1[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].p_n1[1],problem[i,j].nodalStatesOverσ[end][e].p_n2[1]) for e in 1:15]...)
+        p2[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].p_n1[2],problem[i,j].nodalStatesOverσ[end][e].p_n2[2]) for e in 1:15]...)
+        p3[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].p_n1[3],problem[i,j].nodalStatesOverσ[end][e].p_n2[3]) for e in 1:15]...)
+        M2[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].M_n1[2],problem[i,j].nodalStatesOverσ[end][e].M_n2[2]) for e in 1:15]...)
+        α[i,j] = [problem[i,j].aeroVariablesOverσ[end][e].flowAnglesAndRates.αₑ for e in 1:15]
+        cn[i,j] = [problem[i,j].aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
+        pHinge[i,j] = problem[i,j].model.hingeAxisConstraints[1].pH
+        ϕHinge[i,j] = problem[i,j].model.hingeAxisConstraints[1].ϕ*180/π
     end
 end
 

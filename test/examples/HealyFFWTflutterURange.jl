@@ -1,7 +1,7 @@
 using AeroBeams
 
 # Airspeed range [m/s]
-URange = collect(10:1:40)
+URange = collect(5:1:40)
 
 # Flare angle [rad]
 Λ = 30*π/180
@@ -26,12 +26,11 @@ tipLossDecayFactor = 10
 # System solver
 σ0 = 1
 maxIter = 100
-relTol = 1e-6
-ΔλRelaxFactor = 1
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol,ΔλRelaxFactor=ΔλRelaxFactor)
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Number of modes
-nModes = 4
+nModes = 6
 
 # Initialize outputs
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
@@ -51,7 +50,7 @@ for (i,U) in enumerate(URange)
     # Set initial guess solution as the one from previous sideslip angle
     x0 = (i>1 && problem[i-1].systemSolver.convergedFinalSolution) ? problem[i-1].x : zeros(0)
     # Create and solve problem
-    problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,x0=x0,frequencyFilterLimits=[1e0,Inf])
+    problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,x0=x0,frequencyFilterLimits=[1e-0,Inf])
     solve!(problem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem[i].frequenciesOscillatory

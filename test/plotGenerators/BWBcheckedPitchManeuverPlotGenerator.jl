@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(dynamicProblem,refBasis="A",view=(30,15),plotDistLoads=false,plotFrequency=10,plotLimits=[(-5,5),(-5,5),(-5,5)],save=true,savePath=string(relPath,"/BWBcheckedPitchManeuver_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(dynamicProblem,refBasis="A",view=(30,15),plotDistLoads=false,plotFrequency=10,plotLimits=([-5,5],[-5,5],[-5,5]),save=true,savePath=string(relPath,"/BWBcheckedPitchManeuver_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

@@ -1,4 +1,4 @@
-# Computes the elemental contributions to the system's arrays (residual, Jacobian, inertia)
+# Computes the elemental contributions to the system's arrays (residual, Jacobian)
 function element_arrays!(problem::Problem,model::Model,element::Element)
 
     ## Generalized velocities of basis b at element's midpoint, resolved in basis A
@@ -1977,6 +1977,12 @@ function ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=no
 end
 function ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
     return ForwardDiff.jacobian(x -> ∂C_∂pS(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS)
+end
+function ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
+    return ForwardDiff.jacobian(x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS)
+end
+function ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
+    return ForwardDiff.jacobian(x -> ∂C_∂pS(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM)
 end
 
 

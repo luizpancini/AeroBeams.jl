@@ -11,12 +11,15 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_m
 # Hinge angle
 hingeAngle = 90*π/180
 
+# Solution method for hinge constraint
+solutionMethod = "appliedMoment"
+
 # Hinge constraint
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,masterElementLocalID=midElem,slaveElementLocalID=midElem+1,localHingeAxis=AeroBeams.a2,loadBalanceLocalNode=hingedNode+1,pHValue=4*tan(hingeAngle/4))
+hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,beam=beam,localHingeAxis=AeroBeams.a2,pHValue=4*tan(hingeAngle/4))
 
 # Spring
-kSpring = 1e0
-spring = create_Spring(elementsIDs=[midElem,midElem+1],nodesSides=[1,2],kp=[0,0,kSpring])
+kSpring = hingeAngle/(4*tan(hingeAngle/4))
+spring = create_Spring(elementsIDs=[midElem,midElem+1],nodesSides=[1,2],kp=[0,kSpring,0])
 add_spring_to_beams!(beams=[beam,beam],spring=spring)
 
 # BCs
@@ -55,7 +58,12 @@ M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOve
 pHinge = problem.model.hingeAxisConstraints[1].pH
 ϕHinge = problem.model.hingeAxisConstraints[1].ϕ*180/π
 
+# Analytical root moment and relative error
+M2rootAnalytical = hingeAngle
+ϵM2root = 1 - M2[1]/M2rootAnalytical
+
 # Check results
 println("Hinge angle = $ϕHinge deg")
+println("Relative error on root bending moment = $ϵM2root")
 
 println("Finished drivenSpringedHingedBeam.jl")

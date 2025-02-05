@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,plotFrequency=10,fps=60,scale=1,plotUndeformed=false,plotLimits=[(-L,L),(-L,0),(-L,L)],save=true,savePath=string(relPath,"/doublePendulum_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(problem,plotFrequency=10,fps=60,scale=1,plotUndeformed=false,plotLimits=([-L,L],[-L,0],[-L,L]),save=true,savePath=string(relPath,"/doublePendulum_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 lw = 2

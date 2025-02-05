@@ -7,6 +7,8 @@ include("../examples/OMCgustTests.jl")
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(aeroSolvers)))
 labels = ["QS" "Indicial" "Inflow" "BLi" "BLo"]
 linestyles = [:solid :dash :dot :dashdot :dashdotdot]
+ts = 10
+fs = 16
 lw = 2
 ms = 5
 gr()
@@ -49,8 +51,17 @@ end
 absPath = string(pwd(),"/test/outputs/figures/OMCgustTests")
 mkpath(absPath)
 
-## Test 6 - Berci and Righi indicial function
-plt62 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", xlims=[0,80], ylims=[-0.05,0.2])
+## Test 2 - with Kussner indicial function
+plt21 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", xlims=[0,30], ylims=[0.0,0.14], tickfont=font(ts), guidefont=font(fs), legendfontsize=12)
+scatter!(ΔclRef[1,1,2][1,:], ΔclRef[1,1,2][2,:], color=:black, ms=ms, label="CFD - Mallik & Raveh (2019)")
+for (i,aeroSolver) in enumerate(aeroSolvers)
+    plot!(τ[i,1,2], Δcl[i,1,2], color=colors[i], lw=lw, ls=linestyles[i], label=labels[i])
+end
+display(plt21)
+savefig(string(absPath,"/OMCgustTests_test2K.pdf"))
+
+## Test 6 - with Berci and Righi indicial function
+plt62 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", xlims=[0,80], ylims=[-0.05,0.2], tickfont=font(ts), guidefont=font(fs))
 scatter!(ΔclRef[1,1,6][1,:], ΔclRef[1,1,6][2,:], color=:black, ms=ms, label="CFD - Mallik & Raveh (2019)")
 for (i,aeroSolver) in enumerate(aeroSolvers)
     plot!(τ[i,2,6], Δcl[i,2,6], color=colors[i], lw=lw, ls=linestyles[i], label=labels[i])

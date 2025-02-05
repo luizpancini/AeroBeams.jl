@@ -40,9 +40,9 @@ end
 
 # Fields
 # - `α` = quasi-steady angle of attack
-# - `β` = angle of sideslip
+# - `β` = quasi-steady angle of sideslip
 # - `αdot` = quasi-steady angle of attack rate
-# - `αₑ` = effective angle of attack at 3/4-chord
+# - `αₑ` = effective (unsteady) angle of attack at 3/4-chord
 #
 mutable struct FlowAnglesAndRates
     
@@ -82,9 +82,9 @@ end
 # - `UₙTQC` = relative normal wind velocity component at the airfoil's 3/4-chord
 # - `Udot` = wind acceleration vector at spar position, resolved in basis W
 # - `Uₜdot` = tangential component of Udot
-# - `Uₙdot` = normal component of U
-# - `Uᵢdot` = in-plane component of U
-# - `Ωₐdot` = spanwise angular velocity component, resolved in basis W
+# - `Uₙdot` = normal component of Udot
+# - `Uᵢdot` = in-plane component of Udot
+# - `Ωₐdot` = spanwise angular acce component, resolved in basis W
 # - `UₙdotMid` = relative normal wind acceleration component at the airfoil's 1/2-chord
 # - `UₙdotTQC` = = relative normal wind acceleration component at the airfoil's 3/4-chord
 # - `UₜGust` = gust tangential velocity component
@@ -755,7 +755,14 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     normSparPos = aeroSurface.normSparPos isa Real ? aeroSurface.normSparPos : aeroSurface.normSparPos(x1)
     Λ = aeroSurface.Λ isa Real ? aeroSurface.Λ : aeroSurface.Λ(x1)
     φ = aeroSurface.φ isa Real ? aeroSurface.φ : aeroSurface.φ(x1)
-    Rw = rotation_tensor_E321([-Λ; 0; φ-airfoil.attachedFlowParameters.α₀N])
+    if typeof(aeroSurface.solver) in [QuasiSteady,Indicial,Inflow]
+        @unpack α₀N = aeroSurface.airfoil.attachedFlowParameters
+    elseif typeof(aeroSurface.solver) in [BLi]
+        @unpack α₀N = aeroSurface.airfoil.parametersBLi
+    elseif typeof(aeroSurface.solver) == BLo
+        @unpack α₀N = aeroSurface.airfoil.parametersBLo    
+    end
+    Rw = rotation_tensor_E321([-Λ; 0; φ-α₀N])
     RwT = Matrix(Rw')
     RwR0 = Rw*R0
     RwR0T = Matrix(RwR0')
