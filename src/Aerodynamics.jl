@@ -1703,7 +1703,7 @@ function BLo_cm!(element::Element,χ,δNow)
     end
 
     # Rotation-induced
-    cmRot = incompressibleInertialLoads ? -π/4*b*Ωₐ/Uᵢ : -π/8*b[5]*Θ*χ[7]
+    cmRot = incompressibleInertialLoads ? -π/4*element.aero.b*Ωₐ/Uᵢ : -π/8*b[5]*Θ*χ[7]
 
     # Vortex
     CPvP = τvP <= 2*TvL ? 0.25*(1-cos(π*τvP/TvL)) : 0
