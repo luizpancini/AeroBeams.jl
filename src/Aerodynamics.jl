@@ -1672,7 +1672,7 @@ function BLo_cm!(element::Element,χ,δNow)
     @unpack flapLoadsSolver,flapped,normSparPos,normFlapPos,δdotNow,δddotNow,c = element.aero
     @unpack a,b = element.aero.solver
     @unpack α = element.aero.flowAnglesAndRates
-    @unpack Uᵢ,UₙdotMid,Ωₐdot = element.aero.flowVelocitiesAndRates
+    @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
     @unpack cnC,cnF = element.aero.aeroCoefficients
     @unpack ϵₘ,cm₀,K₀,K₁,K₂,TvL = element.aero.airfoil.parametersBLo
     @unpack cmδ = element.aero.airfoil.flapParameters
@@ -1703,7 +1703,7 @@ function BLo_cm!(element::Element,χ,δNow)
     end
 
     # Rotation-induced
-    cmRot = -π/8*b[5]*Θ*χ[7]
+    cmRot = incompressibleInertialLoads ? -π/4*b*Ωₐ/Uᵢ : -π/8*b[5]*Θ*χ[7]
 
     # Vortex
     CPvP = τvP <= 2*TvL ? 0.25*(1-cos(π*τvP/TvL)) : 0

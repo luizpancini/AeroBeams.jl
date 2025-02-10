@@ -1,13 +1,13 @@
 using AeroBeams
 
 # Aerodynamic solvers
-aeroSolvers = [BLi()]
+aeroSolvers = [BLo(incompressibleInertialLoads=true)]
 
 # Wing airfoil
 wingAirfoil = NACA23012A
 
 # Option for reduced chord
-reducedChord = true
+reducedChord = false
 
 # TF to include beam pods and number of elements
 beamPods = false
@@ -27,7 +27,7 @@ P = 0
 U = 40*0.3048
 
 # Elevator profile variables
-Δδ = 8*π/180
+Δδ = 1*π/180
 tδinit = 1
 tδramp = 1
 tδpeak = tδinit+tδramp
