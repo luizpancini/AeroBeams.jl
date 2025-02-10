@@ -34,11 +34,10 @@ update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=b)
 surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=2*b,normSparPos=0.25,updateAirfoilParameters=false)
 
 # Wing
-L = 1.0
-EI,GJ = 2e10,2e10
+L = 1
 nElem = 1
-∞ = 1e12
-wing = create_Beam(name="wing",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EI,EIz=EI)],I=[inertia_matrix(ρA=10,ρIy=1e-2,ρIz=1e-2)],rotationParametrization="E321",p0=[0;0;a₀-a₁],aeroSurface=surf,pdot0_of_x1=x1->[pdot(0); 0.0; 0.0])
+∞ = 1e10
+wing = create_Beam(name="wing",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=10,ρIy=1e-2,ρIz=1e-2)],rotationParametrization="E321",p0=[0;0;a₀-a₁],aeroSurface=surf,pdot0_of_x1=x1->[pdot(0); 0.0; 0.0])
 
 # BCs
 driver = create_BC(name="driver",beam=wing,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,t -> p(t),0,0])

@@ -124,6 +124,7 @@ export BLi
 """
 struct BLo <: AeroSolver
 
+    incompressibleInertialLoads::Bool
     nStates::Int64
     availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
     a::Vector{Float64}
@@ -134,8 +135,8 @@ struct BLo <: AeroSolver
     bWMat::Matrix{Float64}
     a1b1a2b2::Vector{Float64}
 
-    function BLo()
-        nStates = 13
+    function BLo(; incompressibleInertialLoads::Bool=false)
+        nStates = incompressibleInertialLoads ? 7 : 13
         availableDerivativesMethod = [AD,FD]
         a = [0.3; 0.7; 1.5; -0.5]
         b = [0.14; 0.53; 0.25; 0.1; 0.5]
@@ -144,7 +145,7 @@ struct BLo <: AeroSolver
         bW = [0.0455; 0.3]
         bWMat = diagm(bW)
         a1b1a2b2 = [a[1]*b[1]; a[2]*b[2]]
-        return new(nStates,availableDerivativesMethod,a,b,bMat,AW,bW,bWMat,a1b1a2b2)
+        return new(incompressibleInertialLoads,nStates,availableDerivativesMethod,a,b,bMat,AW,bW,bWMat,a1b1a2b2)
     end
 
 end

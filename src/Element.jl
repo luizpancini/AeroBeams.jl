@@ -656,7 +656,7 @@ mutable struct Element <: BeamElement
             if typeof(aero.solver) == BLi
                 states.χ[aero.pitchPlungeStatesRange[4:6]] .= 1.0
             elseif typeof(aero.solver) == BLo
-                states.χ[10:11] .= 1.0
+                states.χ[aero.nonlinearPitchPlungeStatesRange[2:3]] .= 1.0
             end
             statesRates.χdot = zeros(aero.nTotalAeroStates)
             χdotEquiv = zeros(aero.nTotalAeroStates)

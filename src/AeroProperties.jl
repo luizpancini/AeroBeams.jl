@@ -755,14 +755,7 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     normSparPos = aeroSurface.normSparPos isa Real ? aeroSurface.normSparPos : aeroSurface.normSparPos(x1)
     Λ = aeroSurface.Λ isa Real ? aeroSurface.Λ : aeroSurface.Λ(x1)
     φ = aeroSurface.φ isa Real ? aeroSurface.φ : aeroSurface.φ(x1)
-    if typeof(aeroSurface.solver) in [QuasiSteady,Indicial,Inflow]
-        @unpack α₀N = aeroSurface.airfoil.attachedFlowParameters
-    elseif typeof(aeroSurface.solver) in [BLi]
-        @unpack α₀N = aeroSurface.airfoil.parametersBLi
-    elseif typeof(aeroSurface.solver) == BLo
-        @unpack α₀N = aeroSurface.airfoil.parametersBLo    
-    end
-    Rw = rotation_tensor_E321([-Λ; 0; φ-α₀N])
+    Rw = rotation_tensor_E321([-Λ; 0; φ])
     RwT = Matrix(Rw')
     RwR0 = Rw*R0
     RwR0T = Matrix(RwR0')
@@ -798,14 +791,14 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     if typeof(solver) == BLi
         linearPitchPlungeStatesRange = pitchPlungeStatesRange[1:2] 
     elseif typeof(solver) == BLo
-        linearPitchPlungeStatesRange = pitchPlungeStatesRange[1:8] 
+        linearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange[1:8]
     else
         linearPitchPlungeStatesRange = pitchPlungeStatesRange
     end
     if typeof(solver) == BLi
         nonlinearPitchPlungeStatesRange = pitchPlungeStatesRange[3:8]
     elseif typeof(solver) == BLo
-        nonlinearPitchPlungeStatesRange = pitchPlungeStatesRange[9:13]
+        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:7] : pitchPlungeStatesRange[9:13]
     else
         nonlinearPitchPlungeStatesRange = nothing
     end
