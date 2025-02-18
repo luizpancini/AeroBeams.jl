@@ -49,6 +49,7 @@
     mass::Real = 0
     centerOfMass::Vector{<:Real} = zeros(3)
     I::Vector{<:Real} = zeros(3)
+    DOF_χ_all::Vector{Int64} = Vector{Int64}()
 
 end
 export Model
@@ -1152,6 +1153,8 @@ function get_system_indices!(model::Model)
         # Update indices
         i_equations += nTotalAeroStates
         i_states += nTotalAeroStates
+        # Push to list of all aerodynamic DOFs
+        append!(model.DOF_χ_all,collect(DOF_χ))
         # Pack element data
         @pack! element = DOF_χ,eqs_Fχ
     end

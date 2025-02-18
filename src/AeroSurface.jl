@@ -124,7 +124,6 @@ function create_AeroSurface(; solver::AeroSolver=Indicial(),flapLoadsSolver::Fla
     if !isnothing(δ)
         @assert !δIsTrimVariable "flap deflection cannot be a trim variable and an input"
     end
-    @assert typeof(derivationMethod) in solver.availableDerivativesMethod
 
     # Initialize area and aspect ratio (updated later on beam creation)
     area = 1

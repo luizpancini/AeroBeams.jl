@@ -4,11 +4,11 @@
 #     FlowParameters composite type
 
 # Fields
-# - `Re` = Reynolds number
-# - `Ma` = Mach number
-# - `βₚ` = Prandtl-Glauert compressibility factor
-# - `βₚ²` = Prandtl-Glauert compressibility factor squared
-# - `Θ` = Uᵢ/b*βₚ²
+# - `Re`: Reynolds number
+# - `Ma`: Mach number
+# - `βₚ`: Prandtl-Glauert compressibility factor
+# - `βₚ²`: Prandtl-Glauert compressibility factor squared
+# - `Θ`: Uᵢ/b*βₚ², characteristic inverse time scale
 #
 mutable struct FlowParameters
     
@@ -39,10 +39,10 @@ end
 #     FlowAnglesAndRates composite type
 
 # Fields
-# - `α` = quasi-steady angle of attack
-# - `β` = quasi-steady angle of sideslip
-# - `αdot` = quasi-steady angle of attack rate
-# - `αₑ` = effective (unsteady) angle of attack at 3/4-chord
+# - `α`: quasi-steady angle of attack
+# - `β`: quasi-steady angle of sideslip
+# - `αdot`: quasi-steady angle of attack rate
+# - `αₑ`: effective (unsteady) angle of attack at 3/4-chord
 #
 mutable struct FlowAnglesAndRates
     
@@ -71,25 +71,25 @@ end
 #     FlowVelocitiesAndRates composite type
 
 # Fields
-# - `U` = wind velocity vector at spar position, resolved in basis W
-# - `U∞` = norm of U
-# - `Uₛ` = spanwise component of U
-# - `Uₜ` = tangential component of U
-# - `Uₙ` = normal component of U
-# - `Uᵢ` = in-plane component of U
-# - `Ωₐ` = spanwise angular velocity component, resolved in basis W
-# - `UₙMid` = relative normal wind velocity component at the airfoil's 1/2-chord
-# - `UₙTQC` = relative normal wind velocity component at the airfoil's 3/4-chord
-# - `Udot` = wind acceleration vector at spar position, resolved in basis W
-# - `Uₜdot` = tangential component of Udot
-# - `Uₙdot` = normal component of Udot
-# - `Uᵢdot` = in-plane component of Udot
-# - `Ωₐdot` = spanwise angular acce component, resolved in basis W
-# - `UₙdotMid` = relative normal wind acceleration component at the airfoil's 1/2-chord
-# - `UₙdotTQC` = = relative normal wind acceleration component at the airfoil's 3/4-chord
-# - `UₜGust` = gust tangential velocity component
-# - `UₙGust` = gust normal velocity component
-# - `wₑp` = effective pitch-plunge-induced normal velocity component at the airfoil's 3/4-chord
+# - `U`: wind velocity vector at spar position, resolved in basis W
+# - `U∞`: norm of U, relative airspeed
+# - `Uₛ`: spanwise component of U
+# - `Uₜ`: tangential component of U
+# - `Uₙ`: normal component of U
+# - `Uᵢ`: in-plane component of U
+# - `Ωₐ`: spanwise angular velocity component, resolved in basis W
+# - `UₙMid`: relative normal wind velocity component at the airfoil's 1/2-chord
+# - `UₙTQC`: relative normal wind velocity component at the airfoil's 3/4-chord
+# - `Udot`: wind acceleration vector at spar position, resolved in basis W
+# - `Uₜdot`: tangential component of Udot
+# - `Uₙdot`: normal component of Udot
+# - `Uᵢdot`: in-plane component of Udot
+# - `Ωₐdot`: spanwise angular acce component, resolved in basis W
+# - `UₙdotMid`: relative normal wind acceleration component at the airfoil's 1/2-chord
+# - `UₙdotTQC`: = relative normal wind acceleration component at the airfoil's 3/4-chord
+# - `UₜGust`: gust tangential velocity component
+# - `UₙGust`: gust normal velocity component
+# - `wₑp`: effective pitch-plunge-induced normal velocity component at the airfoil's 3/4-chord
 #
 mutable struct FlowVelocitiesAndRates
     
@@ -148,21 +148,21 @@ end
 #     AeroCoefficients composite type
 
 # Fields
-# - `cn` = normal force coefficient
-# - `cm` = pitching moment coefficient about spar position
-# - `ct` = tangential force coefficient
-# - `cnC` = circulatory component of cn
-# - `cnI` = inertial component of cn
-# - `cnP` = potential flow component of cn
-# - `cmC` = circulatory component of cm
-# - `cmI` = inertial component of cm
-# - `cmRot` = rotation-induced component of cm
-# - `cnF` = separated-flow circulatory component of cn
-# - `cmF` = separated-flow circulatory component of cm
-# - `ctF` = separated-flow circulatory component of ct
-# - `cnV` = DSV-induced component of cn
-# - `cmV` = DSV-induced component of cm
-# - `ctV` = DSV-induced component of ct
+# - `cn`: normal force coefficient
+# - `cm`: pitching moment coefficient about spar position
+# - `ct`: tangential force coefficient
+# - `cnC`: circulatory component of cn
+# - `cnI`: inertial component of cn
+# - `cnP`: potential flow component of cn
+# - `cmC`: circulatory component of cm
+# - `cmI`: inertial component of cm
+# - `cmRot`: rotation-induced component of cm
+# - `cnF`: separated-flow circulatory component of cn
+# - `cmF`: separated-flow circulatory component of cm
+# - `ctF`: separated-flow circulatory component of ct
+# - `cnV`: DSV-induced component of cn
+# - `cmV`: DSV-induced component of cm
+# - `ctV`: DSV-induced component of ct
 #
 mutable struct AeroCoefficients
     
@@ -213,12 +213,12 @@ end
 #     BLiNamedStates composite type
 
 # Fields
-# - `αlag` 
-# - `f2primeN`
-# - `f2primeM`
-# - `f2primeT`
-# - `RD`
-# - `RD_stallOnsetRatio`
+# - `αlag`: lagged angle of attack
+# - `f2primeN`: lagged separation point for cn
+# - `f2primeM`: lagged separation point for cm
+# - `f2primeT`: lagged separation point for ct
+# - `RD`: lagged capped pitch rate ratio
+# - `RD_stallOnsetRatio`: slightly lagged capped pitch rate ratio for stall onset
 #
 mutable struct BLiNamedStates
     
@@ -251,12 +251,12 @@ end
 #     BLoNamedStates composite type
 
 # Fields
-# - `cnPprime`
-# - `f2Prime`
-# - `fPrimeM`
-# - `cnVP`
-# - `cnVN`
-# - `cnV`
+# - `cnPprime`: lagged cn
+# - `f2Prime`: lagged separation point
+# - `fPrimeM`: lagged separation point for cm on downstroke
+# - `cnVP`: DSV-induced cn at positive angle of attack
+# - `cnVN`: DSV-induced cn at negative angle of attack
+# - `cnV`: sum of cnVP and cnVN
 #
 mutable struct BLoNamedStates
     
@@ -289,13 +289,15 @@ end
 #     BLiKinematics composite type
 
 # Fields
-# - `r`
-# - `qR`
-# - `R`
+# - `q`: non-dimensional pitch rate
+# - `r`: reduced non-dimensional pitch rate
+# - `qR`: unsigned ratio of reduced pitch rate to critical pitch rate
+# - `R`: unsigned capped reduced pitch rate ratio 
 #
 mutable struct BLiKinematics
     
     # Fields
+    q
     r
     qR
     R
@@ -303,11 +305,12 @@ mutable struct BLiKinematics
     # Constructor
     function BLiKinematics() 
 
+        q = 0.0
         r = 0.0
         qR = 0.0
         R = 0.0      
 
-        return new(r,qR,R)
+        return new(q,r,qR,R)
     end
 end
 
@@ -336,6 +339,11 @@ end
 # - `TfN`
 # - `TfM`
 # - `TfT`
+# - `Ka`
+# - `Kq`
+# - `KaM`
+# - `KqM`
+# - `Tᵢ`
 #
 mutable struct BLiFlowVariables
     
@@ -358,6 +366,11 @@ mutable struct BLiFlowVariables
     TfN
     TfM
     TfT
+    Ka
+    Kq
+    KaM
+    KqM
+    Tᵢ
 
     # Constructor
     function BLiFlowVariables() 
@@ -380,8 +393,13 @@ mutable struct BLiFlowVariables
         TfN = 1.0
         TfM = 1.0
         TfT = 1.0
+        Ka = 1.0
+        Kq = 1.0
+        KaM = 1.0
+        KqM = 1.0
+        Tᵢ = 1.0
 
-        return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT)
+        return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT,Ka,Kq,KaM,KqM,Tᵢ)
     end
 end
 
@@ -533,7 +551,7 @@ mutable struct BLiComplementaryVariables
         αlagPrev = 0.0
         qRPrev = 1.0
         PPrev = 0.0
-        upstrokePrev = true  
+        upstrokePrev = false  
         maxStallOnsetRatio = 1.0
         minStallOnsetRatio = 0.0 
         qRmax = 1.0
@@ -788,18 +806,11 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
 
     # Set aerodynamic states' ranges (assume no gust states are active, update later upon model creation)
     pitchPlungeStatesRange = typeof(solver) in [QuasiSteady] ? nothing : 1:solver.nStates
-    if typeof(solver) == BLi
-        linearPitchPlungeStatesRange = pitchPlungeStatesRange[1:2] 
-    elseif typeof(solver) == BLo
+    if typeof(solver) in [BLi,BLo]
         linearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange[1:8]
+        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:end] : pitchPlungeStatesRange[9:end]
     else
         linearPitchPlungeStatesRange = pitchPlungeStatesRange
-    end
-    if typeof(solver) == BLi
-        nonlinearPitchPlungeStatesRange = pitchPlungeStatesRange[3:8]
-    elseif typeof(solver) == BLo
-        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:7] : pitchPlungeStatesRange[9:13]
-    else
         nonlinearPitchPlungeStatesRange = nothing
     end
     flapStatesRange = hasFlapStates ? (nPitchPungeStates+1:nPitchPungeStates+nFlapStates) : nothing
@@ -867,10 +878,12 @@ function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRa
     F_χ_Vdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) in [Indicial,BLi,BLo]
-        F_χ_Vdot[pitchPlungeStatesRange[1:2],3] = cnα*solver.AW
+    if typeof(solver) == Indicial
+        F_χ_Vdot[pitchPlungeStatesRange[1:2],3] = cnα*solver.aC
     elseif typeof(solver) == Inflow
         F_χ_Vdot[pitchPlungeStatesRange,3] = solver.AₚInvcₚ
+    elseif typeof(solver) in [BLi,BLo]
+        F_χ_Vdot[pitchPlungeStatesRange[1:2],3] = cnα*solver.aC
     end
 
     return F_χ_Vdot
@@ -883,10 +896,12 @@ function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesR
     F_χ_Ωdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) in [Indicial,BLi,BLo]
-        F_χ_Ωdot[pitchPlungeStatesRange[1:2],1] = c*(normSparPos-3/4)*cnα*solver.AW
+    if typeof(solver) == Indicial
+        F_χ_Ωdot[pitchPlungeStatesRange[1:2],1] = c*(normSparPos-3/4)*cnα*solver.aC
     elseif typeof(solver) == Inflow
         F_χ_Ωdot[pitchPlungeStatesRange,1] = c*(normSparPos-3/4)*solver.AₚInvcₚ
+    elseif typeof(solver) in [BLi,BLo]
+        F_χ_Ωdot[pitchPlungeStatesRange[1:2],1] = c*(normSparPos-3/4)*cnα*solver.aC       
     end
 
     return F_χ_Ωdot

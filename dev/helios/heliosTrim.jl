@@ -4,7 +4,7 @@ using AeroBeams, DelimitedFiles
 wingAirfoil = deepcopy(NACA23012A)
 
 # Option for reduced chord
-reducedChord = false
+reducedChord = true
 
 # Flag to include beam pods 
 beamPods = true
@@ -13,11 +13,12 @@ beamPods = true
 payloadOnWing = false
 
 # Aerodynamic solver
-aeroSolver = Indicial()
+aeroSolver = BLi()
 
 # Set NR system solver 
 relaxFactor = 0.5
-NR = create_NewtonRaphson(ρ=relaxFactor,displayStatus=false)
+maxIter = 50
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=false)
 
 # Airspeed [m/s]
 U = 40*0.3048

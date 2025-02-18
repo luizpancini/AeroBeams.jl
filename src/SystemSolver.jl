@@ -23,6 +23,9 @@
     minConvRateAeroJacUpdate::Real
     minConvRateJacUpdate::Real
     alwaysUpdateJacobian::Bool
+    allowAdvanceThroughUnconvergedAeroStates::Bool
+    aeroStatesResidualRatioThreshold::Float64
+    aeroStatesRelativeErrorThreshold::Float64
 
     # Algorithm variables
     loadFactorStep::Float64 = max(min(maximumLoadFactorStep,0.5),minimumLoadFactorStep)
@@ -55,8 +58,11 @@ Newton-Raphson nonlinear system solver constructor
 - `minConvRateAeroJacUpdate::Real`: minimum convergence rate to skip computation of aerodynamic Jacobians
 - `minConvRateJacUpdate::Real`: minimum convergence rate to skip computation of structural Jacobians
 - `alwaysUpdateJacobian::Bool`: flag to update Jacobians on every iteration
+- `allowAdvanceThroughUnconvergedAeroStates::Bool`: flag to allow the advancement of the algorithm through unconverged aerodynamic states
+- `aeroStatesResidualRatioThreshold::Float64`: threshold ratio of aerodynamic/total residuals in order to allow the above flag
+- `aeroStatesRelativeErrorThreshold::Float64`: threshold relative error in order to allow the above flag
 """
-function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Real=1e6,maximumRelativeError::Real=1e6,initialLoadFactor::Real=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Real=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Real=2.0,minConvRateJacUpdate::Real=2.0,alwaysUpdateJacobian::Bool=true)
+function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeTolerance::Float64=1e-8,maximumIterations::Int64=20,desiredIterations::Int64=5,maximumAbsoluteError::Real=1e6,maximumRelativeError::Real=1e6,initialLoadFactor::Real=1.0,minimumLoadFactor::Float64=0.01,maximumLoadFactorStep::Float64=0.5,minimumLoadFactorStep::Float64=0.01,ρ::Real=1.0,trackingLoadSteps::Bool=true,displayStatus::Bool=false,minConvRateAeroJacUpdate::Real=2.0,minConvRateJacUpdate::Real=2.0,alwaysUpdateJacobian::Bool=true,allowAdvanceThroughUnconvergedAeroStates::Bool=false,aeroStatesResidualRatioThreshold::Float64=0.95,aeroStatesRelativeErrorThreshold::Float64=1e-2)
 
     @assert maximumIterations > 1 "maximumIterations must be greater than 1"
     @assert desiredIterations > 1 "desiredIterations must be greater than 1"
@@ -67,8 +73,9 @@ function create_NewtonRaphson(; absoluteTolerance::Float64=1e-8,relativeToleranc
     @assert 0.5 <= ρ <= 1 "relaxation factor for trim variables (ρ) must be between 0.5 and 1.0"
     @assert minConvRateAeroJacUpdate > 1 "minConvRateAeroJacUpdate to skip calculation of aerodynamic derivatives must be greater than 1"
     @assert minConvRateJacUpdate > 1 "minConvRateJacUpdate to skip update of Jacobian matrix must be greater than 1"
+    @assert 0 < aeroStatesResidualRatioThreshold < 1 "aeroStatesResidualRatioThreshold must be between 0 and 1"
 
-    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRateAeroJacUpdate=minConvRateAeroJacUpdate,minConvRateJacUpdate=minConvRateJacUpdate,alwaysUpdateJacobian=alwaysUpdateJacobian)
+    return NewtonRaphson(absoluteTolerance=absoluteTolerance,relativeTolerance=relativeTolerance,maximumIterations=maximumIterations,desiredIterations=desiredIterations,maximumAbsoluteError=maximumAbsoluteError,maximumRelativeError=maximumRelativeError,initialLoadFactor=initialLoadFactor,minimumLoadFactor=minimumLoadFactor,maximumLoadFactorStep=maximumLoadFactorStep,minimumLoadFactorStep=minimumLoadFactorStep,ρ=ρ,trackingLoadSteps=trackingLoadSteps,displayStatus=displayStatus,minConvRateAeroJacUpdate=minConvRateAeroJacUpdate,minConvRateJacUpdate=minConvRateJacUpdate,alwaysUpdateJacobian=alwaysUpdateJacobian,allowAdvanceThroughUnconvergedAeroStates=allowAdvanceThroughUnconvergedAeroStates,aeroStatesResidualRatioThreshold=aeroStatesResidualRatioThreshold,aeroStatesRelativeErrorThreshold=aeroStatesRelativeErrorThreshold)
 
 end
 export create_NewtonRaphson
@@ -78,7 +85,7 @@ export create_NewtonRaphson
 function solve_NewtonRaphson!(problem::Problem)
 
     # Unpack system solver
-    @unpack absoluteTolerance,relativeTolerance,maximumIterations,desiredIterations,maximumAbsoluteError,maximumRelativeError,minimumLoadFactor,loadFactorStep,maximumLoadFactorStep,minimumLoadFactorStep,trackingLoadSteps,displayStatus,convergedFinalSolution,convergedPartialSolution,alwaysUpdateJacobian,minConvRateJacUpdate = problem.systemSolver
+    @unpack absoluteTolerance,relativeTolerance,maximumIterations,desiredIterations,maximumAbsoluteError,maximumRelativeError,minimumLoadFactor,loadFactorStep,maximumLoadFactorStep,minimumLoadFactorStep,trackingLoadSteps,displayStatus,convergedFinalSolution,convergedPartialSolution,alwaysUpdateJacobian,minConvRateJacUpdate,allowAdvanceThroughUnconvergedAeroStates,aeroStatesResidualRatioThreshold,aeroStatesRelativeErrorThreshold = problem.systemSolver
 
     # Reset converged solution flag and load factor step
     convergedPartialSolution = convergedFinalSolution = false
@@ -144,6 +151,11 @@ function solve_NewtonRaphson!(problem::Problem)
             end            
             # Check iterations count
             if iter == maximumIterations
+                # Check special case
+                if allowAdvanceThroughUnconvergedAeroStates && norm(residual[problem.model.DOF_χ_all])/ϵ_abs > aeroStatesResidualRatioThreshold && ϵ_rel < aeroStatesRelativeErrorThreshold
+                    convergedPartialSolution = true
+                    println("Advancing through unconverged aero states...")
+                end
                 break
             end
         end   

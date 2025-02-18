@@ -9,11 +9,15 @@ kᵤ = 0.2
 Ma = 0.3
 U₀ = Ma*atmosphere.a
 
+# Aerodynamic solver
+circulatoryIndicialFunction = "Jose"
+aeroSolver = Indicial(circulatoryIndicialFunction=circulatoryIndicialFunction)
+
 # Wing surface
-airfoil = create_Airfoil(name="flatPlate",Ma=Ma)
 chord = 0.1
 normSparPos = 1/4
-surf = create_AeroSurface(airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=false)
+airfoil = create_Airfoil(name="flatPlate",Ma=Ma,U=U₀,b=chord/2)
+surf = create_AeroSurface(solver=aeroSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=false)
 
 # Wing pitch
 θ = 1*π/180

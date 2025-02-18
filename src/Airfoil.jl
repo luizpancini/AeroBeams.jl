@@ -246,7 +246,7 @@ end
 # - `ztd::Real`
 # - `ztu::Real`
 # - `zm::Real`
-# - `λbWMat::Matrix{Float64}`
+# - `γbCMat::Matrix{Float64}`
 #
 @with_kw mutable struct BLiParameters
 
@@ -333,7 +333,7 @@ end
     ztd::Real
     ztu::Real
     zm::Real
-    λbWMat::Matrix{Float64}
+    γbCMat::Matrix{Float64}
     
     function BLiParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
@@ -428,7 +428,7 @@ end
             ztuRng =        [1.00;  1.00;  1.00;  1.00;  1.00; 1.00; 1.00; 1.00]
             zmRng =         [2.31;  2.02;  2.50;  1.68;  1.47; 1.49; 1.48; 1.25]
             # Fixed parameters
-            λbWMat = Diagonal([2.5; 0.8])
+            γbCMat = Diagonal([2.5; 0.8])
         elseif name in ["NACA0012-GU","NACA0015","NACA0015-s"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.078,min(0.155,Ma))
@@ -519,7 +519,7 @@ end
             ztuRng =               [0.00;    0.00;    0.00]
             zmRng =                [1.59;    1.65;    1.84]
             # Fixed parameters
-            λbWMat = Diagonal([2.5; 0.8])
+            γbCMat = Diagonal([2.5; 0.8])
         elseif name in ["NACA0018"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.062,min(0.15,Ma))
@@ -610,7 +610,7 @@ end
             ztuRng =               [0.00;   0.00;    0.00;    0.00]
             zmRng =                [2.30;   3.84;    2.83;    2.97]
             # Fixed parameters
-            λbWMat = Diagonal([1.0; 1.0])
+            γbCMat = Diagonal([1.0; 1.0])
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -664,7 +664,7 @@ end
             ζₐRng =              [0.20;     0.20]
             cd₀Rng =                [0.003;    0.003]  
             cm₀Rng =                [0.050;    0.050]
-            cnαRng =      2*π*[1.08;     1.08]  
+            cnαRng =      2π/β*[1.08;     1.08]  
             dtRng =         π/180*[1.8;      1.8]    
             dmRng =         π/180*[-1.9;     -1.9] 
             E₀Rng =                  [1.76;     1.76]  
@@ -677,8 +677,8 @@ end
             fbTRng =                [0.80;     0.80]
             gᵥRng =                 [0.18;     0.18] 
             gᵥ₂Rng =                [-0.48;    -0.48]
-            K₀Rng =                  [-0.01;   -0.01]  
-            K₁Rng =                  [-0.17;    -0.17] 
+            K₀Rng =                  [-0.008;   -0.008]  
+            K₁Rng =                  [-0.171;    -0.171] 
             K₂Rng =                  [0.015;    0.015]   
             r₀Rng =             1e-2*[1.62;     1.62]  
             S1NRng =         π/180*[2.50;     2.50]
@@ -701,7 +701,7 @@ end
             ztuRng =               [0.10;     0.10]
             zmRng =                [1.72;     1.72]
             # Fixed parameters
-            λbWMat = Diagonal([1.0; 1.0])
+            γbCMat = Diagonal([1.5; 1.0])
         elseif name in ["VERTOL23010"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.2,min(0.6,Ma))
@@ -792,7 +792,7 @@ end
             ztuRng =               [0.00;    0.00;    0.00]
             zmRng =                [0.5;     3.0;      0.5]
             # Fixed parameters
-            λbWMat = Diagonal([2.5; 0.8])    
+            γbCMat = Diagonal([2.5; 0.8])
         elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -883,7 +883,7 @@ end
             ztuRng =               [0.0;     0.0]
             zmRng =                [1.0;     1.0]
             # Fixed parameters
-            λbWMat = Diagonal([1.0; 1.0])
+            γbCMat = Diagonal([1.0; 1.0])
         else
             error("Airfoil not listed")
         end
@@ -982,7 +982,7 @@ end
             Tv₂ *= b/U
         end
 
-        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cm₀,cnα,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tg,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,λbWMat)
+        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cm₀,cnα,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tg,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,γbCMat)
     end
 
 end
@@ -1016,6 +1016,7 @@ end
 # - `Tp::Real`
 # - `Tv₀::Real`
 # - `TvL::Real`
+# - `γbCMat::Matrix{Float64}`
 #
 @with_kw mutable struct BLoParameters
 
@@ -1042,6 +1043,7 @@ end
     Tp::Real
     Tv₀::Real
     TvL::Real
+    γbCMat::Matrix{Float64}
     
     function BLoParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
@@ -1075,6 +1077,8 @@ end
             TpRng = [1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.7; 1.8; 2.0; 2.5; 3.0; 3.3; 4.3]
             Tv₀Rng = [6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 4.0]
             TvLRng = [4.0; 5.0; 5.0; 5.0; 5.0; 5.0; 5.0; 9.0; 9.0; 9.0; 9.0; 9.0; 9.0]
+            # Fixed parameters
+            γbCMat = Diagonal([2.5; 0.8])
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -1104,6 +1108,8 @@ end
             TpRng = [1.7; 1.7]
             Tv₀Rng = [5.0; 5.0]
             TvLRng = [5.0; 5.0]
+            # Fixed parameters
+            γbCMat = Diagonal([1.5; 1.0])
         elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","VERTOL23010","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -1133,6 +1139,8 @@ end
             TpRng = [1.7; 1.7]
             Tv₀Rng = [6.0; 6.0]
             TvLRng = [5.0; 5.0]
+            # Fixed parameters
+            γbCMat = Diagonal([1.0; 1.0])
         else
             error("Airfoil not listed")
         end
@@ -1170,7 +1178,7 @@ end
             TvL *= b/U
         end
 
-        return new(α₀N,α1₀,δα,ϵₙ,ϵₘ,η,cd₀,cm₀,cn₁,cnα,Df,E₀,f₀,fb,K₀,K₁,K₂,S1,S2,Tf₀,Tp,Tv₀,TvL)
+        return new(α₀N,α1₀,δα,ϵₙ,ϵₘ,η,cd₀,cm₀,cn₁,cnα,Df,E₀,f₀,fb,K₀,K₁,K₂,S1,S2,Tf₀,Tp,Tv₀,TvL,γbCMat)
     end
 
 end

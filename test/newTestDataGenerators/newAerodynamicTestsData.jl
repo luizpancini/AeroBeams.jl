@@ -1,11 +1,11 @@
 # New reference data for aerodynamic tests
 
 # Dynamic analysis of a harmonically pitching airfoil, using the dynamic stall model
-include("../examples/DSModelTest.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/DSModelTest"))
-writedlm("test/newTestDataGenerators/DSModelTest/cn.txt", cn)
-writedlm("test/newTestDataGenerators/DSModelTest/cm.txt", cm)
-writedlm("test/newTestDataGenerators/DSModelTest/ct.txt", ct)
+include("../examples/pitchingAirfoilDSModelTest.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/pitchingAirfoilDSModelTest"))
+writedlm("test/newTestDataGenerators/pitchingAirfoilDSModelTest/"*frameString*"_cn.txt", cn)
+writedlm("test/newTestDataGenerators/pitchingAirfoilDSModelTest/"*frameString*"_cm.txt", cm)
+writedlm("test/newTestDataGenerators/pitchingAirfoilDSModelTest/"*frameString*"_ct.txt", ct)
 
 # Dynamic analysis of an airfoils with harmonic flap deflection profile
 include("../examples/flapOscillation.jl")
