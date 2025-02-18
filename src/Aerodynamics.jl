@@ -496,13 +496,11 @@ function gust_effective_normalwash(element::Element,χ)
         return 0
     end
 
-    @unpack solver,b = element.aero
-    @unpack βₚ² = element.aero.flowParameters
-    @unpack Uᵢ = element.aero.flowVelocitiesAndRates
+    @unpack Θ = element.aero.flowParameters
     @unpack AGbG = element.aero.gustLoadsSolver
 
     # Effective gust-induced normalwash
-    wₑg = Uᵢ/b*βₚ²*dot(AGbG,χ[linearGustStatesRange])
+    wₑg = Θ*dot(AGbG,χ[linearGustStatesRange])
 
     return wₑg
 end
@@ -612,7 +610,7 @@ function attached_flow_state_matrices!(element::Element,δNow)
     # Flap-induced flow states
     if !isnothing(flapStatesRange)
         @unpack aCf,bCfMat = element.aero.flapLoadsSolver
-        # Get the rate of cnαwFlap
+        # Get the rate of cnα*wFlap
         cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
         A[flapStatesRange,flapStatesRange] .= -Θ*bCfMat
@@ -665,9 +663,9 @@ function BLi_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
         BLi_DSV_loads!(element)
     end
 
-    # Update impulsive parameters, if applicable
+    # Update inertial parameters, if applicable
     if !element.aero.solver.incompressibleInertialLoads
-        BLi_update_impulsive_parameters!(element)
+        BLi_update_inertial_parameters!(element)
     end
 
     # Normal force coefficient
@@ -1018,8 +1016,8 @@ function BLi_stall_time!(problem::Problem,element::Element)
 end
 
 
-# Updates the impulsive (inertial) parameters for the modified Beddoes-Leishman model
-function BLi_update_impulsive_parameters!(element::Element)
+# Updates the inertial indicial parameters for the modified Beddoes-Leishman model
+function BLi_update_inertial_parameters!(element::Element)
 
     @unpack c = element.aero
     @unpack aC,bC,aI,bI = element.aero.solver
@@ -1342,7 +1340,7 @@ function BLi_state_matrices!(element::Element,δNow)
     # Flap-induced flow states
     if !isnothing(flapStatesRange)
         @unpack aCf,bCfMat = element.aero.flapLoadsSolver
-        # Get the rate of cnαwFlap
+        # Get the rate of cnα*wFlap
         cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
         A[flapStatesRange,flapStatesRange] .= -Θ*bCfMat
@@ -1392,9 +1390,9 @@ function BLo_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
     # Time delay constants
     BLo_time_delays!(element)
 
-    # Update impulsive parameters, if applicable
+    # Update inertial parameters, if applicable
     if !element.aero.solver.incompressibleInertialLoads
-        BLo_update_impulsive_parameters!(element)
+        BLo_update_inertial_parameters!(element)
     end
 
     # Normal force coefficient
@@ -1588,11 +1586,11 @@ function BLo_time_delays!(element::Element)
 end
 
 
-# Updates the impulsive (inertial) parameters for the original Beddoes-Leishman model
-function BLo_update_impulsive_parameters!(element::Element)
+# Updates the inertial indicial parameters for the original Beddoes-Leishman model
+function BLo_update_inertial_parameters!(element::Element)
 
     @unpack c = element.aero
-    @unpack a,b = element.aero.solver
+    @unpack aC,bC,aI,bI = element.aero.solver
     @unpack Ma,βₚ = element.aero.flowParameters
     @unpack γbCMat = element.aero.airfoil.parametersBLo
 
@@ -1805,7 +1803,7 @@ function BLo_state_matrices!(element::Element,δNow)
     # Flap-induced flow states
     if !isnothing(flapStatesRange)
         @unpack aCf,bCfMat = element.aero.flapLoadsSolver
-        # Get the rate of cnαwFlap
+        # Get the rate of cnα*wFlap
         cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
         A[flapStatesRange,flapStatesRange] .= -Θ*bCfMat
@@ -1873,12 +1871,12 @@ function update_initial_aero_states!(problem::Problem;preInitialization::Bool=fa
         elseif typeof(solver) == BLi
             # Update kinematics
             BLi_kinematics!(element)
-            # Update impulsive parameters, if applicable
+            # Update inertial parameters, if applicable
             if !solver.incompressibleInertialLoads
-                BLi_update_impulsive_parameters!(element)
+                BLi_update_inertial_parameters!(element)
             end
             # Unpack data
-            @unpack incompressibleInertialLoads,bC,aC = solver
+            @unpack incompressibleInertialLoads,bC,aC,bI = solver
             @unpack Ta,cnα,γbCMat = element.aero.airfoil.parametersBLi
             @unpack α = element.aero.flowAnglesAndRates
             @unpack q,R = element.aero.BLiKin
@@ -1896,12 +1894,12 @@ function update_initial_aero_states!(problem::Problem;preInitialization::Bool=fa
         elseif typeof(solver) == BLo
             # Update kinematics
             BLo_motion_qualifiers!(element)
-            # Update impulsive parameters, if applicable
+            # Update inertial parameters, if applicable
             if !solver.incompressibleInertialLoads
-                BLo_update_impulsive_parameters!(element)
+                BLo_update_inertial_parameters!(element)
             end
             # Unpack data
-            @unpack incompressibleInertialLoads,bC,aC = solver
+            @unpack incompressibleInertialLoads,bC,aC,bI = solver
             @unpack α = element.aero.flowAnglesAndRates
             @unpack α₀N,α1₀,cnα,f₀,fb,S1,S2,Tf₀,Tv₀,Tp,γbCMat = element.aero.airfoil.parametersBLo
             @unpack q,Ka,Kq,KaM,KqM,Tᵢ = element.aero.BLoFlow
@@ -1922,7 +1920,7 @@ function update_initial_aero_states!(problem::Problem;preInitialization::Bool=fa
             # Unpack data
             @unpack δNow = element.aero
             @unpack aCf,bCf = element.aero.flapLoadsSolver
-            # Flap normalwash rate
+            # Get the rate of cnα*wFlap
             cnαwdotFlap = cnαwFlap_rate(element,δNow)
             # Flap states
             χ[flapStatesRange] = cnαwdotFlap*aCf./(Θ*bCf)

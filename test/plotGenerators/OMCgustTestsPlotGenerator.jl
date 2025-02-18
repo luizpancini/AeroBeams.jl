@@ -18,7 +18,7 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
     # Loop gust solver
     for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
         # Loop test cases
-        for (k,testCase) in enumerate(1:6)
+        for k in tests
             # Aerodynamic solver name
             if typeof(aeroSolver) == QuasiSteady
                 aeroSolverName = "QS"
@@ -34,7 +34,7 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
             # Gust indicial solver name
             gustSolverName = gustLoadsSolver.indicialFunctionName
             # Set paths
-            relPath = string("/test/outputs/figures/OMCgustTests/",aeroSolverName,"_",gustSolverName,"_test",testCase)
+            relPath = string("/test/outputs/figures/OMCgustTests/",aeroSolverName,"_",gustSolverName,"_test",k)
             absPath = string(pwd(),relPath)
             mkpath(absPath)
             # Lift coefficient increment over time

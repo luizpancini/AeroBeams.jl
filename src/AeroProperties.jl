@@ -807,8 +807,8 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     # Set aerodynamic states' ranges (assume no gust states are active, update later upon model creation)
     pitchPlungeStatesRange = typeof(solver) in [QuasiSteady] ? nothing : 1:solver.nStates
     if typeof(solver) in [BLi,BLo]
-        linearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange[1:8]
-        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:end] : pitchPlungeStatesRange[9:end]
+        linearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange[1:7]
+        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:end] : pitchPlungeStatesRange[8:end]
     else
         linearPitchPlungeStatesRange = pitchPlungeStatesRange
         nonlinearPitchPlungeStatesRange = nothing

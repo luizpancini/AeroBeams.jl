@@ -26,7 +26,7 @@ include("../examples/OMCgustTests.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/OMCgustTests"))
 for (i,aeroSolver) in enumerate(aeroSolvers)
     for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-        for (k,testCase) in enumerate(1:6)
+        for (k,testCase) in enumerate(tests)
             if typeof(aeroSolver) == QuasiSteady
                 aeroSolverName = "QS"
             elseif typeof(aeroSolver) == Indicial
@@ -54,7 +54,7 @@ include("../examples/SEgustTests.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/SEgustTests"))
 for (i,aeroSolver) in enumerate(aeroSolvers)
     for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-        for (k,testCase) in enumerate(1:3)
+        for (k,testCase) in enumerate(tests)
             if typeof(aeroSolver) == QuasiSteady
                 aeroSolverName = "QS"
             elseif typeof(aeroSolver) == Indicial
