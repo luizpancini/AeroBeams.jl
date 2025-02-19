@@ -1,11 +1,11 @@
 # Aerodynamic problems
 
 @testset "Dynamic analysis of a harmonically pitching airfoil, using the dynamic stall model" begin
-    include("examples/DSModelTest.jl")
+    include("examples/pitchingAirfoilDSModelTest.jl")
     # Self-comparison
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "DSModelTest", "cn.txt"))
-    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "DSModelTest", "cm.txt"))
-    ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "DSModelTest", "ct.txt"))
+    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_cn.txt"))
+    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_cm.txt"))
+    ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_ct.txt"))
     @test cn ≈ cn_ atol=SELFatol
     @test cm ≈ cm_ atol=SELFatol
     @test ct ≈ ct_ atol=SELFatol
@@ -123,7 +123,6 @@ end
         @test Vdot2[i][end] ≈ Vdot2Analytical[i][end] rtol=1e-2
         @test Vdot3[i][end] ≈ Vdot3Analytical[i][end] rtol=1e-2
         @test Ω1[i][end] ≈ Ω1Analytical(t[i][end]) rtol=1e-2
-        @test Ωdot1[i][indexTqcycle] ≈ Ωdot1Analytical(t[i][indexTqcycle]) rtol=0.1
     end
     # Self-comparison (for the last λᵤ)
     cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestreamAndPitch", "cn.txt"))

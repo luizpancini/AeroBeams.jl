@@ -9,12 +9,19 @@ kᵤ = 0.2
 Ma = 0.3
 U₀ = Ma*atmosphere.a
 
+# Aerodynamic solver
+circulatoryIndicialFunction = "Jose"
+incompressibleInertialLoads = false
+aeroSolver = BLi(circulatoryIndicialFunction=circulatoryIndicialFunction,incompressibleInertialLoads=incompressibleInertialLoads)
+
 # Wing surface and solver
-aeroSolver = Indicial()
-airfoil = create_Airfoil(name="flatPlate",Ma=Ma)
 chord = 0.1
 normSparPos = 1/4
+airfoil = create_Airfoil(name="flatPlate",Ma=Ma,U=U₀,b=chord/2)
 surf = create_AeroSurface(solver=aeroSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=false)
+
+# Number of cycles to run for each case
+cycles = 10
 
 # Wing pitch and rates as functions of time
 kₚ = 0.2
@@ -22,7 +29,7 @@ kₚ = 0.2
 τₚ = 2π/ωₚ
 θ₀ = 1*π/180
 Δθ = 1*π/180
-θ = t -> @. θ₀ + Δθ*sin(ωₚ*t)*((t/τₚ)^10/(1+(t/τₚ)^10)) # slowly build-up the pitch profile to avoid instability of inertial aerodynamic loads
+θ = t -> @. θ₀ + Δθ*sin(ωₚ*t)*((t/τₚ)^5/(1+(t/τₚ)^5)) # slowly build-up the pitch profile to avoid instability of inertial aerodynamic loads
 p = t -> 4*tan(θ(t)/4)
 θdot = iszero(Δθ) ? t -> 0 : t -> ForwardDiff.derivative(θ,t)
 θddot = iszero(Δθ) ? t -> 0 : t -> ForwardDiff.derivative(θdot,t)
@@ -32,7 +39,7 @@ pddot = iszero(Δθ) ? t -> 0 : t -> ForwardDiff.derivative(pdot,t)
 # Wing beam
 L = 1
 nElem = 1
-∞ = 1e12
+∞ = 1e14
 wing = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],rotationParametrization="E321",p0=[0;0;0],pdot0_of_x1=[pdot(0);0;0],aeroSurface=surf)
 
 # BCs
@@ -72,11 +79,10 @@ for (i,λᵤ) in enumerate(λᵤRange)
     set_motion_basis_A!(model=timeVaryingFreestreamAndPitch,v_A=t->[0;U(t);0])
     # Time variables
     T = 2π/ωᵤ
-    cycles = 20
     tf = cycles*T
     Δt = T/200
     # Initial velocities update options
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,displayProgress=false, relaxFactor=0.5, Δt=Δt/1e3)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=4,displayProgress=false, relaxFactor=0.5, Δt=Δt/1e4)
     # Create and solve problem
     global problem = create_DynamicProblem(model=timeVaryingFreestreamAndPitch,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
     solve!(problem)
@@ -118,7 +124,7 @@ cmCFDLambda0_2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryi
 cnCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cnCFDLambda0_4.txt"))
 cmCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_4.txt"))
 cnCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cnCFDLambda0_6.txt"))
-cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_2.txt"))
+cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_6.txt"))
 cnCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cnCFDLambda0_8.txt"))
 cmCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_8.txt"))
 

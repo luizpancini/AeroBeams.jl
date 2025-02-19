@@ -9,11 +9,16 @@ kᵤ = 0.2
 Ma = 0.3
 U₀ = Ma*atmosphere.a
 
+# Aerodynamic solver
+circulatoryIndicialFunction = "Jose"
+incompressibleInertialLoads = true
+aeroSolver = BLo(circulatoryIndicialFunction=circulatoryIndicialFunction,incompressibleInertialLoads=incompressibleInertialLoads)
+
 # Wing surface
-airfoil = create_Airfoil(name="flatPlate",Ma=Ma)
 chord = 0.1
 normSparPos = 1/4
-surf = create_AeroSurface(airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=false)
+airfoil = create_Airfoil(name="flatPlate",Ma=Ma,U=U₀,b=chord/2)
+surf = create_AeroSurface(solver=aeroSolver,airfoil=airfoil,c=chord,normSparPos=normSparPos,updateAirfoilParameters=false)
 
 # Wing pitch
 θ = 1*π/180
@@ -93,7 +98,7 @@ cmCFDLambda0_2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryi
 cnCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_4.txt"))
 cmCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_4.txt"))
 cnCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_6.txt"))
-cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_2.txt"))
+cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_6.txt"))
 cnCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_8.txt"))
 cmCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_8.txt"))
 

@@ -4,7 +4,7 @@ using AeroBeams
 wingAirfoil = deepcopy(NACA23012A)
 
 # Option for reduced chord
-reducedChord = true
+reducedChord = false
 
 # Option to include beam pods
 beamPods = true

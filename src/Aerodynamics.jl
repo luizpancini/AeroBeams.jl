@@ -31,8 +31,6 @@ function aero_steady_kinematics!(element::Element,V,Ω)
     @pack! element.aero.flowAnglesAndRates = α,β
     @pack! element.aero.flowVelocitiesAndRates = U,U∞,Uₛ,Uₜ,Uₙ,Uᵢ,Ωₐ,UₙMid,UₙTQC
 
-    return Uₜ,Uₙ,Uᵢ,α,UₙTQC
-
 end
 
 
@@ -64,7 +62,6 @@ function aero_unsteady_kinematics!(element::Element,Vdot,Ωdot)
     @pack! element.aero.flowAnglesAndRates = αdot
     @pack! element.aero.flowVelocitiesAndRates = Udot,Uₜdot,Uₙdot,Uᵢdot,Ωₐdot,UₙdotMid,UₙdotTQC
 
-    return Uᵢdot,UₙdotTQC,αdot
 end
 
 
@@ -92,9 +89,9 @@ function nondimensional_flow_parameters!(model::Model,element::Element)
     Tᵢ = c/a
 
     @pack! element.aero.flowParameters = Re,Ma,βₚ,βₚ²,Θ
+    @pack! element.aero.BLiFlow = Tᵢ
     @pack! element.aero.BLoFlow = Tᵢ
 
-    return βₚ,βₚ²,Θ
 end
 
 
@@ -367,7 +364,7 @@ function attached_flow_cm!(element::Element,δNow)
         cmI -= ϵₘ/(2*Uᵢ^2)*(Uᵢ^2*Th[14]*δNow+Uᵢ*b*Th[15]*δdotNow+b^2*Th[16]*δddotNow)
     end
 
-    # Rotation-induced component (this is the increment due to the fact that UₙdotMid acts at midchord but the normal force is at the 3/4-chord)
+    # Rotation-induced component
     cmRot = -π/4*b*Ωₐ/Uᵢ
 
     # Total at attachment point
@@ -423,14 +420,13 @@ function pitch_plunge_effective_normalwash(element::Element,χ)
     # Effective pitch-plunge-induced normalwash
     if typeof(solver) == QuasiSteady
         wₑp = UₙTQC
-    elseif typeof(solver) in [Indicial,BLi]
+    elseif typeof(solver) == Indicial
         wₑp = UₙTQC-sum(χ[linearPitchPlungeStatesRange])/cnα
     elseif typeof(solver) == Inflow
         @unpack bₚ = solver
-        wₑp = UₙTQC-1/2*dot(bₚ,χ[linearPitchPlungeStatesRange])  
-    elseif typeof(solver) == BLo
-        @unpack a1b1a2b2 = solver
-        wₑp = Θ*dot(a1b1a2b2,χ[1:2])
+        wₑp = UₙTQC-1/2*dot(bₚ,χ[linearPitchPlungeStatesRange])
+    elseif typeof(solver) in [BLi,BLo]
+        wₑp = UₙTQC-sum(χ[1:2])/cnα
     end
 
     return wₑp
@@ -500,13 +496,11 @@ function gust_effective_normalwash(element::Element,χ)
         return 0
     end
 
-    @unpack solver,b = element.aero
-    @unpack βₚ² = element.aero.flowParameters
-    @unpack Uᵢ = element.aero.flowVelocitiesAndRates
+    @unpack Θ = element.aero.flowParameters
     @unpack AGbG = element.aero.gustLoadsSolver
 
     # Effective gust-induced normalwash
-    wₑg = Uᵢ/b*βₚ²*dot(AGbG,χ[linearGustStatesRange])
+    wₑg = Θ*dot(AGbG,χ[linearGustStatesRange])
 
     return wₑg
 end
@@ -600,12 +594,12 @@ function attached_flow_state_matrices!(element::Element,δNow)
 
     # Pitch-plunge-induced flow states
     if typeof(solver) == Indicial
-        @unpack AW,bWMat = element.aero.solver
+        @unpack aC,bCMat = element.aero.solver
         # Get the rate of cnαUₙTQC
         cnαUₙTQCdot = cnαUₙTQC_rate(element)
         # Set state matrices
-        A[pitchPlungeStatesRange,pitchPlungeStatesRange] .= -Θ*bWMat
-        B[pitchPlungeStatesRange] .= cnαUₙTQCdot*AW
+        A[pitchPlungeStatesRange,pitchPlungeStatesRange] .= -Θ*bCMat
+        B[pitchPlungeStatesRange] .= cnαUₙTQCdot*aC
     elseif typeof(solver) == Inflow
         @unpack AₚInv,AₚInvcₚ = element.aero.solver
         # Set state matrices
@@ -615,12 +609,12 @@ function attached_flow_state_matrices!(element::Element,δNow)
 
     # Flap-induced flow states
     if !isnothing(flapStatesRange)
-        @unpack AWf,bWfMat = element.aero.flapLoadsSolver
-        # Get the rate of cnαwFlap
+        @unpack aCf,bCfMat = element.aero.flapLoadsSolver
+        # Get the rate of cnα*wFlap
         cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
-        A[flapStatesRange,flapStatesRange] .= -Θ*bWfMat
-        B[flapStatesRange] .= cnαwdotFlap*AWf
+        A[flapStatesRange,flapStatesRange] .= -Θ*bCfMat
+        B[flapStatesRange] .= cnαwdotFlap*aCf
     end
 
     # Gust-induced flow states
@@ -669,11 +663,16 @@ function BLi_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
         BLi_DSV_loads!(element)
     end
 
+    # Update inertial parameters, if applicable
+    if !element.aero.solver.incompressibleInertialLoads
+        BL_update_inertial_parameters!(element)
+    end
+
     # Normal force coefficient
-    BLi_cn!(element,δNow)
+    BLi_cn!(element,χ,δNow)
 
     # Pitching moment coefficient about the spar position
-    BLi_cm!(element,δNow)
+    BLi_cm!(element,χ,δNow)
 
     # Tangential flow coefficient
     BLi_ct!(element,δNow)
@@ -689,8 +688,11 @@ function BLi_kinematics!(element::Element)
     @unpack αdot = element.aero.flowAnglesAndRates
     @unpack r₀ = element.aero.airfoil.parametersBLi
 
-    # Reduced non-dimensional pitch rate (round off to suppress noise)
-    r = round_off!(αdot*c/2/Uᵢ,1e-12)
+    # Non-dimensional pitch rate (round off to suppress noise)
+    q = round_off!(αdot*c/Uᵢ,1e-8)
+
+    # Reduced non-dimensional pitch rate
+    r = q/2
 
     # Unsigned ratio of reduced pitch rate to critical pitch rate
     qR = abs(r)/r₀
@@ -698,7 +700,7 @@ function BLi_kinematics!(element::Element)
     # Unsigned capped reduced pitch rate ratio 
     R = min(1, qR)
 
-    @pack! element.aero.BLiKin = r,qR,R
+    @pack! element.aero.BLiKin = q,r,qR,R
 
 end
 
@@ -800,9 +802,9 @@ function BLi_breakpoint_angles!(element::Element)
         fR = R/min(1, qRmax)*sqrtOfR
         δα1N = (αds₀-αₛₛ)*RD        
         δα1M = δα1N+dm*fR                                  
-        δα1T = δα1N*+dt*fR                                   
+        δα1T = δα1N+dt*fR                                   
     else 
-        δα1N = S == true ? -min(α1₀N/2, δα₀+δα₁*qR*(1+P)) : 0
+        δα1N = S ? -min(α1₀N/2, δα₀+δα₁*qR*(1+P)) : 0
         δα1M = δα1N*(1-zm*sqrtOfR*(1-P/2))                               
         δα1T = δα1N*(1-ztd*sqrtOfR*(1-P/4))    
     end
@@ -872,16 +874,15 @@ function BLi_separation_points!(element::Element)
         S1PrimeN = upstroke ? S1N*(1+βS1Nu*RD) : S1N*(1+βS1Nd*RD)
         fPrimeN = 1-(1-fbN)*exp(αDiffN/S1PrimeN)
     else
-        αDiffN = α1N-absαlag
+        αDiffN = α1N - absαlag
         if upstroke  
             S2PrimeN = S2N*(1+βS2Nu*RD+βS2Nlpr*(1-RD)^2*(1-T)+βσ2N*σ*RD*(1-RD))
-            f₀N2 = f₀N
+            f₀Nprime = f₀N
         else                
-            f₀N2 = !S ? fbN-0.2 : f₀N
-            f₀N2 = min(0.25, (1-sqrtOfR)*(f₀N2+ξRD_tv0*σ))
+            f₀Nprime = min(0.25, (1-sqrtOfR)*((S ? f₀N : fbN-0.2)+ξRD_tv0*σ))
             S2PrimeN = S2N*(1+βS2Nd*RD+βS2Nlpr*(1-RD)^2*(1-T)+βσ2N*σ*RD*(1-RD)+βσ1N*ψ*R)      
         end
-        fPrimeN = f₀N2+(fbN-f₀N2)*exp(αDiffN/S2PrimeN)
+        fPrimeN = f₀Nprime+(fbN-f₀Nprime)*exp(αDiffN/S2PrimeN)
     end
 
     # Pitching moment unsteady lagged separation point based on lagged AoA: fPrimeM
@@ -893,13 +894,12 @@ function BLi_separation_points!(element::Element)
         αDiffM = α1M - absαlag
         if upstroke  
             S2PrimeM = S2M*(1+βS2Mu*RD)
-            f₀M2 = f₀M
+            f₀Mprime = f₀M
         else                
-            f₀M2 = !S ? fbM-0.2 : f₀M
-            f₀M2 = min(0.25, (1-sqrtOfR)*(f₀M2+ξRD_tv0*σ))
+            f₀Mprime = min(0.25, (1-sqrtOfR)*((S ? f₀M : fbM-0.2)+ξRD_tv0*σ))
             S2PrimeM = S2M*(1+βS2Md*RD)
         end
-        fPrimeM = f₀M2+(fbM-f₀M2)*exp(αDiffM/S2PrimeM)
+        fPrimeM = f₀Mprime+(fbM-f₀Mprime)*exp(αDiffM/S2PrimeM)
     end
 
     # Tangential force unsteady lagged separation point based on lagged AoA: fPrimeT
@@ -911,13 +911,12 @@ function BLi_separation_points!(element::Element)
         αDiffT = α1T - absαlag
         if upstroke  
             S2PrimeT = S2T*(1+βS2Tu*RD+βS2Tlpr*(1-RD)^2*(1-T))
-            f₀T2 = f₀T
+            f₀Tprime = f₀T
         else
-            f₀T2 = !S ? fbT-0.2 : f₀T
-            f₀T2 = min(0.25, (1-sqrtOfR)*(f₀T2+ξRD_tv0*σ))
+            f₀Tprime = min(0.25, (1-sqrtOfR)*((S ? f₀T : fbT-0.2)+ξRD_tv0*σ))
             S2PrimeT = S2T*(1+βS2Td*RD+βS2Tlpr*(1-RD)^2*(1-T)+βσ1T*ψ*R)
         end
-        fPrimeT = f₀T2+(fbT-f₀T2)*exp(αDiffT/S2PrimeT)
+        fPrimeT = f₀Tprime+(fbT-f₀Tprime)*exp(αDiffT/S2PrimeT)
     end
 
     @pack! element.aero.BLiFlow = fN,fM,fT,fPrimeN,fPrimeM,fPrimeT
@@ -1163,15 +1162,18 @@ end
 
 
 # Computes normal force coefficient for the modified incompressible Beddoes-Leishman model
-function BLi_cn!(element::Element,δNow)
+function BLi_cn!(element::Element,χ,δNow)
 
-    @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow = element.aero
-    @unpack αₑ = element.aero.flowAnglesAndRates
+    @unpack incompressibleInertialLoads = element.aero.solver
+    @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,normSparPos,c = element.aero
+    @unpack α,αₑ,αdot = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙdotMid = element.aero.flowVelocitiesAndRates
     @unpack α₀N,ϵₙ,cnα = element.aero.airfoil.parametersBLi
     @unpack cnδ = element.aero.airfoil.flapParameters
     @unpack f2primeN = element.aero.BLiStates
     @unpack cnV = element.aero.aeroCoefficients
+    @unpack Ma = element.aero.flowParameters
+    @unpack Kna,Knq,KnM,Tᵢ = element.aero.BLiFlow
 
     # Circulatory component - attached flow
     cnC = cnα * sin(αₑ-α₀N)
@@ -1183,7 +1185,8 @@ function BLi_cn!(element::Element,δNow)
     cnF = cnC * ((1+sqrt(f2primeN))/2)^2
 
     # Inertial component
-    cnI = π*b*UₙdotMid/Uᵢ^2
+    aₕ = 2*normSparPos-1
+    cnI = incompressibleInertialLoads ? π*b*UₙdotMid/Uᵢ^2 : 4/Ma * (α - χ[3]/(Kna*Tᵢ)) + (-2*aₕ)*c/(Uᵢ*Ma) * (αdot - χ[4]/(Knq*Tᵢ)) + 4*α/Ma^2 * (Ma - χ[8]/(KnM*Tᵢ))
     if flapped && typeof(flapLoadsSolver) == ThinAirfoilTheory
         @unpack Th = flapLoadsSolver
         cnI -= ϵₙ*b/Uᵢ^2*(Uᵢ*Th[4]*δdotNow+b*Th[1]*δddotNow)
@@ -1198,17 +1201,20 @@ end
 
 
 # Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the modified incompressible Beddoes-Leishman model
-function BLi_cm!(element::Element,δNow)
+function BLi_cm!(element::Element,χ,δNow)
 
-    @unpack flapLoadsSolver,flapped,b,normSparPos,normFlapPos,δdotNow,δddotNow = element.aero
+    @unpack incompressibleInertialLoads,aI,bI = element.aero.solver
+    @unpack flapLoadsSolver,flapped,b,normSparPos,normFlapPos,δdotNow,δddotNow,c = element.aero
+    @unpack α,αdot = element.aero.flowAnglesAndRates
     @unpack cnF = element.aero.aeroCoefficients
     @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
     @unpack ϵₘ,κ₀,κ₁,κ₂,κ₃,cm₀,cnα,K₀,K₁,K₂ = element.aero.airfoil.parametersBLi
     @unpack cmδ = element.aero.airfoil.flapParameters
     @unpack R = element.aero.BLiKin
-    @unpack stallOnsetRatio,upstroke,S,P = element.aero.BLiFlow
+    @unpack stallOnsetRatio,upstroke,S,P,Kma,Kmq,KmM,Tᵢ = element.aero.BLiFlow
     @unpack f2primeM,RD = element.aero.BLiStates
     @unpack cmV = element.aero.aeroCoefficients
+    @unpack Ma = element.aero.flowParameters
 
     # Center of pressure dynamic variables
     K1Prime = K₁*(1-κ₁*RD*(1-abs(stallOnsetRatio)))-κ₂*R*abs(stallOnsetRatio)*upstroke
@@ -1224,13 +1230,13 @@ function BLi_cm!(element::Element,δNow)
     end
 
     # Inertial component
-    cmI = -π*b/(2*Uᵢ^2)*((1-2*normSparPos)*UₙdotMid+b*Ωₐdot/8)
+    cmI = incompressibleInertialLoads ? -π*b/(2*Uᵢ^2)*((1-2*normSparPos)*UₙdotMid+b*Ωₐdot/8) : -1/Ma * (α - χ[5]*aI[1]/(bI[1]*Kma*Tᵢ) - χ[6]*aI[2]/(bI[2]*Kma*Tᵢ)) -7c/(12*Uᵢ*Ma) * (αdot - χ[7]/(Kmq*Tᵢ)) -α/Ma^2 * (Ma - χ[9]*aI[1]/(bI[1]*KmM*Tᵢ) - χ[10]*aI[2]/(bI[2]*KmM*Tᵢ))
     if flapped && typeof(flapLoadsSolver) == ThinAirfoilTheory
         @unpack Th = flapLoadsSolver
         cmI -= ϵₘ/(2*Uᵢ^2)*(Uᵢ^2*Th[14]*δNow+Uᵢ*b*Th[15]*δdotNow+b^2*Th[16]*δddotNow)
     end
 
-    # Rotation-induced component (this is the increment due to the fact that UₙdotMid acts at midchord but the normal force is at the 3/4-chord)
+    # Rotation-induced component
     cmRot = -π/4*b*Ωₐ/Uᵢ
 
     # Total at attachment point
@@ -1247,7 +1253,7 @@ function BLi_ct!(element::Element,δNow)
     @unpack flapped,flapLoadsSolver = element.aero
     @unpack hasInducedDrag = element.parent.aeroSurface
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack α₀N,α1₀T,η,cd₀,E₀,E₁ = element.aero.airfoil.parametersBLi
+    @unpack α₀N,α1₀T,η,cd₀,cnα,E₀,E₁ = element.aero.airfoil.parametersBLi
     @unpack cdδ = element.aero.airfoil.flapParameters
     @unpack R = element.aero.BLiKin
     @unpack stallOnsetRatio,upstroke,S = element.aero.BLiFlow
@@ -1259,7 +1265,7 @@ function BLi_ct!(element::Element,δNow)
     stallOnsetRatioT = abs(αlag)/α1₀T
 
     # Circulatory component - separated flow
-    ctF = -cd₀/cos(αₑ-α₀N) + (1-η*RD^2)*cnF*sin(αₑ-α₀N)*f2primeT^(1/2+ stallOnsetRatioT + E₀*RD*S*(1-Ts)*R*abs(stallOnsetRatio)^(1/2)*(!upstroke))
+    ctF = -cd₀/cos(αₑ-α₀N) + (1-η*RD^2)*cnF*tan(αₑ-α₀N)*f2primeT^(1/2 + stallOnsetRatioT + E₀*RD*S*(1-Ts)*R*abs(stallOnsetRatio)^(1/2)*(!upstroke))
     if stallOnsetRatioT > 1
         ctF -= E₁ * (1-RD^3) * min(1, stallOnsetRatioT^3-1)
     end
@@ -1285,13 +1291,14 @@ end
 # Computes the aerodynamic state matrices for the modified incompressible Beddoes-Leishman model
 function BLi_state_matrices!(element::Element,δNow)
 
-    @unpack nTotalAeroStates,linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange,flapStatesRange,linearGustStatesRange,nonlinearGustStatesRange,b = element.aero
-    @unpack βₚ²,Θ = element.aero.flowParameters
-    @unpack Ta,λbWMat = element.aero.airfoil.parametersBLi
+    @unpack nTotalAeroStates,linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange,flapStatesRange,linearGustStatesRange,nonlinearGustStatesRange = element.aero
+    @unpack βₚ²,Θ,Ma = element.aero.flowParameters
+    @unpack Ta,γbCMat = element.aero.airfoil.parametersBLi
+    @unpack α,αdot = element.aero.flowAnglesAndRates
     @unpack Uₙ,Uᵢ,UₙdotTQC = element.aero.flowVelocitiesAndRates
     @unpack R = element.aero.BLiKin
-    @unpack Ta_SO,TfN,TfM,TfT,fPrimeN,fPrimeM,fPrimeT = element.aero.BLiFlow
-    @unpack AW,bWMat = element.aero.solver
+    @unpack Ta_SO,TfN,TfM,TfT,fPrimeN,fPrimeM,fPrimeT,Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ = element.aero.BLiFlow
+    @unpack incompressibleInertialLoads,aC,bC,bI,bCMat = element.aero.solver
     @unpack cn = element.aero.aeroCoefficients
 
     # Initialize state matrices with appropriate types
@@ -1301,36 +1308,22 @@ function BLi_state_matrices!(element::Element,δNow)
     # Get the rate of cnαUₙTQC
     cnαUₙTQCdot = cnαUₙTQC_rate(element)
 
-    # Set entries of nonlinear states' matrices
-    tmpA = Vector{typeof(cn)}(undef, 6)
-    tmpB = Vector{typeof(cn)}(undef, 6)
-    tmpA[1] = -1/Ta
-    tmpB[1] = Uₙ/Ta
-    tmpA[2] = -1/TfN
-    tmpB[2] = fPrimeN/TfN
-    tmpA[3] = -1/TfM
-    tmpB[3] = fPrimeM/TfM
-    tmpA[4] = -1/TfT
-    tmpB[4] = fPrimeT/TfT
-    tmpA[5] = -1/(3*Ta)
-    tmpB[5] = R/(3*Ta)
-    tmpA[6] = -1/Ta_SO
-    tmpB[6] = R/Ta_SO
+    # Linear pitch-plunge-induced flow state matrices
+    A[linearPitchPlungeStatesRange,linearPitchPlungeStatesRange] .= incompressibleInertialLoads ? -Θ * bCMat .* γbCMat : -Diagonal([Θ*bC[1]*γbCMat[1,1], Θ*bC[2]*γbCMat[2,2], 1/(Kna*Tᵢ), 1/(Knq*Tᵢ), 1/(bI[1]*Kma*Tᵢ), 1/(bI[2]*Kma*Tᵢ), 1/(Kmq*Tᵢ), 1/(KnM*Tᵢ), 1/(bI[1]*KmM*Tᵢ), 1/(bI[2]*KmM*Tᵢ)])
+    B[linearPitchPlungeStatesRange] .= incompressibleInertialLoads ? cnαUₙTQCdot * aC : [cnαUₙTQCdot*aC[1], cnαUₙTQCdot*aC[2], α, αdot, α, α, αdot, Ma, Ma, Ma]
     
-    # Pitch-plunge-induced flow state matrices
-    A[linearPitchPlungeStatesRange,linearPitchPlungeStatesRange] .= -Θ*bWMat.*λbWMat
-    A[nonlinearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange] .= Diagonal(tmpA)
-    B[linearPitchPlungeStatesRange] .= cnαUₙTQCdot*AW
-    B[nonlinearPitchPlungeStatesRange] .= tmpB
+    # Nonlinear itch-plunge-induced flow state matrices
+    A[nonlinearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange] .= -Diagonal([1/Ta, 1/TfN, 1/TfM, 1/TfT, 1/(3*Ta), 1/Ta_SO])
+    B[nonlinearPitchPlungeStatesRange] .= [Uₙ/Ta, fPrimeN/TfN, fPrimeM/TfM, fPrimeT/TfT, R/(3*Ta), R/Ta_SO]
 
     # Flap-induced flow states
     if !isnothing(flapStatesRange)
-        @unpack AWf,bWfMat = element.aero.flapLoadsSolver
-        # Get the rate of cnαwFlap
+        @unpack aCf,bCfMat = element.aero.flapLoadsSolver
+        # Get the rate of cnα*wFlap
         cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
-        A[flapStatesRange,flapStatesRange] .= -Θ*bWfMat
-        B[flapStatesRange] .= cnαwdotFlap*AWf
+        A[flapStatesRange,flapStatesRange] .= -Θ*bCfMat
+        B[flapStatesRange] .= cnαwdotFlap*aCf
     end
 
     # Gust-induced flow state matrices
@@ -1376,8 +1369,10 @@ function BLo_aero_coefficients!(problem::Problem,element::Element,χ,δNow)
     # Time delay constants
     BLo_time_delays!(element)
 
-    # Update impulsive parameters
-    BLo_update_impulsive_parameters!(element)
+    # Update inertial parameters, if applicable
+    if !element.aero.solver.incompressibleInertialLoads
+        BL_update_inertial_parameters!(element)
+    end
 
     # Normal force coefficient
     BLo_cn!(element,χ,δNow)
@@ -1398,10 +1393,11 @@ end
 function BLo_nonlinear_states!(element::Element,χ)
 
     @unpack nonlinearPitchPlungeStatesRange = element.aero
+    @unpack f₀ = element.aero.airfoil.parametersBLo
 
     cnPprime = χ[nonlinearPitchPlungeStatesRange[1]]
-    f2Prime = χ[nonlinearPitchPlungeStatesRange[2]]
-    fPrimeM = χ[nonlinearPitchPlungeStatesRange[3]]
+    f2Prime = min(max(χ[nonlinearPitchPlungeStatesRange[2]],f₀),1)
+    fPrimeM = min(max(χ[nonlinearPitchPlungeStatesRange[3]],f₀),1)
     cnVP = χ[nonlinearPitchPlungeStatesRange[4]]
     cnVN = χ[nonlinearPitchPlungeStatesRange[5]]
     cnV = cnVP + cnVN
@@ -1421,7 +1417,7 @@ function BLo_motion_qualifiers!(element::Element)
     @unpack cnPprime = element.aero.BLoStates
 
     # Non-dimensional pitch rate (round off to supress noise)
-    q = round_off!(αdot*c/Uᵢ,1e-12)
+    q = round_off!(αdot*c/Uᵢ,1e-8)
 
     # Lagged angle of attack
     αlag = cnPprime/cnα
@@ -1569,31 +1565,14 @@ function BLo_time_delays!(element::Element)
 end
 
 
-# Updates the impulsive (inertial) parameters for the original Beddoes-Leishman model
-function BLo_update_impulsive_parameters!(element::Element)
-
-    @unpack c = element.aero
-    @unpack a,b = element.aero.solver
-    @unpack Ma,βₚ = element.aero.flowParameters
-
-    Ka = 0.75/(1-Ma+π*βₚ*Ma^2*(a[1]*b[1]+a[2]*b[2]))
-    Kq = 0.75/(1-Ma+2π*βₚ*Ma^2*(a[1]*b[1]+a[2]*b[2]))
-    KaM = (a[3]*b[4]+a[4]*b[3])/(b[3]*b[4]*(1-Ma))
-    KqM = 7/(15*(1-Ma)+3π*βₚ*Ma^2*b[5])
-    
-    @pack! element.aero.BLoFlow = Ka,Kq,KaM,KqM
-
-end
-
-
 # Compute the dynamic stall vortex accumulation rate for the original Beddoes-Leishman model
 function BLo_vortex_accumulation_rate!(element::Element,χ)
 
     @unpack c = element.aero
-    @unpack βₚ²,Θ = element.aero.flowParameters
-    @unpack a,b = element.aero.solver
-    @unpack Uₜ,UₙTQC = element.aero.flowVelocitiesAndRates
-    @unpack cnα,TvL = element.aero.airfoil.parametersBLo
+    @unpack Θ = element.aero.flowParameters
+    @unpack aC,bC = element.aero.solver
+    @unpack Uₜ,UₙdotTQC = element.aero.flowVelocitiesAndRates
+    @unpack cnα,TvL,γbCMat = element.aero.airfoil.parametersBLo
     @unpack stallOnsetRatio,Kf,fPrime,Tf = element.aero.BLoFlow
     @unpack f2Prime = element.aero.BLoStates
     @unpack τvP,τvN = element.aero.BLoCompVars
@@ -1603,8 +1582,8 @@ function BLo_vortex_accumulation_rate!(element::Element,χ)
     if abs(stallOnsetRatio) >= 1 && (τvP <= TvL || τvN <= TvL)
         # Kirchhoff-Helmholtz factor time rate
         Kfdot = 1/4*(1+1/sqrt(f2Prime))*(fPrime-f2Prime)/Tf
-        # Circulatory unsteady normal force coefficient time rate (assume cnC ≈ cnα*(αₑ-α₀N), αₑ≈wₑ/Uₜ, and neglect time rate of airspeed)
-        cnCdot = cnα*Θ/Uₜ*(a[1]*b[1]*(-Θ*b[1]*χ[1]+UₙTQC)+a[2]*b[2]*(-Θ*b[2]*χ[2]+UₙTQC))
+        # Circulatory unsteady normal force coefficient time rate (assume cnC≈cnα*(αₑ-α₀N), αₑ≈wₑ/Uₜ, and neglect time rate of U and cnα)
+        cnCdot = (-Θ*bC[1]*γbCMat[1,1]*χ[1]-Θ*bC[2]*γbCMat[2,2]*χ[2]+cnα*UₙdotTQC*(1-aC[1]-aC[2]))/Uₜ
         # Vorticity coefficient rate
         cvdot = cnCdot*(1-Kf) - cnC*Kfdot
     end
@@ -1624,14 +1603,14 @@ end
 function BLo_cn!(element::Element,χ,δNow)
 
     @unpack incompressibleInertialLoads = element.aero.solver
-    @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,normSparPos = element.aero
-    @unpack α,αₑ = element.aero.flowAnglesAndRates
+    @unpack flapLoadsSolver,flapped,b,δdotNow,δddotNow,normSparPos,c = element.aero
+    @unpack α,αₑ,αdot = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙdotMid = element.aero.flowVelocitiesAndRates
     @unpack Ma = element.aero.flowParameters
     @unpack α₀N,ϵₙ,cnα = element.aero.airfoil.parametersBLo
     @unpack cnδ = element.aero.airfoil.flapParameters
     @unpack f2Prime,cnV = element.aero.BLoStates
-    @unpack q,Ka,Kq,Tᵢ,fPrime,Tf = element.aero.BLoFlow
+    @unpack Kna,Knq,KnM,Tᵢ,fPrime,Tf = element.aero.BLoFlow
 
     # Circulatory component - attached flow
     cnC = cnα * sin(αₑ-α₀N)
@@ -1647,7 +1626,7 @@ function BLo_cn!(element::Element,χ,δNow)
 
     # Inertial component
     aₕ = 2*normSparPos-1
-    cnI = incompressibleInertialLoads ? π*b*UₙdotMid/Uᵢ^2 : 4/Ma * (α - χ[3]/(Ka*Tᵢ)) + (-2*aₕ)/Ma * (q - χ[4]/(Kq*Tᵢ))
+    cnI = incompressibleInertialLoads ? π*b*UₙdotMid/Uᵢ^2 : 4/Ma * (α - χ[3]/(Kna*Tᵢ)) + (-2*aₕ)*c/(Uᵢ*Ma) * (αdot - χ[4]/(Knq*Tᵢ)) + 4*α/Ma^2 * (Ma - χ[8]/(KnM*Tᵢ))
     if flapped && typeof(flapLoadsSolver) == ThinAirfoilTheory
         @unpack Th = flapLoadsSolver
         cnI -= ϵₙ*b/Uᵢ^2*(Uᵢ*Th[4]*δdotNow+b*Th[1]*δddotNow)
@@ -1668,17 +1647,16 @@ end
 # Computes the pitching moment aerodynamic coefficient at the attachment point (i.e., the beam reference line) for the original Beddoes-Leishman model
 function BLo_cm!(element::Element,χ,δNow)
 
-    @unpack incompressibleInertialLoads = element.aero.solver
-    @unpack flapLoadsSolver,flapped,normSparPos,normFlapPos,δdotNow,δddotNow,c = element.aero
-    @unpack a,b = element.aero.solver
-    @unpack α = element.aero.flowAnglesAndRates
-    @unpack Uᵢ,UₙdotMid,Ωₐdot = element.aero.flowVelocitiesAndRates
+    @unpack flapLoadsSolver,flapped,normSparPos,normFlapPos,δdotNow,δddotNow,b,c = element.aero
+    @unpack incompressibleInertialLoads,aI,bI = element.aero.solver
+    @unpack α,αdot = element.aero.flowAnglesAndRates
+    @unpack Uᵢ,UₙdotMid,Ωₐ,Ωₐdot = element.aero.flowVelocitiesAndRates
     @unpack cnC,cnF = element.aero.aeroCoefficients
     @unpack ϵₘ,cm₀,K₀,K₁,K₂,TvL = element.aero.airfoil.parametersBLo
     @unpack cmδ = element.aero.airfoil.flapParameters
-    @unpack Ma,Θ = element.aero.flowParameters
+    @unpack Ma = element.aero.flowParameters
     @unpack f2Prime,fPrimeM,cnVP,cnVN = element.aero.BLoStates
-    @unpack q,KaM,KqM,Tᵢ = element.aero.BLoFlow
+    @unpack Kma,Kmq,KmM,Tᵢ = element.aero.BLoFlow
     @unpack τvP,τvN = element.aero.BLoCompVars
 
     # Circulatory unsteady - attached flow
@@ -1687,23 +1665,25 @@ function BLo_cm!(element::Element,χ,δNow)
         cmC += cmδ*δNow
     end
 
-    # Circulatory unsteady - separated flow
+    # Lagged separation point and center of pressure offset from quarter-chord
     f2PrimeM = max(f2Prime, fPrimeM)
     δCP = K₀ + K₁*(1-f2PrimeM) + K₂*sin(π*f2PrimeM^2)
+
+    # Circulatory unsteady - separated flow
     cmF = cm₀ + cnF * (normSparPos-(1/4-δCP))
     if flapped && typeof(flapLoadsSolver) == TableLookup
         cmF += cmδ*δNow
     end
 
     # Inertial
-    cmI = incompressibleInertialLoads ? -π*element.aero.b/(2*Uᵢ^2)*((1-2*normSparPos)*UₙdotMid+element.aero.b*Ωₐdot/8) : a[3]/(Ma*b[3]*KaM*Tᵢ)*χ[5] + a[4]/(Ma*b[4]*KaM*Tᵢ)*χ[6] - 1/Ma*α - 7/(12*Ma) * (q - χ[8]/(KqM*Tᵢ))
+    cmI = incompressibleInertialLoads ? -π*b/(2*Uᵢ^2)*((1-2*normSparPos)*UₙdotMid+b*Ωₐdot/8) : -1/Ma * (α - χ[5]*aI[1]/(bI[1]*Kma*Tᵢ) - χ[6]*aI[2]/(bI[2]*Kma*Tᵢ)) -7c/(12*Uᵢ*Ma) * (αdot - χ[7]/(Kmq*Tᵢ)) -α/Ma^2 * (Ma - χ[9]*aI[1]/(bI[1]*KmM*Tᵢ) - χ[10]*aI[2]/(bI[2]*KmM*Tᵢ))
     if flapped && typeof(flapLoadsSolver) == ThinAirfoilTheory
         @unpack Th = flapLoadsSolver
-        cmI -= ϵₘ/(2*Uᵢ^2)*(Uᵢ^2*Th[14]*δNow+Uᵢ*c/2*Th[15]*δdotNow+(c/2)^2*Th[16]*δddotNow)
+        cmI -= ϵₘ/(2*Uᵢ^2)*(Uᵢ^2*Th[14]*δNow+Uᵢ*b*Th[15]*δdotNow+b^2*Th[16]*δddotNow)
     end
 
     # Rotation-induced
-    cmRot = -π/8*b[5]*Θ*χ[7]
+    cmRot = -π/4*b*Ωₐ/Uᵢ
 
     # Vortex
     CPvP = τvP <= 2*TvL ? 0.25*(1-cos(π*τvP/TvL)) : 0
@@ -1724,7 +1704,7 @@ function BLo_ct!(element::Element,δNow)
     @unpack flapped,flapLoadsSolver = element.aero
     @unpack hasInducedDrag = element.parent.aeroSurface
     @unpack αₑ = element.aero.flowAnglesAndRates
-    @unpack α₀N,η,cd₀,cn₁,Df,E₀ = element.aero.airfoil.parametersBLo
+    @unpack α₀N,η,cd₀,cnα,cn₁,Df,E₀ = element.aero.airfoil.parametersBLo
     @unpack cdδ = element.aero.airfoil.flapParameters
     @unpack stallOnsetRatio = element.aero.BLoFlow
     @unpack cnPprime,f2Prime = element.aero.BLoStates
@@ -1757,22 +1737,25 @@ end
 # Computes the aerodynamic state matrices for the original Beddoes-Leishman model
 function BLo_state_matrices!(element::Element,δNow)
 
-    @unpack nTotalAeroStates,linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange,flapStatesRange,linearGustStatesRange,nonlinearGustStatesRange,c = element.aero
-    @unpack incompressibleInertialLoads,a,b = element.aero.solver
-    @unpack βₚ²,Θ = element.aero.flowParameters
-    @unpack Tf₀,Tp = element.aero.airfoil.parametersBLo
-    @unpack α = element.aero.flowAnglesAndRates
+    @unpack nTotalAeroStates,linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange,flapStatesRange,linearGustStatesRange,nonlinearGustStatesRange = element.aero
+    @unpack incompressibleInertialLoads,aC,bC,bI,bCMat = element.aero.solver
+    @unpack βₚ²,Θ,Ma = element.aero.flowParameters
+    @unpack Tf₀,Tp,γbCMat = element.aero.airfoil.parametersBLo
+    @unpack α,αdot = element.aero.flowAnglesAndRates
     @unpack Uᵢ,UₙTQC = element.aero.flowVelocitiesAndRates
-    @unpack q,Tf,Tv,f,fPrime,Ka,Kq,KaM,KqM,Tᵢ,cvdotP,cvdotN = element.aero.BLoFlow
+    @unpack Tf,Tv,f,fPrime,Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ,cvdotP,cvdotN = element.aero.BLoFlow
     @unpack cnP = element.aero.aeroCoefficients
 
     # Initialize state matrices with appropriate types
     A = zeros(typeof(cnP),nTotalAeroStates,nTotalAeroStates)
     B = zeros(typeof(cnP),nTotalAeroStates)
 
+    # Get the rate of cnαUₙTQC
+    cnαUₙTQCdot = cnαUₙTQC_rate(element)
+
     # Linear pitch-plunge-induced flow state matrices
-    A[linearPitchPlungeStatesRange, linearPitchPlungeStatesRange] .= incompressibleInertialLoads ? -Diagonal([Θ*b[1], Θ*b[2]]) : -Diagonal([Θ*b[1], Θ*b[2], 1/(Ka*Tᵢ), 1/(Kq*Tᵢ), 1/(b[3]*KaM*Tᵢ), 1/(b[4]*KaM*Tᵢ), Θ*b[5], 1/(KqM*Tᵢ)])
-    B[linearPitchPlungeStatesRange] .= incompressibleInertialLoads ? [UₙTQC, UₙTQC] : [UₙTQC, UₙTQC, α, q, α, α, q, q]
+    A[linearPitchPlungeStatesRange, linearPitchPlungeStatesRange] .= incompressibleInertialLoads ? -Θ * bCMat .* γbCMat : -Diagonal([Θ*bC[1]*γbCMat[1,1], Θ*bC[2]*γbCMat[2,2], 1/(Kna*Tᵢ), 1/(Knq*Tᵢ), 1/(bI[1]*Kma*Tᵢ), 1/(bI[2]*Kma*Tᵢ), 1/(Kmq*Tᵢ), 1/(KnM*Tᵢ), 1/(bI[1]*KmM*Tᵢ), 1/(bI[2]*KmM*Tᵢ)])
+    B[linearPitchPlungeStatesRange] .= incompressibleInertialLoads ? cnαUₙTQCdot * aC : [cnαUₙTQCdot*aC[1], cnαUₙTQCdot*aC[2], α, αdot, α, α, αdot, Ma, Ma, Ma]
     
     # Nonlinear pitch-plunge-induced flow state matrices
     A[nonlinearPitchPlungeStatesRange, nonlinearPitchPlungeStatesRange] .= -Diagonal([1/Tp, 1/Tf, 2/Tf₀, 1/Tv, 1/Tv])
@@ -1780,12 +1763,12 @@ function BLo_state_matrices!(element::Element,δNow)
 
     # Flap-induced flow states
     if !isnothing(flapStatesRange)
-        @unpack AWf,bWfMat = element.aero.flapLoadsSolver
-        # Get the rate of cnαwFlap
+        @unpack aCf,bCfMat = element.aero.flapLoadsSolver
+        # Get the rate of cnα*wFlap
         cnαwdotFlap = cnαwFlap_rate(element,δNow)
         # Set state matrices
-        A[flapStatesRange,flapStatesRange] .= -Θ*bWfMat
-        B[flapStatesRange] .= cnαwdotFlap*AWf
+        A[flapStatesRange,flapStatesRange] .= -Θ*bCfMat
+        B[flapStatesRange] .= cnαwdotFlap*aCf
     end
 
     # Gust-induced flow state matrices
@@ -1799,6 +1782,31 @@ function BLo_state_matrices!(element::Element,δNow)
     @pack! element.aero = A,B
 
     return A,B
+end
+
+
+# Updates the inertial indicial parameters for the Beddoes-Leishman models
+function BL_update_inertial_parameters!(element::Element)
+
+    @unpack c = element.aero
+    @unpack aC,bC,aI,bI = element.aero.solver
+    @unpack Ma,βₚ = element.aero.flowParameters
+    @unpack γbCMat = element.aero.airfoil.parametersBLi
+
+    Kna = 1/(1-Ma+π*βₚ*Ma^2*(aC[1]*bC[1]*γbCMat[1,1]+aC[2]*bC[2]*γbCMat[2,2]))
+    Knq = 1/(1-Ma+2π*βₚ*Ma^2*(aC[1]*bC[1]*γbCMat[1,1]+aC[2]*bC[2]*γbCMat[2,2]))
+    KnM = 1/(1-Ma+π/βₚ*Ma^2*(aC[1]*bC[1]*γbCMat[1,1]+aC[2]*bC[2]*γbCMat[2,2]))
+    Kma = (aI[1]*bI[2]+aI[2]*bI[1])/(bI[1]*bI[2]*(1-Ma))
+    Kmq = 7/(15*(1-Ma)+3π*βₚ*Ma^2*aI[3]*bI[3])
+    KmM = Kma
+
+    # Apply correction factor (see Jose et al. - Unsteady Aerodynamic Modeling with Time-Varying Free-Stream Mach Numbers - 2006)
+    λ = 0.75
+    Kna,Knq,KnM,Kma,Kmq,KmM = multiply_inplace!(λ,Kna,Knq,KnM,Kma,Kmq,KmM)
+    
+    @pack! element.aero.BLiFlow = Kna,Knq,KnM,Kma,Kmq,KmM
+    @pack! element.aero.BLoFlow = Kna,Knq,KnM,Kma,Kmq,KmM
+
 end
 
 
@@ -1817,84 +1825,91 @@ function update_initial_aero_states!(problem::Problem;preInitialization::Bool=fa
             continue 
         end
 
-        @unpack a = problem.model.atmosphere
-        @unpack V,Ω,χ = element.states
-        @unpack Vdot,Ωdot = element.statesRates
-        @unpack solver,pitchPlungeStatesRange,flapStatesRange,pitchPlungeStatesRange,RwT,c,b,normSparPos = element.aero
-
-        # Get aerodynamic quantities according to pre-initialization flag
+        # Set aerodynamic quantities if in pre-initialization
         if preInitialization
-            Uₜ,Uₙ,Uᵢ,α,UₙTQC = aero_steady_kinematics!(element,V,Ω)
-            Uᵢdot,UₙdotTQC,αdot = aero_unsteady_kinematics!(element,Vdot,Ωdot)
-            βₚ,βₚ²,Θ = nondimensional_flow_parameters!(problem.model,element)
-        else
-            @unpack βₚ,βₚ²,Θ = element.aero.flowParameters
-            @unpack α,αdot = element.aero.flowAnglesAndRates
-            @unpack UₙTQC,UₙdotTQC,Uₜ,Uₙ,Uᵢ,Uᵢdot = element.aero.flowVelocitiesAndRates
+            aero_steady_kinematics!(element,element.states.V,element.states.Ω)
+            aero_unsteady_kinematics!(element,element.statesRates.Vdot,element.statesRates.Ωdot)
+            nondimensional_flow_parameters!(problem.model,element)
         end
+
+        @unpack solver,pitchPlungeStatesRange,flapStatesRange,b = element.aero
+        @unpack χ = element.states
+        @unpack Θ,Ma = element.aero.flowParameters
 
         # Pitch-plunge states
         if typeof(solver) == Indicial
-            @unpack AW,bW = solver
-            @unpack cnα = element.aero.airfoil.attachedFlowParameters
-            # Time derivative of compressibility factor
-            βₚdot = -Uᵢ*Uᵢdot/(a^2*βₚ)
-            # Time derivative of cnα (assuming it scales with 1/βₚ)
-            cnαdot = cnα*βₚdot/βₚ²
+            @unpack aC,bCMat = solver
             # Time derivative of the product cnα * UₙTQC
-            cnαUₙTQCdot = cnα*UₙdotTQC+cnαdot*UₙTQC
+            cnαUₙTQCdot = cnαUₙTQC_rate(element)
+            # State matrices
+            A = -Θ*bCMat
+            B = cnαUₙTQCdot*aC
             # States
-            χ[pitchPlungeStatesRange] = cnαUₙTQCdot*b*βₚ²/Uᵢ*AW./bW
+            χ[pitchPlungeStatesRange] = -A\B
         elseif typeof(solver) == Inflow
             @unpack AₚInv,AₚInvcₚ = element.aero.solver
+            @unpack UₙdotTQC = element.aero.flowVelocitiesAndRates
             # State matrices
             A = -Θ*AₚInv
             B = UₙdotTQC*AₚInvcₚ
             # States
-            χ[pitchPlungeStatesRange] = -A\B    
+            χ[pitchPlungeStatesRange] = -A\B
         elseif typeof(solver) == BLi
-            @unpack AW,bWMat = solver
-            @unpack Ta,cnα,λbWMat = element.aero.airfoil.parametersBLi
+            # Update kinematics
+            BLi_kinematics!(element)
+            # Update inertial parameters, if applicable
+            if !solver.incompressibleInertialLoads
+                BL_update_inertial_parameters!(element)
+            end
+            # Unpack data
+            @unpack incompressibleInertialLoads,bC,aC,bI = solver
+            @unpack Ta,cnα,γbCMat = element.aero.airfoil.parametersBLi
+            @unpack α,αdot = element.aero.flowAnglesAndRates
             @unpack R = element.aero.BLiKin
-            @unpack Ta_SO,TfN,TfM,TfT,fPrimeN,fPrimeM,fPrimeT = element.aero.BLiFlow
-            # Time derivative of compressibility factor
-            βₚdot = -Uᵢ*Uᵢdot/(a^2*βₚ)
-            # Time derivative of cnα (assuming it scales with 1/βₚ)
-            cnαdot = cnα*βₚdot/βₚ²
+            @unpack Ta_SO,TfN,TfM,TfT,Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ = element.aero.BLiFlow
+            @unpack Uₜ,Uₙ = element.aero.flowVelocitiesAndRates
+            # Steady separation points
+            fN,fM,fT = BLi_quasi_steady_separation_points(element,Uₜ,Uₙ)
             # Time derivative of the product cnα * UₙTQC
-            cnαUₙTQCdot = cnα*UₙdotTQC+cnαdot*UₙTQC
+            cnαUₙTQCdot = cnαUₙTQC_rate(element)
             # State matrices
-            A = -diagm([Θ*bWMat[1,1]*λbWMat[1,1]; Θ*bWMat[2,2]*λbWMat[2,2]; 1/Ta; 1/TfN; 1/TfM; 1/TfT; 1/(3*Ta); 1/Ta_SO])
-            B = [cnαUₙTQCdot*AW[1]; cnαUₙTQCdot*AW[2]; Uₙ/Ta; fPrimeN/TfN; fPrimeM/TfM; fPrimeT/TfT; R/(3*Ta); R/Ta_SO]
+            A = incompressibleInertialLoads ? -diagm([Θ*bC[1]*γbCMat[1,1]; Θ*bC[2]*γbCMat[2,2]; 1/Ta; 1/TfN; 1/TfM; 1/TfT; 1/(3*Ta); 1/Ta_SO]) : -diagm([Θ*bC[1]*γbCMat[1,1]; Θ*bC[2]*γbCMat[2,2]; 1/(Kna*Tᵢ); 1/(Knq*Tᵢ); 1/(bI[1]*Kma*Tᵢ); 1/(bI[2]*Kma*Tᵢ); 1/(Kmq*Tᵢ); 1/(KnM*Tᵢ); 1/(bI[1]*KmM*Tᵢ); 1/(bI[2]*KmM*Tᵢ); 1/Ta; 1/TfN; 1/TfM; 1/TfT; 1/(3*Ta); 1/Ta_SO])
+            B = incompressibleInertialLoads ? [cnαUₙTQCdot*aC[1]; cnαUₙTQCdot*aC[2]; Uₙ/Ta; fN/TfN; fM/TfM; fT/TfT; R/(3*Ta); R/Ta_SO] : [cnαUₙTQCdot*aC[1]; cnαUₙTQCdot*aC[2]; α; αdot; α; α; αdot; Ma; Ma; Ma; Uₙ/Ta; fN/TfN; fM/TfM; fT/TfT; R/(3*Ta); R/Ta_SO]
             # States
             χ[pitchPlungeStatesRange] = -A\B
-            # Overwrite separation points with quasi-steady values
-            fN,fM,fT = BLi_quasi_steady_separation_points(element,Uₜ,Uₙ)
-            χ[pitchPlungeStatesRange[4:6]] = [fN; fM; fT]
         elseif typeof(solver) == BLo
-            @unpack incompressibleInertialLoads,b = solver
-            @unpack α1₀,cnα,f₀,fb,S1,S2,Tf₀,Tv₀,Tp = element.aero.airfoil.parametersBLo
-            @unpack q,Ka,Kq,KaM,KqM,Tᵢ,cvdotP,cvdotN = element.aero.BLoFlow
+            # Update kinematics
+            BLo_motion_qualifiers!(element)
+            # Update inertial parameters, if applicable
+            if !solver.incompressibleInertialLoads
+                BL_update_inertial_parameters!(element)
+            end
+            # Unpack data
+            @unpack incompressibleInertialLoads,bC,aC,bI = solver
+            @unpack α,αdot = element.aero.flowAnglesAndRates
+            @unpack α₀N,α1₀,cnα,f₀,fb,S1,S2,Tf₀,Tv₀,Tp,γbCMat = element.aero.airfoil.parametersBLo
+            @unpack Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ = element.aero.BLoFlow
             # Steady separation point
             absα = abs(α)
             f = absα <= α1₀ ? 1-(1-fb)*exp((absα-α1₀)/S1) : f₀+(fb-f₀)*exp((α1₀-absα)/S2)
-            # Non-dimensional pitch rate
-            q = αdot*c/Uᵢ
+            # Time derivative of the product cnα * UₙTQC
+            cnαUₙTQCdot = cnαUₙTQC_rate(element)
             # State matrices
-            AMat = incompressibleInertialLoads ? -diagm([Θ*b[1]; Θ*b[2]; 1/Tp; 1/Tf₀; 1/(Tf₀/2); 1/Tv₀; 1/Tv₀]) : -diagm([Θ*b[1]; Θ*b[2]; 1/(Ka*Tᵢ); 1/(Kq*Tᵢ); 1/(b[3]*KaM*Tᵢ); 1/(b[4]*KaM*Tᵢ); Θ*b[5]; 1/(KqM*Tᵢ); 1/Tp; 1/Tf₀; 1/(Tf₀/2); 1/Tv₀; 1/Tv₀])
-            BMat = incompressibleInertialLoads ? [UₙTQC; UₙTQC; cnα*α/Tp; f/Tf₀; f/(Tf₀/2); 0; 0] : [UₙTQC; UₙTQC; α; q; α; α; q; q; cnα*α/Tp; f/Tf₀; f/(Tf₀/2); 0; 0]
+            A = incompressibleInertialLoads ? -diagm([Θ*bC[1]*γbCMat[1,1]; Θ*bC[2]*γbCMat[2,2]; 1/Tp; 1/Tf₀; 1/(Tf₀/2); 1/Tv₀; 1/Tv₀]) : -diagm([Θ*bC[1]*γbCMat[1,1]; Θ*bC[2]*γbCMat[2,2]; 1/(Kna*Tᵢ); 1/(Knq*Tᵢ); 1/(bI[1]*Kma*Tᵢ); 1/(bI[2]*Kma*Tᵢ); 1/(Kmq*Tᵢ); 1/(KnM*Tᵢ); 1/(bI[1]*KmM*Tᵢ); 1/(bI[2]*KmM*Tᵢ); 1/Tp; 1/Tf₀; 1/(Tf₀/2); 1/Tv₀; 1/Tv₀])
+            B = incompressibleInertialLoads ? [cnαUₙTQCdot*aC[1]; cnαUₙTQCdot*aC[2]; cnα*(α-α₀N)/Tp; f/Tf₀; f/(Tf₀/2); 0; 0] : [cnαUₙTQCdot*aC[1]; cnαUₙTQCdot*aC[2]; α; αdot; α; α; αdot; Ma; Ma; Ma; cnα*(α-α₀N)/Tp; f/Tf₀; f/(Tf₀/2); 0; 0]
             # States
-            χ[pitchPlungeStatesRange] = -AMat\BMat
+            χ[pitchPlungeStatesRange] = -A\B
         end
 
         # Flap-induced flow states
         if !isnothing(flapStatesRange)
-            @unpack flapLoadsSolver,δNow,δdotNow,δddotNow = element.aero
-            @unpack Th,AWf,bWf = flapLoadsSolver
-            # Flap normalwash rate
-            wdotFlap = Th[10]/π*(Uᵢ*δdotNow+Uᵢdot*δNow)+(c/2)*Th[11]/(2π)*δddotNow
+            # Unpack data
+            @unpack δNow = element.aero
+            @unpack aCf,bCf = element.aero.flapLoadsSolver
+            # Get the rate of cnα*wFlap
+            cnαwdotFlap = cnαwFlap_rate(element,δNow)
             # Flap states
-            χ[flapStatesRange] = wdotFlap*(c/2)/Uᵢ*AWf./bWf
+            χ[flapStatesRange] = cnαwdotFlap*aCf./(Θ*bCf)
         end
 
         # Update states

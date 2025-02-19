@@ -99,6 +99,9 @@ function SEgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
     return τ,Δcl,ΔclRef
 end
 
+# Test cases
+tests = 1:3
+
 # Aerodynamic and gust indicial solvers
 aeroSolvers = [QuasiSteady(); Indicial(); Inflow(); BLi(); BLo()]
 gustLoadsSolvers = [IndicialGust("Kussner"); IndicialGust("Berci&Righi")]
@@ -113,7 +116,7 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
     # Loop gust solver
     for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
         # Loop test cases
-        for (k,testCase) in enumerate(1:3)
+        for (k,testCase) in enumerate(tests)
             # Display status
             println("Solver $i, gust solver $j, test $k")
             # Solve for current configuration

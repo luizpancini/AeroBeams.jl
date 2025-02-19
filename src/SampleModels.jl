@@ -596,8 +596,9 @@ Creates a model based on the flying-wing aircraft described by Patil and Hodges 
 - `thrust::Union{Real,<:Function}`: motors' thrust
 - `reducedChord::Bool`: flag to employ a reduced (7 ft) chord
 - `payloadOnWing::Bool`: flag to set the payload on the wing's reference line
+- `wingRootAoA::Real`: root angle of attack for clamped wing model [rad]
 """
-function create_Helios(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),g::Real=-9.80665,wingAirfoil::Airfoil=deepcopy(HeliosWingAirfoil),podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Real=1.0,∞::Real=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Real=0,airspeed::Real=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false)
+function create_Helios(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),g::Real=-9.80665,wingAirfoil::Airfoil=deepcopy(HeliosWingAirfoil),podAirfoil::Airfoil=HeliosPodAirfoil,beamPods::Bool=false,stiffnessFactor::Real=1.0,∞::Real=1e12,nElemStraightSemispan::Int64=10,nElemDihedralSemispan::Int64=5,nElemPod::Int64=1,payloadPounds::Real=0,airspeed::Real=0,δIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δ::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,reducedChord::Bool=false,payloadOnWing::Bool=false,wingRootAoA::Real=0)
 
     # Validate
     @assert ∞ > 1e8
@@ -632,10 +633,10 @@ function create_Helios(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),deri
     # Wing properties
     wingSection = 40*0.3048
     Γ = 10*π/180
-    GJ,EIy,EIz = 1.6530e5,1.0331e6,1.2398e7
+    EA,GJ,EIy,EIz = 1e10,1.6530e5,1.0331e6,1.2398e7
     wρA,wρIy,wρIz = 8.929,0.691,3.456
-    GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, GJ,EIy,EIz)
-    Swing = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    EA,GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, EA,GJ,EIy,EIz)
+    Swing = isotropic_stiffness_matrix(∞=∞,EA=EA,GJ=GJ,EIy=EIy,EIz=EIz)
     Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 
     # Wing beams
@@ -683,10 +684,17 @@ function create_Helios(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),deri
 
     rightPod = create_Beam(name="rightPod",length=podLength,nElements=nElemPod,S=[Spod],I=[Ipod],aeroSurface=deepcopy(podSurf),rotationParametrization="E321",p0=[0;π/2;0],connectedBeams=[rightWingStraight],connectedNodesThis=[1],connectedNodesOther=[nElemStraightSemispan+1])
 
-    # Generate copies for wing model (has to be done before aircraft model creation)
+    # Generate beam copies for wing model (has to be done before aircraft model creation)
     wingStraight = deepcopy(rightWingStraight)
     wingDihedral = deepcopy(rightWingDihedral)
     wingPod = deepcopy(rightPod)
+
+    # Set root angle of attack for beams of wing model
+    for beam in [wingStraight,wingDihedral,wingPod]
+        beam.rotationParametrization = "E321"
+        beam.p0 .+= [0; 0; wingRootAoA]
+        update_beam!(beam)
+    end
 
     # Propellers thrust force
     thrustValue = thrustIsTrimVariable ? t -> 0 : thrust

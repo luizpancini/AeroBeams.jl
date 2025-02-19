@@ -49,6 +49,7 @@
     mass::Real = 0
     centerOfMass::Vector{<:Real} = zeros(3)
     I::Vector{<:Real} = zeros(3)
+    DOF_χ_all::Vector{Int64} = Vector{Int64}()
 
 end
 export Model
@@ -615,20 +616,20 @@ function update_number_gust_states!(model::Model)
         if isnothing(aero) || !isnothing(aero.gustStatesRange)
             continue
         end
-        @unpack solver,gustLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,airfoil,c,normSparPos = aero
+        @unpack solver,gustLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,nonlinearPitchPlungeStatesRange,airfoil,c,normSparPos = aero
         # Update gust states range
-        if typeof(solver) in [BLi]
+        if typeof(solver) == BLi
             nGustStates = gustLoadsSolver.nStates+1
         else
             nGustStates = gustLoadsSolver.nStates
         end
         gustStatesRange = nTotalAeroStates+1:nTotalAeroStates+nGustStates
-        if typeof(solver) in [BLi]
+        if typeof(solver) == BLi
             linearGustStatesRange = gustStatesRange[1:end-1]
         else
             linearGustStatesRange = gustStatesRange
         end
-        if typeof(solver) in [BLi]
+        if typeof(solver) == BLi
             nonlinearGustStatesRange = (gustStatesRange[end]:gustStatesRange[end])
         else
             nonlinearGustStatesRange = nothing
@@ -650,8 +651,10 @@ function update_number_gust_states!(model::Model)
         F_χ_χdot = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
         χ = zeros(nTotalAeroStates)
         F_χ = zeros(nTotalAeroStates)
-        if typeof(solver) in [BLi]
-            χ[pitchPlungeStatesRange[4:6]] .= 1.0
+        if typeof(solver) == BLi
+            χ[nonlinearPitchPlungeStatesRange[2:4]] .= 1.0
+        elseif typeof(solver) == BLo
+            χ[nonlinearPitchPlungeStatesRange[2:3]] .= 1.0
         end
         χdot = zeros(nTotalAeroStates)
         χdotEquiv = zeros(nTotalAeroStates)
@@ -1152,6 +1155,8 @@ function get_system_indices!(model::Model)
         # Update indices
         i_equations += nTotalAeroStates
         i_states += nTotalAeroStates
+        # Push to list of all aerodynamic DOFs
+        append!(model.DOF_χ_all,collect(DOF_χ))
         # Pack element data
         @pack! element = DOF_χ,eqs_Fχ
     end

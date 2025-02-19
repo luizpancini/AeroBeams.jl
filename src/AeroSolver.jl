@@ -53,12 +53,13 @@ export FD
 struct QuasiSteady <: AeroSolver
 
     nStates::Int64
-    availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
 
     function QuasiSteady()
+
+        # Number of states per element
         nStates = 0
-        availableDerivativesMethod = [AD,FD]
-        return new(nStates,availableDerivativesMethod)
+
+        return new(nStates)
     end
 
 end
@@ -72,19 +73,25 @@ export QuasiSteady
 """
 struct Indicial <: AeroSolver
 
+    circulatoryIndicialFunction::String
     nStates::Int64
-    availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
-    AW::Vector{Float64}
-    bW::Vector{Float64}
-    bWMat::Matrix{Float64}
+    aC::Vector{Float64}
+    bC::Vector{Float64}
+    bCMat::Matrix{Float64}
 
-    function Indicial()
+    function Indicial(; circulatoryIndicialFunction::String="Wagner")
+
+        # Validate
+        @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
+
+        # Number of states per element
         nStates = 2
-        availableDerivativesMethod = [AD,FD]
-        AW = [0.165; 0.335]
-        bW = [0.0455; 0.3]
-        bWMat = diagm(bW)
-        return new(nStates,availableDerivativesMethod,AW,bW,bWMat)
+
+        # Circulatory indicial parameters (Wagner)
+        aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
+        bCMat = diagm(bC)
+
+        return new(circulatoryIndicialFunction,nStates,aC,bC,bCMat)
     end
 
 end
@@ -98,19 +105,32 @@ export Indicial
 """
 struct BLi <: AeroSolver
 
+    circulatoryIndicialFunction::String
+    incompressibleInertialLoads::Bool
     nStates::Int64
-    availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
-    AW::Vector{Float64}
-    bW::Vector{Float64}
-    bWMat::Matrix{Float64}
+    aC::Vector{Float64}
+    bC::Vector{Float64}
+    aI::Vector{Float64}
+    bI::Vector{Float64}
+    bCMat::Matrix{Float64}
 
-    function BLi()
-        nStates = 8
-        availableDerivativesMethod = [AD,FD]
-        AW = [0.165; 0.335]
-        bW = [0.0455; 0.3]
-        bWMat = diagm(bW)
-        return new(nStates,availableDerivativesMethod,AW,bW,bWMat)
+    function BLi(; circulatoryIndicialFunction::String="Beddoes",incompressibleInertialLoads::Bool=true)
+
+        # Validate
+        @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
+
+        # Number of states per element
+        nStates = incompressibleInertialLoads ? 8 : 16
+
+        # Circulatory indicial parameters
+        aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
+        bCMat = diagm(bC)
+
+        # Inertial indicial parameters
+        aI = [1.5; -0.5; 1.0]
+        bI = [0.25; 0.1; 5.0]
+
+        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nStates,aC,bC,aI,bI,bCMat)
     end
 
 end
@@ -124,28 +144,32 @@ export BLi
 """
 struct BLo <: AeroSolver
 
+    circulatoryIndicialFunction::String
     incompressibleInertialLoads::Bool
     nStates::Int64
-    availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
-    a::Vector{Float64}
-    b::Vector{Float64}
-    b12Mat::Matrix{Float64}
-    AW::Vector{Float64}
-    bW::Vector{Float64}
-    bWMat::Matrix{Float64}
-    a1b1a2b2::Vector{Float64}
+    aC::Vector{Float64}
+    bC::Vector{Float64}
+    aI::Vector{Float64}
+    bI::Vector{Float64}
+    bCMat::Matrix{Float64}
 
-    function BLo(; incompressibleInertialLoads::Bool=false)
-        nStates = incompressibleInertialLoads ? 7 : 13
-        availableDerivativesMethod = [AD,FD]
-        a = [0.3; 0.7; 1.5; -0.5]
-        b = [0.14; 0.53; 0.25; 0.1; 0.5]
-        bMat = diagm(b)
-        AW = [0.165; 0.335]
-        bW = [0.0455; 0.3]
-        bWMat = diagm(bW)
-        a1b1a2b2 = [a[1]*b[1]; a[2]*b[2]]
-        return new(incompressibleInertialLoads,nStates,availableDerivativesMethod,a,b,bMat,AW,bW,bWMat,a1b1a2b2)
+    function BLo(; circulatoryIndicialFunction::String="Beddoes",incompressibleInertialLoads::Bool=false)
+
+        # Validate
+        @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
+
+        # Number of states per element
+        nStates = incompressibleInertialLoads ? 7 : 15
+
+        # Circulatory indicial parameters
+        aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
+        bCMat = diagm(bC)
+
+        # Inertial indicial parameters
+        aI = [1.5; -0.5; 1.0]
+        bI = [0.25; 0.1; 5.0]
+
+        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nStates,aC,bC,aI,bI,bCMat)
     end
 
 end
@@ -160,21 +184,35 @@ export BLo
 struct Inflow <: AeroSolver
 
     nStates::Int64
-    availableDerivativesMethod::Vector{Type{<:DerivationMethod}}
     AₚInv::Matrix{Float64}
     AₚInvcₚ::Vector{Float64}
     bₚ::Vector{Float64}
 
     function Inflow(nStates::Int64=6)
+
+        # Validate number of states per element
         @assert 2 <= nStates <= 8 "select between 2 and 8 inflow states"
-        availableDerivativesMethod = [AD,FD]
+
+        # Inflow arrays
         AₚInv,bₚ,cₚ = inflow_arrays(nStates)
         AₚInvcₚ = AₚInv*cₚ
-        return new(nStates,availableDerivativesMethod,AₚInv,AₚInvcₚ,bₚ)
+
+        return new(nStates,AₚInv,AₚInvcₚ,bₚ)
     end
 
 end
 export Inflow
+
+
+# Gets the circulatory indicial parameters given the indicial function
+function circulatory_indicial_parameters(circulatoryIndicialFunction)
+    aCbC = Dict(
+        "Beddoes" => ([0.3; 0.7], [0.14; 0.53]),
+        "Wagner"  => ([0.165; 0.335], [0.0455; 0.3]),
+        "Jose"    => ([0.3493; 0.6507], [0.0984; 0.7759])
+    )
+    return get(aCbC, circulatoryIndicialFunction, nothing)
+end
 
 
 # Computes the fixed state arrays from Peters' inflow theory
@@ -225,7 +263,10 @@ struct TableLookup <: FlapAeroSolver
     nStates::Int64
 
     function TableLookup()
+
+        # Number of states per element
         nStates = 0
+
         return new(nStates)
     end
 
@@ -241,18 +282,24 @@ export TableLookup
 mutable struct ThinAirfoilTheory <: FlapAeroSolver
 
     nStates::Int64
-    AWf::Vector{Float64}
-    bWf::Vector{Float64}
-    bWfMat::Matrix{Float64}
+    aCf::Vector{Float64}
+    bCf::Vector{Float64}
+    bCfMat::Matrix{Float64}
     Th::Vector{Float64} 
 
     function ThinAirfoilTheory()
+
+        # Number of states per element
         nStates = 2
-        AWf = [0.165; 0.335]
-        bWf = [0.0455; 0.3]
-        bWfMat = diagm(bWf)
+
+        # Circulatory indicial parameters (Wagner)
+        aCf,bCf = circulatory_indicial_parameters("Wagner")
+        bCfMat = diagm(bCf)
+
+        # Initialize Theodorsen's flap constants
         Th = theodorsen_flap_constants(0.25,1.0)
-        return new(nStates,AWf,bWf,bWfMat,Th)
+
+        return new(nStates,aCf,bCf,bCfMat,Th)
     end
 
 end
@@ -312,6 +359,7 @@ struct IndicialGust <: GustAeroSolver
 
     function IndicialGust(indicialFunctionName::String)
 
+        # Set number of states and indicial parameters arrays according to indicial function
         if indicialFunctionName == "Kussner"
             nStates = 2
             AG = [0.5; 0.5]
@@ -323,6 +371,8 @@ struct IndicialGust <: GustAeroSolver
         else
             error("Indicial function unavailable")
         end
+
+        # Useful functions of the indicial parameters arrays
         AGbG = AG .* bG
         bGMat = diagm(bG)
 

@@ -100,11 +100,13 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
 
     ## Set system solver options
     σ0 = 1.0
-    maxIter = 100
-    NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
+    maxIter = 20
+    rtol = 1e-12
+    NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=rtol,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
 
     ## Time variables
-    Δt = (tf-t₀)/1000
+    steps = 1000
+    Δt = (tf-t₀)/steps
 
     ## Initial velocities update options
     initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)
@@ -114,7 +116,7 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
     solve!(problem)
 
     ## Unpack numerical solution
-    t = problem.timeVector
+    t = problem.savedTimeVector
     cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
     ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
     cl = @. cn*cos(θ) + ct*sin(θ)
@@ -135,7 +137,7 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
     end
 
     ## Time index of gust encounter
-    ind = argmin(abs.(t .- t₀))
+    ind = floor(Int,t₀/Δt)+1
 
     ## Non-dimensional time and cl increment vectors
     τ = U/b * (t[ind:end] .- t[ind])
@@ -148,7 +150,7 @@ end
 # ### Problem setup
 # To setup the problem, we define which tests will be run, and which aerodynamic and gust indicial solvers will be used. Notice that BLi stands for our [modified Beddoes-Leishman model](https://doi.org/10.1016/j.jfluidstructs.2021.103375), whereas BLo is the [original version](https://doi.org/10.4050/JAHS.34.3.3).
 ## Tests range
-tests = collect(1:1:6)
+tests = collect(1:6)
 
 ## Aerodynamic and gust indicial solvers
 aeroSolvers = [QuasiSteady(); Indicial(); Inflow(); BLi(); BLo()]
