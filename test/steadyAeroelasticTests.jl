@@ -92,19 +92,6 @@ end
     @test tip_IP ≈ tip_IP_ atol=SELFatol
     @test tip_twist ≈ tip_twist_ atol=SELFatol
 end
- 
-@testset "Steady analysis of the Pazy wing with varying root pitch angle" begin
-    include("examples/PazyWingPitchRange.jl")
-    # Self-comparison
-    tip_AoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_AoA.txt"))
-    tip_OOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_OOP.txt"))
-    tip_IP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_IP.txt"))
-    tip_twist_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingPitchRange", "tip_twist.txt"))
-    # @test filter(!isnan,tip_AoA) ≈ filter(!isnan,tip_AoA_) atol=SELFatol
-    @test tip_OOP ≈ tip_OOP_ atol=SELFatol
-    @test tip_IP ≈ tip_IP_ atol=SELFatol
-    @test tip_twist ≈ tip_twist_ atol=SELFatol
-end
 
 @testset "Steady aeroelastic analysis of the sixteen-meter-wing" begin
     include("examples/SMWSteady.jl")

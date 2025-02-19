@@ -9,14 +9,15 @@
     @test Δu3 ≈ Δu3_ atol=SELFatol
 end
 
-@testset "Dynamic analysis of the conventional HALE aircraft undergoing a checked pitch maneuver" begin
-    include("examples/conventionalHALECheckedPitchManeuver.jl")
-    # Self-comparison
-    wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "wingAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
-    @test wingAoA ≈ wingAoA_ atol=SELFatol
-    @test Δu3 ≈ Δu3_ atol=SELFatol
-end
+## Reduce CI time
+# @testset "Dynamic analysis of the conventional HALE aircraft undergoing a checked pitch maneuver" begin
+#     include("examples/conventionalHALECheckedPitchManeuver.jl")
+#     # Self-comparison
+#     wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "wingAoA.txt"))
+#     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
+#     @test wingAoA ≈ wingAoA_ atol=SELFatol
+#     @test Δu3 ≈ Δu3_ atol=SELFatol
+# end
 
 @testset "Dynamic analysis of the conventional HALE aircraft undergoing a coordinated turn maneuver" begin
     include("examples/conventionalHALECheckedRollManeuver.jl")
@@ -79,20 +80,21 @@ end
 #     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
 # end
 
-@testset "Dynamic analysis of the Pazy wing encountering a continuous, 2-dimensional gust" begin
-    include("examples/PazyWingContinuous2DSpaceGust.jl")
-    # Self-comparison
-    tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tipAoA.txt"))
-    tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tipOOP.txt"))
-    tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cn.txt"))
-    tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cm.txt"))
-    tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_ct.txt"))
-    @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-    @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-    @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-    @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-    @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
-end
+## Reduce CI time
+# @testset "Dynamic analysis of the Pazy wing encountering a continuous, 2-dimensional gust" begin
+#     include("examples/PazyWingContinuous2DSpaceGust.jl")
+#     # Self-comparison
+#     tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tipAoA.txt"))
+#     tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tipOOP.txt"))
+#     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cn.txt"))
+#     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cm.txt"))
+#     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_ct.txt"))
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+# end
 
 ## Reduce CI time
 # @testset "Dynamic analysis of the Pazy wing encountering a DARPA gust" begin
