@@ -92,11 +92,13 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
 
     # Set system solver options
     σ0 = 1.0
-    maxIter = 100
-    NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
+    maxIter = 20
+    rtol = 1e-12
+    NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=rtol,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
 
     # Time variables
-    Δt = (tf-t₀)/1000
+    steps = 1000
+    Δt = (tf-t₀)/steps
 
     # Initial velocities update options
     initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)
@@ -106,7 +108,7 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
     solve!(problem)
 
     # Unpack numerical solution
-    t = problem.timeVector
+    t = problem.savedTimeVector
     cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
     ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
     cl = @. cn*cos(θ) + ct*sin(θ)
@@ -127,7 +129,7 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
     end
 
     # Time index of gust encounter
-    ind = argmin(abs.(t .- t₀))
+    ind = floor(Int,t₀/Δt)+1
 
     # Non-dimensional time and cl increment vectors
     τ = U/b * (t[ind:end] .- t[ind])
@@ -135,7 +137,7 @@ function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
 
     return τ,Δcl,ΔclRef
 end</code></pre><h3 id="Problem-setup"><a class="docs-heading-anchor" href="#Problem-setup">Problem setup</a><a id="Problem-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-setup" title="Permalink"></a></h3><p>To setup the problem, we define which tests will be run, and which aerodynamic and gust indicial solvers will be used. Notice that BLi stands for our <a href="https://doi.org/10.1016/j.jfluidstructs.2021.103375">modified Beddoes-Leishman model</a>, whereas BLo is the <a href="https://doi.org/10.4050/JAHS.34.3.3">original version</a>.</p><pre><code class="language-julia hljs"># Tests range
-tests = collect(1:1:6)
+tests = collect(1:6)
 
 # Aerodynamic and gust indicial solvers
 aeroSolvers = [QuasiSteady(); Indicial(); Inflow(); BLi(); BLo()]
@@ -186,4 +188,4 @@ plt62 = plot(xlabel=&quot;\$\\tau\$ [semichords]&quot;, ylabel=&quot;\$\\Delta c
 scatter!(ΔclRef[1,1,6][1,:], ΔclRef[1,1,6][2,:], color=:black, ms=4, label=&quot;Mallik &amp; Raveh (2019)&quot;)
 for (i,aeroSolver) in enumerate(aeroSolvers)
     plot!(τ[i,2,6], Δcl[i,2,6], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
-end</code></pre><p><img src="../OMCgustTests_test2K.svg" alt/> <img src="../OMCgustTests_test2BR.svg" alt/> <img src="../OMCgustTests_test6K.svg" alt/> <img src="../OMCgustTests_test6BR.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../conventionalHALEmodel/">« Creating a HALE aircraft model</a><a class="docs-footer-nextpage" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Wednesday 19 February 2025 17:17">Wednesday 19 February 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p><img src="../OMCgustTests_test2K.svg" alt/> <img src="../OMCgustTests_test2BR.svg" alt/> <img src="../OMCgustTests_test6K.svg" alt/> <img src="../OMCgustTests_test6BR.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../conventionalHALEmodel/">« Creating a HALE aircraft model</a><a class="docs-footer-nextpage" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Wednesday 19 February 2025 17:25">Wednesday 19 February 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
