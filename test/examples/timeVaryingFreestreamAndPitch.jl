@@ -10,8 +10,9 @@ Ma = 0.3
 U₀ = Ma*atmosphere.a
 
 # Aerodynamic solver
-circulatoryIndicialFunction = "Wagner"
-aeroSolver = Indicial(circulatoryIndicialFunction=circulatoryIndicialFunction)
+circulatoryIndicialFunction = "Jose"
+incompressibleInertialLoads = false
+aeroSolver = BLi(circulatoryIndicialFunction=circulatoryIndicialFunction,incompressibleInertialLoads=incompressibleInertialLoads)
 
 # Wing surface and solver
 chord = 0.1
@@ -38,7 +39,7 @@ pddot = iszero(Δθ) ? t -> 0 : t -> ForwardDiff.derivative(pdot,t)
 # Wing beam
 L = 1
 nElem = 1
-∞ = 1e12
+∞ = 1e14
 wing = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=1)],rotationParametrization="E321",p0=[0;0;0],pdot0_of_x1=[pdot(0);0;0],aeroSurface=surf)
 
 # BCs
@@ -81,7 +82,7 @@ for (i,λᵤ) in enumerate(λᵤRange)
     tf = cycles*T
     Δt = T/200
     # Initial velocities update options
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,displayProgress=false, relaxFactor=0.5, Δt=Δt/1e3)
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=4,displayProgress=false, relaxFactor=0.5, Δt=Δt/1e4)
     # Create and solve problem
     global problem = create_DynamicProblem(model=timeVaryingFreestreamAndPitch,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
     solve!(problem)
@@ -123,7 +124,7 @@ cmCFDLambda0_2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryi
 cnCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cnCFDLambda0_4.txt"))
 cmCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_4.txt"))
 cnCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cnCFDLambda0_6.txt"))
-cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_2.txt"))
+cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_6.txt"))
 cnCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cnCFDLambda0_8.txt"))
 cmCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestreamAndPitch", "cmCFDLambda0_8.txt"))
 

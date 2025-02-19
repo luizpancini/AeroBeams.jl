@@ -795,10 +795,10 @@ end
             γbCMat = Diagonal([2.5; 0.8])
         elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.001,min(0.3,Ma))
+            Ma = max(0.001,min(0.8,Ma))
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  =       [  0.001;     0.3]
+            MaRng  =       [  0.001;     0.8]
             α₀NRng =     π/180*[0.0;     0.0]
             αds₀Rng =   π/180*[14.5;    15.0]   
             αₛₛRng =     π/180*[12.0;    13.6]   
@@ -1112,10 +1112,10 @@ end
             γbCMat = Diagonal([1.5; 1.0])
         elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","VERTOL23010","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.001,min(0.3,Ma))
+            Ma = max(0.001,min(0.8,Ma))
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  = [0.001; 0.3]
+            MaRng  = [0.001; 0.8]
             α₀NRng = π/180*[0.0; 0.0]
             α1₀Rng = π/180*[12.4; 16.0]
             δαRng = π/180*[2.0; 2.5]

@@ -11,7 +11,8 @@ U₀ = Ma*atmosphere.a
 
 # Aerodynamic solver
 circulatoryIndicialFunction = "Jose"
-aeroSolver = Indicial(circulatoryIndicialFunction=circulatoryIndicialFunction)
+incompressibleInertialLoads = true
+aeroSolver = BLo(circulatoryIndicialFunction=circulatoryIndicialFunction,incompressibleInertialLoads=incompressibleInertialLoads)
 
 # Wing surface
 chord = 0.1
@@ -97,7 +98,7 @@ cmCFDLambda0_2 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryi
 cnCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_4.txt"))
 cmCFDLambda0_4 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_4.txt"))
 cnCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_6.txt"))
-cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_2.txt"))
+cmCFDLambda0_6 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_6.txt"))
 cnCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cnCFDLambda0_8.txt"))
 cmCFDLambda0_8 = readdlm(joinpath(dirname(@__DIR__), "referenceData", "timeVaryingFreestream", "cmCFDLambda0_8.txt"))
 

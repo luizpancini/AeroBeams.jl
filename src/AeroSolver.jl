@@ -120,15 +120,15 @@ struct BLi <: AeroSolver
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
 
         # Number of states per element
-        nStates = incompressibleInertialLoads ? 8 : 13
+        nStates = incompressibleInertialLoads ? 8 : 16
 
         # Circulatory indicial parameters
         aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
         bCMat = diagm(bC)
 
         # Inertial indicial parameters
-        aI = [1.5; -0.5]
-        bI = [0.25; 0.1; 0.5]
+        aI = [1.5; -0.5; 1.0]
+        bI = [0.25; 0.1; 5.0]
 
         return new(circulatoryIndicialFunction,incompressibleInertialLoads,nStates,aC,bC,aI,bI,bCMat)
     end
@@ -159,15 +159,15 @@ struct BLo <: AeroSolver
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
 
         # Number of states per element
-        nStates = incompressibleInertialLoads ? 7 : 12
+        nStates = incompressibleInertialLoads ? 7 : 15
 
         # Circulatory indicial parameters
         aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
         bCMat = diagm(bC)
 
         # Inertial indicial parameters
-        aI = [1.5; -0.5]
-        bI = [0.25; 0.1; 0.5]
+        aI = [1.5; -0.5; 1.0]
+        bI = [0.25; 0.1; 5.0]
 
         return new(circulatoryIndicialFunction,incompressibleInertialLoads,nStates,aC,bC,aI,bI,bCMat)
     end

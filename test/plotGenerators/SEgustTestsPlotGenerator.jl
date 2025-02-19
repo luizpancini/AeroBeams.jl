@@ -13,7 +13,7 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
     # Loop gust solver
     for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
         # Loop test cases
-        for (k,testCase) in enumerate(1:3)
+        for (k,testCase) in enumerate(tests)
             # Aerodynamic solver name
             if typeof(aeroSolver) == QuasiSteady
                 aeroSolverName = "QS"

@@ -1,13 +1,16 @@
 using AeroBeams
 
 # Flag to save figures
-saveFigures = false
+saveFigures = true
+
+# Circulatory indicial function
+circulatoryIndicialFunction = "Wagner"
 
 # Aerodynamic solvers
-aeroSolvers = [BLi()]
+aeroSolvers = [Indicial(circulatoryIndicialFunction=circulatoryIndicialFunction); BLi(circulatoryIndicialFunction=circulatoryIndicialFunction)]
 
 # Stiffness factor range
-λRange = [1e6]
+λRange = [1, 1e3]
 
 # Wing airfoil
 wingAirfoil = deepcopy(NACA23012A)

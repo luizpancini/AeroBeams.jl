@@ -339,10 +339,12 @@ end
 # - `TfN`
 # - `TfM`
 # - `TfT`
-# - `Ka`
-# - `Kq`
-# - `KaM`
-# - `KqM`
+# - `Kna`
+# - `Knq`
+# - `KnM`
+# - `Kma`
+# - `Kmq`
+# - `KmM`
 # - `Tᵢ`
 #
 mutable struct BLiFlowVariables
@@ -366,10 +368,12 @@ mutable struct BLiFlowVariables
     TfN
     TfM
     TfT
-    Ka
-    Kq
-    KaM
-    KqM
+    Kna
+    Knq
+    KnM
+    Kma
+    Kmq
+    KmM
     Tᵢ
 
     # Constructor
@@ -393,13 +397,15 @@ mutable struct BLiFlowVariables
         TfN = 1.0
         TfM = 1.0
         TfT = 1.0
-        Ka = 1.0
-        Kq = 1.0
-        KaM = 1.0
-        KqM = 1.0
+        Kna = 1.0
+        Knq = 1.0
+        KnM = 1.0
+        Kma = 1.0
+        Kmq = 1.0
+        KmM = 1.0
         Tᵢ = 1.0
 
-        return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT,Ka,Kq,KaM,KqM,Tᵢ)
+        return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT,Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ)
     end
 end
 
@@ -419,10 +425,12 @@ end
 # - `fPrime`
 # - `Tf`
 # - `Tv`
-# - `Ka`
-# - `Kq`
-# - `KaM`
-# - `KqM`
+# - `Kna`
+# - `Knq`
+# - `KnM`
+# - `Kma`
+# - `Kmq`
+# - `KmM`
 # - `Tᵢ`
 # - `Kf`
 # - `cvdotP`
@@ -440,10 +448,12 @@ mutable struct BLoFlowVariables
     fPrime
     Tf
     Tv
-    Ka
-    Kq
-    KaM
-    KqM
+    Kna
+    Knq
+    KnM
+    Kma
+    Kmq
+    KmM
     Tᵢ
     Kf
     cvdotP
@@ -461,16 +471,18 @@ mutable struct BLoFlowVariables
         fPrime = 1.0
         Tf = 1.0
         Tv = 1.0
-        Ka = 1.0
-        Kq = 1.0
-        KaM = 1.0
-        KqM = 1.0
+        Kna = 1.0
+        Knq = 1.0
+        KnM = 1.0
+        Kma = 1.0
+        Kmq = 1.0
+        KmM = 1.0
         Tᵢ = 1.0
         Kf = 1.0
         cvdotP = 0.0
         cvdotN = 0.0
 
-        return new(αlag,q,stallOnsetRatio,upstroke,α1,f,fPrime,Tf,Tv,Ka,Kq,KaM,KqM,Tᵢ,Kf,cvdotP,cvdotN)
+        return new(αlag,q,stallOnsetRatio,upstroke,α1,f,fPrime,Tf,Tv,Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ,Kf,cvdotP,cvdotN)
     end
 end
 
@@ -807,8 +819,8 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     # Set aerodynamic states' ranges (assume no gust states are active, update later upon model creation)
     pitchPlungeStatesRange = typeof(solver) in [QuasiSteady] ? nothing : 1:solver.nStates
     if typeof(solver) in [BLi,BLo]
-        linearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange[1:7]
-        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:end] : pitchPlungeStatesRange[8:end]
+        linearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange[1:10]
+        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:end] : pitchPlungeStatesRange[11:end]
     else
         linearPitchPlungeStatesRange = pitchPlungeStatesRange
         nonlinearPitchPlungeStatesRange = nothing

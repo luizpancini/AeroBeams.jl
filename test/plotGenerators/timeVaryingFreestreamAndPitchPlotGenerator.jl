@@ -1,4 +1,4 @@
-using Plots
+using Plots, ColorSchemes
 
 # Run the script
 include("../examples/timeVaryingFreestreamAndPitch.jl")
