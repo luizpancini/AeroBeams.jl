@@ -7,9 +7,6 @@ derivationMethod = AD()
 # Altitude
 h = 20e3
 
-# Gravity
-g = 9.80665
-
 # Discretization
 nElem = 16
 
@@ -39,7 +36,7 @@ flutterOffsetTipDisp = Array{Float64}(undef,length(θRange),nModes)
 # Sweep root angle
 for (i,θ) in enumerate(θRange)
     # Update model
-    SMWFlutterPitchRange,_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ*π/180,nElem=nElem,altitude=h,g=g)
+    SMWFlutterPitchRange,_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ*π/180,nElem=nElem,altitude=h)
     # Update system solver
     NR = θ <= 1.6 ? NR1 : NR2
     # Sweep airspeed

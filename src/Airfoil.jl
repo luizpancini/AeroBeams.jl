@@ -29,10 +29,10 @@
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["flatPlate","NACA0002","NACA0006"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.01,min(0.5,Ma))
+            Ma = max(0.001,min(0.8,Ma))
             β = sqrt(1-Ma^2)
             # Mach-dependent parameters
-            MaRng  =       [ 0.01;   0.5]
+            MaRng  =       [ 0.001;   0.8]
             α₀NRng = π/180*[  0.0;   0.0]
             ϵₙRng =        [  0.7;   0.7]
             ϵₘRng =        [ 0.96;  0.96]

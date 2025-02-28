@@ -486,13 +486,8 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAer
 
     # Add root clamp and tip load to BCs
     clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-    push!(BCs,clamp)
-
-    # Add tip load to BCs, if applicable
-    if isempty(additionalBCs)
-        tipLoad = create_BC(name="tipLoad",beam=beam,node=nElem+1,types=["F3A"],values=[tipF3])
-        push!(BCs,tipLoad)
-    end
+    tipLoad = create_BC(name="tipLoad",beam=beam,node=nElem+1,types=["F3A"],values=[tipF3])
+    push!(BCs,clamp,tipLoad)
 
     # Wing model
     wing = create_Model(name="SMW",beams=[beam],BCs=BCs,altitude=altitude,gravityVector=[0;0;-g],v_A=[0;airspeed;0])

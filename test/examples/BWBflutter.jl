@@ -82,22 +82,16 @@ for (i,U) in enumerate(URange)
     trimδ[i] = trimProblem.x[end]
     println("Trim AoA = $(trimAoA[i]*180/π), trim thrust = $(trimThrust[i]), trim δ = $(trimδ[i]*180/π)") #src
 
-    ## All the variables needed for the stability analysis are now in place.We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state. 
+    ## All the variables needed for the stability analysis are now in place. We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state. 
     BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
 
-    ## Again, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
-    add_springs_to_beam!(beam=BWBeigen.beams[2],springs=[spring1])
-    add_springs_to_beam!(beam=BWBeigen.beams[3],springs=[spring2])
-    BWBeigen.skipValidationMotionBasisA = true
-    update_model!(BWBeigen)
-
     ## Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1.0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
 
     ## The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
     untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
 end
 #md nothing #hide

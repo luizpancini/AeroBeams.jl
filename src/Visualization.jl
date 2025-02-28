@@ -702,20 +702,23 @@ Plots the mode shapes of the model in the given eigenproblem
 - `view::Union{Nothing,Tuple{Real,Real}}`: view angles
 - `nModes::Union{Nothing,Int64}`: number of modes to plot
 - `scale::Real`: displacements and rotations scale
+- `ΔuDef::Vector{<:Real}`: displacement vector for first node of deformed assembly relative to the undeformed one
 - `frequencyLabel::String`: option for frequency label
 - `lw::Real`: linewidth
 - `colorSteady`: color for steadily deformed assembly
 - `modalColorScheme`: color scheme for mode shapes
 - `plotAxes::Bool`: flag to plot axes
 - `plotGrid::Bool`: flag to plot grid
+- `plotLimits::Union{Nothing,Tuple{Vector{Int64},Vector{Int64}}}` = plot limits
 - `legendPos`: legend position
+- `modeLabels::Union{Nothing,Vector{String}}` = labels for each mode
 - `tolPlane::Real`: displacement tolerance to plot as plane
 - `plotAeroSurf`: flag to plot aerodynamic surfaces
 - `surfα::Float64`: transparency factor of aerodynamic surfaces 
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Real=1,frequencyLabel::String="frequency&damping",lw::Real=1,colorSteady=:black,modalColorScheme=:jet1,plotAxes::Bool=true,plotGrid::Bool=true,legendPos=:best,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Real=1,ΔuDef::Vector{<:Real}=zeros(3),frequencyLabel::String="frequency&damping",lw::Real=2,colorSteady=:black,modalColorScheme=:jet1,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{Int64},Vector{Int64}}}=nothing,legendPos=:best,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert frequencyLabel in ["frequency", "frequency&damping"]
@@ -724,15 +727,21 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
     @assert 0 < surfα <= 1
     nModes = isnothing(nModes) ? problem.nModes : nModes
     @assert nModes <= problem.nModes
+    if !isnothing(modeLabels)
+        @assert length(modeLabels) == nModes
+    end
 
     # Set backend
     pyplot()
 
     # Unpack
-    @unpack modeShapesAbs = problem
+    @unpack modeShapesAbs,refTrimProblem = problem
     @unpack elements,nElementsTotal,units = problem.model
     damps = problem.dampingsOscillatory
-    freqs = problem.frequenciesOscillatory 
+    freqs = problem.frequenciesOscillatory
+
+    # Elements with solution of steady problem
+    elementsSteady = isnothing(refTrimProblem) ? problem.model.elements : refTrimProblem.model.elements
 
     # Set mode colors
     modeColors = cgrad(modalColorScheme, nModes, categorical=true)
@@ -750,10 +759,11 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
     plt = plot(grid=plotGrid,axis=plotAxes,legend=legendPos)
     plot!([NaN],[NaN], c=colorSteady, lw=lw, label="Steady")
     for m in 1:nModes
+        modeLabelNow = isnothing(modeLabels) ? "Mode $m" : modeLabels[m]
         if frequencyLabel == "frequency"
-            label = string("Mode $(m): ω = $(round(γ*freqs[m],digits=2)) ", units.frequency)
+            label = string(modeLabelNow, ": ω = $(round(γ*freqs[m],digits=2)) ", units.frequency)
         elseif frequencyLabel == "frequency&damping"
-            label = string("Mode $(m): σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],digits=2))i ", units.frequency)
+            label = string(modeLabelNow,": σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],digits=2))i ", units.frequency)
         end
         plot!([NaN],[NaN], c=modeColors[m], lw=lw, label=label)
     end
@@ -770,8 +780,8 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
     steadyAirfoilCoords_n1 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
     steadyAirfoilCoords_n2 = Array{Union{Nothing,Matrix{Float64}}}(undef,nElementsTotal)
 
-    # Loop over elements
-    for (e,element) in enumerate(elements)     
+    # Loop over elements of steady solution
+    for (e,element) in enumerate(elementsSteady)     
         @unpack r_n1,r_n2,nodalStates,aero = element
         @unpack u_n1,u_n2,p_n1,p_n2 = nodalStates
         # Set undeformed coordinates
@@ -779,9 +789,9 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
         x2Undef[e] = [r_n1[2]; r_n2[2]]
         x3Undef[e] = [r_n1[3]; r_n2[3]]
         # Set steady deformed coordinates
-        x1Steady[e] = x1Undef[e] .+ [u_n1[1]; u_n2[1]]
-        x2Steady[e] = x2Undef[e] .+ [u_n1[2]; u_n2[2]]
-        x3Steady[e] = x3Undef[e] .+ [u_n1[3]; u_n2[3]]
+        x1Steady[e] = x1Undef[e] .+ [u_n1[1]; u_n2[1]] .+ ΔuDef[1]
+        x2Steady[e] = x2Undef[e] .+ [u_n1[2]; u_n2[2]] .+ ΔuDef[2]
+        x3Steady[e] = x3Undef[e] .+ [u_n1[3]; u_n2[3]] .+ ΔuDef[3]
         # Skip elements without aero surfaces, or if those are not to be plotted
         if !plotAeroSurf || isnothing(aero)
             undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e],steadyAirfoilCoords_n1[e],steadyAirfoilCoords_n2[e] = nothing,nothing,nothing,nothing
@@ -793,8 +803,8 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
         # Undeformed nodal airfoil coordinates
         undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e] = get_undeformed_airfoil_coords(element)
         # Steady deformed nodal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r) and add displacements (+u))
-        steadyAirfoilCoords_n1[e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ u_n1    
-        steadyAirfoilCoords_n2[e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ u_n2
+        steadyAirfoilCoords_n1[e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ u_n1 .+ ΔuDef 
+        steadyAirfoilCoords_n2[e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ u_n2 .+ ΔuDef
     end
 
     # Initialize arrays
@@ -809,7 +819,7 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
 
     # Loop over modes
     for m in 1:nModes
-        # Loop over elements
+        # Loop over elements of eigenProblem
         for (e,element) in enumerate(elements)
             # Nodal displacements and rotations    
             u_n1 = modeShapesAbs[m].nodalStates[e].u_n1
@@ -830,8 +840,8 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
             R_n1,_ = rotation_tensor_WM(scale*p_n1)
             R_n2,_ = rotation_tensor_WM(scale*p_n2)
             # Modal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r), add scaled modal displacements (+scale*u) and steady position displacement)
-            modalAirfoilCoords_n1[m,e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ (steadyAirfoilCoords_n1[e] - undefAirfoilCoords_n1[e])
-            modalAirfoilCoords_n2[m,e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ (steadyAirfoilCoords_n2[e] - undefAirfoilCoords_n2[e])
+            modalAirfoilCoords_n1[m,e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ (steadyAirfoilCoords_n1[e] - undefAirfoilCoords_n1[e] .- ΔuDef) .+ ΔuDef
+            modalAirfoilCoords_n2[m,e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ (steadyAirfoilCoords_n2[e] - undefAirfoilCoords_n2[e] .- ΔuDef) .+ ΔuDef
         end
 
         # Set TFs for plane views
@@ -896,8 +906,10 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
             surface!(Xd,Yd,Zd, color=palette([modeColors[m],modeColors[m]],2), colorbar=false, alpha=surfα)
         end
 
-        # Set the same plot extrema across all axis (equal aspect ratio), if applicable
-        if !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
+        # Set plot limits
+        if !isnothing(plotLimits)
+            plot!(xlims=[plotLimits[1][1],plotLimits[2][1]],ylims=[plotLimits[1][2],plotLimits[2][2]],zlims=[plotLimits[1][3],plotLimits[2][3]])
+        elseif !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
             plotMax = max(plotMax,maximum(reduce(vcat, x1Modal[m,:])),maximum(reduce(vcat, x2Modal[m,:])),maximum(reduce(vcat, x3Modal[m,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
             plotMin = min(plotMin,minimum(reduce(vcat, x1Modal[m,:])),minimum(reduce(vcat, x2Modal[m,:])),minimum(reduce(vcat, x3Modal[m,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
             plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])

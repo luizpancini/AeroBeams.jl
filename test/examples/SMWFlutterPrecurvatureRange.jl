@@ -24,6 +24,9 @@ nElem = 16
 σstep = 0.5
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
+# Number of vibration modes
+nModes = 5
+
 # Set precurvature, tip force and airspeed ranges, and initialize outputs
 kRange = collect(0:0.018:0.018)
 F3Range = collect(0:2:40)
@@ -42,9 +45,6 @@ modeDampings = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),nMode
 modeFrequencies = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),nModes)
 
 SMWFlutterPrecurvatureRange = Array{Model}(undef,length(kRange),length(F3Range),length(URange))
-
-# Set number of vibration modes
-nModes = 5
 
 # Sweep wing precurvature
 for (ki,k) in enumerate(kRange)
