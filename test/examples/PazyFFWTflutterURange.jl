@@ -53,10 +53,8 @@ for (i,U) in enumerate(URange)
     println("Solving for U=$U m/s")
     # Update model
     model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,foldAngle=foldAngle,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,tipMassPosition=ηtipMass)
-    # Set initial guess solution as the one from previous sideslip angle
-    x0 = (i>1 && problem[i-1].systemSolver.convergedFinalSolution) ? problem[i-1].x : zeros(0)
     # Create and solve problem
-    problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,x0=x0,frequencyFilterLimits=[1e-0,Inf])
+    problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1,Inf])
     solve!(problem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem[i].frequenciesOscillatory

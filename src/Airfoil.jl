@@ -26,13 +26,16 @@
 
     function AttachedFlowParameters(name::String; Re::Real=0,Ma::Real=0)
 
+        # Validate
+        @assert all(>=(0), [Ma, Re])
+
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["flatPlate","NACA0002","NACA0006"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.001,min(0.8,Ma))
+            Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2)
             # Mach-dependent parameters
-            MaRng  =       [ 0.001;   0.8]
+            MaRng  =       [    0;   0.8]
             α₀NRng = π/180*[  0.0;   0.0]
             ϵₙRng =        [  0.7;   0.7]
             ϵₘRng =        [ 0.96;  0.96]
@@ -43,92 +46,92 @@
             cnαRng =  2π/β*[  1.0;   1.0]
         elseif name in ["NACA0012"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.035,min(0.3,Ma))
+            Ma = min(0.3,Ma)
             β = sqrt(1-Ma^2)
             # Mach-dependent parameters
-            MaRng  =       [0.035; 0.072; 0.110; 0.185; 0.215; 0.25; 0.28;  0.3]
-            α₀NRng = π/180*[  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
-            ϵₙRng =        [  0.7;   0.7;   0.7;   0.7;   0.7;  0.7;  0.7;  0.7]
-            ϵₘRng =        [ 0.96;  0.96;  0.96;  0.96;  0.96; 0.96; 0.96; 0.96]
-            ηRng =         [ 0.95;  0.95;  0.95;  0.95;  0.95; 0.95; 0.95; 0.95]
-            cd₀Rng =  1e-2*[  1.2;   1.2;   0.8;   0.5;   0.5;  0.5;  0.5;  0.5]
-            cm₀Rng =  1e-3*[    0;   -14;    -5;    -5;    -5;   -5;   -5;   -5]
-            cmαRng =       [  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
-            cnαRng =  2π/β*[1.049; 0.972; 0.998; 0.995; 0.980; 1.00; 1.00; 1.00]
+            MaRng  =       [0; 0.035; 0.072; 0.110; 0.185; 0.215; 0.25; 0.28;  0.3]
+            α₀NRng = π/180*[0.0;  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
+            ϵₙRng =        [0.7;  0.7;   0.7;   0.7;   0.7;   0.7;  0.7;  0.7;  0.7]
+            ϵₘRng =        [0.96; 0.96;  0.96;  0.96;  0.96;  0.96; 0.96; 0.96; 0.96]
+            ηRng =         [0.95; 0.95;  0.95;  0.95;  0.95;  0.95; 0.95; 0.95; 0.95]
+            cd₀Rng =  1e-2*[1.2;  1.2;   1.2;   0.8;   0.5;   0.5;  0.5;  0.5;  0.5]
+            cm₀Rng =  1e-3*[0;    0;   -14;    -5;    -5;    -5;   -5;   -5;   -5]
+            cmαRng =       [0.0;  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
+            cnαRng =  2π/β*[1.049; 1.049; 0.972; 0.998; 0.995; 0.980; 1.00; 1.00; 1.00]
         elseif name in ["NACA0015","NACA0018"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.062,min(0.15,Ma))
+            Ma = min(0.15,Ma)
             β = sqrt(1-Ma^2)
             # Mach-dependent parameters
-            MaRng  =       [0.062; 0.080; 0.120; 0.150]
-            α₀NRng = π/180*[  0.0;   0.0;   0.0;   0.0]
-            ϵₙRng =        [  0.7;   0.7;   0.7;   0.7]
-            ϵₘRng =        [ 0.96;  0.96;  0.96;  0.96]
-            ηRng =         [ 0.95;  0.95;  0.95;  0.95]
-            cd₀Rng =  1e-2*[  1.0;   0.8;   0.5;   0.6] 
-            cm₀Rng =  1e-3*[ -1.0;   2.0;   2.0;   1.0]
-            cmαRng =       [  0.0;   0.0;   0.0;   0.0]
-            cnαRng =  2π/β*[  1.0;   1.0;   1.0;   1.0]
+            MaRng  =       [    0; 0.062; 0.080; 0.120; 0.150]
+            α₀NRng = π/180*[  0.0;   0.0;   0.0;   0.0;   0.0]
+            ϵₙRng =        [  0.7;   0.7;   0.7;   0.7;   0.7]
+            ϵₘRng =        [ 0.96;  0.96;  0.96;  0.96;  0.96]
+            ηRng =         [ 0.95;  0.95;  0.95;  0.95;  0.95]
+            cd₀Rng =  1e-2*[  1.0;   1.0;   0.8;   0.5;   0.6] 
+            cm₀Rng =  1e-3*[ -1.0;  -1.0;   2.0;   2.0;   1.0]
+            cmαRng =       [  0.0;   0.0;   0.0;   0.0;   0.0]
+            cnαRng =  2π/β*[  1.0;   1.0;   1.0;   1.0;   1.0]
         elseif name in ["VERTOL23010"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.001,min(0.3,Ma))
+            Ma = min(0.3,Ma)
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  =       [  0.001;     0.3]
-            α₀NRng = π/180*[    1.0;     1.0]
-            ϵₙRng =        [    0.7;     0.7]
-            ϵₘRng =        [   0.96;    0.96]
-            ηRng =         [   0.95;    0.95]
-            cd₀Rng =  1e-2*[    1.0;     1.0] 
-            cm₀Rng =  1e-2*[   -1.2;    -1.2]
-            cmαRng =       [  -0.00;   -0.00]
-            cnαRng =  2π/β*[   1.0;    1.0]    
+            MaRng  =       [    0;  0.3]
+            α₀NRng = π/180*[  1.0;  1.0]
+            ϵₙRng =        [  0.7;  0.7]
+            ϵₘRng =        [ 0.96; 0.96]
+            ηRng =         [ 0.95; 0.95]
+            cd₀Rng =  1e-2*[  1.0;  1.0] 
+            cm₀Rng =  1e-2*[ -1.2; -1.2]
+            cmαRng =       [  0.0;  0.0]
+            cnαRng =  2π/β*[  1.0;  1.0]    
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.001,min(0.3,Ma))
+            Ma = min(0.3,Ma)
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  =       [  0.001;     0.3]
+            MaRng  =       [      0;     0.3]
             α₀NRng = π/180*[    1.2;     1.2]
             ϵₙRng =        [    0.7;     0.7]
             ϵₘRng =        [   0.96;    0.96]
-            ηRng =         [   1;    1]
+            ηRng =         [      1;       1]
             cd₀Rng =  1e-2*[    0.3;     0.3] 
             cm₀Rng =  1e-2*[    5.0;     5.0]
             cmαRng =       [-0.0573; -0.0573]
             cnαRng =    2π*[   1.08;    1.08]
         elseif name in ["HeliosWingAirfoil"]
-            # Bound Mach 
-            Ma = max(0.001,min(0.3,Ma))
+            # Bound Mach
+            Ma = min(0.3,Ma)
             # Mach-dependent parameters
-            MaRng  =       [0.001; 0.3]
-            α₀NRng = π/180*[  0.0; 0.0]
-            ϵₙRng =        [  1.0; 1.0]
-            ϵₘRng =        [  1.0; 1.0]
+            MaRng  =       [   0; 0.3]
+            α₀NRng = π/180*[ 0.0; 0.0]
+            ϵₙRng =        [ 1.0; 1.0]
+            ϵₘRng =        [ 1.0; 1.0]
             ηRng =         [ 1.0; 1.0]
-            cd₀Rng =  1e-2*[  1.0; 1.0]  
-            cm₀Rng =  1e-2*[  2.5; 2.5]
-            cmαRng =       [  0.0; 0.0]
-            cnαRng =    2π*[  1.0; 1.0]     
+            cd₀Rng =  1e-2*[ 1.0; 1.0]  
+            cm₀Rng =  1e-2*[ 2.5; 2.5]
+            cmαRng =       [ 0.0; 0.0]
+            cnαRng =    2π*[ 1.0; 1.0]     
         elseif name in ["HeliosPodAirfoil"]
-            # Bound Mach 
-            Ma = max(0.001,min(0.3,Ma))
+            # Bound Mach
+            Ma = min(0.3,Ma)
             # Mach-dependent parameters
-            MaRng  =       [0.001; 0.3]
-            α₀NRng = π/180*[  0.0; 0.0]
-            ϵₙRng =        [  1.0; 1.0]
-            ϵₘRng =        [  1.0; 1.0]
+            MaRng  =       [   0; 0.3]
+            α₀NRng = π/180*[ 0.0; 0.0]
+            ϵₙRng =        [ 1.0; 1.0]
+            ϵₘRng =        [ 1.0; 1.0]
             ηRng =         [ 1.0; 1.0]
-            cd₀Rng =  1e-2*[  2.0; 2.0]  
-            cm₀Rng =  1e-3*[  0.0; 0.0]
-            cmαRng =       [  0.0; 0.0]
-            cnαRng =       [  5.0; 5.0] 
+            cd₀Rng =  1e-2*[ 2.0; 2.0]  
+            cm₀Rng =  1e-3*[ 0.0; 0.0]
+            cmαRng =       [ 0.0; 0.0]
+            cnαRng =       [ 5.0; 5.0] 
         elseif name in ["BWBAirfoil"] 
             # Bound Mach and corresponding compressibility factor
-            Ma = max(0.01,min(0.3,Ma))
+            Ma = min(0.3,Ma)
             β = sqrt(1-Ma^2)    
             # Mach-dependent parameters
-            MaRng  =       [0.01; 0.3]
+            MaRng  =       [   0; 0.3]
             α₀NRng = π/180*[ 0.0; 0.0]
             ϵₙRng =        [ 1.0; 1.0]
             ϵₘRng =        [ 1.0; 1.0]
@@ -336,6 +339,9 @@ end
     γbCMat::Matrix{Float64}
     
     function BLiParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
+
+        # Validate
+        @assert all(>=(0), [Ma, Re, U, b])
 
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["NACA0012"]
@@ -1047,6 +1053,9 @@ end
     
     function BLoParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
+        # Validate
+        @assert all(>=(0), [Ma, Re, U, b])
+
         # Airfoil parameters' tables (as functions of Mach)
         if name in ["NACA0012"]
             # Bound Mach and corresponding compressibility factor
@@ -1200,6 +1209,9 @@ end
     cnδ::Real
 
     function FlapParameters(name::String; flapSiteID::Int64)
+
+        # Validate
+        @assert 0 < flapSiteID <= 100
 
         # Airfoil flap parameters
         if name in ["flatPlate","NACA0002","NACA0006"]
