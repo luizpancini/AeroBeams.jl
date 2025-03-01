@@ -24,7 +24,7 @@ aeroSolver = Indicial()
 h = 0e3
 
 ## Airspeed range
-URange = collect(30:2:160)
+URange = collect(30:5:160)
 
 ## Number of vibration modes
 nModes = 8
@@ -40,11 +40,11 @@ freqs = Array{Vector{Float64}}(undef,length(URange))
 damps = Array{Vector{Float64}}(undef,length(URange))
 #md nothing #hide
 
-# For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxiter = 50`, the default is 20).
+# For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxIter = 50`, the default is 20).
 ## System solver
 relaxFactor = 0.5
-maxiter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter)
+maxIter = 50
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter)
 #md nothing #hide
 
 # Next, we address an important step to be taken when performing flutter analyses in free flight with AeroBeams: to attach the model to light springs in displacement and rotation. This step is necessary for the solver to find the flight dynamic (rigid-body) modes of the vehicle, by introducing some sensitivity of the finite element states to those degrees-of-freedom. In the present case, we will attach two springs to the vehicle, one at each of the nodes where the transition from the body (fuselage) to the wing begins. An appropriate value for the stiffness of the springs is specified by the variable `μ`. The vectors `ku` and `kp` denote the stiffness values in the three orthogonal directions.
@@ -69,11 +69,8 @@ for (i,U) in enumerate(URange)
     BWBtrim.skipValidationMotionBasisA = true
     update_model!(BWBtrim)
 
-    ## To increase the rate of convergence, we may set initial an guess solution for the trim problem as the known solution at the previous airspeed (except at the first one).
-    x0Trim = i == 1 ? zeros(0) : trimProblem.x
-
     ## Now we create and solve the trim problem.
-    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR,x0=x0Trim)
+    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR)
     solve!(trimProblem)
 
     ## We extract the trim variables at the current airspeed and set them into our pre-allocated arrays. The trimmed angle of attack at the root, `trimAoA[i]`, is not necessary for the flutter analyses, it is merely an output of interest.
@@ -86,7 +83,7 @@ for (i,U) in enumerate(URange)
     BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
 
     ## Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[2e-2*U,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
 
     ## The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution

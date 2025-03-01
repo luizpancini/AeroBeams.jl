@@ -65,12 +65,15 @@ A few limitations of the theory to keep in mind when using this package:
 
 [GEBT](https://cdmhub.org/resources/367)[^3] [^4] was the first open source implementation of the geometrically exact beam theory proposed by Hodges. All previously mentioned packages (including AeroBeams.jl) are based on it.
 
+[GEBTAero](https://github.com/mid2SUPAERO/GEBTAero) couples GEBT with the 2D aerodynamic model of finite states[^6] to yield an aeroelastic program for very flexible wings. It is geared towards maximum computational efficiency, and can compute sectional beam properties.
+
 [SHARPy](https://github.com/ImperialCollegeLondon/sharpy) is an aeroelastic simulation toolbox for very flexible aircraft and wind turbines. On the structural side, it employs a displacement-based geometrically exact beam formulation, whereas the aerodynamic modeling uses the Unsteady Vortex Lattice Method (UVLM) and the Source Panel Method (SPM).
 
 The University of Michigan's Nonlinear Aeroelastic Simulation Toolbox (UM/NAST) is a framework for simulating the flight dynamics of flexible aircraft structures modeled as an assembly of beams. It implements a strain-based geometrically exact beam theory[^10]. It is not, however, an open source code.
 
-[ASWING](https://web.mit.edu/drela/Public/web/aswing/) is a program for the aerodynamic, structural, and control-response analysis
-of aircraft with flexible wings and fuselages of high to moderate aspect ratio. It uses a displacement-based nonlinear beam structural formulation coupled to a general extented lifting-line aerodynamic model to simulate the flight of aircraft with or without a user-defined control law. ASWING is licensed for commercial use.
+[AeroFlex](https://github.com/flavioluiz/AeroFlex) is a MATLAB toolbox for studying the flight dynamics of highly flexible airplanes, which makes use of the same formulation as UM/NAST, and is open source.
+
+[ASWING](https://web.mit.edu/drela/Public/web/aswing/) is a program for the aerodynamic, structural, and control-response analysis of aircraft with flexible wings and fuselages of high to moderate aspect ratio. It uses a displacement-based nonlinear beam structural formulation coupled to a general extented lifting-line aerodynamic model to simulate the flight of aircraft with or without a user-defined control law. ASWING is licensed for commercial use.
 
 ## Theory
 

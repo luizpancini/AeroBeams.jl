@@ -30,7 +30,7 @@ aeroSolver = Indicial()
 h = 0e3
 
 # Airspeed range
-URange = collect(30:2:160)
+URange = collect(30:5:160)
 
 # Number of vibration modes
 nModes = 8
@@ -47,13 +47,13 @@ damps = Array{Vector{Float64}}(undef,length(URange))
 nothing #hide
 ````
 
-For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxiter = 50`, the default is 20).
+For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (`relaxFactor = 0.5`), and an increased number of maximum iterations (`maxIter = 50`, the default is 20).
 
 ````@example BWBflutter
 # System solver
 relaxFactor = 0.5
-maxiter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter)
+maxIter = 50
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter)
 nothing #hide
 ````
 
@@ -83,11 +83,8 @@ for (i,U) in enumerate(URange)
     BWBtrim.skipValidationMotionBasisA = true
     update_model!(BWBtrim)
 
-    # To increase the rate of convergence, we may set initial an guess solution for the trim problem as the known solution at the previous airspeed (except at the first one).
-    x0Trim = i == 1 ? zeros(0) : trimProblem.x
-
     # Now we create and solve the trim problem.
-    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR,x0=x0Trim)
+    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR)
     solve!(trimProblem)
 
     # We extract the trim variables at the current airspeed and set them into our pre-allocated arrays. The trimmed angle of attack at the root, `trimAoA[i]`, is not necessary for the flutter analyses, it is merely an output of interest.
@@ -95,22 +92,16 @@ for (i,U) in enumerate(URange)
     trimThrust[i] = trimProblem.x[end-1]*BWBtrim.forceScaling
     trimδ[i] = trimProblem.x[end]
 
-    # All the variables needed for the stability analysis are now in place.We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state.
+    # All the variables needed for the stability analysis are now in place. We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state.
     BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
 
-    # Again, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
-    add_springs_to_beam!(beam=BWBeigen.beams[2],springs=[spring1])
-    add_springs_to_beam!(beam=BWBeigen.beams[3],springs=[spring2])
-    BWBeigen.skipValidationMotionBasisA = true
-    update_model!(BWBeigen)
-
     # Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1.0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[2e-2*U,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
 
     # The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
     untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
 end
 nothing #hide

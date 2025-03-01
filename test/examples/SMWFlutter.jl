@@ -5,13 +5,13 @@ aeroSolver = Indicial()
 derivationMethod = AD()
 
 # Airfoil
-airfoil = deepcopy(NACA0012)
+airfoil = deepcopy(flatPlate)
 
 # Altitude
 h = 20e3
 
 # Gravity
-g = 9.80665
+g = 9.7454
 
 # Discretization
 nElem = 16
@@ -29,9 +29,8 @@ k2 = 0.0
 # Model
 SMWFlutter,_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,θ=θ*π/180,k1=k1,k2=k2,nElem=nElem,altitude=h,g=g,stiffnessFactor=λ)
 
-# Set system solver options (limit initial load factor)
-σ0 = 0.5
-σstep = 0.5
+# Set system solver options
+σ0 = 1
 NR = create_NewtonRaphson(initialLoadFactor=σ0,displayStatus=false)
 
 # Set number of vibration modes

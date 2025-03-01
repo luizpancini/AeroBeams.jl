@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Mode shapes at highest airspeed
-modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,save=true,savePath=string(relPath,"/BWBflutter_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(45,30),ΔuDef=[2,-2,-12],legendPos=:top,modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/BWBflutter_modeShapes.pdf"))
 display(modesPlot)
 
 # Plot configurations
@@ -43,7 +43,7 @@ display(plt3)
 savefig(string(absPath,"/BWBflutter_delta.pdf"))
 
 # Root locus
-plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-30,5],ylims=[0,120], tickfont=font(ts), guidefont=font(fs), legend=:topleft, legendfontsize=10)
+plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-30,5],ylims=[0,120], tickfont=font(ts), guidefont=font(fs), legend_position=(0.2,0.5), legendfontsize=10)
 scatter!([NaN],[NaN], c=:black, shape=:circle, ms=ms, msw=msw, label="AeroBeams")
 scatter!([NaN],[NaN], c=:black, shape=:utriangle, ms=ms, msw=msw, label="UM/NAST")
 for mode in 1:nModes
