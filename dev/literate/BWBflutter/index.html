@@ -8,7 +8,7 @@ aeroSolver = Indicial()
 h = 0e3
 
 # Airspeed range
-URange = collect(30:2:160)
+URange = collect(30:5:160)
 
 # Number of vibration modes
 nModes = 8
@@ -21,10 +21,10 @@ untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
 freqs = Array{Vector{Float64}}(undef,length(URange))
-damps = Array{Vector{Float64}}(undef,length(URange))</code></pre><p>For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (<code>relaxFactor = 0.5</code>), and an increased number of maximum iterations (<code>maxiter = 50</code>, the default is 20).</p><pre><code class="language-julia hljs"># System solver
+damps = Array{Vector{Float64}}(undef,length(URange))</code></pre><p>For the trim problem, we set a Newton-Raphson solver for the system of equations, with the adequate relaxation factor for trim problems (<code>relaxFactor = 0.5</code>), and an increased number of maximum iterations (<code>maxIter = 50</code>, the default is 20).</p><pre><code class="language-julia hljs"># System solver
 relaxFactor = 0.5
-maxiter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter)</code></pre><p>Next, we address an important step to be taken when performing flutter analyses in free flight with AeroBeams: to attach the model to light springs in displacement and rotation. This step is necessary for the solver to find the flight dynamic (rigid-body) modes of the vehicle, by introducing some sensitivity of the finite element states to those degrees-of-freedom. In the present case, we will attach two springs to the vehicle, one at each of the nodes where the transition from the body (fuselage) to the wing begins. An appropriate value for the stiffness of the springs is specified by the variable <code>μ</code>. The vectors <code>ku</code> and <code>kp</code> denote the stiffness values in the three orthogonal directions.</p><pre><code class="language-julia hljs"># Attachment springs
+maxIter = 50
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter)</code></pre><p>Next, we address an important step to be taken when performing flutter analyses in free flight with AeroBeams: to attach the model to light springs in displacement and rotation. This step is necessary for the solver to find the flight dynamic (rigid-body) modes of the vehicle, by introducing some sensitivity of the finite element states to those degrees-of-freedom. In the present case, we will attach two springs to the vehicle, one at each of the nodes where the transition from the body (fuselage) to the wing begins. An appropriate value for the stiffness of the springs is specified by the variable <code>μ</code>. The vectors <code>ku</code> and <code>kp</code> denote the stiffness values in the three orthogonal directions.</p><pre><code class="language-julia hljs"># Attachment springs
 μ = 1e-2
 ku = kp = μ*[1; 1; 1]
 spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
@@ -39,11 +39,8 @@ for (i,U) in enumerate(URange)
     BWBtrim.skipValidationMotionBasisA = true
     update_model!(BWBtrim)
 
-    # To increase the rate of convergence, we may set initial an guess solution for the trim problem as the known solution at the previous airspeed (except at the first one).
-    x0Trim = i == 1 ? zeros(0) : trimProblem.x
-
     # Now we create and solve the trim problem.
-    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR,x0=x0Trim)
+    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR)
     solve!(trimProblem)
 
     # We extract the trim variables at the current airspeed and set them into our pre-allocated arrays. The trimmed angle of attack at the root, `trimAoA[i]`, is not necessary for the flutter analyses, it is merely an output of interest.
@@ -51,22 +48,16 @@ for (i,U) in enumerate(URange)
     trimThrust[i] = trimProblem.x[end-1]*BWBtrim.forceScaling
     trimδ[i] = trimProblem.x[end]
 
-    # All the variables needed for the stability analysis are now in place.We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state.
+    # All the variables needed for the stability analysis are now in place. We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state.
     BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
 
-    # Again, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
-    add_springs_to_beam!(beam=BWBeigen.beams[2],springs=[spring1])
-    add_springs_to_beam!(beam=BWBeigen.beams[3],springs=[spring2])
-    BWBeigen.skipValidationMotionBasisA = true
-    update_model!(BWBeigen)
-
     # Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1.0,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[2e-2*U,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
 
     # The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-12)
+    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
     untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
 end</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>We can use the built-in <a href="../../publicAPI/#AeroBeams.mode_tracking"><code>mode_tracking</code></a> function  to enhance the chances of correctly tracking the frequencies and dampings of each mode</p><pre><code class="language-julia hljs"># Mode tracking
 freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
@@ -121,4 +112,4 @@ for mode in 1:nModes
 scatter!(URange, modeDampings[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0,label=false)
 end
 plt5 = plot(plt51,plt52, layout=(2,1))</code></pre><p><img src="../BWBflutter_rootlocus.svg" alt/> <img src="../BWBflutter_Vgf.svg" alt/></p><p>Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the <a href="../../publicAPI/#AeroBeams.plot_mode_shapes"><code>plot_mode_shapes</code></a> function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.</p><pre><code class="language-julia hljs"># Plot mode shapes
-modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)</code></pre><p><img src="../BWBflutter_modeShapes.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../heliosTrim/">« Trimming a flying-wing HALE</a><a class="docs-footer-nextpage" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Saturday 1 March 2025 14:04">Saturday 1 March 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)</code></pre><p><img src="../BWBflutter_modeShapes.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../heliosTrim/">« Trimming a flying-wing HALE</a><a class="docs-footer-nextpage" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Saturday 1 March 2025 19:22">Saturday 1 March 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
