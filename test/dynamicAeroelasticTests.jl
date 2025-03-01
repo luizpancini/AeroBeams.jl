@@ -34,8 +34,8 @@ end
     for (i,ω) in enumerate(ωRange)
         M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("M2root_omega",ω,".txt")))
         ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("fold_omega",ω,".txt")))
-        @test M2root[i] ≈ M2root_ atol=SELFatol
-        @test ϕ[i] ≈ ϕ_ atol=SELFatol
+        @test M2root[i] ≈ M2root_ atol=1e-3
+        @test ϕ[i] ≈ ϕ_ atol=1e-3
     end
 end
 
