@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Gust response of an airfoil section · AeroBeams.jl</title><meta name="title" content="Gust response of an airfoil section · AeroBeams.jl"/><meta property="og:title" content="Gust response of an airfoil section · AeroBeams.jl"/><meta property="twitter:title" content="Gust response of an airfoil section · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/OMCgustTests/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/OMCgustTests/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/OMCgustTests/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../conventionalHALEmodel/">Creating a HALE aircraft model</a></li><li class="is-active"><a class="tocitem" href>Gust response of an airfoil section</a></li><li><a class="tocitem" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section</a></li><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../HealyBaselineFFWTfreeFlutterAoARangeURange/">Flutter analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/">Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li><a class="tocitem" href="../sweptTipRotor/">Modal analysis of a rotating beam</a></li><li><a class="tocitem" href="../twoStoryFrame/">Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li><a class="tocitem" href="../HealyBaselineFFWTOMCGustFloating/">Gust response of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../heliosTrim/">Trimming a flying-wing HALE</a></li><li><a class="tocitem" href="../BWBflutter/">Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li><li><a class="tocitem" href="../conventionalHALECheckedRollManeuver/">Coordinated turn maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Gust response of an airfoil section</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Gust response of an airfoil section</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/OMCgustTests.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Gust-response-of-an-airfoil-section"><a class="docs-heading-anchor" href="#Gust-response-of-an-airfoil-section">Gust response of an airfoil section</a><a id="Gust-response-of-an-airfoil-section-1"></a><a class="docs-heading-anchor-permalink" href="#Gust-response-of-an-airfoil-section" title="Permalink"></a></h1><p>This example illustrates how to set up an aerodynamic analysis of gust response. While AeroBeams <em>can&#39;t</em> run a strictly aerodynamic analyses (only aeroelastic ones), that can be done in practice by using a one-element stiff beam supported at both ends, effectively removing structural deformation effects. We&#39;ll evaluate the response of the NACA 0012 airfoil to one-minus-cosine gusts through several tests, each with different pitch angle and gust length. The performance of the available aerodynamic solvers the gust indicial solvers will be assessed too.</p><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>The code for this example is available <a href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/OMCgustTests.jl">here</a>.</p></div></div><h3 id="Core-function-setup"><a class="docs-heading-anchor" href="#Core-function-setup">Core function setup</a><a id="Core-function-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Core-function-setup" title="Permalink"></a></h3><p>The following core function solves our problem given the test case, the aerodynamic solver the gust indicial solver. Notice that we use the function <a href="../../publicAPI/#AeroBeams.create_OneMinusCosineGust"><code>create_OneMinusCosineGust</code></a> with the appropriate arguments to streamline the process of creation of the gust.</p><pre><code class="language-julia hljs">using AeroBeams, DelimitedFiles
+
+# Core function
+function OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
+
+    # Set test case data
+    if testCase == 1
+        Ma = 0.2            # Mach number
+        U = 68.06           # Airspeed [m/s]
+        H = π               # Normalized gust length
+        b = 0.40663         # Airfoil semichord [m]
+        τ = 2*H*b/U         # Gust duration [s]
+        w = 2.3748          # Gust peak velocity [m/s]
+        t₀ = 80*b/U         # Time of gust encounter [s]
+        tf = t₀ + 30*b/U    # Total simulation time [s]
+        θ = 0*π/180         # Airfoil pitch angle [deg]
+    elseif testCase == 2
+        Ma = 0.2
+        U = 68.06
+        H = π
+        b = 0.40663
+        τ = 2*H*b/U
+        w = 2.3748
+        t₀ = 80*b/U
+        tf = t₀ + 30*b/U
+        θ = 10*π/180
+    elseif testCase == 3
+        Ma = 0.2
+        U = 68.06
+        H = π
+        b = 0.40663
+        τ = 2*H*b/U
+        w = 2.3748
+        t₀ = 80*b/U
+        tf = t₀ + 30*b/U
+        θ = 15*π/180
+    elseif testCase == 4
+        Ma = 0.2
+        U = 68.06
+        H = 8π
+        b = 0.40663
+        τ = 2*H*b/U
+        w = 2.3748
+        t₀ = 80*b/U
+        tf = t₀ + 80*b/U
+        θ = 0*π/180
+    elseif testCase == 5
+        Ma = 0.2
+        U = 68.06
+        H = 8π
+        b = 0.40663
+        τ = 2*H*b/U
+        w = 2.3748
+        t₀ = 80*b/U
+        tf = t₀ + 80*b/U
+        θ = 10*π/180
+    elseif testCase == 6
+        Ma = 0.2
+        U = 68.06
+        H = 8π
+        b = 0.40663
+        τ = 2*H*b/U
+        w = 2.3748
+        t₀ = 60*b/U
+        tf = t₀ + 80*b/U
+        θ = 15*π/180
+    end
+
+    # Gust
+    gust = create_OneMinusCosineGust(initialTime=t₀,duration=τ,verticalVelocity=w)
+
+    # Wing surface
+    airfoil = deepcopy(NACA0012)
+    update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=b)
+    derivationMethod = AD()
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=2*b,normSparPos=1/4,updateAirfoilParameters=true)
+
+    # Wing beam
+    L = 1
+    nElem = 1
+    ρA = 1
+    ∞ = 1e12
+    wing = create_Beam(name=&quot;beam&quot;,length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=ρA)],rotationParametrization=&quot;E321&quot;,p0=[0;0;θ],aeroSurface=surf)
+
+    # BCs
+    clamp1 = create_BC(name=&quot;clamp1&quot;,beam=wing,node=1,types=[&quot;u1A&quot;,&quot;u2A&quot;,&quot;u3A&quot;,&quot;p1A&quot;,&quot;p2A&quot;,&quot;p3A&quot;],values=[0,0,0,0,0,0])
+    clamp2 = create_BC(name=&quot;clamp2&quot;,beam=wing,node=nElem+1,types=[&quot;u1A&quot;,&quot;u2A&quot;,&quot;u3A&quot;,&quot;p1A&quot;,&quot;p2A&quot;,&quot;p3A&quot;],values=[0,0,0,0,0,0])
+
+    # Model
+    OMCgustTests = create_Model(name=&quot;OMCgustTests&quot;,beams=[wing],BCs=[clamp1,clamp2],v_A=[0;U;0],gust=gust)
+
+    # Set system solver options
+    σ0 = 1.0
+    maxIter = 20
+    rtol = 1e-12
+    NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=rtol,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
+
+    # Time variables
+    steps = 1000
+    Δt = (tf-t₀)/steps
+
+    # Initial velocities update options
+    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)
+
+    # Create and solve dynamic problem
+    problem = create_DynamicProblem(model=OMCgustTests,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
+    solve!(problem)
+
+    # Unpack numerical solution
+    t = problem.savedTimeVector
+    cn = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.cn for i in 1:length(t)]
+    ct = [problem.aeroVariablesOverTime[i][1].aeroCoefficients.ct for i in 1:length(t)]
+    cl = @. cn*cos(θ) + ct*sin(θ)
+
+    # Load reference data
+    if testCase == 1
+        ΔclRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/gustTests/Hpi_A0.txt&quot;)
+    elseif testCase == 2
+        ΔclRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/gustTests/Hpi_A10.txt&quot;)
+    elseif testCase == 3
+        ΔclRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/gustTests/Hpi_A15.txt&quot;)
+    elseif testCase == 4
+        ΔclRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/gustTests/H8pi_A0.txt&quot;)
+    elseif testCase == 5
+        ΔclRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/gustTests/H8pi_A10.txt&quot;)
+    elseif testCase == 6
+        ΔclRef = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/gustTests/H8pi_A15.txt&quot;)
+    end
+
+    # Time index of gust encounter
+    ind = floor(Int,t₀/Δt)+1
+
+    # Non-dimensional time and cl increment vectors
+    τ = U/b * (t[ind:end] .- t[ind])
+    Δcl = cl[ind:end] .- cl[ind]
+
+    return τ,Δcl,ΔclRef
+end</code></pre><h3 id="Problem-setup"><a class="docs-heading-anchor" href="#Problem-setup">Problem setup</a><a id="Problem-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-setup" title="Permalink"></a></h3><p>To setup the problem, we define which tests will be run, and which aerodynamic and gust indicial solvers will be used. Notice that BLi stands for our <a href="https://doi.org/10.1016/j.jfluidstructs.2021.103375">modified Beddoes-Leishman model</a>, whereas BLo is the <a href="https://doi.org/10.4050/JAHS.34.3.3">original version</a>.</p><pre><code class="language-julia hljs"># Tests range
+tests = collect(1:6)
+
+# Aerodynamic and gust indicial solvers
+aeroSolvers = [QuasiSteady(); Indicial(); Inflow(); BLi(); BLo()]
+gustLoadsSolvers = [IndicialGust(&quot;Kussner&quot;); IndicialGust(&quot;Berci&amp;Righi&quot;)]
+
+# Initialize outputs
+τ = Array{Vector{Float64}}(undef,length(aeroSolvers),length(gustLoadsSolvers),length(tests))
+Δcl = Array{Vector{Float64}}(undef,length(aeroSolvers),length(gustLoadsSolvers),length(tests))
+ΔclRef = Array{Matrix{Float64}}(undef,length(aeroSolvers),length(gustLoadsSolvers),length(tests))</code></pre><h3 id="Problem-solving"><a class="docs-heading-anchor" href="#Problem-solving">Problem solving</a><a id="Problem-solving-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-solving" title="Permalink"></a></h3><p>We now loop the configurations to solve for each one of them.</p><pre><code class="language-julia hljs"># Loop aerodynamic solver
+for (i,aeroSolver) in enumerate(aeroSolvers)
+    # Loop gust solver
+    for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
+        # Loop test cases
+        for (k,testCase) in enumerate(tests)
+            # Solve for current configuration
+            τ[i,j,k],Δcl[i,j,k],ΔclRef[i,j,k] = OMCgustTestsCore(aeroSolver,gustLoadsSolver,testCase)
+        end
+    end
+end</code></pre><p>Let&#39;s compare the accuracy of the aerodynamic formulations by plotting the development of the lift coefficient. The indicial functions by Kussner (approximation of analytical) and by <a href="https://doi.org/10.1016/j.ast.2017.03.004">Berci and Righi</a> (semi-analytical) compare well to the CFD data by <a href="https://doi.org/10.2514/1.J057546">Mallik and Raveh</a>. The linear models show good results (except the quasi-steady one) for test 2, in which the airfoil is pitched by 10 degrees. However, at test 6 the dynamic stall models fare better, since the airfoil is at a high angle of attack (15 degrees) and stalls upon encountering the gust.</p><pre><code class="language-julia hljs">using Plots, ColorSchemes
+colors = get(colorschemes[:rainbow], LinRange(0, 1, length(aeroSolvers)))
+gr()
+labels = [&quot;QS&quot; &quot;Indicial&quot; &quot;Inflow&quot; &quot;BLi&quot; &quot;BLo&quot;]
+linestyles = [:solid :dash :dot :dashdot :dashdotdot]
+
+# Test 2 - Kussner indicial function
+plt21 = plot(xlabel=&quot;\$\\tau\$ [semichords]&quot;, ylabel=&quot;\$\\Delta c_l\$&quot;, title=&quot;Test 2 - Kussner indicial function&quot;)
+scatter!(ΔclRef[1,1,2][1,:], ΔclRef[1,1,2][2,:], color=:black, ms=4, label=&quot;Mallik &amp; Raveh (2019)&quot;)
+for (i,aeroSolver) in enumerate(aeroSolvers)
+    plot!(τ[i,1,2], Δcl[i,1,2], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+end
+
+# Test 2 - Berci and Righi indicial function
+plt22 = plot(xlabel=&quot;\$\\tau\$ [semichords]&quot;, ylabel=&quot;\$\\Delta c_l\$&quot;, title=&quot;Test 2 - Berci and Righi indicial function&quot;)
+scatter!(ΔclRef[1,1,2][1,:], ΔclRef[1,1,2][2,:], color=:black, ms=4, label=&quot;Mallik &amp; Raveh (2019)&quot;)
+for (i,aeroSolver) in enumerate(aeroSolvers)
+    plot!(τ[i,1,2], Δcl[i,1,2], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+end
+
+# Test 6 - Kussner indicial function
+plt61 = plot(xlabel=&quot;\$\\tau\$ [semichords]&quot;, ylabel=&quot;\$\\Delta c_l\$&quot;, title=&quot;Test 6 - Kussner indicial function&quot;)
+scatter!(ΔclRef[1,1,6][1,:], ΔclRef[1,1,6][2,:], color=:black, ms=4, label=&quot;Mallik &amp; Raveh (2019)&quot;)
+for (i,aeroSolver) in enumerate(aeroSolvers)
+    plot!(τ[i,1,6], Δcl[i,1,6], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+end
+
+# Test 6 - Berci and Righi indicial function
+plt62 = plot(xlabel=&quot;\$\\tau\$ [semichords]&quot;, ylabel=&quot;\$\\Delta c_l\$&quot;, title=&quot;Test 6 - Berci and Righi indicial function&quot;)
+scatter!(ΔclRef[1,1,6][1,:], ΔclRef[1,1,6][2,:], color=:black, ms=4, label=&quot;Mallik &amp; Raveh (2019)&quot;)
+for (i,aeroSolver) in enumerate(aeroSolvers)
+    plot!(τ[i,2,6], Δcl[i,2,6], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+end</code></pre><p><img src="../OMCgustTests_test2K.svg" alt/> <img src="../OMCgustTests_test2BR.svg" alt/> <img src="../OMCgustTests_test6K.svg" alt/> <img src="../OMCgustTests_test6BR.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../conventionalHALEmodel/">« Creating a HALE aircraft model</a><a class="docs-footer-nextpage" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Sunday 2 March 2025 18:04">Sunday 2 March 2025</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
