@@ -445,8 +445,17 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments
+    if any(isnan, jacobian)
+        error("jacobian contains NaNs")
+    elseif any(isinf, jacobian)
+        error("jacobian contains Infs")
+    end
+    println("Minimum abs value of jacobian: ", minimum(abs, jacobian))
+    println("Maximum abs value of jacobian: ", maximum(abs, jacobian))
+    println("Norm of jacobian: ", norm(jacobian))
     println("Rank of Jacobian: ", rank(Matrix(jacobian)))
     println("Det of Jacobian: ", det(Matrix(jacobian)))
+
     if any(isnan, augmentedJacobian)
         error("augmentedJacobian contains NaNs")
     elseif any(isinf, augmentedJacobian)
@@ -457,6 +466,7 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     println("Norm of augmentedJacobian: ", norm(augmentedJacobian))
     println("Rank of augmentedJacobian: ", rank(Matrix(augmentedJacobian)))
     println("Det of augmentedJacobian: ", det(Matrix(augmentedJacobian)))
+    
     sol = -augmentedJacobian\augmentedResidual
     Δx = sol[1:N]
     Δλ = sol[N+1:end]
