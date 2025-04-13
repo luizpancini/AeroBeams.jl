@@ -445,6 +445,9 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments
+    println("Rank of Jacobian: ", rank(Matrix(augmentedJacobian)))
+    println("Det of Jacobian: ", det(Matrix(augmentedJacobian)))
+    # println("Norm of Residual: ", norm(augmentedResidual))
     sol = -augmentedJacobian\augmentedResidual
     Δx = sol[1:N]
     Δλ = sol[N+1:end]

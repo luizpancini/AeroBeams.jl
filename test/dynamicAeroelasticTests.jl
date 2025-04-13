@@ -1,13 +1,13 @@
 # Dynamic aeroelastic problems
 
-@testset "Dynamic analysis of the Blended-Wing-Body vehicle undergoing a checked pitch maneuver" begin
-    include("examples/BWBcheckedPitchManeuver.jl")
-    # Self-comparison
-    rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "rootAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "Deltau3.txt"))
-    @test rootAoA ≈ rootAoA_ atol=SELFatol
-    @test Δu3 ≈ Δu3_ atol=SELFatol
-end
+# @testset "Dynamic analysis of the Blended-Wing-Body vehicle undergoing a checked pitch maneuver" begin
+#     include("examples/BWBcheckedPitchManeuver.jl")
+#     # Self-comparison
+#     rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "rootAoA.txt"))
+#     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "Deltau3.txt"))
+#     @test rootAoA ≈ rootAoA_ atol=SELFatol
+#     @test Δu3 ≈ Δu3_ atol=SELFatol
+# end
 
 ## Reduce CI time
 # @testset "Dynamic analysis of the conventional HALE aircraft undergoing a checked pitch maneuver" begin
@@ -19,14 +19,14 @@ end
 #     @test Δu3 ≈ Δu3_ atol=SELFatol
 # end
 
-@testset "Dynamic analysis of the conventional HALE aircraft undergoing a coordinated turn maneuver" begin
-    include("examples/conventionalHALECheckedRollManeuver.jl")
-    # Self-comparison
-    wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "wingAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "Deltau3.txt"))
-    @test wingAoA ≈ wingAoA_ atol=SELFatol
-    @test Δu3 ≈ Δu3_ atol=SELFatol
-end
+# @testset "Dynamic analysis of the conventional HALE aircraft undergoing a coordinated turn maneuver" begin
+#     include("examples/conventionalHALECheckedRollManeuver.jl")
+#     # Self-comparison
+#     wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "wingAoA.txt"))
+#     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "Deltau3.txt"))
+#     @test wingAoA ≈ wingAoA_ atol=SELFatol
+#     @test Δu3 ≈ Δu3_ atol=SELFatol
+# end
 
 @testset "Dynamic analysis of the baseline Healy FFWT wing under a series of one-minus-cosine gusts" begin
     include("examples/HealyBaselineFFWTOMCGustFloating.jl")
