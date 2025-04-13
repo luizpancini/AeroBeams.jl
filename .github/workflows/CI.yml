@@ -30,6 +30,14 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v4
+      - name: Use strict project environment
+        run: |
+          julia --project -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
+      - name: Ensure Manifest is used
+        run: |
+          if [ ! -f Manifest.toml ]; then
+            echo "Missing Manifest.toml! CI must use the same versions as local." && exit 1
+          fi
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
@@ -52,9 +60,17 @@ jobs:
       statuses: write
     steps:
       - uses: actions/checkout@v4
+      - name: Use strict project environment
+        run: |
+          julia --project -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
+      - name: Ensure Manifest is used
+        run: |
+          if [ ! -f Manifest.toml ]; then
+            echo "Missing Manifest.toml! CI must use the same versions as local." && exit 1
+          fi
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1'
+          version: '1.9'
       - uses: julia-actions/cache@v2
       - name: Install Python dependencies
         run: |

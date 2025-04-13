@@ -1279,15 +1279,6 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         jacobian[eqs_Fp2,DOF_δ] .= -m2χ_δ/forceScaling
     end
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        nan_indices = findall(isnan, A)
-        println("Element $(element.globalID): Jacobian contains NaNs")
-        for idx in nan_indices
-            println("  Index: $idx, Value: ", A[idx])
-        end
-    end
-
     @pack! problem = jacobian
     @pack! element.jacobians = F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω
 
@@ -1718,11 +1709,6 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
     @unpack forceScaling = model
     @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,springs = specialNode
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("SpecialNode $(globalID): Jacobian before allocation contains NaNs")
-    end
-
     # Check if the node is BC'ed
     if !isempty(BCs)
         # Loop applied BCs
@@ -1734,19 +1720,9 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
         jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
     end
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("SpecialNode $(globalID): Jacobian after allocation contains NaNs")
-    end
-
     # Add spring loads' contributions
     for spring in springs
         jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
-    end
-
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("SpecialNode $(globalID): Jacobian after springs contains NaNs")
     end
 
     @pack! problem = jacobian
@@ -1843,14 +1819,6 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         # Derivative of spring rotation with respect to rotation of each of its attachment nodes
         Δp_p = ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p)
         Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
-        if any(isnan, Δp_p)
-            println("p=$p, pOtherNode=$pOtherNode")
-            println("Δp_p=$(Δp_p)")
-        end
-        if any(isnan, Δp_pOtherNode)
-            println("p=$p, pOtherNode=$pOtherNode")
-            println("Δp_pOtherNode=$(Δp_pOtherNode)")
-        end
         # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
         jacobian[eqs_Fp[1],DOF_pM_otherNode] .+= Kp/forceScaling * Δp_pOtherNode * Diagonal(.!otherNode.pIsPrescribed)
