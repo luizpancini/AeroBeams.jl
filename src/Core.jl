@@ -1736,11 +1736,13 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
 
     A = Matrix(jacobian)
     if any(isnan, A)
-        nan_indices = findall(isnan, A)
         println("SpecialNode $(globalID): Jacobian contains NaNs")
-        for idx in nan_indices
-            println("  Index: $idx, Value: ", A[idx])
-        end
+        println("u=$u")
+        println("p=$p")
+        println("F=$F")
+        println("M=$M")
+        println("F_p=$F_p")
+        println("M_p=$M_p")
     end
 
     @pack! problem = jacobian
