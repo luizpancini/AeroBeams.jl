@@ -1718,6 +1718,11 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
     @unpack forceScaling = model
     @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,springs = specialNode
 
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        println("SpecialNode $(globalID): Jacobian before allocation contains NaNs")
+    end
+
     # Check if the node is BC'ed
     if !isempty(BCs)
         # Loop applied BCs
@@ -1729,6 +1734,11 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
         jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
     end
 
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        println("SpecialNode $(globalID): Jacobian after allocation contains NaNs")
+    end
+
     # Add spring loads' contributions
     for spring in springs
         jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
@@ -1736,13 +1746,7 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
 
     A = Matrix(jacobian)
     if any(isnan, A)
-        println("SpecialNode $(globalID): Jacobian contains NaNs")
-        println("u=$u")
-        println("p=$p")
-        println("F=$F")
-        println("M=$M")
-        println("F_p=$F_p")
-        println("M_p=$M_p")
+        println("SpecialNode $(globalID): Jacobian after springs contains NaNs")
     end
 
     @pack! problem = jacobian
