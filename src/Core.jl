@@ -1279,6 +1279,15 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         jacobian[eqs_Fp2,DOF_δ] .= -m2χ_δ/forceScaling
     end
 
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        nan_indices = findall(isnan, A)
+        println("Element $(element.globalID): Jacobian contains NaNs")
+        for idx in nan_indices
+            println("  Index: $idx, Value: ", A[idx])
+        end
+    end
+
     @pack! problem = jacobian
     @pack! element.jacobians = F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω
 
@@ -1723,6 +1732,15 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
     # Add spring loads' contributions
     for spring in springs
         jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
+    end
+
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        nan_indices = findall(isnan, A)
+        println("SpecialNode $(globalID): Jacobian contains NaNs")
+        for idx in nan_indices
+            println("  Index: $idx, Value: ", A[idx])
+        end
     end
 
     @pack! problem = jacobian

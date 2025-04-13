@@ -445,16 +445,6 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("Jacobian contains NaNs — serializing to file.")
-        Serialization.serialize("bad_jacobian_NaNs.bin", A)
-        error("Jacobian contains NaNs")
-    elseif any(isinf, A)
-        println("Jacobian contains Infs — serializing to file.")
-        Serialization.serialize("bad_jacobian_Infs.bin", A)
-        error("Jacobian contains Infs")
-    end
     sol = -augmentedJacobian\augmentedResidual
     Δx = sol[1:N]
     Δλ = sol[N+1:end]
