@@ -84,7 +84,7 @@ end
 end
 
 @testset "Dynamic analysis of a harmonically plunging airfoil, using the dynamic stall model" begin
-    include("examples/plungingAirfoil.jl")
+    include("examples/plungingAirfoilDSModelTest.jl")
     # Self-comparison
     cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoil", "cn.txt"))
     cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoil", "cm.txt"))

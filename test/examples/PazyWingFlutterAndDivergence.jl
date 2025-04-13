@@ -1,13 +1,7 @@
 using AeroBeams, LinearInterpolations
 
-# Option for mode tracking
-modeTracking = true
-
 # Aerodynamic solver
-aeroSolver = Indicial()
-
-# Derivation method
-derivationMethod = AD()
+aeroSolver = Inflow()
 
 # Airfoil section
 airfoil = deepcopy(flatPlate)
@@ -15,19 +9,29 @@ airfoil = deepcopy(flatPlate)
 # Flag for upright position
 upright = true
 
+# Gravity
+g = 0
+
 # Pitch angle
 θ = 0*π/180
 
-# Set system solver options (limit initial load factor)
-σ0 = 0.5
+# Fixed geometrical and discretization properties
+nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+
+# Tip mass
+tipMass = 0.00
+ηtipMass = [0; -chord*(1-normSparPos)-0.00; 0]
+
+# Set system solver options
+σ0 = 1
 σstep = 0.5
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
 
 # Number of modes
-nModes = 5
+nModes = 3
 
 # Set airspeed range, and initialize outputs
-URange = collect(0:0.5:115)
+URange = collect(5:0.5:120)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
@@ -41,7 +45,7 @@ for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U = $U m/s")
     # Model
-    PazyWingFlutterAndDivergence,nElem,L,chord,normSparPos = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,upright=upright,θ=θ,airspeed=U)
+    PazyWingFlutterAndDivergence,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,θ=θ,airspeed=U,g=g,tipMass=tipMass,ηtipMass=ηtipMass)
     # Create and solve problem
     problem = create_EigenProblem(model=PazyWingFlutterAndDivergence,nModes=nModes,systemSolver=NR)
     solve!(problem)
@@ -59,11 +63,7 @@ for (i,U) in enumerate(URange)
 end
 
 # Apply mode tracking, if applicable
-if modeTracking
-    freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
-else
-    freqs,damps = untrackedFreqs,untrackedDamps
-end
+freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 modeFrequencies = Array{Vector{Float64}}(undef,nModes)
@@ -116,11 +116,29 @@ for mode in 1:nModes
     flutterOffsetDispOfMode[mode] = flutterOffsetDisp
 end
 
-# Divergence
-indicesNonOscillatoryInstability = [findfirst(x->x>0 && x<100,nonOscillatoryDampings[i]) for i in eachindex(URange)]
-indexDivergence = findfirst(!isnothing,indicesNonOscillatoryInstability[2:end])
-divergenceSpeed = !isnothing(indexDivergence) ? URange[indexDivergence] : NaN
-println("Divergence speed = $divergenceSpeed m/s")
-# Note: the first value of nonOscillatoryDampings[i] crosses zero at an airspeed between 96.0 and 96.5, but once it becomes positive, it disappears. So the divergence speed is between those values
+# Initialize divergence speed, its index, and flag for divergence being found
+global divergenceFound = nothing
+global iD = nothing
+global divergenceFound = false
+
+# Separate non-oscillatory dampings by mode
+nNOModes = 1
+modeNonOscillatoryDampings = Array{Vector{Float64}}(undef,nNOModes)
+modeNonOscillatoryDampingsEst = Array{Vector{Float64}}(undef,nNOModes)
+for mode in 1:nNOModes
+    # Mode dampings
+    modeNonOscillatoryDampings[mode] = [nonOscillatoryDampings[i][mode] for i in eachindex(URange)]
+    # Estimated mode dampings from backward finite difference extrapolation
+    modeNonOscillatoryDampingsEst[mode] = backward_extrapolation(modeNonOscillatoryDampings[mode])
+    # Divergence is found when the sign of the estimated value is different from the actual
+    if !divergenceFound
+        global iD = findfirst(i -> modeNonOscillatoryDampings[mode][i]*modeNonOscillatoryDampingsEst[mode][i] < 0, 1:length(URange))
+        if !isnothing(iD)
+            global divergenceSpeed = LinearInterpolations.interpolate(modeNonOscillatoryDampingsEst[mode][iD-1:iD],URange[iD-1:iD],0)
+            global divergenceFound = true
+            println("Divergence speed = $divergenceSpeed m/s")
+        end
+    end
+end
 
 println("Finished PazyWingFlutterAndDivergence.jl")

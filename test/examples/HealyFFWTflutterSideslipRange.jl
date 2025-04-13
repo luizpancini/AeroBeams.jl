@@ -20,7 +20,7 @@ nElementsInner = 15
 nElementsFFWT = 5
 
 # Tip loss options (the value of tipLossDecayFactor is assumed to match the experimental results, since it strongly influences the solution, especially at lower airspeeds)
-withTipCorrection = true
+hasTipCorrection = true
 tipLossDecayFactor = 10
 
 # System solver
@@ -46,7 +46,7 @@ for (i,β) in enumerate(βRange)
     # Display progress
     println("Solving for β=$(round(Int,β*180/π)) deg")
     # Update model
-    model = create_HealyFFWT(flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β);cos(β);0])
+    model = create_HealyFFWT(flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β);cos(β);0])
     # Set initial guess solution as the one from previous sideslip angle
     x0 = (i>1 && problem[i-1].systemSolver.convergedFinalSolution) ? problem[i-1].x : zeros(0)
     # Create and solve problem

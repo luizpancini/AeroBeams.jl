@@ -1,7 +1,5 @@
 using AeroBeams, ForwardDiff, DelimitedFiles
 
-include("DSframesLoader.jl")
-
 # Reference data source ("NASA" or "GU")
 source = "NASA"
 

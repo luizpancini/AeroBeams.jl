@@ -11,13 +11,8 @@ altitude = 0
 atmosphere = standard_atmosphere(altitude)
 
 # Frame data
-airfoil = deepcopy(NACA0012)
-a₀ = 0.20944
-a₁ = 0.17279
-b = 0.305
-k = 0.098
-Ma = 0.301
-U = Ma*atmosphere.a
+frame = 10_022
+airfoil,a₀,a₁,b,k,Ma,U = NASA_frames_loader(frame)
 
 # Pitch profile
 ω = k*U/b
@@ -34,7 +29,7 @@ update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=b)
 surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=2*b,normSparPos=0.25,updateAirfoilParameters=false)
 
 # Wing
-L = 10*2*b
+L = 10*2b
 EIy,GJ = 5e6,1e8
 ρA,ρIy,ρIz = 10,1e-2,1e-2
 nElem = 20
@@ -61,7 +56,7 @@ tf = nCycles*τ
 initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/1e3)
 
 # Create and solve dynamic problem
-problem = create_DynamicProblem(model=wingDStest,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false,minΔt=Δt/2^2)
+problem = create_DynamicProblem(model=wingDStest,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
 solve!(problem)
 
 # Unpack numerical solution
@@ -75,9 +70,9 @@ ct = [[problem.aeroVariablesOverTime[i][elem].aeroCoefficients.ct for i in 1:len
 cl = @. [cn[e]*cos(α[e]) + ct[e]*sin(α[e]) for e in sizeRange]
 cdrag = @. [cn[e]*sin(α[e]) - ct[e]*cos(α[e]) for e in sizeRange]
 
-# Load reference data from McAlister et al (frame 10022)
-clRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "DSModelTest", "cl.txt"))
-cmRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "DSModelTest", "cm.txt"))
-cdRef = readdlm(joinpath(dirname(@__DIR__), "referenceData", "DSModelTest", "cd.txt"))
+# Load reference data from McAlister et al.
+clRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/NASAframes/"*string(frame)*"_cl.txt")
+cmRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/NASAframes/"*string(frame)*"_cm.txt")
+cdRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/NASAframes/"*string(frame)*"_cd.txt")
 
 println("Finished wingDStest.jl")

@@ -74,24 +74,35 @@ export QuasiSteady
 struct Indicial <: AeroSolver
 
     circulatoryIndicialFunction::String
+    incompressibleInertialLoads::Bool
+    nCirculatoryStates::Int64
+    nInertialStates::Int64
     nStates::Int64
-    aC::Vector{Float64}
+    AC::Vector{Float64}
     bC::Vector{Float64}
+    AI::Vector{Float64}
+    bI::Vector{Float64}
     bCMat::Matrix{Float64}
 
-    function Indicial(; circulatoryIndicialFunction::String="Wagner")
+    function Indicial(; circulatoryIndicialFunction::String="Wagner",incompressibleInertialLoads::Bool=true)
 
         # Validate
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
 
-        # Number of states per element
-        nStates = 2
-
-        # Circulatory indicial parameters (Wagner)
-        aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
+        # Circulatory indicial parameters
+        AC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
         bCMat = diagm(bC)
 
-        return new(circulatoryIndicialFunction,nStates,aC,bC,bCMat)
+        # Number of states per element
+        nCirculatoryStates = length(AC)
+        nInertialStates = incompressibleInertialLoads ? 0 : 8
+        nStates = nCirculatoryStates + nInertialStates
+
+        # Inertial indicial parameters
+        AI = [1.5; -0.5; 1.0]
+        bI = [0.25; 0.1; 5.0]
+
+        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nCirculatoryStates,nInertialStates,nStates,AC,bC,AI,bI,bCMat)
     end
 
 end
@@ -107,10 +118,13 @@ struct BLi <: AeroSolver
 
     circulatoryIndicialFunction::String
     incompressibleInertialLoads::Bool
+    nLinearCirculatoryStates::Int64
+    nInertialStates::Int64
+    nNonlinearCirculatoryStates::Int64
     nStates::Int64
-    aC::Vector{Float64}
+    AC::Vector{Float64}
     bC::Vector{Float64}
-    aI::Vector{Float64}
+    AI::Vector{Float64}
     bI::Vector{Float64}
     bCMat::Matrix{Float64}
 
@@ -119,18 +133,21 @@ struct BLi <: AeroSolver
         # Validate
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
 
-        # Number of states per element
-        nStates = incompressibleInertialLoads ? 8 : 16
-
         # Circulatory indicial parameters
-        aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
+        AC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
         bCMat = diagm(bC)
 
+        # Number of states per element
+        nLinearCirculatoryStates = length(AC)
+        nInertialStates = incompressibleInertialLoads ? 0 : 8
+        nNonlinearCirculatoryStates = 6
+        nStates = nLinearCirculatoryStates + nInertialStates + nNonlinearCirculatoryStates
+
         # Inertial indicial parameters
-        aI = [1.5; -0.5; 1.0]
+        AI = [1.5; -0.5; 1.0]
         bI = [0.25; 0.1; 5.0]
 
-        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nStates,aC,bC,aI,bI,bCMat)
+        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nLinearCirculatoryStates,nInertialStates,nNonlinearCirculatoryStates,nStates,AC,bC,AI,bI,bCMat)
     end
 
 end
@@ -146,10 +163,13 @@ struct BLo <: AeroSolver
 
     circulatoryIndicialFunction::String
     incompressibleInertialLoads::Bool
+    nLinearCirculatoryStates::Int64
+    nInertialStates::Int64
+    nNonlinearCirculatoryStates::Int64
     nStates::Int64
-    aC::Vector{Float64}
+    AC::Vector{Float64}
     bC::Vector{Float64}
-    aI::Vector{Float64}
+    AI::Vector{Float64}
     bI::Vector{Float64}
     bCMat::Matrix{Float64}
 
@@ -158,18 +178,21 @@ struct BLo <: AeroSolver
         # Validate
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
 
-        # Number of states per element
-        nStates = incompressibleInertialLoads ? 7 : 15
-
         # Circulatory indicial parameters
-        aC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
+        AC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
         bCMat = diagm(bC)
 
+        # Number of states per element
+        nLinearCirculatoryStates = length(AC)
+        nInertialStates = incompressibleInertialLoads ? 0 : 8
+        nNonlinearCirculatoryStates = 5
+        nStates = nLinearCirculatoryStates + nInertialStates + nNonlinearCirculatoryStates
+
         # Inertial indicial parameters
-        aI = [1.5; -0.5; 1.0]
+        AI = [1.5; -0.5; 1.0]
         bI = [0.25; 0.1; 5.0]
 
-        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nStates,aC,bC,aI,bI,bCMat)
+        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nLinearCirculatoryStates,nInertialStates,nNonlinearCirculatoryStates,nStates,AC,bC,AI,bI,bCMat)
     end
 
 end
@@ -183,21 +206,40 @@ export BLo
 """
 struct Inflow <: AeroSolver
 
+    circulatoryIndicialFunction::String
+    incompressibleInertialLoads::Bool
+    nInflowStates::Int64
+    nInertialStates::Int64
     nStates::Int64
     AₚInv::Matrix{Float64}
     AₚInvcₚ::Vector{Float64}
     bₚ::Vector{Float64}
+    AC::Vector{Float64}
+    bC::Vector{Float64}
+    AI::Vector{Float64}
+    bI::Vector{Float64}
 
-    function Inflow(nStates::Int64=6)
+    function Inflow(; circulatoryIndicialFunction::String="Jose", incompressibleInertialLoads::Bool=true, nInflowStates::Int64=6)
 
         # Validate number of states per element
-        @assert 2 <= nStates <= 8 "select between 2 and 8 inflow states"
+        @assert nInflowStates in [4,6,8] "select nInflowStates as 4, 6 or 8"
 
         # Inflow arrays
-        AₚInv,bₚ,cₚ = inflow_arrays(nStates)
+        AₚInv,bₚ,cₚ = inflow_arrays(nInflowStates)
         AₚInvcₚ = AₚInv*cₚ
 
-        return new(nStates,AₚInv,AₚInvcₚ,bₚ)
+        # Number of states per element
+        nInertialStates = incompressibleInertialLoads ? 0 : 8
+        nStates = nInflowStates + nInertialStates
+
+        # Circulatory indicial parameters (needed only to compute inertial response time scales)
+        AC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
+
+        # Inertial indicial parameters
+        AI = [1.5; -0.5; 1.0]
+        bI = [0.25; 0.1; 5.0]
+
+        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nInflowStates,nInertialStates,nStates,AₚInv,AₚInvcₚ,bₚ,AC,bC,AI,bI)
     end
 
 end
@@ -206,12 +248,12 @@ export Inflow
 
 # Gets the circulatory indicial parameters given the indicial function
 function circulatory_indicial_parameters(circulatoryIndicialFunction)
-    aCbC = Dict(
+    ACbC = Dict(
         "Beddoes" => ([0.3; 0.7], [0.14; 0.53]),
         "Wagner"  => ([0.165; 0.335], [0.0455; 0.3]),
         "Jose"    => ([0.3493; 0.6507], [0.0984; 0.7759])
     )
-    return get(aCbC, circulatoryIndicialFunction, nothing)
+    return get(ACbC, circulatoryIndicialFunction, nothing)
 end
 
 
@@ -282,7 +324,7 @@ export TableLookup
 mutable struct ThinAirfoilTheory <: FlapAeroSolver
 
     nStates::Int64
-    aCf::Vector{Float64}
+    ACf::Vector{Float64}
     bCf::Vector{Float64}
     bCfMat::Matrix{Float64}
     Th::Vector{Float64} 
@@ -293,13 +335,13 @@ mutable struct ThinAirfoilTheory <: FlapAeroSolver
         nStates = 2
 
         # Circulatory indicial parameters (Wagner)
-        aCf,bCf = circulatory_indicial_parameters("Wagner")
+        ACf,bCf = circulatory_indicial_parameters("Wagner")
         bCfMat = diagm(bCf)
 
-        # Initialize Theodorsen's flap constants
-        Th = theodorsen_flap_constants(0.25,1.0)
+        # Initialize Theodorsen's flap constants assuming a pitch axis at 1/4-chord and a flap axis at 3/4-chord (updated later on model creation)
+        Th = theodorsen_flap_constants(1/4,3/4)
 
-        return new(nStates,aCf,bCf,bCfMat,Th)
+        return new(nStates,ACf,bCf,bCfMat,Th)
     end
 
 end
@@ -333,10 +375,10 @@ function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
 
     # Useful functions of the above
     Th[14] = Th[4]+Th[10]
-    Th[15] = Th[1]-Th[8]-(normFlapPos-normSparPos)*Th[4]+Th[11]/2
-    Th[16] = Th[7]+Th[1]*(normFlapPos-normSparPos)
-    Th[17] = Th[11]/(2π)
-    Th[18] = Th[10]/π
+    Th[15] = Th[1]-Th[8]-Th[4]*(d-a)+Th[11]/2
+    Th[16] = Th[7]+Th[1]*(d-a)
+    Th[17] = Th[10]/π
+    Th[18] = Th[11]/(2π)
 
     return Th
 

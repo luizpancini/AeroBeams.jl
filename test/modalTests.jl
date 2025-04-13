@@ -247,6 +247,13 @@ end
     @test hcat(numFreqs...)' ≈ freqs_ atol=SELFatol
 end
 
+@testset "Modal analysis of the undeformed swept Pazy wing" begin
+    include("examples/sweptPazyModal.jl")
+    # Self-comparison
+    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptPazyModal", "freqs.txt"))
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+end
+
 @testset "Modal analysis of a swept-tip rotor under varying angular velocities" begin
     include("examples/sweptTipRotor.jl")
     # Reference comparison (3 first bending frequencies @ ω = 750 rpm and tipAngle = 45 deg)

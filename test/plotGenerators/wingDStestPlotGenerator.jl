@@ -13,7 +13,7 @@ plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,view=(30,30),plot
 
 # Plot configurations
 colors = get(colorschemes[:rainbow], LinRange(0, 1, length(elemRangePlot)))
-labels = string.(elemRangePlot)
+labels = ["Root element", "Tip element"]
 ts = 10
 fs = 16
 lw = 2
@@ -23,10 +23,10 @@ gr()
 # Pitch angle
 range2plot = 1:50:length(t)
 θprescribed = (a₀-a₁.+θ.(t))*180/π
-plt1 = plot(xlabel="Cycles", ylabel="Pitch angle [deg]", tickfont=font(ts), guidefont=font(fs), legend=:bottomleft, legendfontsize=10)
+plt1 = plot(xlabel="Cycles", ylabel="Pitch angle [deg]", tickfont=font(ts), guidefont=font(fs), legend=:top, legendfontsize=10)
 scatter!(t[range2plot]/τ, θprescribed[range2plot], color=:black, ms=ms, label="Prescribed at the root")
 for (i,e) in enumerate(elemRangePlot)
-    plot!(t/τ, α[i]*180/π, color=colors[i], lw=lw, label=string("Element ",labels[i]))
+    plot!(t/τ, α[i]*180/π, color=colors[i], lw=lw, label=labels[i])
 end
 display(plt1)
 savefig(string(absPath,"/wingDStest_alpha.pdf"))
@@ -34,7 +34,7 @@ savefig(string(absPath,"/wingDStest_alpha.pdf"))
 # cn vs time
 plt2 = plot(xlabel="Time [s]", ylabel="\$c_n\$", tickfont=font(ts), guidefont=font(fs))
 for (i,e) in enumerate(elemRangePlot)
-    plot!(t, cn[i], color=colors[i], lw=lw, label=string("Element ",labels[i]))
+    plot!(t, cn[i], color=colors[i], lw=lw, label=labels[i])
 end
 display(plt2)
 savefig(string(absPath,"/wingDStest_cnt.pdf"))
@@ -42,7 +42,7 @@ savefig(string(absPath,"/wingDStest_cnt.pdf"))
 # cm vs time
 plt3 = plot(xlabel="Time [s]", ylabel="\$c_m\$", tickfont=font(ts), guidefont=font(fs))
 for (i,e) in enumerate(elemRangePlot)
-    plot!(t, cm[i], color=colors[i], lw=lw, label=string("Element ",labels[i]))
+    plot!(t, cm[i], color=colors[i], lw=lw, label=labels[i])
 end
 display(plt3)
 savefig(string(absPath,"/wingDStest_cmt.pdf"))
@@ -50,7 +50,7 @@ savefig(string(absPath,"/wingDStest_cmt.pdf"))
 # ct vs time
 plt4 = plot(xlabel="Time [s]", ylabel="\$c_t\$", tickfont=font(ts), guidefont=font(fs))
 for (i,e) in enumerate(elemRangePlot)
-    plot!(t, ct[i], color=colors[i], lw=lw, label=string("Element ",labels[i]))
+    plot!(t, ct[i], color=colors[i], lw=lw, label=labels[i])
 end
 display(plt4)
 savefig(string(absPath,"/wingDStest_ctt.pdf"))
@@ -59,7 +59,7 @@ savefig(string(absPath,"/wingDStest_ctt.pdf"))
 plt5 = plot(xlabel="Pitch angle [deg]", ylabel="\$c_l\$", tickfont=font(ts), guidefont=font(fs), legend=:topleft, legendfontsize=10)
 scatter!(clRef[1,:], clRef[2,:], color=:black, ms=ms, label="Exp. - McAlister et al (1982)")
 for (i,e) in enumerate(elemRangePlot)
-    plot!(α[i]*180/π, cl[i], color=colors[i], lw=lw, label=string("Element ",labels[i]))
+    plot!(α[i]*180/π, cl[i], color=colors[i], lw=lw, label=labels[i])
 end
 display(plt5)
 savefig(string(absPath,"/wingDStest_cla.pdf"))

@@ -18,7 +18,7 @@ Let's begin by setting up the variables of our problem.
 using AeroBeams
 
 # Aerodynamic solver
-aeroSolver = Inflow(6)
+aeroSolver = Inflow(nInflowStates=6)
 
 # Stiffness factor (for the structure)
 λ = 1

@@ -43,13 +43,13 @@ Four types of analysis can be simulated:
 - Vibration/Stability: an eigenvalue-based (linearized) analysis of small motions about a deformed state.
 - Dynamic: time-marching.
 
-A simple built-in post-processing tool allows the visualization of the results. Here is an example of the large-displacement motion of the [Pazy wing](https://nescacademy.nasa.gov/workshops/AePW3/public/wg/largedeflection) benchmark upon encountering a continuous gust (simulated atmospheric turbulence):
+A simple built-in post-processing tool allows the visualization of the results. Here is an example of limit-cycle oscillations of the [Pazy wing](https://nescacademy.nasa.gov/workshops/AePW3/public/wg/largedeflection) benchmark after encountering a gust:
 
-![Pazy Wing Continuous 1D Gust Deformation](docs/src/assets/PazyWingContinuous1DGust_deformation.gif)
+![Pazy Wing Gust Response](test/outputs/figures/PazyWingOMCGust/PazyWingOMCGust_deformation.gif)
 
 Purely structural problems (in the abscence of aerodynamic loads) can analyzed as well, such as the "flying spaghetti" proposed by [[9]](#9):
 
-![flying spaghetti](docs/src/assets/flyingSpaghetti2D_deformation.gif)
+![flying spaghetti](test/outputs/figures/flyingSpaghetti2D/flyingSpaghetti2D_deformation.gif)
 
 ## Limitations
 A few limitations of the theory to keep in mind when using this package:
@@ -70,6 +70,8 @@ A few limitations of the theory to keep in mind when using this package:
 [SHARPy](https://github.com/ImperialCollegeLondon/sharpy) is an aeroelastic simulation toolbox for very flexible aircraft and wind turbines. On the structural side, it employs a displacement-based geometrically exact beam formulation, whereas the aerodynamic modeling uses the Unsteady Vortex Lattice Method (UVLM) and the Source Panel Method (SPM).
 
 The University of Michigan's Nonlinear Aeroelastic Simulation Toolbox (UM/NAST) is a framework for simulating the flight dynamics of flexible aircraft structures modeled as an assembly of beams. It implements a strain-based geometrically exact beam theory, as described in [[10]](#10). It is not, however, an open source code.
+
+[AeroFlex](https://github.com/flavioluiz/AeroFlex) is a MATLAB toolbox for studying the flight dynamics of highly flexible airplanes, which makes use of the same formulation as UM/NAST, and is open source.
 
 [ASWING](https://web.mit.edu/drela/Public/web/aswing/) is a program for the aerodynamic, structural, and control-response analysis
 of aircraft with flexible wings and fuselages of high to moderate aspect ratio. It uses a displacement-based nonlinear beam structural formulation coupled to a general extented lifting-line aerodynamic model to simulate the flight of aircraft with or without a user-defined control law. ASWING is licensed for commercial use.

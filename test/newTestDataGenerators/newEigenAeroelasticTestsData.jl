@@ -133,6 +133,11 @@ for i=1:3
     writedlm(string("test/newTestDataGenerators/PazyWingFlutterTipMassRange/damps",i,".txt"), hcat(damps[i,:]...)')
 end
 
+# Frequency analysis of the Pazy wing
+include("../examples/PazyWingFreqsEvolution.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingFreqsEvolution"))
+writedlm("test/newTestDataGenerators/PazyWingFreqsEvolution/freqs.txt", freqs)
+
 # Flutter analysis of the sixteen-meter-wing
 include("../examples/SMWFlutter.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/SMWFlutter"))
@@ -185,6 +190,53 @@ include("../examples/SMWLinearFlutter.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/SMWLinearFlutter"))
 writedlm("test/newTestDataGenerators/SMWLinearFlutter/flutterSpeed.txt", flutterSpeed)
 writedlm("test/newTestDataGenerators/SMWLinearFlutter/flutterFreq.txt", flutterFreq)
+
+# Torsional divergence analysis of a straight wing
+include("../examples/straightWingTorsionalDivergence.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/straightWingTorsionalDivergence"))
+writedlm("test/newTestDataGenerators/straightWingTorsionalDivergence/damps.txt", dampingsNonOscillatory)
+
+# Flutter analysis of the swept Pazy wing
+include("../examples/sweptPazyFlutterPitchRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptPazyFlutterPitchRange"))
+for (i,θ) in enumerate(θRange)
+    writedlm(string("test/newTestDataGenerators/sweptPazyFlutterPitchRange/freqs_",i,".txt"),hcat(freqs[i,:]...)')
+    writedlm(string("test/newTestDataGenerators/sweptPazyFlutterPitchRange/damps_",i,".txt"),hcat(damps[i,:]...)')
+end
+
+# Flutter analysis of the undeformed swept Pazy wing
+include("../examples/sweptPazyUndeformedFlutterSweepRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptPazyUndeformedFlutterSweepRange"))
+for (i,Λ) in enumerate(ΛRange)
+    writedlm(string("test/newTestDataGenerators/sweptPazyUndeformedFlutterSweepRange/freqs_",i,".txt"),hcat(freqs[i,:]...)')
+    writedlm(string("test/newTestDataGenerators/sweptPazyUndeformedFlutterSweepRange/damps_",i,".txt"),hcat(damps[i,:]...)')
+end
+
+# Bending divergence analyses of swept wings
+include("../examples/sweptWingBendingDivergenceSweepRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptWingBendingDivergenceSweepRange"))
+for (i,Λ) in enumerate(ΛRange)
+    writedlm(string("test/newTestDataGenerators/sweptWingBendingDivergenceSweepRange/damps_",i,".txt"),hcat(dampingsNonOscillatory[i,:]...)')
+end
+
+# Coupled bending-torsion divergence analyses of swept wings
+include("../examples/sweptWingBendingTorsionalDivergenceSweepRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptWingBendingTorsionalDivergenceSweepRange"))
+for (i,Λ) in enumerate(ΛRange)
+    writedlm(string("test/newTestDataGenerators/sweptWingBendingTorsionalDivergenceSweepRange/damps_",i,".txt"),hcat(dampingsNonOscillatory[i,:]...)')
+end
+
+# Torsional divergence analyses of swept wings
+include("../examples/sweptWingTorsionalDivergenceSweepRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptWingTorsionalDivergenceSweepRange"))
+for (i,Λ) in enumerate(ΛRange)
+    writedlm(string("test/newTestDataGenerators/sweptWingTorsionalDivergenceSweepRange/damps_",i,".txt"),hcat(dampingsNonOscillatory[i,:]...)')
+end
+
+# Torsional divergence analysis of a typical section
+include("../examples/typicalSectionDivergence.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/typicalSectionDivergence"))
+writedlm("test/newTestDataGenerators/typicalSectionDivergence/damps.txt", dampingsNonOscillatory)
 
 # Flutter and divergence analysis of a typical section
 include("../examples/typicalSectionFlutterAndDivergence.jl")

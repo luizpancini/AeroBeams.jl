@@ -41,9 +41,9 @@ Four types of analysis can be simulated:
 - Vibration/Stability: an eigenvalue-based (linearized) analysis of small motions about a deformed state.
 - Dynamic: time-marching.
 
-A simple built-in post-processing tool allows the visualization of the results. Here is an example of the large-displacement motion of the [Pazy wing](https://nescacademy.nasa.gov/workshops/AePW3/public/wg/largedeflection) benchmark upon encountering a continuous gust (simulated atmospheric turbulence):
+A simple built-in post-processing tool allows the visualization of the results. Here is an example of the large-displacement motion of limit-cycle oscillations of the [Pazy wing](https://nescacademy.nasa.gov/workshops/AePW3/public/wg/largedeflection) benchmark after encountering a gust:
 
-![Pazy Wing Continuous 1D Gust Deformation](assets/PazyWingContinuous1DGust_deformation.gif)
+![Pazy Wing Gust Response](assets/PazyWingOMCGust_deformation.gif)
 
 Purely structural problems (in the abscence of aerodynamic loads) can analyzed as well, such as the "flying spaghetti"[^9]:
 

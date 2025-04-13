@@ -11,19 +11,19 @@ derivationMethod = AD()
 upright = true
 
 # Root pitch angle [rad]
-θ = 5*π/180
+θ = 3*π/180
 
 # Airspeed
-U = 50
+U = 55
 
 # Gust
 Ug = -U*1/10
-ω = 4*2π
+ω = 10*2π
 τ = 2π/ω
 gust = create_OneMinusCosineGust(initialTime=τ,duration=2*τ,verticalVelocity=Ug,p=[0;-π/2;0])
 
 # Model
-PazyWingOMCGust,nElem,_ = create_Pazy(aeroSolver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,upright=upright,θ=θ,airspeed=U,gust=gust)
+PazyWingOMCGust,nElem,L,_ = create_Pazy(aeroSolver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,upright=upright,θ=θ,airspeed=U,gust=gust)
 
 # Set system solver options
 σ0 = 1.0
@@ -31,8 +31,8 @@ maxIter = 100
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
 
 # Time variables
-Δt = τ/500
-tf = 10*τ
+Δt = τ/100
+tf = 3
 
 # Initial velocities update options
 initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)

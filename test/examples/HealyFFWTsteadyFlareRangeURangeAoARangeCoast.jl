@@ -17,11 +17,11 @@ nElementsInner = 15
 nElementsFFWT = 5
 
 # Tip loss options (the value of tipLossDecayFactor is assumed to match the experimental results, since it strongly influences the solution, especially at lower airspeeds)
-withTipCorrection = true
+hasTipCorrection = true
 tipLossDecayFactor = 10
 
 # Initialize model
-HealyFFWTsteadyFlareRangeURangeAoARangeCoast = create_HealyFFWT(flareAngle=0,kSpring=kSpring,pitchAngle=0,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+HealyFFWTsteadyFlareRangeURangeAoARangeCoast = create_HealyFFWT(flareAngle=0,kSpring=kSpring,pitchAngle=0,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
 
 # System solver
 σ0 = 1
@@ -59,7 +59,7 @@ for (i,Λ) in enumerate(ΛRange)
         for (k,U) in enumerate(URange)
             println("Solving for Λ = $(round(Int,Λ*180/π)) deg, θ = $(round(Int,θ*180/π)) deg, U = $U m/s")
             # Update model
-            model = create_HealyFFWT(flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+            model = create_HealyFFWT(flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
             # Set initial guess solution as the one from previous airspeed
             x0 = (k==1) ? zeros(0) : problem[i,j,k-1].x
             # Create and solve problem

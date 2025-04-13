@@ -1,128 +1,5 @@
 using DelimitedFiles
 
-# Returns the normalized nodal positions of the Pazy wing
-function nodal_positions_Pazy()
-    return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
-end
-
-
-# Returns the sectional stiffness matrices of the Pazy wing
-function stiffness_matrices_Pazy(GAy::Real,GAz::Real)
-
-    @assert GAy > 0
-    @assert GAz > 0
-
-    # Load elemental sectional stiffness values
-    # Axial stiffness
-    EA = [9.79449259e06 9.66669055e06 9.64764696e06 9.64877085e06 9.64996612e06 9.65062048e06 9.65094702e06 9.65092085e06 9.65060878e06 9.64997519e06 9.64887183e06 9.64715800e06 9.65344706e06 9.69921416e06 1.00196328e07]
-    # Torsional stiffness
-    GJ = [7.58259714e00 7.58259714e00 7.58259714e00 7.58259714e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51583594e00 6.51583594e00 6.51583594e00 6.51583594e00 7.11892627e00 7.11892627e00 1.73730728e01]
-    # Out-of-plane bending stiffness
-    EIy = [5.24743501e00 4.50448461e00 4.47822861e00 4.47438433e00 4.47481272e00 4.47492882e00 4.47492903e00 4.47492905e00 4.47492889e00 4.47488638e00 4.47471764e00 4.47618354e00 4.48916524e00 4.54819972e00 4.77037999e00]
-    # In-plane bending stiffness
-    EIz = [3.31757932e03 3.27862894e03 3.28287728e03 3.28653821e03 3.28881887e03 3.29012279e03 3.29071820e03 3.29071311e03 3.29015111e03 3.28892576e03 3.28685980e03 3.28351136e03 3.27904566e03 3.27164430e03 3.37372291e03]
-    # Axial-torsion coupling stiffness
-    c_EA_GJ = [-5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 1.14679646e00 1.14679646e00 6.11339950e00]
-    # Axial-OOP bending coupling stiffness
-    c_EA_EIy = [-1.37141817e00 -1.85955625e00 -2.03745676e00 -2.36861943e00 -2.34621942e00 -2.33093397e00 -2.32194657e00 -2.31978268e00 -2.32431249e00 -2.33594699e00 -2.35794054e00 -2.42282990e00 -2.63402308e00 -2.79279201e00 -2.28331802e00]
-    # Axial-IP bending coupling stiffness
-    c_EA_EIz = [5.44855583e04 5.35354102e04 5.32071297e04 5.31204588e04 5.30688769e04 5.30373657e04 5.30224268e04 5.30209363e04 5.30331840e04 5.30603697e04 5.31061305e04 5.31755122e04 5.33603082e04 5.41016226e04 5.44519115e04]
-    # Torsion-OOP bending coupling stiffness
-    c_GJ_EIy = [9.33080027e-02 9.33080027e-02 9.33080027e-02 9.33080027e-02 4.22659591e-05 4.22659591e-05 4.22659591e-05 4.22659591e-05 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -8.09780725e-02 -8.09780725e-02 -1.39455813e00]
-    # Torsion-IP bending coupling stiffness
-    c_GJ_EIz = [1.52918906e-02 1.52918906e-02 1.52918906e-02 1.52918906e-02 3.94787982e-03 3.94787982e-03 3.94787982e-03 3.94787982e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 1.01277971e-02 1.01277971e-02 4.24981724e-01]
-    # OOP-IP bending coupling stiffness
-    c_EIy_EIz = [-1.17141160e-01 -1.12442858e-01 -1.15192612e-01 -1.18950224e-01 -1.20649484e-01 -1.21389557e-01 -1.21682056e-01 -1.21652571e-01 -1.21317479e-01 -1.20584487e-01 -1.19291993e-01 -1.17184960e-01 -1.14807975e-01 -1.16130851e-01 -1.14249441e-01]
-
-    # Set matrices
-    S = [[    EA[i]  0    0  c_EA_GJ[i]  c_EA_EIy[i]  c_EA_EIz[i];
-                  0 GAy   0           0            0            0;
-                  0  0  GAz           0            0            0;
-         c_EA_GJ[i]  0    0       GJ[i]  c_GJ_EIy[i]  c_GJ_EIz[i];
-        c_EA_EIy[i]  0    0 c_GJ_EIy[i]       EIy[i] c_EIy_EIz[i];
-        c_EA_EIz[i]  0    0 c_GJ_EIz[i] c_EIy_EIz[i]       EIz[i]] for i in 1:15]
-
-    return S
-end
-
-
-# Returns the sectional inertia matrices of the Pazy wing
-function inertia_matrices_Pazy()
-
-    # Length and nodal position
-    L = 0.549843728 
-    nodalPositions = nodal_positions_Pazy()
-
-    # Load nodal inertia values
-    # Point mass
-    m = [1.91186108e-02 2.06788141e-02 2.06828340e-02 2.06828274e-02 2.06828571e-02 2.06828792e-02 2.06828498e-02 2.06828527e-02 2.06828616e-02 2.06828621e-02 2.06828626e-02 2.06828630e-02 2.06828635e-02 2.06828635e-02 2.54479524e-02 4.31558925e-02]
-    # Center of mass offset from reference axis in x1 axis direction
-    m_x1 = [6.44284658e-03 -1.87501083e-03 -1.88019018e-03 -1.88021112e-03 -1.88022963e-03 -1.88021127e-03 -1.88020545e-03 -1.88022219e-03 -1.88022845e-03 -1.88022769e-03 -1.88022693e-03 -1.88022617e-03 -1.88022541e-03 -1.88022469e-03 1.34295741e-03 3.28782957e-03]
-    # Center of mass offset from reference axis in x2 axis direction
-    m_x2 = [6.09115952e-06 -9.03114429e-04 -9.13241152e-04 -9.13181107e-04 -9.13136269e-04 -9.13139373e-04 -9.13148460e-04 -9.13133755e-04 -9.13138940e-04 -9.13138146e-04 -9.13137351e-04 -9.13136557e-04 -9.13135762e-04 -9.13135762e-04 8.11101073e-04 -5.09272488e-03]
-    # Center of mass offset  from reference axis in x3 axis direction
-    m_x3 = [-2.71488305e-05 -1.48960084e-05 -1.49441628e-05 -1.50172024e-05 -1.50375210e-05 -1.50375096e-05 -1.50376952e-05 -1.50378716e-05 -1.50380388e-05 -1.50382121e-05 -1.50383854e-05 -1.50385588e-05 -1.50387321e-05 -1.50387321e-05 -3.00392326e-05 -1.43641715e-04]
-    # x1 axis mass moment of inertia
-    Ixx = [1.21416697e-05 1.09721424e-05 1.09788396e-05 1.09788493e-05 1.09788664e-05 1.09788786e-05 1.09788644e-05 1.09788687e-05 1.09788717e-05 1.09788723e-05 1.09788729e-05 1.09788735e-05 1.09788741e-05 1.09788741e-05 1.45515348e-05 1.22200220e-04]
-    # x1-x3 axes mass product of inertia
-    Ixy = [1.29099112e-08 -4.29590762e-08 -4.66241072e-08 -4.66239396e-08 -4.66186558e-08 -4.66208462e-08 -4.66181019e-08 -4.66178877e-08 -4.66200515e-08 -4.66200824e-08 -4.66201133e-08 -4.66201442e-08 -4.66201750e-08 -4.66201750e-08 -2.55761995e-07 3.06994479e-07]
-    # x1-x3 axes mass product of inertia
-    Ixz = [2.61326836e-10 -4.05020470e-10 -4.09113627e-10 -4.09779617e-10 -4.05575499e-10 -4.05572069e-10 -4.05576866e-10 -4.05587362e-10 -4.05596285e-10 -4.05603025e-10 -4.05609766e-10 -4.05616506e-10 -4.05623247e-10 -4.05623246e-10 -2.22503423e-09 -7.38220857e-09]
-    # x2 axis mass moment of inertia
-    Iyy = [6.63182204e-07 2.08434944e-06 2.08700528e-06 2.08700318e-06 2.08700972e-06 2.08701867e-06 2.08700826e-06 2.08700778e-06 2.08701031e-06 2.08701035e-06 2.08701038e-06 2.08701041e-06 2.08701047e-06 2.08701047e-06 1.68654882e-06 8.76965373e-07]
-    # x2-x3 axes mass product of inertia
-    Iyz = [9.44646195e-09 2.45046373e-09 2.45271020e-09 2.45762425e-09 2.45962684e-09 2.45962929e-09 2.45978322e-09 2.45991134e-09 2.46005086e-09 2.46019166e-09 2.46033249e-09 2.46047329e-09 2.46061128e-09 2.46061778e-09 1.47231285e-08 1.29956112e-07]
-    # x3-axis mass moment of inertia
-    Izz = [1.20937988e-05 1.28286585e-05 1.28380090e-05 1.28380097e-05 1.28380332e-05 1.28380544e-05 1.28380298e-05 1.28380335e-05 1.28380389e-05 1.28380395e-05 1.28380401e-05 1.28380406e-05 1.28380412e-05 1.28380412e-05 1.55828514e-05 1.22614163e-04]
-
-    # Set matrices
-    I = Vector{Matrix{Float64}}(undef,15)
-    for n=2:16
-        Δℓ = L*(nodalPositions[n]-nodalPositions[n-1])
-        η = [Δℓ/2+m_x1[n]; m_x2[n]; m_x3[n]]
-        inertiaMatrix = [Ixx[n] Ixy[n] Ixz[n]; Ixy[n] Iyy[n] Iyz[n]; Ixz[n] Iyz[n] Izz[n]]
-        I[n-1] = 1/Δℓ*[       m[n]*I3                -m[n]*tilde(η);
-                        m[n]*tilde(η) inertiaMatrix-m[n]*tilde(η)^2]
-        if n==2
-            η = [-Δℓ/2+m_x1[1]; m_x2[1]; m_x3[1]]
-            inertiaMatrix = [Ixx[1] Ixy[1] Ixz[1]; Ixy[1] Iyy[1] Iyz[1]; Ixz[1] Iyz[1] Izz[1]]
-            I[1] += 1/Δℓ*[        m[1]*I3                -m[1]*tilde(η);
-                            m[1]*tilde(η) inertiaMatrix-m[1]*tilde(η)^2]
-        end
-    end
-
-    return I
-end
-
-
-"""
-    tip_loss_factor_Pazy(θ::Real,U::Real)
-
-Computes the tip loss factor for the Pazy wing's tip correction function
-
-# Arguments
-- `θ::Real`: root pitch angle, in degrees
-- `U::Real`: airspeed
-"""
-function tip_loss_factor_Pazy(θ::Real,U::Real)
-
-    # Bound inputs
-    θ = min(7,max(θ,0))
-    U = min(60,max(U,0))
-
-    # Coefficients as a function of root angle of attack
-    θRange = [0; 1; 2; 3; 4; 5; 6; 7]
-    τ₀Range = [6.58; 6.29; 6.00; 5.92; 5.91; 6.08; 6.43; 6.88]
-    τ₁Range = 1e-2*[0; 3.33; 5.19; 6.01; 6.49; 5.98; 4.43; 2.30]
-    τ₂Range = -1e-4*[0; 5.56; 8.59; 10.6; 12.3; 12.8; 11.9; 10.2]
-    τ₀ = interpolate(θRange,τ₀Range,θ)
-    τ₁ = interpolate(θRange,τ₁Range,θ)
-    τ₂ = interpolate(θRange,τ₂Range,θ)
-    
-    return τ₀ + τ₁*U + τ₂*U^2
-end
-export tip_loss_factor_Pazy
-
 
 """
     geometrical_properties_Pazy()
@@ -147,6 +24,179 @@ function geometrical_properties_Pazy()
     return nElem,L,chord,normSparPos
 end
 export geometrical_properties_Pazy
+
+
+# Returns the normalized nodal positions of the Pazy wing
+function nodal_positions_Pazy()
+    return [0.0; 0.06956521653730675; 0.13913043671201064; 0.208695655068016; 0.2782608734240213; 0.34782609178002666; 0.41739131195473056; 0.4869565303107358; 0.5565217486667412; 0.626086968841445; 0.6956521871974504; 0.7652174055534556; 0.8347826239094611; 0.9043478440841649; 0.9652173080712125; 1.0]
+end
+
+
+# Returns the sectional stiffness matrices of the Pazy wing
+function stiffness_matrices_Pazy(; withSkin::Bool,sweepStructuralCorrections::Bool,GAy::Real=1e12,GAz::Real=1e12,Λ::Real)
+
+    # Elemental sectional stiffness values
+    # Axial stiffness
+    EA = withSkin ? [9.79449259e06 9.66669055e06 9.64764696e06 9.64877085e06 9.64996612e06 9.65062048e06 9.65094702e06 9.65092085e06 9.65060878e06 9.64997519e06 9.64887183e06 9.64715800e06 9.65344706e06 9.69921416e06 1.00196328e07] : [9.8519E+06 9.6654E+06 9.6455E+06 9.6469E+06 9.6483E+06 9.6491E+06 9.6495E+06 9.6496E+06 9.6493E+06 9.6486E+06 9.6475E+06 9.6457E+06 9.6519E+06 9.6976E+06 1.0018E+07]
+    # Torsional stiffness
+    GJ = withSkin ? [7.58259714e00 7.58259714e00 7.58259714e00 7.58259714e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51583594e00 6.51583594e00 6.51583594e00 6.51583594e00 7.11892627e00 7.11892627e00 1.73730728e01] : [7.2801E+00 7.2801E+00 7.2801E+00 7.2801E+00 6.4468E+00 6.4468E+00 6.4468E+00 6.4468E+00 6.4508E+00 6.4508E+00 6.4508E+00 6.4508E+00 7.0484E+00 7.0484E+00 1.7161E+01]
+    # Out-of-plane bending stiffness
+    EIy = withSkin ? [5.24743501e00 4.50448461e00 4.47822861e00 4.47438433e00 4.47481272e00 4.47492882e00 4.47492903e00 4.47492905e00 4.47492889e00 4.47488638e00 4.47471764e00 4.47618354e00 4.48916524e00 4.54819972e00 4.77037999e00] : [4.5919E+00 4.4474E+00 4.4276E+00 4.4243E+00 4.4246E+00 4.4246E+00 4.4247E+00 4.4246E+00 4.4246E+00 4.4246E+00 4.4244E+00 4.4258E+00 4.4387E+00 4.4985E+00 4.7103E+00]
+    # In-plane bending stiffness
+    EIz = withSkin ? [3.31757932e03 3.27862894e03 3.28287728e03 3.28653821e03 3.28881887e03 3.29012279e03 3.29071820e03 3.29071311e03 3.29015111e03 3.28892576e03 3.28685980e03 3.28351136e03 3.27904566e03 3.27164430e03 3.37372291e03] : [3.3182E+03 3.2745E+03 3.2796E+03 3.2838E+03 3.2867E+03 3.2884E+03 3.2892E+03 3.2894E+03 3.2888E+03 3.2874E+03 3.2850E+03 3.2813E+03 3.2763E+03 3.2683E+03 3.3711E+03]
+    # Axial-torsion coupling stiffness
+    c_EA_GJ = withSkin ? [-5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 1.14679646e00 1.14679646e00 6.11339950e00] : [-6.0416E-01 -6.0416E-01 -6.0416E-01 -6.0416E-01 -2.4284E-01 -2.4284E-01 -2.4284E-01 -2.4284E-01 5.9636E-01 5.9636E-01 5.9636E-01 5.9636E-01 1.3161E+00 1.3161E+00 7.5942E+00]
+    # Axial-OOP bending coupling stiffness
+    c_EA_EIy = withSkin ? [-1.37141817e00 -1.85955625e00 -2.03745676e00 -2.36861943e00 -2.34621942e00 -2.33093397e00 -2.32194657e00 -2.31978268e00 -2.32431249e00 -2.33594699e00 -2.35794054e00 -2.42282990e00 -2.63402308e00 -2.79279201e00 -2.28331802e00] : [-2.3983E+00 -2.6972E+00 -2.0315E+00 -2.3737E+00 -2.3396E+00 -2.3199E+00 -2.3094E+00 -2.3078E+00 -2.3150E+00 -2.3320E+00 -2.3607E+00 -2.4379E+00 -2.6763E+00 -2.8406E+00 -2.2564E+00]
+    # Axial-IP bending coupling stiffness
+    c_EA_EIz = withSkin ? [5.44855583e04 5.35354102e04 5.32071297e04 5.31204588e04 5.30688769e04 5.30373657e04 5.30224268e04 5.30209363e04 5.30331840e04 5.30603697e04 5.31061305e04 5.31755122e04 5.33603082e04 5.41016226e04 5.44519115e04] : [5.4387E+04 5.3580E+04 5.3233E+04 5.3138E+04 5.3080E+04 5.3043E+04 5.3025E+04 5.3022E+04 5.3035E+04 5.3064E+04 5.3114E+04 5.3190E+04 5.3383E+04 5.4132E+04 5.4469E+04]
+    # Torsion-OOP bending coupling stiffness
+    c_GJ_EIy = withSkin ? [9.33080027e-02 9.33080027e-02 9.33080027e-02 9.33080027e-02 4.22659591e-05 4.22659591e-05 4.22659591e-05 4.22659591e-05 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -8.09780725e-02 -8.09780725e-02 -1.39455813e00] : [1.0673E-01 1.0673E-01 1.0673E-01 1.0673E-01 -4.7619E-06 -4.7619E-06 -4.7619E-06 -4.7619E-06 -1.0471E-03 -1.0471E-03 -1.0471E-03 -1.0471E-03 -8.1077E-02 -8.1077E-02 -1.4041E+00]
+    # Torsion-IP bending coupling stiffness
+    c_GJ_EIz = withSkin ? [1.52918906e-02 1.52918906e-02 1.52918906e-02 1.52918906e-02 3.94787982e-03 3.94787982e-03 3.94787982e-03 3.94787982e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 1.01277971e-02 1.01277971e-02 4.24981724e-01] : [1.6787E-02 1.6787E-02 1.6787E-02 1.6787E-02 4.2981E-03 4.2981E-03 4.2981E-03 4.2981E-03 -1.0081E-02 -1.0081E-02 -1.0081E-02 -1.0081E-02 1.0495E-02 1.0495E-02 4.9732E-01]
+    # OOP-IP bending coupling stiffness
+    c_EIy_EIz = withSkin ? [-1.17141160e-01 -1.12442858e-01 -1.15192612e-01 -1.18950224e-01 -1.20649484e-01 -1.21389557e-01 -1.21682056e-01 -1.21652571e-01 -1.21317479e-01 -1.20584487e-01 -1.19291993e-01 -1.17184960e-01 -1.14807975e-01 -1.16130851e-01 -1.14249441e-01] : [-1.1292E-01 -1.1088E-01 -1.1319E-01 -1.1684E-01 -1.1917E-01 -1.2035E-01 -1.2092E-01 -1.2100E-01 -1.2062E-01 -1.1969E-01 -1.1798E-01 -1.1539E-01 -1.1277E-01 -1.1418E-01 -1.0623E-01]
+
+    # Apply ad hoc corrections for sweep, if applicable
+    if sweepStructuralCorrections
+        GJ ./= cos(Λ)^2
+    end
+
+    # Set matrices
+    S = [[    EA[i]  0    0  c_EA_GJ[i]  c_EA_EIy[i]  c_EA_EIz[i];
+                  0 GAy   0           0            0            0;
+                  0  0  GAz           0            0            0;
+         c_EA_GJ[i]  0    0       GJ[i]  c_GJ_EIy[i]  c_GJ_EIz[i];
+        c_EA_EIy[i]  0    0 c_GJ_EIy[i]       EIy[i] c_EIy_EIz[i];
+        c_EA_EIz[i]  0    0 c_GJ_EIz[i] c_EIy_EIz[i]       EIz[i]] for i in 1:15]
+
+    return S
+end
+
+
+# Returns the sectional inertia matrices of the Pazy wing
+function inertia_matrices_Pazy(; withSkin::Bool)
+
+    # Length and nodal position
+    nElem,L,_ = geometrical_properties_Pazy()
+    nodalPositions = nodal_positions_Pazy()
+
+    # Nodal sectional inertia values
+    # Point mass
+    m = withSkin ? [1.91186108e-02 2.06788141e-02 2.06828340e-02 2.06828274e-02 2.06828571e-02 2.06828792e-02 2.06828498e-02 2.06828527e-02 2.06828616e-02 2.06828621e-02 2.06828626e-02 2.06828630e-02 2.06828635e-02 2.06828635e-02 2.54479524e-02 4.31558925e-02] : [1.5953E-02 2.0679E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.5448E-02 3.7056E-02]
+    # Center of mass offset from reference axis in x1 axis direction
+    m_x1 = withSkin ? [6.44284658e-03 -1.87501083e-03 -1.88019018e-03 -1.88021112e-03 -1.88022963e-03 -1.88021127e-03 -1.88020545e-03 -1.88022219e-03 -1.88022845e-03 -1.88022769e-03 -1.88022693e-03 -1.88022617e-03 -1.88022541e-03 -1.88022469e-03 1.34295741e-03 3.28782957e-03] : [6.9001E-03 -1.8750E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 1.3430E-03 3.0324E-03]
+    # Center of mass offset from reference axis in x2 axis direction
+    m_x2 = withSkin ? [6.09115952e-06 -9.03114429e-04 -9.13241152e-04 -9.13181107e-04 -9.13136269e-04 -9.13139373e-04 -9.13148460e-04 -9.13133755e-04 -9.13138940e-04 -9.13138146e-04 -9.13137351e-04 -9.13136557e-04 -9.13135762e-04 -9.13135762e-04 8.11101073e-04 -5.09272488e-03] : [9.8372E-04 -9.0312E-04 -9.1325E-04 -9.1319E-04 -9.1314E-04 -9.1314E-04 -9.1315E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 8.1110E-04 -4.8757E-03]
+    # Center of mass offset  from reference axis in x3 axis direction
+    m_x3 = withSkin ? [-2.71488305e-05 -1.48960084e-05 -1.49441628e-05 -1.50172024e-05 -1.50375210e-05 -1.50375096e-05 -1.50376952e-05 -1.50378716e-05 -1.50380388e-05 -1.50382121e-05 -1.50383854e-05 -1.50385588e-05 -1.50387321e-05 -1.50387321e-05 -3.00392326e-05 -1.43641715e-04] : [-3.1468E-05 -1.4977E-05 -1.4977E-05 -1.5017E-05 -1.5038E-05 -1.5037E-05 -1.5038E-05 -1.5038E-05 -1.5038E-05 -1.5038E-05 -1.5038E-05 -1.5039E-05 -1.5039E-05 -1.5039E-05 -3.0039E-05 -1.3985E-04]
+    # x1 axis mass moment of inertia
+    Ixx = withSkin ? [1.21416697e-05 1.09721424e-05 1.09788396e-05 1.09788493e-05 1.09788664e-05 1.09788786e-05 1.09788644e-05 1.09788687e-05 1.09788717e-05 1.09788723e-05 1.09788729e-05 1.09788735e-05 1.09788741e-05 1.09788741e-05 1.45515348e-05 1.22200220e-04] : [9.1917E-06 1.0972E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.4552E-05 1.2219E-04]
+    # x1-x3 axes mass product of inertia
+    Ixy = withSkin ? [1.29099112e-08 -4.29590762e-08 -4.66241072e-08 -4.66239396e-08 -4.66186558e-08 -4.66208462e-08 -4.66181019e-08 -4.66178877e-08 -4.66200515e-08 -4.66200824e-08 -4.66201133e-08 -4.66201442e-08 -4.66201750e-08 -4.66201750e-08 -2.55761995e-07 3.06994479e-07] : [5.4285E-08 -4.2959E-08 -4.6624E-08 -4.6624E-08 -4.6619E-08 -4.6621E-08 -4.6621E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -2.5576E-07 2.9246E-07]
+    # x1-x3 axes mass product of inertia
+    Ixz = withSkin ? [2.61326836e-10 -4.05020470e-10 -4.09113627e-10 -4.09779617e-10 -4.05575499e-10 -4.05572069e-10 -4.05576866e-10 -4.05587362e-10 -4.05596285e-10 -4.05603025e-10 -4.05609766e-10 -4.05616506e-10 -4.05623247e-10 -4.05623246e-10 -2.22503423e-09 -7.38220857e-09] : [4.4861E-10 -4.0276E-10 -4.0187E-10 -4.0978E-10 -4.0558E-10 -4.0557E-10 -4.0558E-10 -4.0559E-10 -4.0560E-10 -4.0560E-10 -4.0561E-10 -4.0562E-10 -4.0562E-10 -4.0562E-10 -2.2250E-09 -7.1280E-09]
+    # x2 axis mass moment of inertia
+    Iyy = withSkin ? [6.63182204e-07 2.08434944e-06 2.08700528e-06 2.08700318e-06 2.08700972e-06 2.08701867e-06 2.08700826e-06 2.08700778e-06 2.08701031e-06 2.08701035e-06 2.08701038e-06 2.08701041e-06 2.08701047e-06 2.08701047e-06 1.68654882e-06 8.76965373e-07] : [4.7770E-07 2.0844E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 1.6865E-06 8.5986E-07]
+    # x2-x3 axes mass product of inertia
+    Iyz = withSkin ? [9.44646195e-09 2.45046373e-09 2.45271020e-09 2.45762425e-09 2.45962684e-09 2.45962929e-09 2.45978322e-09 2.45991134e-09 2.46005086e-09 2.46019166e-09 2.46033249e-09 2.46047329e-09 2.46061128e-09 2.46061778e-09 1.47231285e-08 1.29956112e-07] : [9.9747E-09 2.4434E-09 2.4518E-09 2.4576E-09 2.4596E-09 2.4596E-09 2.4598E-09 2.4599E-09 2.4601E-09 2.4602E-09 2.4603E-09 2.4605E-09 2.4606E-09 2.4606E-09 1.4723E-08 1.3017E-07]
+    # x3-axis mass moment of inertia
+    Izz = withSkin ? [1.20937988e-05 1.28286585e-05 1.28380090e-05 1.28380097e-05 1.28380332e-05 1.28380544e-05 1.28380298e-05 1.28380335e-05 1.28380389e-05 1.28380395e-05 1.28380401e-05 1.28380406e-05 1.28380412e-05 1.28380412e-05 1.55828514e-05 1.22614163e-04] : [9.2334E-06 1.2829E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.5583E-05 1.2258E-04]
+
+    # Set matrices
+    I = Vector{Matrix{Float64}}(undef,nElem)
+    for n=2:nElem+1
+        Δℓ = L*(nodalPositions[n]-nodalPositions[n-1])
+        η = [Δℓ/2+m_x1[n]; m_x2[n]; m_x3[n]]
+        inertiaMatrix = [Ixx[n] Ixy[n] Ixz[n]; Ixy[n] Iyy[n] Iyz[n]; Ixz[n] Iyz[n] Izz[n]]
+        I[n-1] = 1/Δℓ*[       m[n]*I3                -m[n]*tilde(η);
+                        m[n]*tilde(η) inertiaMatrix-m[n]*tilde(η)^2]
+        if n==2
+            η = [-Δℓ/2+m_x1[1]; m_x2[1]; m_x3[1]]
+            inertiaMatrix = [Ixx[1] Ixy[1] Ixz[1]; Ixy[1] Iyy[1] Iyz[1]; Ixz[1] Iyz[1] Izz[1]]
+            I[1] += 1/Δℓ*[        m[1]*I3                -m[1]*tilde(η);
+                            m[1]*tilde(η) inertiaMatrix-m[1]*tilde(η)^2]
+        end
+    end
+
+    return I
+end
+
+
+"""
+    tip_loss_function_Pazy(type::String,θ::Real,U::Real,Λ::Real)
+
+Computes the tip loss function for the Pazy wing's tip correction function
+
+# Arguments
+- `type::String`: tip loss function type
+- `θ::Real`: root pitch angle [rad]
+- `U::Real`: airspeed [m/s]
+- `Λ::Real`: sweep angle [rad]
+"""
+function tip_loss_function_Pazy(type::String,θ::Real,U::Real,Λ::Real)
+
+    # Fixed exponential decay tip loss
+    if occursin("FixedExponential", type)
+        # Extract tip loss decay factor
+        m = match(r"FixedExponential-([\d.]+)", type)
+        τ = m !== nothing ? parse(Float64, m[1]) : nothing
+        @assert !isnothing(τ)
+        @assert τ > 0
+        # Set tip loss function
+        return s -> 1-exp(-τ*(1-s))
+    # Exponential decay tip loss (root pitch and airspeed dependent)
+    elseif type == "Exponential"
+        # Bound inputs
+        θ = min(7*π/180,max(θ,0))
+        U = min(60,U)
+        # Coefficients as a function of root pitch angle and airspeed
+        θRange = [0; 1; 2; 3; 4; 5; 6; 7]*π/180
+        τ₀Range = [6.58; 6.29; 6.00; 5.92; 5.91; 6.08; 6.43; 6.88]
+        τ₁Range = 1e-2*[0; 3.33; 5.19; 6.01; 6.49; 5.98; 4.43; 2.30]
+        τ₂Range = -1e-4*[0; 5.56; 8.59; 10.6; 12.3; 12.8; 11.9; 10.2]
+        τ₀ = LinearInterpolations.interpolate(θRange,τ₀Range,θ)
+        τ₁ = LinearInterpolations.interpolate(θRange,τ₁Range,θ)
+        τ₂ = LinearInterpolations.interpolate(θRange,τ₂Range,θ)    
+        τ = τ₀ + τ₁*U + τ₂*U^2
+        # Set tip loss function
+        return s -> 1-exp(-τ*(1-s))
+    # VLM: interpolate 8th order polynomial   
+    elseif occursin("VLM", type)
+        # Sweep angle, root pitch angle and airspeed ranges of the reference data
+        ΛRange = [0,10,20,30]*π/180
+        θRange = type == "VLM-undef" ? nothing : [0,3,5,7]*π/180
+        URange = type == "VLM-undef" ? nothing : vcat(0:10:70,120)
+        # Polynomial order
+        order = 8
+        # Load polynomial coefficients at reference data points
+        polyCoeffs = type == "VLM-undef" ? zeros(order+1, length(ΛRange)) : zeros(order+1, length(ΛRange), length(θRange), length(URange))
+        if type == "VLM-undef"
+            polyCoeffs = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/polyCoeffsUndef.txt")
+        elseif type == "VLM-def"
+            for j=1:length(θRange)
+                for k=1:length(URange)
+                    polyCoeffs[:,:,j,k] = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/polyCoeffsDef_"*string(j)*"_"*string(k)*".txt")
+                end
+            end
+        end
+        # Interpolate polynomial coefficients
+        q = zeros(9)
+        for i=1:9
+            if type == "VLM-undef"
+                itp = Interpolations.interpolate((ΛRange,), polyCoeffs[i,:], Gridded(Linear()))
+                q[i] = itp(max(min(Λ,ΛRange[end]),ΛRange[1]))*sqrt(1-(U/343)^2) # Correct with compressibility factor
+            elseif type == "VLM-def"
+                itp = Interpolations.interpolate((ΛRange, θRange, URange), polyCoeffs[i,:,:,:], Gridded(Linear()))
+                q[i] = itp(max(min(Λ,ΛRange[end]),ΛRange[1]), max(min(θ,θRange[end]),θRange[1]), min(U,URange[end]))
+            end
+        end
+        # Set tip loss function
+        return s -> q[1]+q[2]*s+q[3]*s^2+q[4]*s^3+q[5]*s^4+q[6]*s^5+q[7]*s^6+q[8]*s^7+q[9]*s^8
+    end
+
+end
+export tip_loss_function_Pazy
 
 
 """
@@ -174,7 +224,7 @@ function typical_section_data(name::String)
         μ = 20
         rα² = 6/25
         σ = 2/5
-        ωα = 50 # A numerical value was not given
+        ωα = 30 # A numerical value was not given
         c = 1   # A numerical value was not given
     elseif name == "HP-2" # Defined in problem 5.9 of Hodges & Pierce
         a = -1/3
@@ -182,9 +232,9 @@ function typical_section_data(name::String)
         μ = 50
         rα² = 4/25
         σ = 2/5
-        ωα = 40 # A numerical value was not given
+        ωα = 30 # A numerical value was not given
         c = 1   # A numerical value was not given
-    elseif name == "Fung" # Defined by Fung - An Introduction to Theory of Aeroelasticity
+    elseif name == "Fung" # Defined by Fung (Sec. 6.9) - An Introduction to Theory of Aeroelasticity
         a = -0.15
         e = 0.1
         μ = 76
@@ -211,32 +261,41 @@ Returns the wing model and geometrical properties
 - `aeroSolver::AeroSolver`: aerodynamic solver
 - `gustLoadsSolver::GustAeroSolver`: indicial gust loads solver
 - `derivationMethod::DerivationMethod`: method for aerodynamic derivatives
+- `withSkin::Bool`: flag for skin on
+- `sweepStructuralCorrections::Bool`: flag to apply ad hoc structural corrections on sectional stiffness matrix with sweep angle
 - `updateAirfoilParameters::Bool`: flag to update airfoil parameters with airspeed
 - `upright::Bool`: flag to set the wing in the upright position
 - `airfoil::Airfoil`: airfoil section
 - `θ::Real`: pitch angle at the root [rad]
 - `Λ::Real`: sweep angle [rad]
-- `withTipCorrection::Bool`: flag for aerodynamic tip correction 
+- `hasTipCorrection::Bool`: flag for aerodynamic tip correction 
 - `GAy::Real`: shear stiffness in the x2 direction
 - `GAz::Real`: shear stiffness in the x3 direction
 - `altitude::Real`: altitude
 - `g::Real`: acceleration of gravity
 - `airspeed::Real`: airspeed
+- `smallAngles::Bool`: flag for small angles approximation
+- `tipLossType::String`: tip loss function type
 - `tipMass::Real`: mass of a point inertia added to the tip of the wing
-- `ξtipMass::Vector{<:Real}`: position vector of the tip mass relative to the tip of the spar, resolved in the local basis
+- `ηtipMass::Vector{<:Real}`: position vector of the tip mass relative to the tip of the spar, resolved in the local basis
 - `tipMassInertia::Matrix{<:Real}`: mass moment of inertia matrix of the tip mass
 - `additionalBCs::Vector{BC}`: additional BCs (beyond the clamp)
 - `gust::Union{Nothing,Gust}`: gust
 """
-function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),updateAirfoilParameters::Bool=true,upright::Bool=false,airfoil::Airfoil=deepcopy(NACA0018),θ::Real=0,Λ::Real=0,withTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,altitude::Real=0,g::Real=-9.80665,airspeed::Real=0,tipMass::Real=0,ξtipMass::Vector{<:Real}=zeros(3),tipMassInertia::Matrix{<:Real}=zeros(3,3),additionalBCs::Vector{BC}=Vector{BC}(),gust::Union{Nothing,Gust}=nothing)
+function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withSkin::Bool=true,sweepStructuralCorrections::Bool=false,updateAirfoilParameters::Bool=true,upright::Bool=false,airfoil::Airfoil=deepcopy(NACA0018),θ::Real=0,Λ::Real=0,hasTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,altitude::Real=0,g::Real=standard_atmosphere(altitude).g,airspeed::Real=0,smallAngles::Bool=false,tipLossType::String="Exponential",tipMass::Real=0,ηtipMass::Vector{<:Real}=zeros(3),tipMassInertia::Matrix{<:Real}=zeros(3,3),additionalBCs::Vector{BC}=Vector{BC}(),gust::Union{Nothing,Gust}=nothing)
 
     # Validate
     @assert altitude >= 0
     @assert airspeed >= 0
-    @assert GAy >= 1e6
-    @assert GAz >= 1e6
+    @assert g >= 0
+    @assert GAy >= 1e8
+    @assert GAz >= 1e8
+    @assert -π/2 < Λ < π/2
     @assert tipMass >= 0
-    @assert length(ξtipMass) == 3
+    @assert length(ηtipMass) == 3
+    if hasTipCorrection
+        @assert tipLossType in ["Exponential","VLM-undef","VLM-def"] || occursin("FixedExponential", tipLossType)
+    end
 
     # Atmosphere
     atmosphere = standard_atmosphere(altitude)
@@ -248,28 +307,29 @@ function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAe
     nodalPositions = nodal_positions_Pazy()
 
     # Stiffness matrices
-    S = stiffness_matrices_Pazy(GAy,GAz)
+    S = stiffness_matrices_Pazy(withSkin=withSkin,sweepStructuralCorrections=sweepStructuralCorrections,GAy=GAy,GAz=GAz,Λ=Λ)
 
     # Inertia matrices
-    I = inertia_matrices_Pazy()
+    I = inertia_matrices_Pazy(withSkin=withSkin)
 
-    # Tip loss factor
-    τ = tip_loss_factor_Pazy(θ*180/pi,airspeed)
+    # Tip loss function
+    tipLossFunction = tip_loss_function_Pazy(tipLossType,θ,airspeed,Λ)
 
-    # Rotation parameters from basis A to basis b
-    p0 = upright ? [-Λ; -π/2; θ] : [-Λ; 0; θ]
+    # Rotation parametrization and rotation parameters from basis A to basis b
+    rotationParametrization = upright ? "E231" : "E321"
+    p0 = upright ? [-π/2; -Λ; θ] : [-Λ; 0; θ]
 
     # Update airfoil parameters
     update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
 
     # Aerodynamic surface
-    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=τ,updateAirfoilParameters=updateAirfoilParameters)
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=hasTipCorrection,tipLossFunction=tipLossFunction,updateAirfoilParameters=updateAirfoilParameters,Λ=Λ,smallAngles=smallAngles)
 
     # Tip mass
-    tipInertia = PointInertia(elementID=nElem,η=[L/nElem/2+ξtipMass[1];ξtipMass[2];ξtipMass[3]],mass=tipMass,inertiaMatrix=tipMassInertia)
+    tipInertia = PointInertia(elementID=nElem,η=[L/nElem/2+ηtipMass[1];ηtipMass[2];ηtipMass[3]],mass=tipMass,inertiaMatrix=tipMassInertia)
 
     # Wing beam
-    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=p0,aeroSurface=surf,pointInertias=[tipInertia])
+    beam = create_Beam(name="wingBeam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization=rotationParametrization,p0=p0,aeroSurface=surf,pointInertias=[tipInertia])
 
     # Update beam of additional BCs, if applicable
     for BC in additionalBCs
@@ -282,7 +342,7 @@ function create_Pazy(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAe
     push!(BCs,clamp)
 
     # Model
-    pazy = create_Model(name="Pazy",beams=[beam],BCs=BCs,gravityVector=[0;0;g],v_A=[0;airspeed;0],gust=gust,units=create_UnitsSystem(frequency="Hz"))
+    pazy = create_Model(name="Pazy",beams=[beam],BCs=BCs,gravityVector=[0;0;-g],v_A=[0;airspeed;0],gust=gust,units=create_UnitsSystem(frequency="Hz"))
 
     return pazy,nElem,L,chord,normSparPos
 end
@@ -300,11 +360,14 @@ Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 - `aeroSolver::AeroSolver`: aerodynamic solver
 - `gustLoadsSolver::GustAeroSolver`: indicial gust loads solver
 - `derivationMethod::DerivationMethod`: method for aerodynamic derivatives
-- `withTipCorrection::Bool`: flag for aerodynamic tip correction
+- `withSkin::Bool` = flag for skin on
+- `sweepStructuralCorrections::Bool`: flag to apply ad hoc structural corrections on sectional stiffness matrix with sweep angle
+- `hasTipCorrection::Bool`: flag for aerodynamic tip correction
 - `GAy::Real`: shear stiffness in the x2 direction
 - `GAz::Real`: shear stiffness in the x3 direction
 - `hingeNode::Int64`: hinge node
 - `pitchAngle::Real`: pitch angle [rad]
+- `Λ::Real`: sweep angle [rad]
 - `foldAngle::Union{Real,Nothing}`: fold angle [rad]
 - `flareAngle::Real`: flare angle [rad]
 - `kSpring::Real`: stiffness of the spring around the hinge for folding (combination of OOP bending and twist)
@@ -312,12 +375,13 @@ Creates a version of the Pazy wing with flared folding wingtip (FFWT)
 - `g::Real`: local acceleration of gravity
 - `altitude::Real`: altitude
 - `airspeed::Real`: local airspeed
+- `tipLossType::String`: tip loss function type
 - `flightDirection::Vector{<:Real}`: flight direction vector, resolved in basis A
 - `tipMass::Real`: tip mass for passive flutter control
-- `tipMassPosition::Vector{<:Real}`: position vector of the tip mass, relative to the spar
+- `ηtipMass::Vector{<:Real}`: position vector of the tip mass, relative to the spar
 - `gust::Union{Nothing,Gust}=nothing`: gust
 """
-function create_PazyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,pitchAngle::Real=0,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real=0,kSpring::Real=1e-4,kIPBendingHinge::Real=kSpring,g::Real=9.80665,altitude::Real=0,airspeed::Real=0,flightDirection::Vector{<:Real}=[0;1;0],tipMass::Real=0,tipMassPosition::Vector{<:Real}=[0;0;0],gust::Union{Nothing,Gust}=nothing)
+function create_PazyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfoil=deepcopy(NACA0018),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withSkin::Bool=true,sweepStructuralCorrections::Bool=false,hasTipCorrection::Bool=true,GAy::Real=1e16,GAz::Real=GAy,hingeNode::Int64=14,pitchAngle::Real=0,Λ::Real=0,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real=0,kSpring::Real=1e-4,kIPBendingHinge::Real=kSpring,altitude::Real=0,g::Real=standard_atmosphere(altitude).g,airspeed::Real=0,tipLossType::String="Exponential",flightDirection::Vector{<:Real}=[0;1;0],tipMass::Real=0,ηtipMass::Vector{<:Real}=[0;0;0],gust::Union{Nothing,Gust}=nothing)
 
     # Validate
     @assert 2 <= hingeNode <= 15 "hingeNode must be between 2 and 15"
@@ -325,10 +389,15 @@ function create_PazyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfo
         @assert -π < foldAngle <= π "set foldAngle between -π and π (rad) "
     end
     @assert 0 <= flareAngle < π/4 "set flareAngle between 0 and π/4 (rad)"
+    @assert -π/2 < Λ < π/2
     @assert kSpring >= 0
     @assert g >= 0
     @assert airspeed >= 0
     @assert tipMass >= 0
+    @assert length(ηtipMass) == 3
+    if hasTipCorrection
+        @assert tipLossType in ["Exponential","VLM-undef","VLM-def"]
+    end
 
     # Flags
     foldAngleIsInput = !isnothing(foldAngle)
@@ -346,13 +415,13 @@ function create_PazyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfo
     nodalPositions = nodal_positions_Pazy()
 
     # Stiffness matrices
-    S = stiffness_matrices_Pazy(GAy,GAz)
+    S = stiffness_matrices_Pazy(withSkin=withSkin,sweepStructuralCorrections=sweepStructuralCorrections,GAy=GAy,GAz=GAz,Λ=Λ)
 
     # Inertia matrices
-    I = inertia_matrices_Pazy()
+    I = inertia_matrices_Pazy(withSkin=withSkin)
 
     # Tip mass
-    tipMass = PointInertia(elementID=nElem,η=tipMassPosition,mass=tipMass)
+    tipMass = PointInertia(elementID=nElem,η=ηtipMass,mass=tipMass)
 
     # Chord
     chord = 0.0989
@@ -367,11 +436,11 @@ function create_PazyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfo
     # Update airfoil parameters
     update_Airfoil_params!(airfoil,Ma=airspeed/atmosphere.a,U=airspeed,b=chord/2)
 
-    # Tip loss factor
-    τ = tip_loss_factor_Pazy(pitchAngle*180/π,airspeed)
+    # Tip loss function
+    tipLossFunction = tip_loss_function_Pazy(tipLossType,pitchAngle,airspeed,Λ)
 
     # Aerodynamic surface
-    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=τ)
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=hasTipCorrection,tipLossFunction=tipLossFunction)
 
     # Beams 
     beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=nodalPositions,S=S,I=I,rotationParametrization="E321",p0=[0;0;pitchAngle],aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[trues(3)],pointInertias=[tipMass])
@@ -424,6 +493,7 @@ Returns the wing model and its span
 - `g::Real`: acceleration of gravity
 - `stiffnessFactor::Real`: stiffness factor for beam structural properties
 - `∞::Real`: value of rigid structural properties
+- `Ψ::Real`: torsion-IP-bending stiffness coupling factor
 - `tipF3::Real`: tip dead transverse force applied at the tip
 - `cd0::Real`: parasite drag coefficient for the wing
 - `cnδ::Real`: cn vs δ slope for the wing
@@ -433,7 +503,7 @@ Returns the wing model and its span
 - `δAil::Union{Nothing,Real,<:Function}`: aileron deflection
 - `additionalBCs::Vector{BC}`: additional BCs (beyond the clamp and tip load)
 """
-function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,k1::Real=0,k2::Real=0,nElem::Int64=32,altitude::Real=0,airspeed::Real=0,g::Real=standard_atmosphere(altitude).g,stiffnessFactor::Real=1,∞::Real=1e12,tipF3::Real=0,cd0::Real=0,cnδ::Real=2.5,cmδ::Real=-0.35,cdδ::Real=0.15,hasInducedDrag::Bool=false,δAil::Union{Nothing,Real,<:Function}=nothing,additionalBCs::Vector{BC}=Vector{BC}())
+function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,k1::Real=0,k2::Real=0,nElem::Int64=32,altitude::Real=0,airspeed::Real=0,g::Real=standard_atmosphere(altitude).g,stiffnessFactor::Real=1,∞::Real=1e12,Ψ::Real=0,tipF3::Real=0,cd0::Real=0,cnδ::Real=2.5,cmδ::Real=-0.35,cdδ::Real=0.15,hasInducedDrag::Bool=false,δAil::Union{Nothing,Real,<:Function}=nothing,additionalBCs::Vector{BC}=Vector{BC}())
 
     # Validate
     @assert -π/2 < θ < π/2
@@ -473,6 +543,7 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAer
     ρA,ρIs = 0.75,0.1
     ρIy,ρIz = (EIy/EIz)*ρIs,(1-EIy/EIz)*ρIs
     S = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
+    S[4,6] = S[6,4] = -Ψ*sqrt(GJ*EIz)
     I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)
 
     # Wing beam
@@ -668,7 +739,7 @@ function create_Helios(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),deri
     podSurf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=podAirfoil,c=wChord,normSparPos=wNormSparPos,updateAirfoilParameters=false)
 
     # Pod properties
-    pρA,pρIy,pρIz = 0,wρIy,wρIz
+    pρA,pρIy,pρIz = 1e-3,wρIy,wρIz
     Spod = isotropic_stiffness_matrix(∞=∞)
     Ipod = inertia_matrix(ρA=pρA,ρIy=pρIy,ρIz=pρIz)
 
@@ -1007,7 +1078,7 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     fusLength = sqrt((kp2[1]-kp1[1])^2+(kp2[2]-kp1[2])^2)
 
     # Angle of sweep of the fuselage section 
-    fΛ = acos((kp2[1]-kp1[1])/fusLength)             
+    fΛ = -acos((kp2[1]-kp1[1])/fusLength)             
 
     # Length of wing section
     wingSemispan = sqrt((kp3[1]-kp2[1])^2+(kp3[2]-kp2[2])^2)  
@@ -1032,9 +1103,9 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     wNormSparPos = tipSparPos
     wNormFlapPos = 0.75
 
-    leftWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor)
+    leftWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor)
 
-    rightWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor)
+    rightWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor)
 
     # Wing properties
     nElemWing = 8
@@ -1050,7 +1121,7 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     wRConInertias = Vector{PointInertia}()
     push!(wLConInertias,PointInertia(elementID=1,η=[-wingSemispan/nElemWing/2;0;0],mass=wConMass))
     push!(wRConInertias,PointInertia(elementID=nElemWing,η=[wingSemispan/nElemWing/2;0;0],mass=wConMass))
-    for e=1:8
+    for e=1:nElemWing
         push!(wLConInertias,PointInertia(elementID=e,η=[wingSemispan/nElemWing/2;0;0],mass=wConMass))
         push!(wRConInertias,PointInertia(elementID=e,η=[-wingSemispan/nElemWing/2;0;0],mass=wConMass))
     end
@@ -1087,9 +1158,9 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     fRightConInertia = PointInertia(elementID=1,η=[-fusLength/nElemFus/2;fConMassOffset;0],mass=fConMass)
 
     # Fuselage beams
-    leftFus = create_Beam(name="leftFus",length=fusLength,nElements=nElemFus,S=[Sfus],I=[Ifus],aeroSurface=leftFusSurf,rotationParametrization="E321",p0=[-fΛ;0;0],pointInertias=[fLeftConInertia])
+    leftFus = create_Beam(name="leftFus",length=fusLength,nElements=nElemFus,S=[Sfus],I=[Ifus],aeroSurface=leftFusSurf,rotationParametrization="E321",p0=[fΛ;0;0],pointInertias=[fLeftConInertia])
 
-    rightFus = create_Beam(name="rightFus",length=fusLength,nElements=nElemFus,S=[Sfus],I=[Ifus],aeroSurface=rightFusSurf,rotationParametrization="E321",p0=[fΛ;0;0],pointInertias=[fRightConInertia])
+    rightFus = create_Beam(name="rightFus",length=fusLength,nElements=nElemFus,S=[Sfus],I=[Ifus],aeroSurface=rightFusSurf,rotationParametrization="E321",p0=[-fΛ;0;0],pointInertias=[fRightConInertia])
 
     # Propellers thrust force
     thrustValue = thrustIsTrimVariable ? t -> 0 : thrust
@@ -1123,8 +1194,8 @@ Creates a version of Healy's wing with flared folding wingtip (FFWT). See Healy'
 - `aeroSolver::AeroSolver`: aerodynamic solver
 - `gustLoadsSolver::GustAeroSolver`: indicial gust loads solver
 - `derivationMethod::DerivationMethod`: method for aerodynamic derivatives
-- `withTipCorrection::Bool`: flag for aerodynamic tip correction
-- `tipLossDecayFactor::Real`: tip loss decay factor, in case withTipCorrection is true
+- `hasTipCorrection::Bool`: flag for aerodynamic tip correction
+- `tipLossDecayFactor::Real`: tip loss decay factor, in case hasTipCorrection is true
 - `pitchAngle::Real`: root pitch angle [rad]
 - `wingtipTwist::Real`: wingtip twist angle [rad]
 - `foldAngle::Union{Real,Nothing}`: fold angle [rad]
@@ -1139,7 +1210,7 @@ Creates a version of Healy's wing with flared folding wingtip (FFWT). See Healy'
 - `nElementsFFWT::Int64`: number of elements for discretization of the wingtip
 - `gust::Union{Nothing,Gust}=nothing`: gust
 """
-function create_HealyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfoil=deepcopy(NACA0015),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=true,tipLossDecayFactor::Real=Inf,pitchAngle::Real,wingtipTwist::Real=0,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real,kSpring::Real=1e-4,kIPBendingHinge::Real=kSpring,g::Real=9.80665,altitude::Real=0,airspeed::Real=0,flightDirection::Vector{<:Real}=[0;1;0],nElementsInner::Int64=15,nElementsFFWT::Int64=6,gust::Union{Nothing,Gust}=nothing)
+function create_HealyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfoil=deepcopy(NACA0015),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),hasTipCorrection::Bool=true,tipLossDecayFactor::Real=Inf,pitchAngle::Real,wingtipTwist::Real=0,foldAngle::Union{Real,Nothing}=nothing,flareAngle::Real,kSpring::Real=1e-4,kIPBendingHinge::Real=kSpring,g::Real=9.80665,altitude::Real=0,airspeed::Real=0,flightDirection::Vector{<:Real}=[0;1;0],nElementsInner::Int64=15,nElementsFFWT::Int64=6,gust::Union{Nothing,Gust}=nothing)
 
     # Validate
     if !isnothing(foldAngle)
@@ -1227,7 +1298,7 @@ function create_HealyFFWT(; solutionMethod::String="appliedMoment",airfoil::Airf
     φ_of_x1 = x1 -> ifelse(x1<=(0.365+0.06),0.0,ifelse(x1>=0.365+0.085,wingtipTwist,wingtipTwist*(x1-0.365-0.06)/0.025))
 
     # Aerodynamic surface
-    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,φ=φ_of_x1,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,updateAirfoilParameters=false)
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,φ=φ_of_x1,normSparPos=normSparPos,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,updateAirfoilParameters=false)
 
     # Wing beam
     beam = create_Beam(name="beam",length=L,nElements=nElem,normalizedNodalPositions=normalizedNodalPositions,S=[S],I=vcat(fill(I1,nElementsInner),fill(I2,nElementsFFWT)),rotationParametrization="E321",p0=[0;0;pitchAngle],aeroSurface=surf,hingedNodes=[hingeNode],hingedNodesDoF=[trues(3)],pointInertias=pointInertias)
@@ -1269,8 +1340,8 @@ Creates a version of Healy's baseline wing with flared folding wingtip (FFWT). S
 - `aeroSolver::AeroSolver`: aerodynamic solver
 - `gustLoadsSolver::GustAeroSolver`: indicial gust loads solver
 - `derivationMethod::DerivationMethod`: method for aerodynamic derivatives
-- `withTipCorrection::Bool`: flag for aerodynamic tip correction
-- `tipLossDecayFactor::Real`: tip loss decay factor, in case withTipCorrection is true
+- `hasTipCorrection::Bool`: flag for aerodynamic tip correction
+- `tipLossDecayFactor::Real`: tip loss decay factor, in case hasTipCorrection is true
 - `hingeConfiguration::String`: hinge hingeConfiguration ("free" or "locked")
 - `flareAngle::Real`: flare angle [rad]
 - `pitchAngle::Real`: root pitch angle [rad]
@@ -1284,7 +1355,7 @@ Creates a version of Healy's baseline wing with flared folding wingtip (FFWT). S
 - `nElementsFFWT::Int64`: number of elements for discretization of the wingtip
 - `gust::Union{Nothing,Gust}=nothing`: gust
 """
-function create_HealyBaselineFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfoil=deepcopy(flatPlate),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),withTipCorrection::Bool=false,tipLossDecayFactor::Real=12,hingeConfiguration::String,flareAngle::Real=15*π/180,pitchAngle::Real=0,foldAngle::Union{Real,Nothing}=nothing,kSpringHinge::Real=1e-4,kIPBendingHinge::Real=kSpringHinge,altitude::Real=0,airspeed::Real=0,g::Real=9.80665,nElementsInner::Int64=16,nElementsFFWT::Int64=4,gust::Union{Nothing,Gust}=nothing)
+function create_HealyBaselineFFWT(; solutionMethod::String="appliedMoment",airfoil::Airfoil=deepcopy(flatPlate),aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),hasTipCorrection::Bool=false,tipLossDecayFactor::Real=12,hingeConfiguration::String,flareAngle::Real=15*π/180,pitchAngle::Real=0,foldAngle::Union{Real,Nothing}=nothing,kSpringHinge::Real=1e-4,kIPBendingHinge::Real=kSpringHinge,altitude::Real=0,airspeed::Real=0,g::Real=9.80665,nElementsInner::Int64=16,nElementsFFWT::Int64=4,gust::Union{Nothing,Gust}=nothing)
 
     # Validate
     @assert hingeConfiguration in ["free","locked"] " set 'hingeConfiguration' as 'free' or 'locked'"
@@ -1376,7 +1447,7 @@ function create_HealyBaselineFFWT(; solutionMethod::String="appliedMoment",airfo
     end
 
     # Aerodynamic surface
-    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,updateAirfoilParameters=false)
+    surf = create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=chord,normSparPos=normSparPos,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,updateAirfoilParameters=false)
 
     # Hinged node and DOFs
     hingedNodes = hingeConfiguration == "free" ? [hingeNode] : Vector{Int64}()

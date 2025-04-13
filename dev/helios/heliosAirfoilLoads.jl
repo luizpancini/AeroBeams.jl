@@ -1,14 +1,9 @@
 using AeroBeams, ForwardDiff, DelimitedFiles
 
 # Frames and respective data
-frames = ["02000101", "02010151", "02010351"]
-airfoil_frames = [deepcopy(NACA23012A), deepcopy(NACA23012A), deepcopy(NACA23012A)]
-a₀_frames = [2.4817e-01, 1.8100e-01, 1.7899e-01]
-a₁_frames = [2.6967e-01, 1.0401e-01, 1.7741e-01]
-b_frames = [0.275, 0.275, 0.275]
-k_frames = [1e-3, 0.12489, 0.174]
-Ma_frames = [1.1931e-01, 1.1635e-01, 1.1694e-01]
-U_frames = [4.1570e+01, 4.0605e+01, 4.0815e+01]
+frames = ["02_000_101", "02_010_151", "02_010_351"]
+airfoil_frames, a₀_frames, a₁_frames, b_frames, k_frames, Ma_frames, U_frames = 
+map(GU_frames_loader, frames) |> x -> [getindex.(x, i) for i in 1:7]
 
 # Circulatory indicial function
 circulatoryIndicialFunction = "Wagner"
@@ -79,9 +74,10 @@ cnRef = Array{Matrix{Float64}}(undef,length(frames))
 cmRef = Array{Matrix{Float64}}(undef,length(frames))
 ctRef = Array{Matrix{Float64}}(undef,length(frames))
 for (i,frame) in enumerate(frames)
-    cnRef[i] = readdlm(pkgdir(AeroBeams)*"/test/referenceData/GUframes/"*frame*"_cn.txt")
-    cmRef[i] = readdlm(pkgdir(AeroBeams)*"/test/referenceData/GUframes/"*frame*"_cm.txt")
-    ctRef[i] = readdlm(pkgdir(AeroBeams)*"/test/referenceData/GUframes/"*frame*"_ct.txt")
+    onlyNumbersFrameStr = replace(frame, "_" => "")
+    cnRef[i] = readdlm(pkgdir(AeroBeams)*"/test/referenceData/GUframes/"*onlyNumbersFrameStr*"_cn.txt")
+    cmRef[i] = readdlm(pkgdir(AeroBeams)*"/test/referenceData/GUframes/"*onlyNumbersFrameStr*"_cm.txt")
+    ctRef[i] = readdlm(pkgdir(AeroBeams)*"/test/referenceData/GUframes/"*onlyNumbersFrameStr*"_ct.txt")
 end
 
 # Plot configurations

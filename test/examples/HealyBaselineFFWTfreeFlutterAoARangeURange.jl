@@ -38,7 +38,7 @@ nElementsInner = 16
 nElementsFFWT = 4
 
 ## Tip loss flag
-withTipCorrection = true
+hasTipCorrection = true
 
 ## Solution method for constraint
 solutionMethod = "addedResidual"
@@ -77,7 +77,7 @@ for (i,τ) in enumerate(τRange)
             ## Display progress #src
             println("Solving for τ=$τ, θ=$(round(Int,θ*180/π)) deg, U=$U m/s") #src
             ## Update model
-            model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=τ,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+            model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=τ,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
             ## Initial guess solution as the one at previous airspeed
             x0 = (k > 1 && problem[i,j,k-1].systemSolver.convergedFinalSolution) ? problem[i,j,k-1].x : zeros(0)
             ## Create and solve problem

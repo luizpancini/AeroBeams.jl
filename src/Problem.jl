@@ -348,7 +348,7 @@ Eigen problem constructor
 - `inertia::SparseMatrixCSC{Float64,Int64}`: inertia matrix
 - `refTrimProblem::Union{Nothing,TrimProblem}`: reference trim problem contatining steady solution
 """
-function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=Inf64,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),refTrimProblem::Union{Nothing,TrimProblem}=nothing)
+function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=50,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),refTrimProblem::Union{Nothing,TrimProblem}=nothing)
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes,refTrimProblem=refTrimProblem)
@@ -1350,7 +1350,7 @@ end
 # Marches the dynamic problem in time
 function time_march!(problem::Problem)
 
-    @unpack model,sizeOfTime,trackingTimeSteps,trackingFrequency,displayProgress,displayFrequency = problem
+    @unpack sizeOfTime,trackingTimeSteps,trackingFrequency,displayProgress,displayFrequency = problem
 
     # Advance time
     for timeIndex = 2:sizeOfTime    
@@ -1360,7 +1360,7 @@ function time_march!(problem::Problem)
         # Update basis A orientation
         update_basis_A_orientation!(problem)
         # Update boundary conditions
-        for BC in model.BCs
+        for BC in problem.model.BCs
             update_BC_data!(BC,timeNow)
         end   
         # Get equivalent states' rates at the begin of the time step

@@ -12,7 +12,7 @@
 using AeroBeams, LinearInterpolations, DelimitedFiles
 
 ## Aerodynamic solver
-aeroSolver = Inflow(6)
+aeroSolver = Inflow(nInflowStates=6)
 
 ## Derivation method
 derivationMethod = FD(nothing)
@@ -62,7 +62,7 @@ journal2 = create_BC(name="journal-2",beam=wing,node=nElem+1,types=["u1A","u2A",
 typicalSectionFlutterAndDivergence = create_Model(name="typicalSectionFlutterAndDivergence",beams=[wing],BCs=[journal1,journal2])
 
 ## Airspeed range
-URange = collect(5:1:80)
+URange = b*ωα*collect(0.25:0.025:2.5)
 
 ## Number of oscillatory modes
 nModes = 2
@@ -78,7 +78,7 @@ problem = Array{EigenProblem}(undef,length(URange))
 # We're now ready to solve the eigenproblem at each airspeed value.
 ## Sweep airspeed
 for (i,U) in enumerate(URange)
-    println("Solving for U = $U m/s") #src
+    println("Solving for U/bωα = $(U/(b*ωα))") #src
     ## Update airspeed on model
     set_motion_basis_A!(model=typicalSectionFlutterAndDivergence,v_A=[0;U;0])
     ## Create and solve eigenproblem
@@ -140,7 +140,7 @@ freqsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/typicalSectionFlutterA
 dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/typicalSectionFlutterAndDivergence/damps.txt")
 #md nothing #hide
 
-#md # We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly! Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be found in spite of it.
+#md # We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly! Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be computed in spite of it. See [this](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/typicalSectionDivergence.jl) example to learn how.
 #md using Plots, ColorSchemes
 #md gr()
 #md ENV["GKSwstype"] = "100" #hide
@@ -151,37 +151,33 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/typicalSectionFlutterA
 #md modeLabels = ["Plunge" "Pitch"]
 #md lw = 3
 #md ms = 2
+#md msw = 0
 
 ## Frequency plot
-#md plt11 = plot(ylabel="Frequency ratio", ylims=[0,1.01])
+#md plt11 = plot(ylabel="Frequency ratio", xlims=[0,URange[end]/(b*ωα)], ylims=[0,1.02])
 #md for mode in 1:nModes
-#md     plot!(URange, modeFrequencies[mode]/ωα, c=modeColors[mode], lw=lw,  label=false)
+#md     plot!(URange/(b*ωα), modeFrequencies[mode]/ωα, c=modeColors[mode], lw=lw,  label=false)
 #md end
-#md for r in 2:axes(freqsRef, 1)[end]
-#md     plot!(freqsRef[1,:], freqsRef[r,:], ls=:dash, c=modeColors[end], lw=1, label=false)
-#md end
+#md plot!(freqsRef[1,:], freqsRef[2,:], ls=:dash, lw=1, marker=:circle, ms=2, msw=msw, c=modeColors[end], label=false)
 ## Damping plot
-#md plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", ylims=[-0.15,0.15],legend=:topleft)
+#md plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,URange[end]/(b*ωα)], ylims=[-0.15,0.15],legend=:topleft)
 #md for i in eachindex(URange)
 #md     for j in eachindex(dampingsNonOscillatory[i])
-#md         scatter!([URange[i]], [dampingsNonOscillatory[i][j]/ωα], c=:black, ms=ms, msw=0, label=false)
+#md         scatter!([URange[i]/(b*ωα)], [dampingsNonOscillatory[i][j]/ωα], c=:black, ms=ms, msw=msw, label=false)
 #md     end
 #md end
-#md scatter!([NaN], [NaN], c=:black, ms=ms, msw=0, label="Non-oscillatory")
+#md scatter!([NaN], [NaN], c=:black, ms=ms, msw=msw, label="Non-oscillatory")
 #md for mode in 1:nModes
-#md     plot!(URange, modeDampings[mode]/ωα, c=modeColors[mode], lw=lw, label=modeLabels[mode])
+#md     plot!(URange/(b*ωα), modeDampings[mode]/ωα, c=modeColors[mode], lw=lw, label=modeLabels[mode])
 #md end
-#md for r in 2:axes(dampsRef, 1)[end]
-#md     plot!(dampsRef[1,:], dampsRef[r,:], ls=:dash, c=modeColors[end], lw=1, label=false)
-#md end
-#md plot!([NaN], [NaN], ls=:dash, c=modeColors[end], lw=1, label="\$p\$ method")
+#md plot!(dampsRef[1,:], dampsRef[2,:], ls=:dash, lw=1, marker=:circle, ms=2, msw=msw, c=modeColors[end], label="Hodges & Pierce (2011) - \$p\$ method")
 #md plt1 = plot(plt11,plt12, layout=(2,1))
 #md savefig("typicalSectionFlutter_Vgf.svg") #hide
 #md nothing #hide
 
 #md # ![](typicalSectionFlutter_Vgf.svg)
 
-# Finally, we show the numerical values of the nondimensional flutter speed and frequency
+# Finally, we show the numerical values of the nondimensional flutter speed and frequency. The values computed by Hodges & Pierce are 2.165 and 0.6545, respectively.
 ## Compute nondimensional flutter speed and frequency
 flutterSpeedAll = vcat(flutterOnsetSpeed...)
 flutterFreqAll = vcat(flutterOnsetFreq...)

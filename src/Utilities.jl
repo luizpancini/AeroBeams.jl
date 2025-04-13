@@ -145,9 +145,9 @@ function isotropic_stiffness_matrix(; ∞=1e16,EA=∞,GAy=∞,GAz=∞,GJ=∞,EIy
     # See Hodges' book Eqs. 4.114 - 4.118
     z = [0 t3 -t2; -s3 0 0; s2 0 0]
 
-    A = diagm([EA,GAy,GAz])
+    A = diagm([EA,GAy,GAz] .|> Float64)
 
-    Tinv = diagm([GJ,EIy,EIz])
+    Tinv = diagm([GJ,EIy,EIz] .|> Float64)
 
     B = A*z
 
@@ -181,7 +181,7 @@ function inertia_matrix(; ρA=0,ρIy=0,ρIz=0,ρIs=ρIy+ρIz,ρIyz=0,e2=0,e3=0)
     @assert all(x->x>=0,[ρA,ρIy,ρIz,ρIs])
 
     ηtilde = tilde([0;ρA*e2;ρA*e3])
-    I = diagm([ρA,ρA,ρA,ρIs,ρIy,ρIz])
+    I = diagm([ρA, ρA, ρA, ρIs, ρIy, ρIz] .|> Float64)
     I[5,6] = I[6,5] = ρIyz
     I[1:3,4:6] = -ηtilde
     I[4:6,1:3] = ηtilde
@@ -254,16 +254,16 @@ function rotation_tensor_E321(p)
     # Validate
     @assert length(p) == 3
 
-    # Euler angles 3-2-1 sequence (yaw, pitch and roll angles), respective sines and cosines
-    yaw,pitch,roll = p[1],p[2],p[3]
+    # Euler angles 3-2-1 sequence (yaw, roll and pitch angles), respective sines and cosines
+    yaw,roll,pitch = p[1],p[2],p[3]
     sy,cy = sincos(yaw)
-    sp,cp = sincos(pitch)
     sr,cr = sincos(roll)
+    sp,cp = sincos(pitch)
 
     # Rotation tensor that brings the reference basis to the final basis
-    R = [cp*cy cy*sr*sp-cr*sy sr*sy+cr*cy*sp;
-         cp*sy cy*cr+sr*sp*sy cr*sp*sy-cy*sr;
-           -sp          cp*sr          cp*cr]
+    R = [cr*cy cy*sp*sr-cp*sy sp*sy+cp*cy*sr;
+         cr*sy cy*cp+sp*sr*sy cp*sr*sy-cy*sp;
+           -sr          cr*sp          cr*cp]
 
     round_off!(R)       
 
@@ -271,6 +271,68 @@ function rotation_tensor_E321(p)
 
 end
 export rotation_tensor_E321
+
+
+"""
+    rotation_tensor_E213(p)
+
+Computes the rotation tensor according to Euler parameters sequence 2-1-3.
+
+# Arguments
+- `p`: rotation parameters
+"""
+function rotation_tensor_E213(p)
+
+    # Validate
+    @assert length(p) == 3
+
+    # Euler angles 2-1-3 sequence (roll, pitch, yaw), respective sines and cosines
+    roll,pitch,yaw = p[1],p[2],p[3]
+    sr,cr = sincos(roll)
+    sp,cp = sincos(pitch)
+    sy,cy = sincos(yaw)
+
+    # Rotation tensor
+    R = [cy*cr+sy*sp*sr cy*sp*sr-sy*cr cp*sr;
+                  sy*cp          cy*cp   -sp;
+         sy*sp*cr-cy*sr sy*sr+cy*sp*cr cp*cr]
+
+    round_off!(R)
+
+    return R
+end
+export rotation_tensor_E213
+
+
+"""
+    rotation_tensor_E231(p)
+
+Computes the rotation tensor according to Euler parameters sequence 2-3-1.
+
+# Arguments
+- `p`: rotation parameters
+"""
+function rotation_tensor_E231(p)
+
+    # Validate
+    @assert length(p) == 3
+
+    # Euler angles 2-3-1 sequence (roll, yaw, pitch), respective sines and cosines
+    roll,yaw,pitch = p[1],p[2],p[3]
+    sr,cr = sincos(roll)
+    sy,cy = sincos(yaw)
+    sp,cp = sincos(pitch)
+
+    # Rotation tensor
+    R = [ cr*cy sp*sr-sy*cp*cr sr*cp+cr*sp*sy;
+             sy          cp*cy         -sp*cy;
+         -sr*cy cr*sp+cp*sy*sr cp*cr-sp*sr*sy]
+
+    round_off!(R)
+
+    return R
+end
+export rotation_tensor_E231
 
 
 """
@@ -293,7 +355,7 @@ function rotation_tensor_E313(p)
     sψ,cψ = sincos(ψ)
        
     # Rotation tensor that brings the reference basis to the final basis
-    R = [-sϕ*cθ*sψ+cϕ*cψ -sϕ*cθ*cψ-cϕ*sψ  sψ*sθ;
+    R = [-sϕ*cθ*sψ+cϕ*cψ -sϕ*cθ*cψ-cϕ*sψ  sϕ*sθ;
           cϕ*cθ*sψ+sϕ*cψ  cϕ*cθ*cψ-sϕ*sψ -cϕ*sθ;
                    sθ*sψ           sθ*cψ     cθ]
 
@@ -854,9 +916,9 @@ export rotation_parameters_Rodrigues
 
 
 """
-    ypr_from_rotation_tensor(R; ϵround=1e-10,ϵsingularity=1e-3,assumeNullYawInSingularity=true)
+    yrp_from_rotation_tensor(R; ϵround=1e-10,ϵsingularity=1e-3,assumeNullYawInSingularity=true)
 
-Computes the Euler angles from the sequence 3-2-1 (yaw, pitch, roll) given the rotation tensor
+Computes the Euler angles from the sequence 3-2-1 (yaw, roll, pitch) given the rotation tensor
 
 # Arguments
 - `R`: rotation tensor
@@ -866,35 +928,35 @@ Computes the Euler angles from the sequence 3-2-1 (yaw, pitch, roll) given the r
 - `ϵsingularity`: tolerance to consider singular case 
 - `assumeNullYawInSingularity`: flag to assume zero yaw angle in singularity
 """
-function ypr_from_rotation_tensor(R; ϵround=1e-10,ϵsingularity=1e-3,assumeNullYawInSingularity=true)
+function yrp_from_rotation_tensor(R; ϵround=1e-10,ϵsingularity=1e-3,assumeNullYawInSingularity=true)
 
     # Round-off
     round_off!(R,ϵround)
     
-    # Pitch angle
-    pitch = asin(-R[3,1])
+    # Roll angle
+    roll = asin(-R[3,1])
 
-    # Check if near singularity (pitch ≈ ±π/2)
-    if abs(cos(pitch)) < ϵsingularity
+    # Check if near singularity (roll ≈ ±π/2)
+    if abs(cos(roll)) < ϵsingularity
         # Singular case - only sum of yaw and roll can be determined: set angles according to assumption of either one being zero
-        yaw_plus_roll = atan(R[1,2]/R[1,3])
+        yaw_plus_pitch = atan(R[1,2]/R[1,3])
         if assumeNullYawInSingularity
             yaw = 0
-            roll = yaw_plus_roll
+            pitch = yaw_plus_pitch
         else
-            roll = 0
-            yaw = yaw_plus_roll
+            pitch = 0
+            yaw = yaw_plus_pitch
         end
     else
         # Non-singular case
         yaw = atan(R[2,1]/R[1,1])
-        roll = atan(R[3,2]/R[3,3])
+        pitch = atan(R[3,2]/R[3,3])
     end
 
-    return yaw, pitch, roll
+    return yaw, roll, pitch
 
 end
-export ypr_from_rotation_tensor
+export yrp_from_rotation_tensor
 
 
 """
@@ -934,37 +996,37 @@ export quaternion_from_rotation_tensor
 
 
 """
-    WM_to_ypr(p)
+    WM_to_yrp(p)
 
-Transforms Wiener-Milenkovic parameters to Euler parameters of sequence 3-2-1 (yaw, pitch, roll)
+Transforms Wiener-Milenkovic parameters to Euler parameters of sequence 3-2-1 (yaw, roll, pitch)
 
 # Arguments
 - `p`: rotation parameters
 """
-function WM_to_ypr(p)
+function WM_to_yrp(p)
 
     R,_ = rotation_tensor_WM(p)
 
-    yaw,pitch,roll = ypr_from_rotation_tensor(R)
+    yaw,roll,pitch = yrp_from_rotation_tensor(R)
     
-    return [yaw; pitch; roll]
+    return [yaw; roll; pitch]
 end
-export WM_to_ypr
+export WM_to_yrp
 
 
 """
-    ypr_to_WM(p)
+    yrp_to_WM(p)
 
-Transforms Euler parameters of sequence 3-2-1 (yaw, pitch, roll) to Wiener-Milenkovic parameters
+Transforms Euler parameters of sequence 3-2-1 (yaw, roll, pitch) to Wiener-Milenkovic parameters
 
 # Arguments
 - `p`: rotation parameters
 """
-function ypr_to_WM(p)
+function yrp_to_WM(p)
 
     return rotation_parameters_WM(rotation_tensor_E321(p))
 end
-export ypr_to_WM
+export yrp_to_WM
 
 
 """
@@ -1202,3 +1264,120 @@ function Newton_solver(f::Function, x0::AbstractArray; absTol::Real=1e-9, relTol
     return x, converged
 end
 export Newton_solver
+
+
+"""
+    backward_extrapolation(v::Vector{<:Real}; order::Int=5)
+
+Estimates the values of an array from backward finite difference extrapolation
+
+# Arguments
+- `v::Vector{<:Real}`: vector
+
+# Keyword arguments
+- `order::Int`: order of the approximation
+"""
+function backward_extrapolation(v::Vector{<:Real}; order::Int=5)
+
+    # Size of the vector
+    n = length(v)
+
+    # Fix Inf values
+    v[v .== Inf .|| v .== -Inf] .= 0
+
+    # Initialize estimated vector
+    vEst = deepcopy(v)
+    
+    # Compute estimated vector
+    if order == 3
+        for i in 4:n
+            vEst[i] = 3v[i-1] - 3v[i-2] + v[i-3]
+        end
+    elseif order == 4
+        for i in 5:n
+            vEst[i] = 4v[i-1] - 6v[i-2] + 4v[i-3] - v[i-4]
+        end
+    elseif order == 5
+        for i in 6:n
+            vEst[i] = 5v[i-1] - 10v[i-2] + 10v[i-3] - 5v[i-4] + v[i-5]
+        end
+    else
+        error("Set order between 3 and 5")
+    end
+    
+    return vEst
+end
+export backward_extrapolation
+
+
+"""
+    NASA_frames_loader(frame::Union{Int,String})
+
+Loads dynamic stall data from a frame of the NASA report (https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19830003778.pdf)
+
+# Arguments
+- `frame::Union{Int,String}`: frame number
+"""
+function NASA_frames_loader(frame::Union{Int,String})
+
+    # Atmosphere
+    altitude = 0
+    atmosphere = standard_atmosphere(altitude)
+
+    # Frame data lookup (airfoil, mean angle, angle amplitude, airfoil semichord, reduced frequency, Mach number)
+    frames = Dict(
+        10_022 => (airfoil=deepcopy(NACA0012), a₀=12π/180, a₁=9.9π/180, b=0.305, k=0.098, Ma=0.301)
+    )
+
+    # Retrieve frame data
+    frame_data = get(frames, frame, nothing)
+    isnothing(frame_data) && error("Frame $frame is unavailable")
+
+    # Extract variables
+    airfoil,a₀,a₁,b,k,Ma = frame_data
+
+    # Airspeed
+    U = Ma*atmosphere.a
+
+    # Update airfoil parameters
+    update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=b)
+
+    return airfoil,a₀,a₁,b,k,Ma,U
+end
+export NASA_frames_loader
+
+
+"""
+    GU_frames_loader(frame::Union{Int,String})
+
+Loads dynamic stall data from a frame of the University of Glasgow (DOI:10.5525/gla.researchdata.464)
+
+# Arguments
+- `frame::Union{Int,String}`: frame number
+"""
+function GU_frames_loader(frame::Union{Int,String})
+
+    if frame isa String
+        frame = parse(Int, replace(frame, "_" => ""))
+    end
+
+    # Frame data lookup (airfoil, mean angle, angle amplitude, airfoil semichord, reduced frequency, Mach number, airspeed)
+    frames = Dict(
+        02_000_101 => (airfoil=deepcopy(NACA23012A), a₀=0.24817, a₁=0.26967, b=0.275, k=0.001, Ma=0.11931, U=41.570),
+        02_010_151 => (airfoil=deepcopy(NACA23012A), a₀=0.18100, a₁=0.10401, b=0.275, k=0.12489, Ma=0.11635, U=40.605),
+        02_010_351 => (airfoil=deepcopy(NACA23012A), a₀=0.17899, a₁=0.17741, b=0.275, k=0.174, Ma=0.11694, U=40.815)
+    )
+
+    # Retrieve frame data
+    frame_data = get(frames, frame, nothing)
+    isnothing(frame_data) && error("Frame $frame is unavailable")
+
+    # Extract variables
+    airfoil,a₀,a₁,b,k,Ma,U = frame_data
+
+    # Update airfoil parameters
+    update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=b)
+
+    return airfoil,a₀,a₁,b,k,Ma,U
+end
+export GU_frames_loader

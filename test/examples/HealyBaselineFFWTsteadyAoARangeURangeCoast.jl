@@ -24,11 +24,11 @@ nElementsFFWT = 4
 nElem = nElementsInner + nElementsFFWT
 
 # Tip loss options (assumed, since Healy's analysis uses DLM for aerodynamic)
-withTipCorrection = true
+hasTipCorrection = true
 tipLossDecayFactor = 12
 
 # Initialize model
-HealyBaselineFFWTsteadyAoARangeURangeCoast = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,pitchAngle=0,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+HealyBaselineFFWTsteadyAoARangeURangeCoast = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,pitchAngle=0,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
 
 # System solver
 σ0 = 1
@@ -56,7 +56,7 @@ for (i,θ) in enumerate(θRange)
     for (j,U) in enumerate(URange)
         println("Solving for θ = $(round(θ*180/π,digits=1)) deg, U = $U m/s")
         # Update model
-        model = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+        model = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
         # Create and solve problem
         problem[i,j] = create_SteadyProblem(model=model,systemSolver=NR)
         solve!(problem[i,j])

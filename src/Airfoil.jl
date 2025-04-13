@@ -39,7 +39,7 @@
             α₀NRng = π/180*[  0.0;   0.0]
             ϵₙRng =        [  0.7;   0.7]
             ϵₘRng =        [ 0.96;  0.96]
-            ηRng =         [ 0.95;  0.95]
+            ηRng =         [  1.0;   1.0]
             cd₀Rng =  1e-2*[  0.0;   0.0]
             cm₀Rng =  1e-3*[  0.0;   0.0]
             cmαRng =       [  0.0;   0.0]
@@ -60,38 +60,38 @@
             cnαRng =  2π/β*[1.049; 1.049; 0.972; 0.998; 0.995; 0.980; 1.00; 1.00; 1.00]
         elseif name in ["NACA0015","NACA0018"]
             # Bound Mach and corresponding compressibility factor
-            Ma = min(0.15,Ma)
+            Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2)
             # Mach-dependent parameters
-            MaRng  =       [    0; 0.062; 0.080; 0.120; 0.150]
-            α₀NRng = π/180*[  0.0;   0.0;   0.0;   0.0;   0.0]
-            ϵₙRng =        [  0.7;   0.7;   0.7;   0.7;   0.7]
-            ϵₘRng =        [ 0.96;  0.96;  0.96;  0.96;  0.96]
-            ηRng =         [ 0.95;  0.95;  0.95;  0.95;  0.95]
-            cd₀Rng =  1e-2*[  1.0;   1.0;   0.8;   0.5;   0.6] 
-            cm₀Rng =  1e-3*[ -1.0;  -1.0;   2.0;   2.0;   1.0]
-            cmαRng =       [  0.0;   0.0;   0.0;   0.0;   0.0]
-            cnαRng =  2π/β*[  1.0;   1.0;   1.0;   1.0;   1.0]
+            MaRng  =       [    0;  0.8]
+            α₀NRng = π/180*[  0.0;  0.0]
+            ϵₙRng =        [  0.7;  0.7]
+            ϵₘRng =        [ 0.96; 0.96]
+            ηRng =         [ 0.95; 0.95]
+            cd₀Rng =  1e-2*[  1.0;  0.6] 
+            cm₀Rng =  1e-3*[  1.0;  1.0]
+            cmαRng =       [  0.0;  0.0]
+            cnαRng =  2π/β*[  1.0;  1.0]
         elseif name in ["VERTOL23010"]
             # Bound Mach and corresponding compressibility factor
-            Ma = min(0.3,Ma)
+            Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  =       [    0;  0.3]
-            α₀NRng = π/180*[  1.0;  1.0]
+            MaRng  =       [    0;  0.8]
+            α₀NRng = π/180*[  0.7;  0.7]
             ϵₙRng =        [  0.7;  0.7]
             ϵₘRng =        [ 0.96; 0.96]
             ηRng =         [ 0.95; 0.95]
             cd₀Rng =  1e-2*[  1.0;  1.0] 
-            cm₀Rng =  1e-2*[ -1.2; -1.2]
+            cm₀Rng =  1e-2*[  0.0;  0.0]
             cmαRng =       [  0.0;  0.0]
             cnαRng =  2π/β*[  1.0;  1.0]    
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
-            Ma = min(0.3,Ma)
+            Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  =       [      0;     0.3]
+            MaRng  =       [      0;     0.8]
             α₀NRng = π/180*[    1.2;     1.2]
             ϵₙRng =        [    0.7;     0.7]
             ϵₘRng =        [   0.96;    0.96]
@@ -102,9 +102,9 @@
             cnαRng =    2π*[   1.08;    1.08]
         elseif name in ["HeliosWingAirfoil"]
             # Bound Mach
-            Ma = min(0.3,Ma)
+            Ma = min(0.8,Ma)
             # Mach-dependent parameters
-            MaRng  =       [   0; 0.3]
+            MaRng  =       [   0; 0.8]
             α₀NRng = π/180*[ 0.0; 0.0]
             ϵₙRng =        [ 1.0; 1.0]
             ϵₘRng =        [ 1.0; 1.0]
@@ -115,9 +115,9 @@
             cnαRng =    2π*[ 1.0; 1.0]     
         elseif name in ["HeliosPodAirfoil"]
             # Bound Mach
-            Ma = min(0.3,Ma)
+            Ma = min(0.8,Ma)
             # Mach-dependent parameters
-            MaRng  =       [   0; 0.3]
+            MaRng  =       [   0; 0.8]
             α₀NRng = π/180*[ 0.0; 0.0]
             ϵₙRng =        [ 1.0; 1.0]
             ϵₘRng =        [ 1.0; 1.0]
@@ -128,10 +128,10 @@
             cnαRng =       [ 5.0; 5.0] 
         elseif name in ["BWBAirfoil"] 
             # Bound Mach and corresponding compressibility factor
-            Ma = min(0.3,Ma)
+            Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2)    
             # Mach-dependent parameters
-            MaRng  =       [   0; 0.3]
+            MaRng  =       [   0; 0.8]
             α₀NRng = π/180*[ 0.0; 0.0]
             ϵₙRng =        [ 1.0; 1.0]
             ϵₘRng =        [ 1.0; 1.0]
@@ -145,14 +145,14 @@
         end
 
         # Interpolated values
-        α₀N = interpolate(MaRng,α₀NRng,Ma)
-        ϵₙ  = interpolate(MaRng,ϵₙRng,Ma)
-        ϵₘ  = interpolate(MaRng,ϵₘRng,Ma)
-        η   = interpolate(MaRng,ηRng,Ma)
-        cd₀ = interpolate(MaRng,cd₀Rng,Ma)
-        cm₀ = interpolate(MaRng,cm₀Rng,Ma)
-        cmα = interpolate(MaRng,cmαRng,Ma)
-        cnα = interpolate(MaRng,cnαRng,Ma)
+        α₀N = LinearInterpolations.interpolate(MaRng,α₀NRng,Ma)
+        ϵₙ  = LinearInterpolations.interpolate(MaRng,ϵₙRng,Ma)
+        ϵₘ  = LinearInterpolations.interpolate(MaRng,ϵₘRng,Ma)
+        η   = LinearInterpolations.interpolate(MaRng,ηRng,Ma)
+        cd₀ = LinearInterpolations.interpolate(MaRng,cd₀Rng,Ma)
+        cm₀ = LinearInterpolations.interpolate(MaRng,cm₀Rng,Ma)
+        cmα = LinearInterpolations.interpolate(MaRng,cmαRng,Ma)
+        cnα = LinearInterpolations.interpolate(MaRng,cnαRng,Ma)
 
         return new(α₀N,ϵₙ,ϵₘ,η,cd₀,cm₀,cmα,cnα)
     end
@@ -249,6 +249,7 @@ end
 # - `ztd::Real`
 # - `ztu::Real`
 # - `zm::Real`
+# - `γbC::Vector{Float64}`
 # - `γbCMat::Matrix{Float64}`
 #
 @with_kw mutable struct BLiParameters
@@ -336,6 +337,7 @@ end
     ztd::Real
     ztu::Real
     zm::Real
+    γbC::Vector{Float64}
     γbCMat::Matrix{Float64}
     
     function BLiParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
@@ -434,7 +436,8 @@ end
             ztuRng =        [1.00;  1.00;  1.00;  1.00;  1.00; 1.00; 1.00; 1.00]
             zmRng =         [2.31;  2.02;  2.50;  1.68;  1.47; 1.49; 1.48; 1.25]
             # Fixed parameters
-            γbCMat = Diagonal([2.5; 0.8])
+            γbC = [2.5; 0.8]
+            γbCMat = Diagonal(γbC)
         elseif name in ["NACA0012-GU","NACA0015","NACA0015-s"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.078,min(0.155,Ma))
@@ -525,7 +528,8 @@ end
             ztuRng =               [0.00;    0.00;    0.00]
             zmRng =                [1.59;    1.65;    1.84]
             # Fixed parameters
-            γbCMat = Diagonal([2.5; 0.8])
+            γbC = [2.5; 0.8]
+            γbCMat = Diagonal(γbC)
         elseif name in ["NACA0018"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.062,min(0.15,Ma))
@@ -616,7 +620,8 @@ end
             ztuRng =               [0.00;   0.00;    0.00;    0.00]
             zmRng =                [2.30;   3.84;    2.83;    2.97]
             # Fixed parameters
-            γbCMat = Diagonal([1.0; 1.0])
+            γbC = [1.0; 1.0]
+            γbCMat = Diagonal(γbC)
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -683,7 +688,7 @@ end
             fbTRng =                [0.80;     0.80]
             gᵥRng =                 [0.18;     0.18] 
             gᵥ₂Rng =                [-0.48;    -0.48]
-            K₀Rng =                  [-0.008;   -0.008]  
+            K₀Rng =                  [-0.0083;   -0.0083]  
             K₁Rng =                  [-0.171;    -0.171] 
             K₂Rng =                  [0.015;    0.015]   
             r₀Rng =             1e-2*[1.62;     1.62]  
@@ -707,7 +712,8 @@ end
             ztuRng =               [0.10;     0.10]
             zmRng =                [1.72;     1.72]
             # Fixed parameters
-            γbCMat = Diagonal([1.5; 1.0])
+            γbC = [1.5; 1.0]
+            γbCMat = Diagonal(γbC)
         elseif name in ["VERTOL23010"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.2,min(0.6,Ma))
@@ -718,7 +724,7 @@ end
             αds₀Rng =    π/180*[20.0;    17.0;     20.0]   
             αₛₛRng =     π/180*[14.5;    13.5;     17.0]   
             α1₀NRng =    π/180*[14.5;    14.0;     8.0]
-            α1₀MRng =    π/180*[14.5;    13.5;     8.0]
+            α1₀MRng =    π/180*[14.5;    14.0;     8.0]
             α1₀TRng =    π/180*[14.5;    14.0;     8.0]
             βσ1NRng =          [0.00;    0.00;    0.00]
             βσ1TRng =          [0.00;    0.00;    0.00]        
@@ -761,7 +767,7 @@ end
             ζₐRng =              [0.00;    0.00;    0.00]
             cd₀Rng =           1e-2*[1.0;     1.0;     1.0]  
             cm₀Rng =           1e-2*[0.0;    -0.0;    -0.0]
-            cnαRng =        2*π/β*[1.0;   1.0;   1.0]  
+            cnαRng =        2π/β*[1.0;   1.0;   1.0]  
             dtRng =         π/180*[0.0;     0.0;      0.0]    
             dmRng =         π/180*[0.0;     0.0;      0.0] 
             E₀Rng =                  [1.0;     1.0;     1.0]  
@@ -781,7 +787,7 @@ end
             S1NRng =         π/180*[1.5;     1.67;      3.0]
             S1MRng =         π/180*[1.5;     1.67;      3.0]
             S1TRng =         π/180*[1.5;     1.67;      3.0]
-            S2NRng =         π/180*[2.0;     1.30;      4.5]
+            S2NRng =         π/180*[2.0;     1.80;      4.5]
             S2MRng =         π/180*[2.0;     1.30;      4.5]
             S2TRng =         π/180*[2.0;     1.30;      4.5]
             TaRng =                  [2.0;     2.5;      1.5]    
@@ -789,16 +795,17 @@ end
             TgRng =             5*TaRng    
             TvRng =                  [5.0;     6.0;      5.0] 
             Tv₂Rng =                 [5.0;     6.0;      5.0]
-            VmRng =                  [0.35;    0.40;     0.35]
+            VmRng =                  [0.35;    0.35;     0.35]
             VtRng =                  [0.16;    0.24;    0.23]
-            Vn₁Rng =                 [1.5;     0.70;     0.50]   
+            Vn₁Rng =                 [1.5;     1.00;     0.50]   
             Vn₂Rng =                 [1.0;     0.45;     0.10]
             Vn₃Rng =                 [0.00;    0.00;    0.00] 
             ztdRng =               [1.25;    1.5;      1.2]
             ztuRng =               [0.00;    0.00;    0.00]
             zmRng =                [0.5;     3.0;      0.5]
             # Fixed parameters
-            γbCMat = Diagonal([2.5; 0.8])
+            γbC = [2.5; 0.8]
+            γbCMat = Diagonal(γbC)
         elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.8,Ma))
@@ -889,95 +896,96 @@ end
             ztuRng =               [0.0;     0.0]
             zmRng =                [1.0;     1.0]
             # Fixed parameters
-            γbCMat = Diagonal([1.0; 1.0])
+            γbC = [1.0; 1.0]
+            γbCMat = Diagonal(γbC)
         else
             error("Airfoil not listed")
         end
 
         # Interpolated values
-        α₀N = interpolate(MaRng,α₀NRng,Ma)
-        αds₀ = interpolate(MaRng,αds₀Rng,Ma)
-        αₛₛ = interpolate(MaRng,αₛₛRng,Ma)
-        α1₀N = interpolate(MaRng,α1₀NRng,Ma)
-        α1₀M = interpolate(MaRng,α1₀MRng,Ma)
-        α1₀T = interpolate(MaRng,α1₀TRng,Ma)
-        βσ1N = interpolate(MaRng,βσ1NRng,Ma)
-        βσ1T = interpolate(MaRng,βσ1TRng,Ma)
-        βσ2N = interpolate(MaRng,βσ2NRng,Ma)
-        βS2Nlpr = interpolate(MaRng,βS2NlprRng,Ma)
-        βS2Tlpr = interpolate(MaRng,βS2TlprRng,Ma)
-        βS1Nu = interpolate(MaRng,βS1NuRng,Ma)
-        βS1Mu = interpolate(MaRng,βS1MuRng,Ma)
-        βS1Tu = interpolate(MaRng,βS1TuRng,Ma)
-        βS1Nd = interpolate(MaRng,βS1NdRng,Ma)
-        βS1Md = interpolate(MaRng,βS1MdRng,Ma)
-        βS1Td = interpolate(MaRng,βS1TdRng,Ma)
-        βS2Nu = interpolate(MaRng,βS2NuRng,Ma)
-        βS2Mu = interpolate(MaRng,βS2MuRng,Ma)
-        βS2Tu = interpolate(MaRng,βS2TuRng,Ma)
-        βS2Nd = interpolate(MaRng,βS2NdRng,Ma)
-        βS2Md = interpolate(MaRng,βS2MdRng,Ma)
-        βS2Td = interpolate(MaRng,βS2TdRng,Ma)
-        γLS = interpolate(MaRng,γLSRng,Ma)
-        δα₀ = interpolate(MaRng,δα₀Rng,Ma)
-        δα₁ = interpolate(MaRng,δα₁Rng,Ma)
-        ϵₙ = interpolate(MaRng,ϵₙRng,Ma)
-        ϵₘ = interpolate(MaRng,ϵₘRng,Ma)
-        η = interpolate(MaRng,ηRng,Ma)
-        κ₀ = interpolate(MaRng,κ₀Rng,Ma)
-        κ₁ = interpolate(MaRng,κ₁Rng,Ma)
-        κ₂ = interpolate(MaRng,κ₂Rng,Ma)
-        κ₃ = interpolate(MaRng,κ₃Rng,Ma)
-        λ₁ = interpolate(MaRng,λ₁Rng,Ma)
-        λ₂ = interpolate(MaRng,λ₂Rng,Ma)
-        μv₂ = interpolate(MaRng,μv₂Rng,Ma)
-        ν₁ = interpolate(MaRng,ν₁Rng,Ma)
-        ν₂ = interpolate(MaRng,ν₂Rng,Ma)
-        ν₃ = interpolate(MaRng,ν₃Rng,Ma)
-        ν₄ = interpolate(MaRng,ν₄Rng,Ma)
-        ν₅ = interpolate(MaRng,ν₅Rng,Ma)
-        χu = interpolate(MaRng,χuRng,Ma)
-        χd = interpolate(MaRng,χdRng,Ma)
-        ξ = interpolate(MaRng,ξRng,Ma)
-        ζₐ = interpolate(MaRng,ζₐRng,Ma)
-        cd₀ = interpolate(MaRng,cd₀Rng,Ma)
-        cm₀ = interpolate(MaRng,cm₀Rng,Ma)
-        cnα = interpolate(MaRng,cnαRng,Ma)
-        dt = interpolate(MaRng,dtRng,Ma)
-        dm = interpolate(MaRng,dmRng,Ma)
-        E₀ = interpolate(MaRng,E₀Rng,Ma)
-        E₁ = interpolate(MaRng,E₁Rng,Ma)
-        f₀N = interpolate(MaRng,f₀NRng,Ma)
-        f₀M = interpolate(MaRng,f₀MRng,Ma)
-        f₀T = interpolate(MaRng,f₀TRng,Ma)
-        fbN = interpolate(MaRng,fbNRng,Ma)
-        fbM = interpolate(MaRng,fbMRng,Ma)
-        fbT = interpolate(MaRng,fbTRng,Ma)
-        gᵥ = interpolate(MaRng,gᵥRng,Ma)
-        gᵥ₂ = interpolate(MaRng,gᵥ₂Rng,Ma)
-        K₀ = interpolate(MaRng,K₀Rng,Ma)
-        K₁ = interpolate(MaRng,K₁Rng,Ma)
-        K₂ = interpolate(MaRng,K₂Rng,Ma)
-        r₀ = interpolate(MaRng,r₀Rng,Ma)
-        S1N = interpolate(MaRng,S1NRng,Ma)
-        S1M = interpolate(MaRng,S1MRng,Ma)
-        S1T = interpolate(MaRng,S1TRng,Ma)
-        S2N = interpolate(MaRng,S2NRng,Ma)
-        S2M = interpolate(MaRng,S2MRng,Ma)
-        S2T = interpolate(MaRng,S2TRng,Ma)
-        Ta = interpolate(MaRng,TaRng,Ma)
-        Tf = interpolate(MaRng,TfRng,Ma)
-        Tg = interpolate(MaRng,TgRng,Ma)
-        Tv = interpolate(MaRng,TvRng,Ma)
-        Tv₂ = interpolate(MaRng,Tv₂Rng,Ma)
-        Vn₁ = interpolate(MaRng,Vn₁Rng,Ma)
-        Vn₂ = interpolate(MaRng,Vn₂Rng,Ma)
-        Vn₃ = interpolate(MaRng,Vn₃Rng,Ma)
-        Vm = interpolate(MaRng,VmRng,Ma)
-        Vt = interpolate(MaRng,VtRng,Ma)
-        ztd = interpolate(MaRng,ztdRng,Ma)
-        ztu = interpolate(MaRng,ztuRng,Ma)
-        zm = interpolate(MaRng,zmRng,Ma)
+        α₀N = LinearInterpolations.interpolate(MaRng,α₀NRng,Ma)
+        αds₀ = LinearInterpolations.interpolate(MaRng,αds₀Rng,Ma)
+        αₛₛ = LinearInterpolations.interpolate(MaRng,αₛₛRng,Ma)
+        α1₀N = LinearInterpolations.interpolate(MaRng,α1₀NRng,Ma)
+        α1₀M = LinearInterpolations.interpolate(MaRng,α1₀MRng,Ma)
+        α1₀T = LinearInterpolations.interpolate(MaRng,α1₀TRng,Ma)
+        βσ1N = LinearInterpolations.interpolate(MaRng,βσ1NRng,Ma)
+        βσ1T = LinearInterpolations.interpolate(MaRng,βσ1TRng,Ma)
+        βσ2N = LinearInterpolations.interpolate(MaRng,βσ2NRng,Ma)
+        βS2Nlpr = LinearInterpolations.interpolate(MaRng,βS2NlprRng,Ma)
+        βS2Tlpr = LinearInterpolations.interpolate(MaRng,βS2TlprRng,Ma)
+        βS1Nu = LinearInterpolations.interpolate(MaRng,βS1NuRng,Ma)
+        βS1Mu = LinearInterpolations.interpolate(MaRng,βS1MuRng,Ma)
+        βS1Tu = LinearInterpolations.interpolate(MaRng,βS1TuRng,Ma)
+        βS1Nd = LinearInterpolations.interpolate(MaRng,βS1NdRng,Ma)
+        βS1Md = LinearInterpolations.interpolate(MaRng,βS1MdRng,Ma)
+        βS1Td = LinearInterpolations.interpolate(MaRng,βS1TdRng,Ma)
+        βS2Nu = LinearInterpolations.interpolate(MaRng,βS2NuRng,Ma)
+        βS2Mu = LinearInterpolations.interpolate(MaRng,βS2MuRng,Ma)
+        βS2Tu = LinearInterpolations.interpolate(MaRng,βS2TuRng,Ma)
+        βS2Nd = LinearInterpolations.interpolate(MaRng,βS2NdRng,Ma)
+        βS2Md = LinearInterpolations.interpolate(MaRng,βS2MdRng,Ma)
+        βS2Td = LinearInterpolations.interpolate(MaRng,βS2TdRng,Ma)
+        γLS = LinearInterpolations.interpolate(MaRng,γLSRng,Ma)
+        δα₀ = LinearInterpolations.interpolate(MaRng,δα₀Rng,Ma)
+        δα₁ = LinearInterpolations.interpolate(MaRng,δα₁Rng,Ma)
+        ϵₙ = LinearInterpolations.interpolate(MaRng,ϵₙRng,Ma)
+        ϵₘ = LinearInterpolations.interpolate(MaRng,ϵₘRng,Ma)
+        η = LinearInterpolations.interpolate(MaRng,ηRng,Ma)
+        κ₀ = LinearInterpolations.interpolate(MaRng,κ₀Rng,Ma)
+        κ₁ = LinearInterpolations.interpolate(MaRng,κ₁Rng,Ma)
+        κ₂ = LinearInterpolations.interpolate(MaRng,κ₂Rng,Ma)
+        κ₃ = LinearInterpolations.interpolate(MaRng,κ₃Rng,Ma)
+        λ₁ = LinearInterpolations.interpolate(MaRng,λ₁Rng,Ma)
+        λ₂ = LinearInterpolations.interpolate(MaRng,λ₂Rng,Ma)
+        μv₂ = LinearInterpolations.interpolate(MaRng,μv₂Rng,Ma)
+        ν₁ = LinearInterpolations.interpolate(MaRng,ν₁Rng,Ma)
+        ν₂ = LinearInterpolations.interpolate(MaRng,ν₂Rng,Ma)
+        ν₃ = LinearInterpolations.interpolate(MaRng,ν₃Rng,Ma)
+        ν₄ = LinearInterpolations.interpolate(MaRng,ν₄Rng,Ma)
+        ν₅ = LinearInterpolations.interpolate(MaRng,ν₅Rng,Ma)
+        χu = LinearInterpolations.interpolate(MaRng,χuRng,Ma)
+        χd = LinearInterpolations.interpolate(MaRng,χdRng,Ma)
+        ξ = LinearInterpolations.interpolate(MaRng,ξRng,Ma)
+        ζₐ = LinearInterpolations.interpolate(MaRng,ζₐRng,Ma)
+        cd₀ = LinearInterpolations.interpolate(MaRng,cd₀Rng,Ma)
+        cm₀ = LinearInterpolations.interpolate(MaRng,cm₀Rng,Ma)
+        cnα = LinearInterpolations.interpolate(MaRng,cnαRng,Ma)
+        dt = LinearInterpolations.interpolate(MaRng,dtRng,Ma)
+        dm = LinearInterpolations.interpolate(MaRng,dmRng,Ma)
+        E₀ = LinearInterpolations.interpolate(MaRng,E₀Rng,Ma)
+        E₁ = LinearInterpolations.interpolate(MaRng,E₁Rng,Ma)
+        f₀N = LinearInterpolations.interpolate(MaRng,f₀NRng,Ma)
+        f₀M = LinearInterpolations.interpolate(MaRng,f₀MRng,Ma)
+        f₀T = LinearInterpolations.interpolate(MaRng,f₀TRng,Ma)
+        fbN = LinearInterpolations.interpolate(MaRng,fbNRng,Ma)
+        fbM = LinearInterpolations.interpolate(MaRng,fbMRng,Ma)
+        fbT = LinearInterpolations.interpolate(MaRng,fbTRng,Ma)
+        gᵥ = LinearInterpolations.interpolate(MaRng,gᵥRng,Ma)
+        gᵥ₂ = LinearInterpolations.interpolate(MaRng,gᵥ₂Rng,Ma)
+        K₀ = LinearInterpolations.interpolate(MaRng,K₀Rng,Ma)
+        K₁ = LinearInterpolations.interpolate(MaRng,K₁Rng,Ma)
+        K₂ = LinearInterpolations.interpolate(MaRng,K₂Rng,Ma)
+        r₀ = LinearInterpolations.interpolate(MaRng,r₀Rng,Ma)
+        S1N = LinearInterpolations.interpolate(MaRng,S1NRng,Ma)
+        S1M = LinearInterpolations.interpolate(MaRng,S1MRng,Ma)
+        S1T = LinearInterpolations.interpolate(MaRng,S1TRng,Ma)
+        S2N = LinearInterpolations.interpolate(MaRng,S2NRng,Ma)
+        S2M = LinearInterpolations.interpolate(MaRng,S2MRng,Ma)
+        S2T = LinearInterpolations.interpolate(MaRng,S2TRng,Ma)
+        Ta = LinearInterpolations.interpolate(MaRng,TaRng,Ma)
+        Tf = LinearInterpolations.interpolate(MaRng,TfRng,Ma)
+        Tg = LinearInterpolations.interpolate(MaRng,TgRng,Ma)
+        Tv = LinearInterpolations.interpolate(MaRng,TvRng,Ma)
+        Tv₂ = LinearInterpolations.interpolate(MaRng,Tv₂Rng,Ma)
+        Vn₁ = LinearInterpolations.interpolate(MaRng,Vn₁Rng,Ma)
+        Vn₂ = LinearInterpolations.interpolate(MaRng,Vn₂Rng,Ma)
+        Vn₃ = LinearInterpolations.interpolate(MaRng,Vn₃Rng,Ma)
+        Vm = LinearInterpolations.interpolate(MaRng,VmRng,Ma)
+        Vt = LinearInterpolations.interpolate(MaRng,VtRng,Ma)
+        ztd = LinearInterpolations.interpolate(MaRng,ztdRng,Ma)
+        ztu = LinearInterpolations.interpolate(MaRng,ztuRng,Ma)
+        zm = LinearInterpolations.interpolate(MaRng,zmRng,Ma)
 
         # Dimensionalize time delay constants
         if U > 0 && b > 0
@@ -988,7 +996,7 @@ end
             Tv₂ *= b/U
         end
 
-        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cm₀,cnα,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tg,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,γbCMat)
+        return new(α₀N,αds₀,αₛₛ,α1₀N,α1₀M,α1₀T,βσ1N,βσ1T,βσ2N,βS2Nlpr,βS2Tlpr,βS1Nu,βS1Mu,βS1Tu,βS1Nd,βS1Md,βS1Td,βS2Nu,βS2Mu,βS2Tu,βS2Nd,βS2Md,βS2Td,γLS,δα₀,δα₁,ϵₙ,ϵₘ,η,κ₀,κ₁,κ₂,κ₃,λ₁,λ₂,μv₂,ν₁,ν₂,ν₃,ν₄,ν₅,χu,χd,ξ,ζₐ,cd₀,cm₀,cnα,dt,dm,E₀,E₁,f₀N,f₀M,f₀T,fbN,fbM,fbT,gᵥ,gᵥ₂,K₀,K₁,K₂,r₀,S1N,S1M,S1T,S2N,S2M,S2T,Ta,Tf,Tg,Tv,Tv₂,Vn₁,Vn₂,Vn₃,Vm,Vt,ztd,ztu,zm,γbC,γbCMat)
     end
 
 end
@@ -1022,6 +1030,7 @@ end
 # - `Tp::Real`
 # - `Tv₀::Real`
 # - `TvL::Real`
+# - `γbC::Vector{Float64}`
 # - `γbCMat::Matrix{Float64}`
 #
 @with_kw mutable struct BLoParameters
@@ -1049,6 +1058,7 @@ end
     Tp::Real
     Tv₀::Real
     TvL::Real
+    γbC::Vector{Float64}
     γbCMat::Matrix{Float64}
     
     function BLoParameters(name::String; Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
@@ -1087,7 +1097,8 @@ end
             Tv₀Rng = [6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 6.0; 4.0]
             TvLRng = [4.0; 5.0; 5.0; 5.0; 5.0; 5.0; 5.0; 9.0; 9.0; 9.0; 9.0; 9.0; 9.0]
             # Fixed parameters
-            γbCMat = Diagonal([2.5; 0.8])
+            γbC = [2.5; 0.8]
+            γbCMat = Diagonal(γbC)
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.3,Ma))
@@ -1118,7 +1129,8 @@ end
             Tv₀Rng = [5.0; 5.0]
             TvLRng = [5.0; 5.0]
             # Fixed parameters
-            γbCMat = Diagonal([1.5; 1.0])
+            γbC = [1.5; 1.0]
+            γbCMat = Diagonal(γbC)
         elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","VERTOL23010","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.8,Ma))
@@ -1149,35 +1161,36 @@ end
             Tv₀Rng = [6.0; 6.0]
             TvLRng = [5.0; 5.0]
             # Fixed parameters
-            γbCMat = Diagonal([1.0; 1.0])
+            γbC = [1.0; 1.0]
+            γbCMat = Diagonal(γbC)
         else
             error("Airfoil not listed")
         end
 
         # Interpolated values
-        α₀N = interpolate(MaRng,α₀NRng,Ma)
-        α1₀ = interpolate(MaRng,α1₀Rng,Ma)
-        δα = interpolate(MaRng,δαRng,Ma)
-        ϵₙ = interpolate(MaRng,ϵₙRng,Ma)
-        ϵₘ = interpolate(MaRng,ϵₘRng,Ma)
-        η = interpolate(MaRng,ηRng,Ma)
-        cd₀ = interpolate(MaRng,cd₀Rng,Ma)
-        cm₀ = interpolate(MaRng,cm₀Rng,Ma)
-        cn₁ = interpolate(MaRng,cn₁Rng,Ma)
-        cnα = interpolate(MaRng,cnαRng,Ma)
-        Df = interpolate(MaRng,DfRng,Ma)
-        E₀ = interpolate(MaRng,E₀Rng,Ma)
-        f₀ = interpolate(MaRng,f₀Rng,Ma)
-        fb = interpolate(MaRng,fbRng,Ma)
-        K₀ = interpolate(MaRng,K₀Rng,Ma)
-        K₁ = interpolate(MaRng,K₁Rng,Ma)
-        K₂ = interpolate(MaRng,K₂Rng,Ma)
-        S1 = interpolate(MaRng,S1Rng,Ma)
-        S2 = interpolate(MaRng,S2Rng,Ma)
-        Tf₀ = interpolate(MaRng,Tf₀Rng,Ma)
-        Tp = interpolate(MaRng,TpRng,Ma)
-        Tv₀ = interpolate(MaRng,Tv₀Rng,Ma)
-        TvL = interpolate(MaRng,TvLRng,Ma)
+        α₀N = LinearInterpolations.interpolate(MaRng,α₀NRng,Ma)
+        α1₀ = LinearInterpolations.interpolate(MaRng,α1₀Rng,Ma)
+        δα = LinearInterpolations.interpolate(MaRng,δαRng,Ma)
+        ϵₙ = LinearInterpolations.interpolate(MaRng,ϵₙRng,Ma)
+        ϵₘ = LinearInterpolations.interpolate(MaRng,ϵₘRng,Ma)
+        η = LinearInterpolations.interpolate(MaRng,ηRng,Ma)
+        cd₀ = LinearInterpolations.interpolate(MaRng,cd₀Rng,Ma)
+        cm₀ = LinearInterpolations.interpolate(MaRng,cm₀Rng,Ma)
+        cn₁ = LinearInterpolations.interpolate(MaRng,cn₁Rng,Ma)
+        cnα = LinearInterpolations.interpolate(MaRng,cnαRng,Ma)
+        Df = LinearInterpolations.interpolate(MaRng,DfRng,Ma)
+        E₀ = LinearInterpolations.interpolate(MaRng,E₀Rng,Ma)
+        f₀ = LinearInterpolations.interpolate(MaRng,f₀Rng,Ma)
+        fb = LinearInterpolations.interpolate(MaRng,fbRng,Ma)
+        K₀ = LinearInterpolations.interpolate(MaRng,K₀Rng,Ma)
+        K₁ = LinearInterpolations.interpolate(MaRng,K₁Rng,Ma)
+        K₂ = LinearInterpolations.interpolate(MaRng,K₂Rng,Ma)
+        S1 = LinearInterpolations.interpolate(MaRng,S1Rng,Ma)
+        S2 = LinearInterpolations.interpolate(MaRng,S2Rng,Ma)
+        Tf₀ = LinearInterpolations.interpolate(MaRng,Tf₀Rng,Ma)
+        Tp = LinearInterpolations.interpolate(MaRng,TpRng,Ma)
+        Tv₀ = LinearInterpolations.interpolate(MaRng,Tv₀Rng,Ma)
+        TvL = LinearInterpolations.interpolate(MaRng,TvLRng,Ma)
 
         # Dimensionalize time delay constants
         if U > 0 && b > 0
@@ -1187,7 +1200,7 @@ end
             TvL *= b/U
         end
 
-        return new(α₀N,α1₀,δα,ϵₙ,ϵₘ,η,cd₀,cm₀,cn₁,cnα,Df,E₀,f₀,fb,K₀,K₁,K₂,S1,S2,Tf₀,Tp,Tv₀,TvL,γbCMat)
+        return new(α₀N,α1₀,δα,ϵₙ,ϵₘ,η,cd₀,cm₀,cn₁,cnα,Df,E₀,f₀,fb,K₀,K₁,K₂,S1,S2,Tf₀,Tp,Tv₀,TvL,γbC,γbCMat)
     end
 
 end

@@ -247,8 +247,8 @@ function plot_steady_deformation(problem::Problem; interactive::Bool=false,plotB
         isPlane = isnothing(view) && (x1Plane || x2Plane || x3Plane)
 
         # Compute plot limits
-        plotMax = max(maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
-        plotMin = min(minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
+        plotMax = 1.2*max(maximum(reduce(vcat, x1Def)),maximum(reduce(vcat, x2Def)),maximum(reduce(vcat, x3Def)),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
+        plotMin = 1.2*min(minimum(reduce(vcat, x1Def)),minimum(reduce(vcat, x2Def)),minimum(reduce(vcat, x3Def)),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
 
         # Set plot limits
         if isPlane
@@ -698,6 +698,7 @@ Plots the mode shapes of the model in the given eigenproblem
 - `problem::EigenProblem`: problem
 
 # Keyword arguments
+- `interactive::Bool`: flag for interactive plot
 - `plotBCs::Bool`: flag to plot BCs
 - `view::Union{Nothing,Tuple{Real,Real}}`: view angles
 - `nModes::Union{Nothing,Int64}`: number of modes to plot
@@ -718,7 +719,7 @@ Plots the mode shapes of the model in the given eigenproblem
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Real=1,ΔuDef::Vector{<:Real}=zeros(3),frequencyLabel::String="frequency&damping",lw::Real=2,colorSteady=:black,modalColorScheme=:jet1,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{Int64},Vector{Int64}}}=nothing,legendPos=:best,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Real=1,ΔuDef::Vector{<:Real}=zeros(3),frequencyLabel::String="frequency&damping",lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{Int64},Vector{Int64}}}=nothing,legendPos=:best,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert frequencyLabel in ["frequency", "frequency&damping"]
@@ -732,7 +733,11 @@ function plot_mode_shapes(problem::EigenProblem; plotBCs::Bool=true,view::Union{
     end
 
     # Set backend
-    pyplot()
+    if interactive
+        plotlyjs()
+    else
+        pyplot()
+    end
 
     # Unpack
     @unpack modeShapesAbs,refTrimProblem = problem
@@ -2402,7 +2407,7 @@ function get_undeformed_airfoil_coords(element::Element)
     Z2 *= c2
 
     # Rotate to match initial nodal orientation and translate to initial position
-    XYZRot1,XYZRot2 = Rw*R0_n1*[zeros(N)'; Y1'; Z1'], Rw*R0_n2*[zeros(N)'; Y2'; Z2']           
+    XYZRot1,XYZRot2 = R0_n1*Rw*[zeros(N)'; Y1'; Z1'], R0_n2*Rw*[zeros(N)'; Y2'; Z2']           
     X1,X2 = XYZRot1[1,:]' .+ r_n1[1], XYZRot2[1,:]' .+ r_n2[1]
     Y1,Y2 = XYZRot1[2,:]' .+ r_n1[2], XYZRot2[2,:]' .+ r_n2[2]
     Z1,Z2 = XYZRot1[3,:]' .+ r_n1[3], XYZRot2[3,:]' .+ r_n2[3]

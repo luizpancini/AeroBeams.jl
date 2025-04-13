@@ -15,7 +15,7 @@
 
 # ### Problem setup
 # Let's begin by setting up the variables of our problem.
-using AeroBeams, DelimitedFiles
+using AeroBeams, DelimitedFiles, LinearInterpolations
 
 ## Aerodynamic solver
 aeroSolver = Indicial()
@@ -24,7 +24,7 @@ aeroSolver = Indicial()
 h = 0e3
 
 ## Airspeed range
-URange = collect(30:5:160)
+URange = collect(30:2:160)
 
 ## Number of vibration modes
 nModes = 8
@@ -49,7 +49,7 @@ NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter)
 
 # Next, we address an important step to be taken when performing flutter analyses in free flight with AeroBeams: to attach the model to light springs in displacement and rotation. This step is necessary for the solver to find the flight dynamic (rigid-body) modes of the vehicle, by introducing some sensitivity of the finite element states to those degrees-of-freedom. In the present case, we will attach two springs to the vehicle, one at each of the nodes where the transition from the body (fuselage) to the wing begins. An appropriate value for the stiffness of the springs is specified by the variable `μ`. The vectors `ku` and `kp` denote the stiffness values in the three orthogonal directions.
 ## Attachment springs
-μ = 1e-2
+μ = 1e-1
 ku = kp = μ*[1; 1; 1]
 spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
 spring2 = create_Spring(elementsIDs=[3],nodesSides=[2],ku=ku,kp=kp)
@@ -61,7 +61,7 @@ spring2 = create_Spring(elementsIDs=[3],nodesSides=[2],ku=ku,kp=kp)
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s") #src
     ## The first step of the solution is to trim the aircraft at that flight condition (combination of altitude and airspeed). We leverage the built-in function in AeroBeams to create our model for the trim problem.
-    BWBtrim = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h,airspeed=U)
+    BWBtrim = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
 
     ## Next, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
     add_springs_to_beam!(beam=BWBtrim.beams[2],springs=[spring1])
@@ -79,11 +79,11 @@ for (i,U) in enumerate(URange)
     trimδ[i] = trimProblem.x[end]
     println("Trim AoA = $(trimAoA[i]*180/π), trim thrust = $(trimThrust[i]), trim δ = $(trimδ[i]*180/π)") #src
 
-    ## All the variables needed for the stability analysis are now in place. We create the model for eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state. 
+    ## All the variables needed for the stability analysis are now in place. We create the model for the eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state. 
     BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
 
-    ## Now we create and solve eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, leveraging the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[2e-2*U,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    ## Now we create and solve the eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, making use of the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 5e-2*U rad/s through the keyword argument `frequencyFilterLimits`
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[5e-2*U,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
 
     ## The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution
@@ -107,6 +107,16 @@ for mode in 1:nModes
 end
 #md nothing #hide
 
+# The flutter onset speed is computed as the smallest among all modes
+## Flutter onset speed of each mode
+flutterOnsetSpeedOfMode = fill(NaN, nModes)
+for mode in 1:nModes
+    iOnset = findfirst(j -> modeDampings[mode][j] < 0 && modeDampings[mode][j+1] > 0, 1:length(URange)-1)
+    flutterOnsetSpeedOfMode[mode] = isnothing(iOnset) ? Inf64 : interpolate(modeDampings[mode][iOnset:iOnset+1],URange[iOnset:iOnset+1],0)
+end
+flutterOnsetSpeed = minimum(filter(!isinf,flutterOnsetSpeedOfMode),init=Inf64)
+println("Flutter speed = $(flutterOnsetSpeed)")
+
 # We can load the reference solution found with the University of Michigan's Nonlinear Aeroelastic Simulation Tool (UM/NAST) in its 2024 version (not the version in Su's thesis).
 ## Load reference data
 trimAoARef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/trimAoA.txt")
@@ -116,7 +126,7 @@ freqsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/freqs.txt")
 dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md nothing #hide
 
-#md # We are ready to plot the results. The following plots show the trim root angle of attack, motor thrust and elevator deflection as functions of the airspeed. The correlation with the reference solution is very good, except for the thrust. This difference arises because of the way in which the airfoil tangential force is computed when a flap deflection is present: either as proportional to the total normal force, the including flap-induced component (in AeroBeams), or proportional to the effective angle of attack (in UM/NAST).
+#md # We are ready to plot the results. The following plots show the trim root angle of attack, motor thrust and elevator deflection as functions of the airspeed. The correlation with the reference solution is very good, except for the thrust. This difference arises because of the way in which the airfoil tangential force is computed when a flap deflection is present: either as proportional to the total normal force, which includes the flap-induced component (in AeroBeams), or proportional to the effective angle of attack (in UM/NAST).
 #md using Suppressor #hide
 #md using Plots, ColorSchemes
 #md gr()
@@ -146,10 +156,9 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md # ![](BWBflutter_thrust.svg)
 #md # ![](BWBflutter_delta.svg)
 
-#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. It is seen that one of the modes crosses the zero-damping barrier at approximately 132.5 m/s, indicating flutter. There is a good correlation with the results from UM/NAST, which predicts the flutter speed at 137.7 m/s.
+#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. The flutter speed is computed at approximately 120.6 m/s, whereas the flutter speed predicted by UM/NAST is around 137.7 m/s, yielding a 12% difference. There is, however, qualitatively good agreement among the models for the behavior of the roots.
 ## Colormap
-#md cmap = :rainbow
-#md modeColors = get(colorschemes[cmap], LinRange(0, 1, nModes))
+#md modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 
 ## Root locus
 #md plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-20,5],ylims=[0,120])
@@ -180,7 +189,7 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md # Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the [`plot_mode_shapes`](@ref plot_mode_shapes) function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.
 ## Plot mode shapes  
 #md @suppress begin #hide
-#md modesPlot = plot_mode_shapes(eigenProblem,scale=1,view=(30,30),legendPos=:outerright,modalColorScheme=cmap)
+#md modesPlot = plot_mode_shapes(eigenProblem,scale=2,view=(45,30),ΔuDef=-eigenProblem.elementalStatesOverσ[end][11].u.+[0;0;-2],legendPos=:top,modalColorScheme=:rainbow)
 #md end #hide
 #md savefig("BWBflutter_modeShapes.svg") #hide
 #md nothing #hide

@@ -1,8 +1,7 @@
 module AeroBeams
 
-using FFTW, FiniteDifferences, ForwardDiff, LinearAlgebra, LinearInterpolations, Parameters, QuadGK, Random, Revise, SparseArrays, Statistics
+using FFTW, FiniteDifferences, ForwardDiff, LinearAlgebra, LinearInterpolations, Interpolations, Parameters, QuadGK, Random, Revise, SparseArrays, Statistics
 
-include("Utilities.jl")
 include("UnitsSystem.jl")
 include("PointInertia.jl")
 include("Spring.jl")
@@ -12,6 +11,7 @@ include("AeroSolver.jl")
 include("AeroSurface.jl")
 include("AeroProperties.jl")
 include("Gust.jl")
+include("Utilities.jl")
 include("Beam.jl")
 include("HingeAxisConstraint.jl")
 include("Element.jl")

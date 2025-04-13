@@ -12,7 +12,7 @@ U₀ = Ma*atmosphere.a
 # Aerodynamic solver
 circulatoryIndicialFunction = "Jose"
 incompressibleInertialLoads = true
-aeroSolver = BLo(circulatoryIndicialFunction=circulatoryIndicialFunction,incompressibleInertialLoads=incompressibleInertialLoads)
+aeroSolver = Indicial(circulatoryIndicialFunction=circulatoryIndicialFunction,incompressibleInertialLoads=incompressibleInertialLoads)
 
 # Wing surface
 chord = 0.1

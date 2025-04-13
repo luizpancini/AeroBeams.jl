@@ -52,7 +52,7 @@ for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U=$U m/s")
     # Update model
-    model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,foldAngle=foldAngle,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,tipMassPosition=ηtipMass)
+    model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,foldAngle=foldAngle,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,ηtipMass=ηtipMass)
     # Create and solve problem
     problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1,Inf])
     solve!(problem[i])

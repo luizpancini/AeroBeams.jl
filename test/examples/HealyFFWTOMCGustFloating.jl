@@ -25,7 +25,7 @@ nElementsFFWT = 5
 nElem = nElementsInner + nElementsFFWT
 
 # Tip loss options (the value of tipLossDecayFactor is assumed to match the experimental results, since it strongly influences the solution, especially at lower airspeeds)
-withTipCorrection = true
+hasTipCorrection = true
 tipLossDecayFactor = 10
 
 # System solver
@@ -41,7 +41,7 @@ Ug = 1
 gust = create_OneMinusCosineGust(initialTime=τ,duration=2*τ,verticalVelocity=Ug)
 
 # Model
-HealyFFWTOMCGustFloating = create_HealyFFWT(solutionMethod=solutionMethod,flareAngle=Λ,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,gust=gust,foldAngle=foldAngle,g=g) 
+HealyFFWTOMCGustFloating = create_HealyFFWT(solutionMethod=solutionMethod,flareAngle=Λ,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,gust=gust,foldAngle=foldAngle,g=g) 
 
 # Time variables
 Δt = 1e-3

@@ -648,7 +648,7 @@ mutable struct Element <: BeamElement
         isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set = false,false,false,false
 
         # Initialize aerodynamic properties 
-        aero = !isnothing(parent.aeroSurface) ? AeroProperties(parent.aeroSurface,R0,x1,x1_norm,x1_n1_norm,x1_n2_norm) : nothing
+        aero = !isnothing(parent.aeroSurface) ? AeroProperties(parent.aeroSurface,parent.rotationParametrization,R0,x1,x1_norm,x1_n1_norm,x1_n2_norm) : nothing
 
         # Update aerodynamic states and rates vectors to correct size
         if !isnothing(aero)

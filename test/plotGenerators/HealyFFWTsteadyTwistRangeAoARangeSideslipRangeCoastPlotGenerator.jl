@@ -18,27 +18,6 @@ ms = 6
 msw = 0
 gr()
 
-# p1 at highest airspeed
-plt_p1 = plot(xlabel="\$x_1/L\$", ylabel="\$p_1\$")
-for (i,φ) in enumerate(φRange)
-    plot!(x1_n/x1_n[end], p1[i], lw=lw, label="\$\\phi = $(round(φ*180/π,digits=1)) \\degree\$")
-end
-display(plt_p1)
-
-# p2 at highest airspeed
-plt_p2 = plot(xlabel="\$x_1/L\$", ylabel="\$p_2\$")
-for (i,φ) in enumerate(φRange)
-    plot!(x1_n/x1_n[end], p2[i], lw=lw, label="\$\\phi = $(round(φ*180/π,digits=1)) \\degree\$")
-end
-display(plt_p2)
-
-# p3 at highest airspeed
-plt_p3 = plot(xxlabel="\$x_1/L\$", ylabel="\$p_3\$")
-for (i,φ) in enumerate(φRange)
-    plot!(x1_n/x1_n[end], p3[i], lw=lw, label="\$\\phi = $(round(φ*180/π,digits=1)) \\degree\$")
-end
-display(plt_p3)
-
 # Coast angle vs sideslip angle for each AoA, for several wingtip twist angles
 for (i,φ) in enumerate(φRange)
     if i==1

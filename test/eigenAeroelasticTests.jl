@@ -135,6 +135,13 @@ end
     end
 end
 
+@testset "Frequency analysis of the Pazy wing" begin
+    include("examples/PazyWingFreqsEvolution.jl")
+    # Self-comparison
+    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFreqsEvolution", "freqs.txt"))
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+end
+
 @testset "Flutter boundary analysis of the sixteen-meter-wing as a function of the bending-torsion coupling factor" begin
     include("examples/SMWFlutterStructuralCouplingRange.jl")
     # Reference comparison (flutter at zero displacement)
@@ -156,6 +163,69 @@ end
     flutterFreq_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SMWLinearFlutter", "flutterFreq.txt"))[1]
     @test flutterSpeed ≈ flutterSpeed_ atol=SELFatol
     @test flutterFreq ≈ flutterFreq_ atol=SELFatol
+end
+
+@testset "Torsional divergence analysis of a straight wing" begin
+    include("examples/straightWingTorsionalDivergence.jl")
+    # Self-comparison
+    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "straightWingTorsionalDivergence", "damps.txt"))
+    @test hcat(dampingsNonOscillatory...)' ≈ damps_ atol=SELFatol
+end
+
+@testset "Flutter analysis of the swept Pazy wing" begin
+    include("examples/sweptPazyFlutterPitchRange.jl")
+    # Self-comparison
+    for (i,θ) in enumerate(θRange)
+        freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptPazyFlutterPitchRange", string("freqs_",i,".txt")))
+        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptPazyFlutterPitchRange", string("damps_",i,".txt")))
+        @test hcat(freqs[i,:]...)' ≈ freqs_ atol=SELFatol
+        @test hcat(damps[i,:]...)' ≈ damps_ atol=SELFatol
+    end
+end
+
+@testset "Flutter analysis of the undeformed swept Pazy wing" begin
+    include("examples/sweptPazyUndeformedFlutterSweepRange.jl")
+    # Self-comparison
+    for (i,Λ) in enumerate(ΛRange)
+        freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptPazyUndeformedFlutterSweepRange", string("freqs_",i,".txt")))
+        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptPazyUndeformedFlutterSweepRange", string("damps_",i,".txt")))
+        @test hcat(freqs[i,:]...)' ≈ freqs_ atol=SELFatol
+        @test hcat(damps[i,:]...)' ≈ damps_ atol=SELFatol
+    end
+end
+
+@testset "Bending divergence analyses of swept wing" begin
+    include("examples/sweptWingBendingDivergenceSweepRange.jl")
+    # Self-comparison
+    for (i,Λ) in enumerate(ΛRange)
+        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptWingBendingDivergenceSweepRange", string("damps_",i,".txt")))
+        @test hcat(dampingsNonOscillatory[i,:]...)' ≈ damps_ atol=SELFatol
+    end
+end
+
+@testset "Coupled bending-torsion divergence analyses of swept wings" begin
+    include("examples/sweptWingBendingTorsionalDivergenceSweepRange.jl")
+    # Self-comparison
+    for (i,Λ) in enumerate(ΛRange)
+        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptWingBendingTorsionalDivergenceSweepRange", string("damps_",i,".txt")))
+        @test hcat(dampingsNonOscillatory[i,:]...)' ≈ damps_ atol=SELFatol
+    end
+end
+
+@testset "Torsional divergence analyses of swept wings" begin
+    include("examples/sweptWingTorsionalDivergenceSweepRange.jl")
+    # Self-comparison
+    for (i,Λ) in enumerate(ΛRange)
+        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptWingTorsionalDivergenceSweepRange", string("damps_",i,".txt")))
+        @test hcat(dampingsNonOscillatory[i,:]...)' ≈ damps_ atol=SELFatol
+    end
+end
+
+@testset "Torsional divergence analysis of a typical section" begin
+    include("examples/typicalSectionDivergence.jl")
+    # Self-comparison
+    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "typicalSectionDivergence", "damps.txt"))
+    @test hcat(dampingsNonOscillatory...)' ≈ damps_ atol=SELFatol
 end
 
 @testset "Flutter and divergence analysis of a typical section" begin

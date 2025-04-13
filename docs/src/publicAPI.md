@@ -104,8 +104,8 @@ solve_eigen!
 
 ### Creating a sample model
 ```@docs
-tip_loss_factor_Pazy
 geometrical_properties_Pazy
+tip_loss_function_Pazy
 typical_section_data
 create_Pazy
 create_PazyFFWT
@@ -142,6 +142,8 @@ axial
 isotropic_stiffness_matrix
 inertia_matrix
 rotation_tensor_E321
+rotation_tensor_E213
+rotation_tensor_E231
 rotation_tensor_E313
 rotation_tensor_WM
 scaled_rotation_parameters
@@ -149,14 +151,17 @@ rotation_angle
 rotation_angle_limited
 rotation_parameters_WM
 rotation_parameters_Rodrigues
-ypr_from_rotation_tensor
+yrp_from_rotation_tensor
 quaternion_from_rotation_tensor
-WM_to_ypr
-ypr_to_WM
+WM_to_yrp
+yrp_to_WM
 rotation_between_WM
 mode_tracking
 get_FFT_and_PSD
 Newton_solver
+backward_extrapolation
+NASA_frames_loader
+GU_frames_loader
 ```
 
 ### Visualizing the results

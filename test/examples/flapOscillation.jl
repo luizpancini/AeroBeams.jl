@@ -9,7 +9,7 @@ Ma = 0.5
 U = Ma*atmosphere.a
 
 # Wing surface data
-aeroSolver = Indicial()
+aeroSolver = BLi()
 flapLoadsSolver = ThinAirfoilTheory()
 airfoil = deepcopy(flatPlate)
 chord = 0.18

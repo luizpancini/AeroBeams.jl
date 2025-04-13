@@ -20,7 +20,7 @@ URange = collect(5:1:80)
 PazyFFWTsteadyURangeAoARangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
 
 # System solver
-σ0 = 1
+σ0 = 0.5
 maxIter = 100
 relTol = 1e-6
 NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)

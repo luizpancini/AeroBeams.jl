@@ -10,7 +10,7 @@ mkpath(string(pwd(),"/test/outputs/figures/PazyWingModal"))
 for i in [1,2]
     legendPos = i==1 ? (0.3,0.55) : :best
     savePath = string("/test/outputs/figures/PazyWingModal/PazyWingModal_",i,".pdf")
-    modesPlot = plot_mode_shapes(problem[i],scale=1,lw=2,modalColorScheme=:rainbow,view=(45,15),plotAxes=false,legendPos=legendPos,frequencyLabel="frequency",save=true,savePath=savePath)
+    modesPlot = plot_mode_shapes(problem[i],scale=1,lw=2,modeLabels=["1st OOP", "2nd OOP","1st T","3rd OOP","1st T-IP"],modalColorScheme=:rainbow,view=(45,15),plotAxes=false,legendPos=legendPos,frequencyLabel="frequency",save=true,savePath=savePath)
     display(modesPlot)
 end
 

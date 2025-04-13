@@ -27,7 +27,7 @@ tip_OOP = Array{Float64}(undef,length(mRange))
 ## Sweep tip mass
 for (i,m) in enumerate(mRange)
     ## Create model with current tip mass 80 mm behind the trailing-edge
-    PazyWingTorsionTest,_ = create_Pazy(tipMass=m,ξtipMass=[0;-(chord*(1-normSparPos)+0.08);0])
+    PazyWingTorsionTest,_ = create_Pazy(tipMass=m,ηtipMass=[0;-(chord*(1-normSparPos)+0.08);0])
     ## Create and solve problem
     global problem = create_SteadyProblem(model=PazyWingTorsionTest)
     solve!(problem)

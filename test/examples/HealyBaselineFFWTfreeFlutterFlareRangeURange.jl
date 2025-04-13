@@ -23,7 +23,7 @@ nElementsInner = 16
 nElementsFFWT = 4
 
 # Tip loss options (assumed, since Healy's analysis uses DLM for aerodynamic)
-withTipCorrection = true
+hasTipCorrection = true
 tipLossDecayFactor = 12
 
 # Solution method for hinge constraint
@@ -56,7 +56,7 @@ for (i,Λ) in enumerate(ΛRange)
         # Display progress
         println("Solving for Λ=$(round(Int,Λ*180/π)) deg, U=$U m/s")
         # Update model
-        model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+        model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
         # Create and solve problem
         problem[i,j] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2*U,Inf])
         solve!(problem[i,j])

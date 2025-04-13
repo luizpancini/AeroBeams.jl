@@ -3,7 +3,7 @@ using AeroBeams, LinearInterpolations
 # Goland wing parameters taken from PALACIOS & EPUREANU - An Intrinsic Description of the Nonlinear Aeroelasticity of Very Flexible Wings - (2011) (https://doi.org/10.2514/6.2011-1917)
 
 # Aerodynamic solver
-aeroSolver = Inflow(6)
+aeroSolver = Inflow()
 
 # Derivation method
 derivationMethod = AD()

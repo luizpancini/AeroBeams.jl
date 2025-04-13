@@ -12,7 +12,7 @@ for (i,m) in enumerate(mRange)
     # Display progress
     println("Solving for tip mass = $m kg")
     # Create model with current tip mass at the trailing-edge
-    PazyWingBendingTest,_ = create_Pazy(tipMass=m,ξtipMass=[0;-chord*(1-normSparPos);0])
+    PazyWingBendingTest,_ = create_Pazy(tipMass=m,ηtipMass=[0;-chord*(1-normSparPos);0])
     # Create and solve problem
     global problem = create_SteadyProblem(model=PazyWingBendingTest)
     solve!(problem)

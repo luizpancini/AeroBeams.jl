@@ -452,7 +452,7 @@ function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ
     nondimensional_flow_parameters!(model,element)
 
     # Update airfoil parameters
-    update_airfoil_parameters!(problem,element)
+    update_airfoil_parameters!(element)
 
     # Local gust velocity
     if !isnothing(model.gust)
@@ -500,8 +500,8 @@ function interpolate_distributed_loads(problem::Problem,loadArray::Array{Float64
         timesBeginAndEnd = [timeBeginTimeStep,timeEndTimeStep]
         indicesBeginAndEnd = indexBeginTimeStep:indexEndTimeStep
         # Interpolate
-        v1 = [interpolate(timesBeginAndEnd,loadArray[1,i,indicesBeginAndEnd],timeNow) for i in 1:3]
-        v2 = [interpolate(timesBeginAndEnd,loadArray[2,i,indicesBeginAndEnd],timeNow) for i in 1:3]
+        v1 = [LinearInterpolations.interpolate(timesBeginAndEnd,loadArray[1,i,indicesBeginAndEnd],timeNow) for i in 1:3]
+        v2 = [LinearInterpolations.interpolate(timesBeginAndEnd,loadArray[2,i,indicesBeginAndEnd],timeNow) for i in 1:3]
     else
         # Set values at the begin of the time step
         v1 = loadArray[1,:,indexBeginTimeStep]

@@ -1,4 +1,4 @@
-using AeroBeams
+using AeroBeams, LinearInterpolations
 
 # Mode tracking option
 modeTracking = true

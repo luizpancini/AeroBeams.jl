@@ -113,45 +113,50 @@ include("../examples/HealyBaselineFFWTModalFree.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/HealyBaselineFFWTModalFree"))
 writedlm("test/newTestDataGenerators/HealyBaselineFFWTModalFree/freqs.txt", freqs)
 
-# # Modal analyses of the Pazy wing in horizontal and vertical positions
-# include("../examples/PazyWingModal.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingModal"))
-# writedlm("test/newTestDataGenerators/PazyWingModal/freqs.txt", freqs)
+# Modal analyses of the Pazy wing in horizontal and vertical positions
+include("../examples/PazyWingModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingModal"))
+writedlm("test/newTestDataGenerators/PazyWingModal/freqs.txt", freqs)
 
-# # Modal analysis of a beam pinned at one end and transversely springed at the other
-# include("../examples/pinnedSpringedBeamEigen.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/pinnedSpringedBeamEigen"))
-# writedlm("test/newTestDataGenerators/pinnedSpringedBeamEigen/freqs.txt", freqs)
+# Modal analysis of a beam pinned at one end and transversely springed at the other
+include("../examples/pinnedSpringedBeamEigen.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/pinnedSpringedBeamEigen"))
+writedlm("test/newTestDataGenerators/pinnedSpringedBeamEigen/freqs.txt", freqs)
 
-# # Modal analysis of the sixteen-meter-wing
-# include("../examples/SMWModal.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/SMWModal"))
-# writedlm("test/newTestDataGenerators/SMWModal/freqs.txt", freqs)
+# Modal analysis of the sixteen-meter-wing
+include("../examples/SMWModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/SMWModal"))
+writedlm("test/newTestDataGenerators/SMWModal/freqs.txt", freqs)
 
-# # Modal analysis of a straight rotor under varying angular velocities
-# include("../examples/straightRotor.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/straightRotor"))
-# writedlm("test/newTestDataGenerators/straightRotor/freqs.txt", numFreqs)
+# Modal analysis of a straight rotor under varying angular velocities
+include("../examples/straightRotor.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/straightRotor"))
+writedlm("test/newTestDataGenerators/straightRotor/freqs.txt", numFreqs)
 
-# # Modal analysis of a swept-tip rotor under varying angular velocities
-# include("../examples/sweptTipRotor.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/sweptTipRotor"))
-# writedlm("test/newTestDataGenerators/sweptTipRotor/freqs.txt", numFreqs[end,end])
+# Modal analysis of the undeformed swept Pazy wing
+include("../examples/sweptPazyModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptPazyModal"))
+writedlm("test/newTestDataGenerators/sweptPazyModal/freqs.txt", freqs)
 
-# # Modal analysis of a cantilevered tapered beam
-# include("../examples/taperedBeamEigen.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/taperedBeamEigen"))
-# writedlm("test/newTestDataGenerators/taperedBeamEigen/freqs.txt", freqs)
+# Modal analysis of a swept-tip rotor under varying angular velocities
+include("../examples/sweptTipRotor.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptTipRotor"))
+writedlm("test/newTestDataGenerators/sweptTipRotor/freqs.txt", numFreqs[end,end])
 
-# # Modal analysis of the Tang&Dowell wing at varying pitch angles
-# include("../examples/TDWingPitchRange.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/TDWingPitchRange"))
-# writedlm("test/newTestDataGenerators/TDWingPitchRange/tip_u3.txt", tip_u3)
-# writedlm("test/newTestDataGenerators/TDWingPitchRange/tip_u2.txt", tip_u2)
-# writedlm("test/newTestDataGenerators/TDWingPitchRange/tip_twist.txt", tip_twist)
-# writedlm("test/newTestDataGenerators/TDWingPitchRange/freqs.txt", freqs)
+# Modal analysis of a cantilevered tapered beam
+include("../examples/taperedBeamEigen.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/taperedBeamEigen"))
+writedlm("test/newTestDataGenerators/taperedBeamEigen/freqs.txt", freqs)
 
-# # Modal analysis of a 2-story frame
-# include("../examples/twoStoryFrame.jl")
-# mkpath(string(pwd(),"/test/newTestDataGenerators/twoStoryFrame"))
-# writedlm("test/newTestDataGenerators/twoStoryFrame/freqs.txt", freqs)
+# Modal analysis of the Tang&Dowell wing at varying pitch angles
+include("../examples/TDWingPitchRange.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/TDWingPitchRange"))
+writedlm("test/newTestDataGenerators/TDWingPitchRange/tip_u3.txt", tip_u3)
+writedlm("test/newTestDataGenerators/TDWingPitchRange/tip_u2.txt", tip_u2)
+writedlm("test/newTestDataGenerators/TDWingPitchRange/tip_twist.txt", tip_twist)
+writedlm("test/newTestDataGenerators/TDWingPitchRange/freqs.txt", freqs)
+
+# Modal analysis of a 2-story frame
+include("../examples/twoStoryFrame.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/twoStoryFrame"))
+writedlm("test/newTestDataGenerators/twoStoryFrame/freqs.txt", freqs)

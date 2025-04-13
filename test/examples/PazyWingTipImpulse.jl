@@ -1,7 +1,7 @@
 using AeroBeams, LinearAlgebra
 
 # Aerodynamic solver
-aeroSolver = BLi()
+aeroSolver = Inflow()
 
 # Derivation method
 derivationMethod = AD()
@@ -10,7 +10,7 @@ derivationMethod = AD()
 θ = 5*π/180
 
 # Airspeed
-U = 50
+U = 60
 
 # Flag for upright position
 upright = true
@@ -25,7 +25,8 @@ dummyBeam = create_Beam(length=L,nElements=nElem,S=[isotropic_stiffness_matrix(�
 F₀ = 10
 ω = 4*2π
 τ = 2π/ω
-F = t -> ifelse.(t.<=τ,0.0,ifelse.(t.<=2*τ,F₀*sin.(ω*(t.-τ)),0.0))
+t₀ = 0.25
+F = t -> ifelse.(t.<=t₀,0.0,ifelse.(t.<=t₀+τ/2,F₀*sin.(ω*(t.-(t₀+τ))),0.0))
 impulse = create_BC(name="impulse",beam=dummyBeam,node=nElem+1,types=["F1A"],values=[t->F(t)])
 
 # Model
@@ -37,11 +38,11 @@ maxIter = 100
 NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
 
 # Time variables
-Δt = τ/1000
-tf = 5*τ
+Δt = τ/500
+tf = t₀+5τ
 
 # Initial velocities update options
-initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt)
+initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)
 
 # Create and solve dynamic problem
 problem = create_DynamicProblem(model=PazyWingTipImpulse,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,skipInitialStatesUpdate=false)

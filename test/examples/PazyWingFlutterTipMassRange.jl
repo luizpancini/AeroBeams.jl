@@ -50,7 +50,7 @@ for c in configurations
         # Display progress
         println("Solving for configuration $c, U = $U m/s")
         # Model
-        PazyWingFlutterTipMassRange,_ = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,upright=upright,θ=θ,airspeed=U,tipMass=tipMassRange[c],ξtipMass=[0;tipMassPosRange[c];0])
+        PazyWingFlutterTipMassRange,_ = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,upright=upright,θ=θ,airspeed=U,tipMass=tipMassRange[c],ηtipMass=[0;tipMassPosRange[c];0])
         # Create and solve problem
         problem = create_EigenProblem(model=PazyWingFlutterTipMassRange,nModes=nModes,systemSolver=NR)
         solve!(problem)

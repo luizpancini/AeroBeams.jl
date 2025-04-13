@@ -9,6 +9,12 @@
 # - `βₚ`: Prandtl-Glauert compressibility factor
 # - `βₚ²`: Prandtl-Glauert compressibility factor squared
 # - `Θ`: Uᵢ/b*βₚ², characteristic inverse time scale
+# - `Tnα`: time scale for pitch-plunge-rate-induced inertial force
+# - `TnM`: time scale for Mach-rate-induced normal inertial force
+# - `Tnθ̇`: time scale for pitch-acceleration-induced normal inertial force
+# - `Tmα`: time scale for pitch-plunge-rate-induced inertial moment
+# - `TmM`: time scale for Mach-rate-induced normal inertial moment
+# - `Tmθ̇`: time scale for pitch-acceleration-induced normal inertial moment
 #
 mutable struct FlowParameters
     
@@ -18,6 +24,13 @@ mutable struct FlowParameters
     βₚ
     βₚ²
     Θ
+    Tᵢ
+    Tnα
+    Tnθ̇
+    TnM
+    Tmα
+    Tmθ̇
+    TmM
 
     # Constructor
     function FlowParameters() 
@@ -27,8 +40,15 @@ mutable struct FlowParameters
         βₚ = 1.0 
         βₚ² = 1.0
         Θ = 0.0
+        Tᵢ = 1.0
+        Tnα = 1.0
+        Tnθ̇ = 1.0
+        TnM = 1.0
+        Tmα = 1.0
+        Tmθ̇ = 1.0
+        TmM = 1.0
 
-        return new(Re,Ma,βₚ,βₚ²,Θ)
+        return new(Re,Ma,βₚ,βₚ²,Θ,Tᵢ,Tnα,Tnθ̇,TnM,Tmα,Tmθ̇,TmM)
     end
 end
 
@@ -156,13 +176,16 @@ end
 # - `cnP`: potential flow component of cn
 # - `cmC`: circulatory component of cm
 # - `cmI`: inertial component of cm
-# - `cmRot`: rotation-induced component of cm
 # - `cnF`: separated-flow circulatory component of cn
 # - `cmF`: separated-flow circulatory component of cm
+# - `ctC`: circulatory component of ct
 # - `ctF`: separated-flow circulatory component of ct
 # - `cnV`: DSV-induced component of cn
 # - `cmV`: DSV-induced component of cm
 # - `ctV`: DSV-induced component of ct
+# - `cnNC`: Non-circulatory component of cn
+# - `cmNC`: Non-circulatory component of cm
+# - `ctNC`: Non-circulatory component of ct
 #
 mutable struct AeroCoefficients
     
@@ -175,13 +198,16 @@ mutable struct AeroCoefficients
     cnP 
     cmC 
     cmI 
-    cmRot
     cnF 
     cmF
+    ctC
     ctF
     cnV
     cmV
     ctV
+    cnNC
+    cmNC
+    ctNC
 
     # Constructor
     function AeroCoefficients() 
@@ -194,15 +220,18 @@ mutable struct AeroCoefficients
         cnP = 0.0
         cmC = 0.0
         cmI = 0.0
-        cmRot = 0.0
         cnF = 0.0
         cmF = 0.0
+        ctC = 0.0
         ctF = 0.0
         cnV = 0.0
         cmV = 0.0
         ctV = 0.0
+        cnNC = 0.0
+        cmNC = 0.0
+        ctNC = 0.0
 
-        return new(cn,cm,ct,cnC,cnI,cnP,cmC,cmI,cmRot,cnF,cmF,ctF,cnV,cmV,ctV)
+        return new(cn,cm,ct,cnC,cnI,cnP,cmC,cmI,cnF,cmF,ctC,ctF,cnV,cmV,ctV,cnNC,cmNC,ctNC)
     end
 end
 
@@ -339,13 +368,6 @@ end
 # - `TfN`
 # - `TfM`
 # - `TfT`
-# - `Kna`
-# - `Knq`
-# - `KnM`
-# - `Kma`
-# - `Kmq`
-# - `KmM`
-# - `Tᵢ`
 #
 mutable struct BLiFlowVariables
     
@@ -368,13 +390,6 @@ mutable struct BLiFlowVariables
     TfN
     TfM
     TfT
-    Kna
-    Knq
-    KnM
-    Kma
-    Kmq
-    KmM
-    Tᵢ
 
     # Constructor
     function BLiFlowVariables() 
@@ -397,15 +412,8 @@ mutable struct BLiFlowVariables
         TfN = 1.0
         TfM = 1.0
         TfT = 1.0
-        Kna = 1.0
-        Knq = 1.0
-        KnM = 1.0
-        Kma = 1.0
-        Kmq = 1.0
-        KmM = 1.0
-        Tᵢ = 1.0
 
-        return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT,Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ)
+        return new(stallOnsetRatio,upstroke,S,P,T,α1N,α1M,α1T,fN,fM,fT,fPrimeN,fPrimeM,fPrimeT,Ta_SO,TfN,TfM,TfT)
     end
 end
 
@@ -425,13 +433,6 @@ end
 # - `fPrime`
 # - `Tf`
 # - `Tv`
-# - `Kna`
-# - `Knq`
-# - `KnM`
-# - `Kma`
-# - `Kmq`
-# - `KmM`
-# - `Tᵢ`
 # - `Kf`
 # - `cvdotP`
 # - `cvdotN`
@@ -448,13 +449,6 @@ mutable struct BLoFlowVariables
     fPrime
     Tf
     Tv
-    Kna
-    Knq
-    KnM
-    Kma
-    Kmq
-    KmM
-    Tᵢ
     Kf
     cvdotP
     cvdotN
@@ -471,18 +465,11 @@ mutable struct BLoFlowVariables
         fPrime = 1.0
         Tf = 1.0
         Tv = 1.0
-        Kna = 1.0
-        Knq = 1.0
-        KnM = 1.0
-        Kma = 1.0
-        Kmq = 1.0
-        KmM = 1.0
-        Tᵢ = 1.0
         Kf = 1.0
         cvdotP = 0.0
         cvdotN = 0.0
 
-        return new(αlag,q,stallOnsetRatio,upstroke,α1,f,fPrime,Tf,Tv,Kna,Knq,KnM,Kma,Kmq,KmM,Tᵢ,Kf,cvdotP,cvdotN)
+        return new(αlag,q,stallOnsetRatio,upstroke,α1,f,fPrime,Tf,Tv,Kf,cvdotP,cvdotN)
     end
 end
 
@@ -676,6 +663,8 @@ end
     pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
     linearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
     nonlinearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
+    circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
+    inertialPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
     flapStatesRange::Union{Nothing,UnitRange{Int64}}
     gustStatesRange::Union{Nothing,UnitRange{Int64}}
     linearGustStatesRange::Union{Nothing,UnitRange{Int64}}
@@ -687,8 +676,10 @@ end
     b::Real
     c::Real
     normSparPos::Float64
+    aₕ::Float64
     Λ::Real
     φ::Real
+    cosΛ::Real
     Rw::Matrix{Float64}
     RwT::Matrix{Float64}
     RwR0::Matrix{Float64}
@@ -769,23 +760,31 @@ end
     m2χ_Vdot::Matrix{Float64} = zeros(3,3)
     m1χ_Ωdot::Matrix{Float64} = zeros(3,3)
     m2χ_Ωdot::Matrix{Float64} = zeros(3,3)
-    F_χ_Vdot::Matrix{Float64} = initial_F_χ_Vdot(solver,nTotalAeroStates,pitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
-    F_χ_Ωdot::Matrix{Float64} = initial_F_χ_Ωdot(solver,nTotalAeroStates,pitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
+    F_χ_Vdot::Matrix{Float64} = initial_F_χ_Vdot(solver,nTotalAeroStates,circulatoryPitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
+    F_χ_Ωdot::Matrix{Float64} = initial_F_χ_Ωdot(solver,nTotalAeroStates,circulatoryPitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
     F_χ_χdot::Matrix{Float64} = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
 
 end
 
 # AeroProperties constructor
-function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1_norm::Float64,x1_n1_norm::Float64,x1_n2_norm::Float64)
+function AeroProperties(aeroSurface::AeroSurface,rotationParametrization::String,R0::Matrix{Float64},x1::Real,x1_norm::Float64,x1_n1_norm::Float64,x1_n2_norm::Float64)
 
     # Set geometric properties 
     airfoil = aeroSurface.airfoil
     c = aeroSurface.c isa Real ? aeroSurface.c : aeroSurface.c(x1)
     b = c/2
     normSparPos = aeroSurface.normSparPos isa Real ? aeroSurface.normSparPos : aeroSurface.normSparPos(x1)
+    aₕ = 2*normSparPos .- 1
     Λ = aeroSurface.Λ isa Real ? aeroSurface.Λ : aeroSurface.Λ(x1)
     φ = aeroSurface.φ isa Real ? aeroSurface.φ : aeroSurface.φ(x1)
-    Rw = rotation_tensor_E321([-Λ; 0; φ])
+    cosΛ = cos(Λ)
+    if rotationParametrization == "E321"
+        Rw = rotation_tensor_E321([Λ; 0; φ])
+    elseif rotationParametrization == "E213"
+        Rw = rotation_tensor_E213([0; φ; Λ])
+    elseif rotationParametrization == "E231"
+        Rw = rotation_tensor_E231([0; Λ; φ])
+    end
     RwT = Matrix(Rw')
     RwR0 = Rw*R0
     RwR0T = Matrix(RwR0')
@@ -817,13 +816,24 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     nTotalAeroStates = nPitchPungeStates + nFlapStates + nGustStates
 
     # Set aerodynamic states' ranges (assume no gust states are active, update later upon model creation)
-    pitchPlungeStatesRange = typeof(solver) in [QuasiSteady] ? nothing : 1:solver.nStates
-    if typeof(solver) in [BLi,BLo]
-        linearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[1:2] : pitchPlungeStatesRange[1:10]
-        nonlinearPitchPlungeStatesRange = solver.incompressibleInertialLoads ? pitchPlungeStatesRange[3:end] : pitchPlungeStatesRange[11:end]
-    else
-        linearPitchPlungeStatesRange = pitchPlungeStatesRange
+    if typeof(solver) == QuasiSteady
+        circulatoryPitchPlungeStatesRange = inertialPitchPlungeStatesRange = pitchPlungeStatesRange = linearPitchPlungeStatesRange = nonlinearPitchPlungeStatesRange = nothing
+    elseif typeof(solver) == Indicial
+        circulatoryPitchPlungeStatesRange = 1:solver.nCirculatoryStates
+        inertialPitchPlungeStatesRange = solver.nCirculatoryStates+1:solver.nStates
+        pitchPlungeStatesRange = linearPitchPlungeStatesRange = 1:solver.nStates
         nonlinearPitchPlungeStatesRange = nothing
+    elseif typeof(solver) == Inflow
+        circulatoryPitchPlungeStatesRange = 1:solver.nInflowStates
+        inertialPitchPlungeStatesRange = solver.nInflowStates+1:solver.nStates
+        pitchPlungeStatesRange = linearPitchPlungeStatesRange = 1:solver.nStates
+        nonlinearPitchPlungeStatesRange = nothing
+    elseif typeof(solver) in [BLi,BLo]
+        circulatoryPitchPlungeStatesRange = 1:solver.nLinearCirculatoryStates
+        inertialPitchPlungeStatesRange = solver.nLinearCirculatoryStates+1:solver.nLinearCirculatoryStates+solver.nInertialStates
+        pitchPlungeStatesRange = 1:solver.nStates
+        linearPitchPlungeStatesRange = 1:solver.nLinearCirculatoryStates+solver.nInertialStates
+        nonlinearPitchPlungeStatesRange = solver.nLinearCirculatoryStates+solver.nInertialStates+1:solver.nStates
     end
     flapStatesRange = hasFlapStates ? (nPitchPungeStates+1:nPitchPungeStates+nFlapStates) : nothing
     nonlinearGustStatesRange = linearGustStatesRange = gustStatesRange = nothing
@@ -854,17 +864,19 @@ function AeroProperties(aeroSurface::AeroSurface,R0::Matrix{Float64},x1::Real,x1
     if !hasTipCorrection
         ϖ = ζ -> 1
     else
+        s = ζ -> x1_n1_norm + ζ * (x1_n2_norm-x1_n1_norm)
+        sFlip = ζ -> (1-x1_n1_norm) + ζ * ((1-x1_n2_norm)-(1-x1_n1_norm))
         if isnothing(tipLossFunction)
-            ϖ = tipLossDecayFactor >= 0 ? ζ -> 1-exp(-tipLossDecayFactor*(1-(x1_n1_norm+ζ*(x1_n2_norm-x1_n1_norm)))) : ϖ = ζ -> 1-exp(tipLossDecayFactor*(1-((1-x1_n1_norm)+ζ*((1-x1_n2_norm)-(1-x1_n1_norm)))))
+            ϖ = tipLossDecayFactor >= 0 ? ζ -> 1-exp(-tipLossDecayFactor*(1-s(ζ))) : ϖ = ζ -> 1-exp(tipLossDecayFactor*(1-sFlip(ζ)))
         else
-            ϖ = ζ -> tipLossFunction(ζ)
+            ϖ = ζ -> tipLossFunction(s(ζ))
         end
     end
 
     # TF for small angle of attack approximations
     smallAngles = aeroSurface.smallAngles
 
-    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,linearPitchPlungeStatesRange=linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange=nonlinearPitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,linearGustStatesRange=linearGustStatesRange,nonlinearGustStatesRange=nonlinearGustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,Λ=Λ,φ=φ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection,smallAngles=smallAngles)
+    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,linearPitchPlungeStatesRange=linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange=nonlinearPitchPlungeStatesRange,circulatoryPitchPlungeStatesRange=circulatoryPitchPlungeStatesRange,inertialPitchPlungeStatesRange=inertialPitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,linearGustStatesRange=linearGustStatesRange,nonlinearGustStatesRange=nonlinearGustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,aₕ=aₕ,Λ=Λ,φ=φ,cosΛ=cosΛ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection,smallAngles=smallAngles)
 end
 
 
@@ -885,17 +897,15 @@ end
 
 
 # Computes the initial value of F_χ_Vdot (for zero relative airspeed)
-function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},cnα::Real)
+function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},cnα::Real)
 
     F_χ_Vdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) == Indicial
-        F_χ_Vdot[pitchPlungeStatesRange[1:2],3] = cnα*solver.aC
+    if typeof(solver) in [Indicial,BLi,BLo]
+        F_χ_Vdot[circulatoryPitchPlungeStatesRange[1:length(solver.AC)],3] = cnα*solver.AC
     elseif typeof(solver) == Inflow
-        F_χ_Vdot[pitchPlungeStatesRange,3] = solver.AₚInvcₚ
-    elseif typeof(solver) in [BLi,BLo]
-        F_χ_Vdot[pitchPlungeStatesRange[1:2],3] = cnα*solver.aC
+        F_χ_Vdot[circulatoryPitchPlungeStatesRange,3] = solver.AₚInvcₚ
     end
 
     return F_χ_Vdot
@@ -903,17 +913,15 @@ end
 
 
 # Computes the initial value of F_χ_Ωdot (for zero relative airspeed)
-function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},c::Real,normSparPos::Float64,cnα::Real)
+function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},c::Real,normSparPos::Float64,cnα::Real)
 
     F_χ_Ωdot = zeros(nStates,3)
 
     # Calculate according to solver
-    if typeof(solver) == Indicial
-        F_χ_Ωdot[pitchPlungeStatesRange[1:2],1] = c*(normSparPos-3/4)*cnα*solver.aC
+    if typeof(solver) in [Indicial,BLi,BLo]
+        F_χ_Ωdot[circulatoryPitchPlungeStatesRange[1:length(solver.AC)],1] = c*(normSparPos-3/4)*cnα*solver.AC
     elseif typeof(solver) == Inflow
-        F_χ_Ωdot[pitchPlungeStatesRange,1] = c*(normSparPos-3/4)*solver.AₚInvcₚ
-    elseif typeof(solver) in [BLi,BLo]
-        F_χ_Ωdot[pitchPlungeStatesRange[1:2],1] = c*(normSparPos-3/4)*cnα*solver.aC       
+        F_χ_Ωdot[circulatoryPitchPlungeStatesRange,1] = c*(normSparPos-3/4)*solver.AₚInvcₚ  
     end
 
     return F_χ_Ωdot

@@ -45,7 +45,7 @@ nElementsFFWT = 4
 nElem = nElementsInner + nElementsFFWT
 
 ## Tip loss options
-withTipCorrection = true
+hasTipCorrection = true
 tipLossDecayFactor = 12
 
 ## Solution method for hinge constraint
@@ -78,7 +78,7 @@ for (i,ω) in enumerate(ωRange)
     ## Gust
     gust = create_OneMinusCosineGust(initialTime=0,duration=1/ω,verticalVelocity=Ug)
     ## Model
-    model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,foldAngle=foldAngle,flareAngle=Λ,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,withTipCorrection=withTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,g=g,gust=gust) 
+    model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,foldAngle=foldAngle,flareAngle=Λ,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,g=g,gust=gust) 
     ## Solve steady problem for initial conditions
     steadyProblem = create_SteadyProblem(model=model,systemSolver=NR)
     solve!(steadyProblem)
