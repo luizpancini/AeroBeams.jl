@@ -396,11 +396,6 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     # Size of nominal system (without constraints)
     N = length(residual)
 
-    A = Matrix(jacobian)
-    if any(isnan, A) || any(isinf, A)
-        println("jacobian contains NaNs")
-    end
-
     # Initialize augmented arrays
     augmentedJacobian = copy(jacobian)
     augmentedResidual = copy(residual)
@@ -437,6 +432,13 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
             Jb[slaveElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pS2(pM,pSscaled,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
             Jb[masterElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
             Jb[slaveElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
+            #
+            println("pM=$pM")
+            println("pSscaled=$pSscaled")
+            println("initialHingeAxis=$initialHingeAxis")
+            println("resC=$resC")
+            println("Jb=$Jb")
+            println("Jc=$Jc")
         end
         # Update residual of nominal system, if applicable
         if solutionMethod == "addedResidual"

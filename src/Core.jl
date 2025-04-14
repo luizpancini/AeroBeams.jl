@@ -1709,11 +1709,6 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
     @unpack forceScaling = model
     @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,springs = specialNode
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs before adding terms")
-    end
-
     # Check if the node is BC'ed
     if !isempty(BCs)
         # Loop applied BCs
@@ -1725,19 +1720,9 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
         jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
     end
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs after adding regular terms")
-    end
-
     # Add spring loads' contributions
     for spring in springs
         jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
-    end
-
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs after spring additions")
     end
 
     @pack! problem = jacobian
@@ -1820,11 +1805,6 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
 
     @unpack hasDoubleAttachment,Ku,Kp,nodesSpecialIDs,nodesGlobalIDs = spring
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs before spring additions")
-    end
-
     # Double attachment springs
     if hasDoubleAttachment
         # Node of other attachment
@@ -1839,17 +1819,6 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         # Derivative of spring rotation with respect to rotation of each of its attachment nodes
         Δp_p = ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p)
         Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
-        # Dummy check for CI
-        if any(isnan, Δp_p)
-            println("Δp_p contains NaNs, overriding")
-            Δp_p = I3
-            println("Δp_p=$Δp_p")
-        end
-        if any(isnan, Δp_pOtherNode)
-            println("Δp_pOtherNode contains NaNs, overriding")
-            Δp_pOtherNode = -I3
-            println("Δp_pOtherNode=$Δp_pOtherNode")
-        end
         # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
         jacobian[eqs_Fp[1],DOF_pM_otherNode] .+= Kp/forceScaling * Δp_pOtherNode * Diagonal(.!otherNode.pIsPrescribed)
@@ -1860,11 +1829,6 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         # Add rotational spring Jacobian (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp*λ/forceScaling
         λ,_,_ = rotation_parameter_scaling(p)
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp*λ/forceScaling * Diagonal(.!pIsPrescribed)
-    end
-
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs after spring additions")
     end
 
     return jacobian
@@ -1990,6 +1954,10 @@ end
 # Hinge constraint equations residual
 function C(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
     c = isnothing(pHValue) ? hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,hinge_rotation_value(pM,pS,initialHingeAxis)) : hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,pHValue)
+    h = hinge_rotation_parameters(pM,pS)
+    h2 = hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,hinge_rotation_value(pM,pS,initialHingeAxis))
+    println("h=$h")
+    println("h2=$h2")
     if isnothing(slaveDOFs)
         return c
     else
