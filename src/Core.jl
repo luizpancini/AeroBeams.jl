@@ -1805,6 +1805,11 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
 
     @unpack hasDoubleAttachment,Ku,Kp,nodesSpecialIDs,nodesGlobalIDs = spring
 
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        println("jacobian contains NaNs before spring additions")
+    end
+
     # Double attachment springs
     if hasDoubleAttachment
         # Node of other attachment
@@ -1821,10 +1826,14 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
         # Dummy check for CI
         if any(isnan, Δp_p)
+            println("Δp_p contains NaNs, overriding")
             Δp_p = I3
+            println("Δp_p=$Δp_p")
         end
         if any(isnan, Δp_pOtherNode)
+            println("Δp_pOtherNode contains NaNs, overriding")
             Δp_pOtherNode = -I3
+            println("Δp_pOtherNode=$Δp_pOtherNode")
         end
         # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
@@ -1836,6 +1845,11 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         # Add rotational spring Jacobian (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp*λ/forceScaling
         λ,_,_ = rotation_parameter_scaling(p)
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp*λ/forceScaling * Diagonal(.!pIsPrescribed)
+    end
+
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        println("jacobian contains NaNs after spring additions")
     end
 
     return jacobian
