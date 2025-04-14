@@ -125,7 +125,9 @@ function create_AeroSurface(; solver::AeroSolver=Indicial(),flapLoadsSolver::Fla
         @assert !δIsTrimVariable "flap deflection cannot be a trim variable and an input"
     end
     # Set derivationMethod as FD when in CI: problems with ForwardDiff
-    if get(ENV, "CI", false) || get(ENV, "GITHUB_ACTIONS", false)
+    isCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false")  == "true"
+    println("isCI = $isCI")
+    if isCI
         derivationMethod = FD(nothing)
     end
 
