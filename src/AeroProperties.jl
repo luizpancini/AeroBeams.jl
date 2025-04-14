@@ -843,7 +843,8 @@ function AeroProperties(aeroSurface::AeroSurface,rotationParametrization::String
 
     # CI has problems with AD when there are tip corrections, so set derivationMethod as FD in that case
     inCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
-    if inCI && hasTipCorrection && typeof(derivationMethod) == AD
+    if inCI && aeroSurface.hasTipCorrection && typeof(derivationMethod) == AD
+        println("inCI: setting derivationMethod to FD")
         derivationMethod = FD(nothing)
     end
 
