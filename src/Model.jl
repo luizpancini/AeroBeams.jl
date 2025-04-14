@@ -1363,10 +1363,9 @@ function update_hinge_axis_constraint_data!(model::Model)
     end
 
     # CI has problems with AD when there are hinge constraints, so set derivationMethod as FD in that case
-    isCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
-    println("isCI=$isCI")
+    inCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
     for (e,element) in enumerate(model.elements)
-        if isCI && model.hasHingeAxisConstraints && !isnothing(element.aero) && typeof(element.aero.derivationMethod) == AD
+        if inCI && model.hasHingeAxisConstraints && !isnothing(element.aero) && typeof(element.aero.derivationMethod) == AD
             model.elements[e].aero.derivationMethod = FD(nothing)
         end
     end
