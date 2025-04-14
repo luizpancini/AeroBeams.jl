@@ -85,8 +85,8 @@ for (i,U) in enumerate(URange)
     j = Int(U/10)
     scatter!(refData[2*j-1,:],refData[2*j,:], c=colors[i], ms=4, msw=0, label=false)
 end
-if case != 1
-    plot!(legend=false)
-end
+# if case != 1
+#     plot!(legend=false)
+# end
 display(plt)
 savefig(string(absPath,"/cnalpha_compare_VLM_Nastran_case",case,".pdf"))
