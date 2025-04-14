@@ -436,10 +436,6 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
                 Jb[masterElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
                 Jb[slaveElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
             end
-            #
-            println("resC=$resC")
-            println("Jb=$Jb")
-            println("Jc=$Jc")
         end
         # Update residual of nominal system, if applicable
         if solutionMethod == "addedResidual"

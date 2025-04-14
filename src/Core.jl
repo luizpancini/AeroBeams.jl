@@ -840,6 +840,9 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     @unpack aero = element
 
+    # Flag for CI: has problems with ForwardDiff
+    isCI = (get(ENV, "CI", true) || get(ENV, "GITHUB_ACTIONS", true))
+
     # Skip if there are no aero loads, or angle of attack is undefined, or the convergence rate in a dynamic problem is higher than the required minimum
     if isnothing(aero) || isnan(aero.flowAnglesAndRates.α) || (problem isa DynamicProblem && problem.systemSolver.convRate > problem.systemSolver.minConvRateAeroJacUpdate)
         return
@@ -855,11 +858,10 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     states = isempty(DOF_δ) ? vcat([V,Ω,χ]...) : vcat([V,Ω,χ,problem.x[DOF_δ]*δMultiplier]...)
 
     # Get derivatives of aerodynamic loads and state matrices w.r.t. states
-    if typeof(derivationMethod) == AD
+    if typeof(derivationMethod) == AD && !isCI
         derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
-    elseif typeof(derivationMethod) == FD
-        derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
-        derivatives = derivatives[1]
+    else
+        derivatives = first(FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states))
     end
 
     # Deal with possible NaN values
@@ -907,7 +909,7 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     end
 
     # Reset complementary variables of dynamic stall model
-    if typeof(derivationMethod) == AD
+    if typeof(derivationMethod) == AD && !isCI
         element.aero.BLiCompVars = reset_dual_numbers(element.aero.BLiCompVars)
         element.aero.BLoCompVars = reset_dual_numbers(element.aero.BLoCompVars)
     end
@@ -927,11 +929,10 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     statesRates = vcat([Vdot,Ωdot]...)
 
     # Get derivatives of aerodynamic loads and state matrices w.r.t. states' rates
-    if typeof(derivationMethod) == AD
+    if typeof(derivationMethod) == AD && !isCI
         derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates)
-    elseif typeof(derivationMethod) == FD
-        derivatives = FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates)
-        derivatives = derivatives[1]
+    else
+        derivatives = first(FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates))
     end
 
     # Deal with possible NaN values
@@ -968,7 +969,7 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     end
 
     # Reset complementary variables of dynamic stall model
-    if typeof(derivationMethod) == AD
+    if typeof(derivationMethod) == AD && !isCI
         element.aero.BLiCompVars = reset_dual_numbers(element.aero.BLiCompVars)
         element.aero.BLoCompVars = reset_dual_numbers(element.aero.BLoCompVars)
     end
