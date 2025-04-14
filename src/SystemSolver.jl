@@ -400,10 +400,6 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     augmentedJacobian = copy(jacobian)
     augmentedResidual = copy(residual)
 
-    if any(isnan, residual) || any(isinf, residual)
-        println("residual contains NaNs")
-    end
-
     # Loop hinge axis constraints
     for constraint in hingeAxisConstraints
         @unpack solutionMethod,rotationIsFixed,initialHingeAxis,pHValue,masterElementGlobalDOFs,slaveElementGlobalDOFs,slaveDOFs,λ = constraint
@@ -418,7 +414,7 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
             Jb = spzeros(length(augmentedResidual),length(augmentedResidual))
             Jc[:,masterElementGlobalDOFs] .= ∂C_∂pM(pM,pS,initialHingeAxis,pHValue=pHValue)
             Jc[:,slaveElementGlobalDOFs] .= ∂C_∂pS(pM,pS,initialHingeAxis,pHValue=pHValue)
-            if isapprox(pM, pS; atol=1e-10)
+            if !isapprox(pM, pS; atol=1e-10)
                 Jb[masterElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
                 Jb[slaveElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
                 Jb[masterElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ,pHValue=pHValue)
@@ -434,7 +430,7 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
             Jb = spzeros(length(augmentedResidual),length(augmentedResidual))
             Jc[:,masterElementGlobalDOFs] .= ∂C_∂pM(pM,pSscaled,initialHingeAxis,slaveDOFs=slaveDOFs)
             Jc[:,slaveElementGlobalDOFs] .= ∂C_∂pS(pM,pSscaled,initialHingeAxis,slaveDOFs=slaveDOFs)
-            if isapprox(pM, pS; atol=1e-10)
+            if !isapprox(pM, pS; atol=1e-10)
                 Jb[masterElementGlobalDOFs,masterElementGlobalDOFs] .= ∂2CTλ_∂pM2(pM,pSscaled,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
                 Jb[slaveElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pS2(pM,pSscaled,initialHingeAxis,λ,slaveDOFs=slaveDOFs)
                 Jb[masterElementGlobalDOFs,slaveElementGlobalDOFs] .= ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ,slaveDOFs=slaveDOFs)

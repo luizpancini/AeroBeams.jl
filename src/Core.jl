@@ -1964,37 +1964,25 @@ end
 
 # Jacobian functions of constraint equations w.r.t. system states
 function ∂C_∂pM(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
-    d = ForwardDiff.jacobian(x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM)
-    if any(isnan,d)
-        println("∂C_∂pM has NaNs, computing with FiniteDiff")
-        d = first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM))
-        println("After computation, d=$d")
-    end
-    return d
+    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM))
 end
 function ∂C_∂pS(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
-    d = ForwardDiff.jacobian(x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS)
-    if any(isnan,d)
-        println("∂C_∂pS has NaNs, computing with FiniteDiff")
-        d = first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS))
-        println("After computation, d=$d")
-    end
-    return d
+    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS))
 end
 
 
 # Constraint Hessian functions
 function ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return ForwardDiff.jacobian(x -> ∂C_∂pM(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM)
+    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM))
 end
 function ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return ForwardDiff.jacobian(x -> ∂C_∂pS(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS)
+    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS))
 end
 function ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return ForwardDiff.jacobian(x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS)
+    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS))
 end
 function ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return ForwardDiff.jacobian(x -> ∂C_∂pS(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM)
+    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM))
 end
 
 
