@@ -1620,6 +1620,10 @@ function special_node_residual!(problem::Problem,model::Model,specialNode::Speci
     @unpack forceScaling = model
     @unpack ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,u,p,F,M = specialNode
 
+    if any(isnan, residual)
+        println("residual contains NaNs before additions")
+    end
+
     # Loop connected elements of the node
     for e in eachindex(ζonElements)
         # Check if the node has separate compatibility equations
@@ -1634,6 +1638,10 @@ function special_node_residual!(problem::Problem,model::Model,specialNode::Speci
             residual[eqs_FF_sep[e]] .+= ζonElements[e]*u
             residual[eqs_FM_sep[e]] .+= ζonElements[e]*p
         end
+    end
+
+    if any(isnan, residual)
+        println("residual contains NaNs after additions")
     end
 
     @pack! problem = residual
@@ -1709,6 +1717,11 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
     @unpack forceScaling = model
     @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,springs = specialNode
 
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        println("jacobian contains NaNs before adding terms")
+    end
+
     # Check if the node is BC'ed
     if !isempty(BCs)
         # Loop applied BCs
@@ -1720,9 +1733,19 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
         jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
     end
 
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        println("jacobian contains NaNs after adding regular terms")
+    end
+
     # Add spring loads' contributions
     for spring in springs
         jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
+    end
+
+    A = Matrix(jacobian)
+    if any(isnan, A)
+        println("jacobian contains NaNs after spring additions")
     end
 
     @pack! problem = jacobian
