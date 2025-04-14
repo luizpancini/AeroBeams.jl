@@ -124,12 +124,6 @@ function create_AeroSurface(; solver::AeroSolver=Indicial(),flapLoadsSolver::Fla
     if !isnothing(δ)
         @assert !δIsTrimVariable "flap deflection cannot be a trim variable and an input"
     end
-    # Set derivationMethod as FD when in CI: problems with ForwardDiff
-    isCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false")  == "true"
-    println("isCI = $isCI")
-    if isCI
-        derivationMethod = FD(nothing)
-    end
 
     # Initialize area and aspect ratio (updated later on beam creation)
     area = 1

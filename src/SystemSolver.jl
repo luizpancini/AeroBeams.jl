@@ -448,14 +448,6 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
         @pack! constraint = Jc
     end
 
-    A = Matrix(augmentedJacobian)
-    if any(isnan, A) || any(isinf, A)
-        println("augmentedJacobian contains NaNs")
-    end
-    if any(isnan, augmentedResidual) || any(isinf, augmentedResidual)
-        println("augmentedResidual contains NaNs")
-    end
-
     # Solve constrained linear system for solution and Lagrange multipliers increments
     sol = -augmentedJacobian\augmentedResidual
     Δx = sol[1:N]
