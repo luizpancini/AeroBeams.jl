@@ -1954,10 +1954,6 @@ end
 # Hinge constraint equations residual
 function C(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
     c = isnothing(pHValue) ? hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,hinge_rotation_value(pM,pS,initialHingeAxis)) : hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,pHValue)
-    h = hinge_rotation_parameters(pM,pS)
-    h2 = hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,hinge_rotation_value(pM,pS,initialHingeAxis))
-    println("h=$h")
-    println("h2=$h2")
     if isnothing(slaveDOFs)
         return c
     else
@@ -1968,10 +1964,22 @@ end
 
 # Jacobian functions of constraint equations w.r.t. system states
 function ∂C_∂pM(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
-    return ForwardDiff.jacobian(x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM)
+    d = ForwardDiff.jacobian(x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM)
+    if any(isnan,d)
+        println("∂C_∂pM has NaNs, computing with FiniteDiff")
+        d = first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM))
+        println("After computation, d=$d")
+    end
+    return d
 end
 function ∂C_∂pS(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
-    return ForwardDiff.jacobian(x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS)
+    d = ForwardDiff.jacobian(x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS)
+    if any(isnan,d)
+        println("∂C_∂pS has NaNs, computing with FiniteDiff")
+        d = first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS))
+        println("After computation, d=$d")
+    end
+    return d
 end
 
 
