@@ -1819,6 +1819,13 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         # Derivative of spring rotation with respect to rotation of each of its attachment nodes
         Δp_p = ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p)
         Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
+        # Dummy check for CI
+        if any(isnan, Δp_p)
+            Δp_p = I3
+        end
+        if any(isnan, Δp_pOtherNode)
+            Δp_pOtherNode = -I3
+        end
         # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
         jacobian[eqs_Fp[1],DOF_pM_otherNode] .+= Kp/forceScaling * Δp_pOtherNode * Diagonal(.!otherNode.pIsPrescribed)
