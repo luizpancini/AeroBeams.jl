@@ -396,6 +396,11 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     # Size of nominal system (without constraints)
     N = length(residual)
 
+    A = Matrix(jacobian)
+    if any(isnan, A) || any(isinf, A)
+        println("jacobian contains NaNs")
+    end
+
     # Initialize augmented arrays
     augmentedJacobian = copy(jacobian)
     augmentedResidual = copy(residual)
@@ -442,6 +447,14 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
         augmentedResidual = [residual; resC]
         # Pack data
         @pack! constraint = Jc
+    end
+
+    A = Matrix(augmentedJacobian)
+    if any(isnan, A) || any(isinf, A)
+        println("augmentedJacobian contains NaNs")
+    end
+    if any(isnan, augmentedResidual) || any(isinf, augmentedResidual)
+        println("augmentedResidual contains NaNs")
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments

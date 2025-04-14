@@ -1620,10 +1620,6 @@ function special_node_residual!(problem::Problem,model::Model,specialNode::Speci
     @unpack forceScaling = model
     @unpack ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,u,p,F,M = specialNode
 
-    if any(isnan, residual)
-        println("residual contains NaNs before additions")
-    end
-
     # Loop connected elements of the node
     for e in eachindex(ζonElements)
         # Check if the node has separate compatibility equations
@@ -1638,10 +1634,6 @@ function special_node_residual!(problem::Problem,model::Model,specialNode::Speci
             residual[eqs_FF_sep[e]] .+= ζonElements[e]*u
             residual[eqs_FM_sep[e]] .+= ζonElements[e]*p
         end
-    end
-
-    if any(isnan, residual)
-        println("residual contains NaNs after additions")
     end
 
     @pack! problem = residual
