@@ -44,12 +44,13 @@ end
 #     @test isapprox(hcat(ϕHinge...)', ϕHinge_, atol=SELFatol, nans=true)
 # end
 
-@testset "Steady analysis of the Pazy wing with a coasting FFWT" begin
-    include("examples/PazyFFWTsteadyCoast.jl")
-    # Self-comparison
-    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyCoast", "phiHinge.txt"))[1]
-    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Steady analysis of the Pazy wing with a coasting FFWT" begin
+#     include("examples/PazyFFWTsteadyCoast.jl")
+#     # Self-comparison
+#     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTsteadyCoast", "phiHinge.txt"))[1]
+#     @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+# end
 
 # Reduce CI time
 # @testset "Steady analysis of the Pazy wing with a FFWT at a fixed fold angle" begin

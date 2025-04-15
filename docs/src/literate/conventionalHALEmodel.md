@@ -289,6 +289,7 @@ nothing #hide
 
 ````@example conventionalHALEmodel
 nothing #hide
+println("Finished conventionalHALEmodel.jl")
 ````
 
 ---

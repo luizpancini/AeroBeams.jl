@@ -235,3 +235,5 @@ p1 = plot_undeformed_assembly(conventionalHALE, view=(30,30))
 #md nothing #hide
 #md # ![](conventionalHALE.svg)
 #md nothing #hide
+
+println("Finished conventionalHALEmodel.jl") #src
