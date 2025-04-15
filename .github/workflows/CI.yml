@@ -22,9 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.11'
+          - '1.9'
         os:
-          - macos-latest
+          - ubuntu-latest
         arch:
           - x64
     steps:
@@ -35,10 +35,7 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
-      - name: Run tests with optimizations
-        shell: bash
-        run: |
-          julia --project=. --check-bounds=no -O3 --color=yes -e 'using Pkg; Pkg.test()'
+      - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
       - name: Upload coverage data to Codecov
         uses: codecov/codecov-action@v5
@@ -47,7 +44,7 @@ jobs:
           files: lcov.info   
   docs:
     name: Documentation
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
       contents: write
@@ -56,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.11'
+          version: '1.9'
       - uses: julia-actions/cache@v2
       - name: Install Python dependencies
         run: |
