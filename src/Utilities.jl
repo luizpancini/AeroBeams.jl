@@ -84,6 +84,37 @@ end
 export axial
 
 
+function gauss7(f, a::Real, b::Real)
+    # Gauss-Legendre nodes and weights for 7 points over [-1, 1]
+    ξs = [-0.9491079123427585,
+          -0.7415311855993945,
+          -0.4058451513773972,
+           0.0,
+           0.4058451513773972,
+           0.7415311855993945,
+           0.9491079123427585]
+
+    ws = [0.1294849661688697,
+          0.2797053914892766,
+          0.3818300505051189,
+          0.4179591836734694,
+          0.3818300505051189,
+          0.2797053914892766,
+          0.1294849661688697]
+
+    # Change of interval from [-1,1] to [a,b]
+    mid = (a + b)/2
+    half = (b - a)/2
+
+    result = zero(f(mid))  # ensures same type/shape as output of f
+    for i in 1:7
+        result .+= ws[i] .* f(mid + half * ξs[i])
+    end
+
+    return half .* result
+end
+
+
 # Divides the input variables in-place
 function divide_inplace!(divisor, vars...)
     return (var ./ divisor for var in vars)

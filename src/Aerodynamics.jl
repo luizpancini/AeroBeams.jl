@@ -198,12 +198,16 @@ function aero_loads_resultants!(model::Model,element::Element)
     for node=1:2  
         # Nodal loads array: perform integration only if tip correction is present, otherwise split equally among nodes
         if hasTipCorrection
-            for ζtest in (0.0, 0.5, 1.0)
-                @info "f($ζtest) = $(f(ζtest))"
-            end
-            @info "ϖMid = $ϖMid, cosΛ = $cosΛ, ct = $ct, ctNC = $ctNC"
-            integrand(ζ) = f(ζ) .* ϕ(node,ζ) 
-            F[6*node-4:6*node-2], = quadgk(integrand, 0, 1)
+            integrand(ζ) = f(ζ) .* ϕ(node,ζ)
+            # try 
+            #     F[6*node-4:6*node-2], = quadgk(integrand, 0, 1)
+            # catch
+                # for ζtest in (0.0, 0.5, 1.0)
+                #     @info "f($ζtest) = $(f(ζtest))"
+                # end
+                # @info "ϖMid = $ϖMid, cosΛ = $cosΛ, ct = $ct, ctNC = $ctNC"
+                F[6*node-4:6*node-2] = gauss7(integrand, 0, 1)
+            # end
         else
             F[6*node-4:6*node-2] = f(1/2)/2
         end
