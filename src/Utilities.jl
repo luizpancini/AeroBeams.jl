@@ -1081,11 +1081,6 @@ Computes the Wiener-Milenkovic parameters describing the rotation from p1 to p2,
 """
 function rotation_between_WM(p1,p2)
 
-    # Handle no rotation early
-    if isapprox(p1, p2; atol=1e-10)
-        return zeros(3)
-    end
-
     # Rotation tensors
     R1,_ = rotation_tensor_WM(p1)
     R2,_ = rotation_tensor_WM(p2)
