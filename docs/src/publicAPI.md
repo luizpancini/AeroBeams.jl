@@ -139,6 +139,7 @@ round_off!
 rms
 tilde
 axial
+gauss_legendre7
 isotropic_stiffness_matrix
 inertia_matrix
 rotation_tensor_E321

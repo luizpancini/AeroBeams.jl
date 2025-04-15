@@ -36,13 +36,12 @@ end
 #     @test hcat(ϕHinge...)' ≈ ϕHinge_ atol=SELFatol
 # end
 
-# Reduce CI time
-# @testset "Steady analysis of the Healy FFWT wing with varying wingtip twist, root pitch angle and sideslip angle" begin
-#     include("examples/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl")
-#     # Self-comparison
-#     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast", "phiHinge.txt"))
-#     @test isapprox(hcat(ϕHinge...)', ϕHinge_, atol=SELFatol, nans=true)
-# end
+@testset "Steady analysis of the Healy FFWT wing with varying wingtip twist, root pitch angle and sideslip angle" begin
+    include("examples/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl")
+    # Self-comparison
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast", "phiHinge.txt"))
+    @test isapprox(hcat(ϕHinge...)', ϕHinge_, atol=SELFatol, nans=true)
+end
 
 # Reduce CI time
 # @testset "Steady analysis of the Pazy wing with a coasting FFWT" begin

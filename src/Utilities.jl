@@ -84,7 +84,18 @@ end
 export axial
 
 
-function gauss7(f, a::Real, b::Real)
+"""
+    gauss_legendre7(f, a::Real, b::Real)
+
+Computes the Gauss-Legendre quadrature (integral) for the vector-valued function f in the interval from a to b, using 7 points
+
+# Arguments
+- `f`: function
+- `a::Real`: lower limit
+- `b::Real`: upper limit
+"""
+function gauss_legendre7(f, a::Real, b::Real)
+
     # Gauss-Legendre nodes and weights for 7 points over [-1, 1]
     ξs = [-0.9491079123427585,
           -0.7415311855993945,
@@ -106,13 +117,12 @@ function gauss7(f, a::Real, b::Real)
     mid = (a + b)/2
     half = (b - a)/2
 
-    result = zero(f(mid))  # ensures same type/shape as output of f
-    for i in 1:7
-        result .+= ws[i] .* f(mid + half * ξs[i])
-    end
+    # Weighted sum
+    weightedSum = sum(ws[i] .* f(mid + half * ξs[i]) for i in 1:7)
 
-    return half .* result
+    return half .* weightedSum
 end
+export gauss_legendre7
 
 
 # Divides the input variables in-place

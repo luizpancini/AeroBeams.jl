@@ -841,12 +841,6 @@ function AeroProperties(aeroSurface::AeroSurface,rotationParametrization::String
     # Set aerodynamic derivatives calculation method
     derivationMethod = aeroSurface.derivationMethod
 
-    # # CI has problems with AD when there are tip corrections, so set derivationMethod as FD in that case
-    # inCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
-    # if inCI && aeroSurface.hasTipCorrection && typeof(derivationMethod) == AD
-    #     derivationMethod = FD(nothing)
-    # end
-
     # Set flap deflection trim TF, value and rates
     δIsZero = aeroSurface.δIsZero
     δIsTrimVariable = aeroSurface.δIsTrimVariable
