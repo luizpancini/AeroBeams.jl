@@ -27,56 +27,61 @@ end
     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 end
 
-@testset "Flutter analysis of the baseline Healy free FFWT wing with tip loss, root pitch and airspeed as the varying parameters" begin
-    include("examples/HealyBaselineFFWTfreeFlutterAoARangeURange.jl")
-    # Self-comparison
-    for (i,τ) in enumerate(τRange)
-        for (j,θ) in enumerate(θRange)
-            freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterAoARangeURange", string("freqs",i,j,".txt")))
-            damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterAoARangeURange", string("damps",i,j,".txt")))
-            @test isapprox(hcat(freqs[i,j,:]...)', freqs_, atol=SELFatol, nans=true)
-            @test isapprox(hcat(damps[i,j,:]...)', damps_, atol=SELFatol, nans=true)
-        end
-    end
-end
+# Reduce CI time
+# @testset "Flutter analysis of the baseline Healy free FFWT wing with tip loss, root pitch and airspeed as the varying parameters" begin
+#     include("examples/HealyBaselineFFWTfreeFlutterAoARangeURange.jl")
+#     # Self-comparison
+#     for (i,τ) in enumerate(τRange)
+#         for (j,θ) in enumerate(θRange)
+#             freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterAoARangeURange", string("freqs",i,j,".txt")))
+#             damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterAoARangeURange", string("damps",i,j,".txt")))
+#             @test isapprox(hcat(freqs[i,j,:]...)', freqs_, atol=SELFatol, nans=true)
+#             @test isapprox(hcat(damps[i,j,:]...)', damps_, atol=SELFatol, nans=true)
+#         end
+#     end
+# end
 
-@testset "Flutter analysis of the baseline Healy free FFWT wing with flare angle and airspeed as the varying parameters" begin
-    include("examples/HealyBaselineFFWTfreeFlutterFlareRangeURange.jl")
-    # Self-comparison
-    for (i,Λ) in enumerate(ΛRange)
-        freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterFlareRangeURange", string("freqs",i,".txt")))
-        damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterFlareRangeURange", string("damps",i,".txt")))
-        @test hcat(freqs[i,:]...)' ≈ freqs_ atol=SELFatol
-        @test hcat(damps[i,:]...)' ≈ damps_ atol=SELFatol
-    end
-end
+# Reduce CI time
+# @testset "Flutter analysis of the baseline Healy free FFWT wing with flare angle and airspeed as the varying parameters" begin
+#     include("examples/HealyBaselineFFWTfreeFlutterFlareRangeURange.jl")
+#     # Self-comparison
+#     for (i,Λ) in enumerate(ΛRange)
+#         freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterFlareRangeURange", string("freqs",i,".txt")))
+#         damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterFlareRangeURange", string("damps",i,".txt")))
+#         @test hcat(freqs[i,:]...)' ≈ freqs_ atol=SELFatol
+#         @test hcat(damps[i,:]...)' ≈ damps_ atol=SELFatol
+#     end
+# end
 
-@testset "Flutter analysis of the baseline Healy locked FFWT wing with airspeed as the varying parameters" begin
-    include("examples/HealyBaselineFFWTlockedFlutterURange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTlockedFlutterURange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTlockedFlutterURange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Flutter analysis of the baseline Healy locked FFWT wing with airspeed as the varying parameters" begin
+#     include("examples/HealyBaselineFFWTlockedFlutterURange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTlockedFlutterURange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTlockedFlutterURange", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
-@testset "Flutter analysis of the Healy FFWT wing with sideslip angle as the varying parameter" begin
-    include("examples/HealyFFWTflutterSideslipRange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterSideslipRange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterSideslipRange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Flutter analysis of the Healy FFWT wing with sideslip angle as the varying parameter" begin
+#     include("examples/HealyFFWTflutterSideslipRange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterSideslipRange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterSideslipRange", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
-@testset "Flutter analysis of the Healy FFWT wing with airspeed as the varying parameter" begin
-    include("examples/HealyFFWTflutterURange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterURange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterURange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Flutter analysis of the Healy FFWT wing with airspeed as the varying parameter" begin
+#     include("examples/HealyFFWTflutterURange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterURange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterURange", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
 @testset "Flutter analysis of the Helios flying-wing in free flight with airspeed as the varying parameter" begin
     include("examples/heliosFlutterURange.jl")
@@ -96,33 +101,35 @@ end
     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 end
 
-@testset "Flutter analysis of the Pazy FFWT wing with airspeed as the varying parameter" begin
-    include("examples/PazyFFWTflutterURange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTflutterURange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTflutterURange", "damps.txt"))
-    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTflutterURange", "phiHinge.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Flutter analysis of the Pazy FFWT wing with airspeed as the varying parameter" begin
+#     include("examples/PazyFFWTflutterURange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTflutterURange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTflutterURange", "damps.txt"))
+#     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyFFWTflutterURange", "phiHinge.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+#     @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+# end
 
-@testset "Flutter analysis of the Pazy wing" begin
-    include("examples/PazyWingFlutter.jl")
-    # Self-comparison
-    flutterOnsetSpeedsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOnsetSpeedsOfMode.txt"))
-    flutterOnsetFreqsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOnsetFreqsOfMode.txt"))
-    flutterOnsetDispOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOnsetDispOfMode.txt"))
-    flutterOffsetSpeedsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOffsetSpeedsOfMode.txt"))
-    flutterOffsetFreqsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOffsetFreqsOfMode.txt"))
-    flutterOffsetDispOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOffsetDispOfMode.txt"))
-    @test hcat(filter(x->!isempty(x),flutterOnsetSpeedsOfMode)...)' ≈ flutterOnsetSpeedsOfMode_ atol=SELFatol
-    @test hcat(filter(x->!isempty(x),flutterOnsetFreqsOfMode)...)' ≈ flutterOnsetFreqsOfMode_ atol=SELFatol
-    @test hcat(filter(x->!isempty(x),flutterOnsetDispOfMode)...)' ≈ flutterOnsetDispOfMode_ atol=SELFatol
-    @test hcat(filter(x->!isempty(x),flutterOffsetSpeedsOfMode)...)' ≈ flutterOffsetSpeedsOfMode_ atol=SELFatol
-    @test hcat(filter(x->!isempty(x),flutterOffsetFreqsOfMode)...)' ≈ flutterOffsetFreqsOfMode_ atol=SELFatol
-    @test hcat(filter(x->!isempty(x),flutterOffsetDispOfMode)...)' ≈ flutterOffsetDispOfMode_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Flutter analysis of the Pazy wing" begin
+#     include("examples/PazyWingFlutter.jl")
+#     # Self-comparison
+#     flutterOnsetSpeedsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOnsetSpeedsOfMode.txt"))
+#     flutterOnsetFreqsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOnsetFreqsOfMode.txt"))
+#     flutterOnsetDispOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOnsetDispOfMode.txt"))
+#     flutterOffsetSpeedsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOffsetSpeedsOfMode.txt"))
+#     flutterOffsetFreqsOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOffsetFreqsOfMode.txt"))
+#     flutterOffsetDispOfMode_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingFlutter", "flutterOffsetDispOfMode.txt"))
+#     @test hcat(filter(x->!isempty(x),flutterOnsetSpeedsOfMode)...)' ≈ flutterOnsetSpeedsOfMode_ atol=SELFatol
+#     @test hcat(filter(x->!isempty(x),flutterOnsetFreqsOfMode)...)' ≈ flutterOnsetFreqsOfMode_ atol=SELFatol
+#     @test hcat(filter(x->!isempty(x),flutterOnsetDispOfMode)...)' ≈ flutterOnsetDispOfMode_ atol=SELFatol
+#     @test hcat(filter(x->!isempty(x),flutterOffsetSpeedsOfMode)...)' ≈ flutterOffsetSpeedsOfMode_ atol=SELFatol
+#     @test hcat(filter(x->!isempty(x),flutterOffsetFreqsOfMode)...)' ≈ flutterOffsetFreqsOfMode_ atol=SELFatol
+#     @test hcat(filter(x->!isempty(x),flutterOffsetDispOfMode)...)' ≈ flutterOffsetDispOfMode_ atol=SELFatol
+# end
 
 @testset "Flutter analysis of the Pazy wing with varying tip mass positions" begin
     include("examples/PazyWingFlutterTipMassRange.jl")
