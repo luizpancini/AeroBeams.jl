@@ -20,7 +20,7 @@ lw = 2
 ms = 4
 msw = 0
 colorFeniax = :purple
-colorSharpy = :olive
+colorSharpy = :gold
 gr()
 
 # Initialize plot variables
@@ -312,7 +312,7 @@ for (i,Λ) in enumerate(ΛRange)
     Λstr = string(round(Int,Λ*180/pi))
     
     # Initialize
-    plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root pitch angle [deg]", xlims=[0,120], ylims=[0,7], xticks=collect(0:20:120), yticks=collect(0:1:7), legend=:bottomleft, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
+    plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root pitch angle [deg]", xlims=[0,121], ylims=[0,7], xticks=collect(0:20:120), yticks=collect(0:1:7), legend=:bottomleft, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
     if i == 1
         for c in eachindex(tipLossTypeConfig)
             plot!(Shape([NaN],[NaN]), fillcolor=plot_color(configColors[c], fill_alpha), lw=lw, label=configLabels[c])
@@ -341,7 +341,7 @@ end
 # Plot flutter onset and offset speeds vs root pitch angle accross sweep angles
 fill_alpha = 0.75
 for (c,tipLossType) in enumerate(tipLossTypeConfig)
-    plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Root pitch angle [deg]", xlims=[0,120], ylims=[0,7], xticks=collect(0:20:120), yticks=collect(0:1:7), legend=:bottomleft, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs,legendtitle=configLabels[c])
+    plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Root pitch angle [deg]", xlims=[0,121], ylims=[0,7], xticks=collect(0:20:120), yticks=collect(0:1:7), legend=:bottomleft, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs,legendtitle=configLabels[c])
     for (j,Λ) in enumerate(reverse(ΛRange))
         i = length(ΛRange)-j+1
         # Lines of flutter onset/offset speeds

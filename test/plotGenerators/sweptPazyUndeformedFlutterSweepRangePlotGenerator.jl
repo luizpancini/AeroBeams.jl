@@ -20,7 +20,7 @@ gr()
 # V-g-f
 for (i,Λ) in enumerate(ΛRange)
     Λstr = string(round(Int,Λ*180/pi))
-    ULim = i == 1 ? 120 : 90
+    ULim = i == 1 ? 121 : 90
     plt_Vf = plot(ylabel="Frequency [Hz]", xlims=[10,ULim], ylims=[0,50], xticks=0:10:ULim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legendposition=(0.75,0.95))
     if i==1
         plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams (VLM)")

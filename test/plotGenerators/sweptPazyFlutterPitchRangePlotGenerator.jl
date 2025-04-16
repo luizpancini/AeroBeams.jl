@@ -18,13 +18,13 @@ ms = 3
 gr()
 
 # V-g-f
-plt_Vf = plot(ylabel="Frequency [Hz]", xlims=[0,URange[end]], ylims=[0,50], tickfont=font(ts), guidefont=font(fs))
+plt_Vf = plot(ylabel="Frequency [Hz]", xlims=[0,101], ylims=[0,50], tickfont=font(ts), guidefont=font(fs))
 for (i,θ) in enumerate(θRange)
     for mode in 1:nModes
         plot!(URange, modeFrequencies[i,mode]/(2π), c=modeColors[mode], lw=lw, alpha=0.1+0.9*i/length(θRange), label=false)
     end
 end
-plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,URange[end]], ylims=[-0.2,0.1], tickfont=font(ts), guidefont=font(fs), legend=:topleft)
+plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,101], ylims=[-0.2,0.1], tickfont=font(ts), guidefont=font(fs), legend=:topleft)
 plot!(URange, zeros(length(URange)), c=:black, lw=lw, ls=:dash, label=false)
 for (i,θ) in enumerate(θRange)
     for mode in 1:nModes

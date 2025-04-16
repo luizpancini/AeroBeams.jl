@@ -10,7 +10,7 @@ tipLossTypeConfig = ["None","Exponential","VLM-undef","VLM-def"]
 ΛRange = π/180*vcat(0:10:30)
 
 # Root pitch angle range
-θRange = π/180*unique(sort([vcat(0:0.25:0.75)...,vcat(1:0.5:7)...,vcat(0.1,2.25,6.75,4.25,5.75)...]))
+θRange = π/180*unique(sort([vcat(0:0.25:0.75)...,vcat(1:0.5:7)...,vcat(0.1,2.35,6.75,4.25,5.75)...]))
 
 # Airspeed range
 URange = unique(sort([vcat(30:0.5:60)...,vcat(30:1:120)...]))
