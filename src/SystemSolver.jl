@@ -400,11 +400,6 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
     augmentedJacobian = copy(jacobian)
     augmentedResidual = copy(residual)
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs")
-    end
-
     # Loop hinge axis constraints
     for constraint in hingeAxisConstraints
         @unpack solutionMethod,rotationIsFixed,initialHingeAxis,pHValue,masterElementGlobalDOFs,slaveElementGlobalDOFs,slaveDOFs,λ = constraint
@@ -451,11 +446,6 @@ function linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisCon
         augmentedResidual = [residual; resC]
         # Pack data
         @pack! constraint = Jc
-    end
-
-    A = Matrix(augmentedJacobian)
-    if any(isnan, A)
-        println("augmentedJacobian contains NaNs")
     end
 
     # Solve constrained linear system for solution and Lagrange multipliers increments
