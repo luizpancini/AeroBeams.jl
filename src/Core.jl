@@ -1707,11 +1707,6 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
     @unpack forceScaling = model
     @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,springs = specialNode
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs before node contributions")
-    end
-
     # Check if the node is BC'ed
     if !isempty(BCs)
         # Loop applied BCs
@@ -1723,19 +1718,9 @@ function special_node_jacobian!(problem::Problem,model::Model,specialNode::Speci
         jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
     end
 
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs after node contributions")
-    end
-
     # Add spring loads' contributions
     for spring in springs
         jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
-    end
-
-    A = Matrix(jacobian)
-    if any(isnan, A)
-        println("jacobian contains NaNs after spring contributions")
     end
 
     @pack! problem = jacobian
@@ -1831,11 +1816,11 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         jacobian[eqs_Fu[1],DOF_uF_otherNode] .+= -Ku/forceScaling * Diagonal(.!otherNode.uIsPrescribed)
         # Derivative of spring rotation with respect to rotation of each of its attachment nodes
         if isapprox(p, pOtherNode; atol=1e-10)
-            Δp_p = ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p)
-            Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
-        else
             Δp_p = I3
             Δp_pOtherNode = -I3
+        else
+            Δp_p = ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p)
+            Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
         end
         # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
