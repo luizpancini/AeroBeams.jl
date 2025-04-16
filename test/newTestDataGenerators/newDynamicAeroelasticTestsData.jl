@@ -26,6 +26,12 @@ for (i,ω) in enumerate(ωRange)
     writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTOMCGustFloating/fold_omega",ω,".txt"),ϕ[i])
 end
 
+# Dynamic analysis of the baseline Healy FFWT wing for a specific one-minus-cosine gust
+include("../examples/HealyBaselineFFWTOMCGustFloating2.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyBaselineFFWTOMCGustFloating2"))
+writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTOMCGustFloating2/M2root.txt"),M2root)
+writedlm(string("test/newTestDataGenerators/HealyBaselineFFWTOMCGustFloating2/fold.txt"),ϕ)
+
 # Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver
 include("../examples/heliosCheckedPitchManeuver.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/heliosCheckedPitchManeuver"))

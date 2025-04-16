@@ -28,15 +28,25 @@ end
     @test Δu3 ≈ Δu3_ atol=SELFatol
 end
 
-@testset "Dynamic analysis of the baseline Healy FFWT wing under a series of one-minus-cosine gusts" begin
-    include("examples/HealyBaselineFFWTOMCGustFloating.jl")
+## Reduce CI time
+# @testset "Dynamic analysis of the baseline Healy FFWT wing under a series of one-minus-cosine gusts" begin
+#     include("examples/HealyBaselineFFWTOMCGustFloating.jl")
+#     # Self-comparison
+#     for (i,ω) in enumerate(ωRange)
+#         M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("M2root_omega",ω,".txt")))
+#         ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("fold_omega",ω,".txt")))
+#         @test M2root[i] ≈ M2root_ atol=1e-3
+#         @test ϕ[i] ≈ ϕ_ atol=1e-3
+#     end
+# end
+
+@testset "Dynamic analysis of the baseline Healy FFWT wing for a specific one-minus-cosine gust" begin
+    include("examples/HealyBaselineFFWTOMCGustFloating2.jl")
     # Self-comparison
-    for (i,ω) in enumerate(ωRange)
-        M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("M2root_omega",ω,".txt")))
-        ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("fold_omega",ω,".txt")))
-        @test M2root[i] ≈ M2root_ atol=1e-3
-        @test ϕ[i] ≈ ϕ_ atol=1e-3
-    end
+    M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating2", "M2root.txt"))
+    ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating2", "fold.txt"))
+    @test M2root ≈ M2root_ atol=1e-3
+    @test ϕ ≈ ϕ_ atol=1e-3
 end
 
 @testset "Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver" begin
