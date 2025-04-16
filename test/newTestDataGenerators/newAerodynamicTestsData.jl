@@ -42,6 +42,33 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
     end
 end
 
+# One-minus-cosine gust response of an airfoil section at several pitch angles
+include("../examples/OMCgustTests2.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/OMCgustTests2"))
+for (i,aeroSolver) in enumerate(aeroSolvers)
+    for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
+        for (k,testCase) in enumerate(tests)
+            if typeof(aeroSolver) == QuasiSteady
+                aeroSolverName = "QS"
+            elseif typeof(aeroSolver) == Indicial
+                aeroSolverName = "Indicial"
+            elseif typeof(aeroSolver) == Inflow
+                aeroSolverName = "Inflow"
+            elseif typeof(aeroSolver) == BLi
+                aeroSolverName = "BLi"
+            elseif typeof(aeroSolver) == BLo
+                aeroSolverName = "BLo"
+            end
+            gustSolverName = gustLoadsSolver.indicialFunctionName
+            relPath = string("/test/newTestDataGenerators/OMCgustTests2/OMCgustTests2_",aeroSolverName,"_",gustSolverName,"_test",testCase)
+            absPath = string(pwd(),relPath)
+            mkpath(absPath)
+            writedlm(string("test/newTestDataGenerators/OMCgustTests2/OMCgustTests2_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/tau",i,j,k,".txt"), τ[i,j,k])
+            writedlm(string("test/newTestDataGenerators/OMCgustTests2/OMCgustTests2_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt"), Δcl[i,j,k])
+            writedlm(string("test/newTestDataGenerators/OMCgustTests2/OMCgustTests2_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dclRef",i,j,k,".txt"), ΔclRef[i,j,k])
+        end
+    end
+end
 
 # Dynamic analysis of a harmonically pitching airfoil, using the dynamic stall model
 include("../examples/pitchingAirfoilDSModelTest.jl")

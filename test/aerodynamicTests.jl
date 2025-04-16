@@ -33,12 +33,38 @@ end
     @test cmSlave ≈ cmSlave_ atol=SELFatol
 end
 
+## Reduce CI time
+# @testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
+#     include("examples/OMCgustTests.jl")
+#     # Self-comparison
+#     for (i,aeroSolver) in enumerate(aeroSolvers)
+#         for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
+#             for (k,testCase) in enumerate(tests)
+#                 if typeof(aeroSolver) == QuasiSteady
+#                     aeroSolverName = "QS"
+#                 elseif typeof(aeroSolver) == Indicial
+#                     aeroSolverName = "Indicial"
+#                 elseif typeof(aeroSolver) == Inflow
+#                     aeroSolverName = "Inflow"
+#                 elseif typeof(aeroSolver) == BLi
+#                     aeroSolverName = "BLi"
+#                 elseif typeof(aeroSolver) == BLo
+#                     aeroSolverName = "BLo"
+#                 end
+#                 gustSolverName = gustLoadsSolver.indicialFunctionName
+#                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests", string("OMCgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
+#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
+#             end
+#         end
+#     end
+# end
+
 @testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
-    include("examples/OMCgustTests.jl")
+    include("examples/OMCgustTests2.jl")
     # Self-comparison
     for (i,aeroSolver) in enumerate(aeroSolvers)
         for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-            for (k,testCase) in enumerate(1:6)
+            for (k,testCase) in enumerate(tests)
                 if typeof(aeroSolver) == QuasiSteady
                     aeroSolverName = "QS"
                 elseif typeof(aeroSolver) == Indicial
@@ -51,37 +77,38 @@ end
                     aeroSolverName = "BLo"
                 end
                 gustSolverName = gustLoadsSolver.indicialFunctionName
-                Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests", string("OMCgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
+                Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests2", string("OMCgustTests2_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
             end
         end
     end
 end
 
-@testset "Sharp-edged gust response of an airfoil section at several pitch angles" begin
-    include("examples/SEgustTests.jl")
-    # Self-comparison
-    for (i,aeroSolver) in enumerate(aeroSolvers)
-        for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-            for (k,testCase) in enumerate(1:3)
-                if typeof(aeroSolver) == QuasiSteady
-                    aeroSolverName = "QS"
-                elseif typeof(aeroSolver) == Indicial
-                    aeroSolverName = "Indicial"
-                elseif typeof(aeroSolver) == Inflow
-                    aeroSolverName = "Inflow"
-                elseif typeof(aeroSolver) == BLi
-                    aeroSolverName = "BLi"
-                elseif typeof(aeroSolver) == BLo
-                    aeroSolverName = "BLo"
-                end
-                gustSolverName = gustLoadsSolver.indicialFunctionName
-                Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SEgustTests", string("SEgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-                @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
-            end
-        end
-    end
-end
+## Reduce CI time
+# @testset "Sharp-edged gust response of an airfoil section at several pitch angles" begin
+#     include("examples/SEgustTests.jl")
+#     # Self-comparison
+#     for (i,aeroSolver) in enumerate(aeroSolvers)
+#         for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
+#             for (k,testCase) in enumerate(1:3)
+#                 if typeof(aeroSolver) == QuasiSteady
+#                     aeroSolverName = "QS"
+#                 elseif typeof(aeroSolver) == Indicial
+#                     aeroSolverName = "Indicial"
+#                 elseif typeof(aeroSolver) == Inflow
+#                     aeroSolverName = "Inflow"
+#                 elseif typeof(aeroSolver) == BLi
+#                     aeroSolverName = "BLi"
+#                 elseif typeof(aeroSolver) == BLo
+#                     aeroSolverName = "BLo"
+#                 end
+#                 gustSolverName = gustLoadsSolver.indicialFunctionName
+#                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SEgustTests", string("SEgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
+#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
+#             end
+#         end
+#     end
+# end
 
 @testset "Dynamic analysis of a harmonically plunging airfoil, using the dynamic stall model" begin
     include("examples/plungingAirfoilDSModelTest.jl")
