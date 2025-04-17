@@ -368,3 +368,5 @@ end
     @test F3_root ≈ F3_root_ atol=SELFatol
     @test M2_root ≈ M2_root_ atol=SELFatol
 end
+GC.gc()
+sleep(1)

@@ -298,3 +298,5 @@ end
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "twoStoryFrame", "freqs.txt"))
     @test freqs ≈ freqs_ atol=SELFatol
 end
+GC.gc()
+sleep(1)

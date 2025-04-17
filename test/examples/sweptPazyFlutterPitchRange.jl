@@ -1,7 +1,7 @@
 using AeroBeams
 
 # Sweep angle [rad]
-Λ = 0*π/180
+Λ = 20*π/180
 
 # Root pitch angle range
 θRange = π/180*[0,1,3,5,7]

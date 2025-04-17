@@ -449,3 +449,5 @@ end
     @test p1 ≈ p1_ atol=SELFatol
     @test M1 ≈ M1_ atol=SELFatol
 end
+GC.gc()
+sleep(1)

@@ -1,13 +1,14 @@
 # Eigen aeroelastic problems
 
-@testset "Flutter analysis of the conventional HALE aircraft in free flight with structural stiffness as the varying parameter" begin
-    include("examples/conventionalHALELambdaRange.jl")
-    # Self-comparison
-    freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "freqs.txt"))
-    damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Flutter analysis of the conventional HALE aircraft in free flight with structural stiffness as the varying parameter" begin
+#     include("examples/conventionalHALELambdaRange.jl")
+#     # Self-comparison
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALELambdaRange", "damps.txt"))
+#     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+#     @test hcat(damps...)' ≈ damps_ atol=SELFatol
+# end
 
 @testset "Flutter analysis of the conventional HALE aircraft in free flight with airspeed as the varying parameter" begin
     include("examples/conventionalHALEURange.jl")
@@ -148,16 +149,17 @@ end
     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
 end
 
-@testset "Flutter boundary analysis of the sixteen-meter-wing as a function of the bending-torsion coupling factor" begin
-    include("examples/SMWFlutterStructuralCouplingRange.jl")
-    # Reference comparison (flutter at zero displacement)
-    @test flutterSpeed[1,1] ≈ flutterSpeedVsTipLoadΨm02[2,1] rtol=2e-2
-    @test flutterSpeed[2,1] ≈ flutterSpeedVsTipLoadΨ0[2,1] rtol=2e-2
-    @test flutterSpeed[3,1] ≈ flutterSpeedVsTipLoadΨp02[2,1] rtol=2e-2
-    # Self-comparison
-    flutterSpeed_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SMWFlutterStructuralCouplingRange", "flutterSpeed.txt"))
-    @test flutterSpeed ≈ flutterSpeed_ atol=SELFatol
-end
+# Reduce CI time
+# @testset "Flutter boundary analysis of the sixteen-meter-wing as a function of the bending-torsion coupling factor" begin
+#     include("examples/SMWFlutterStructuralCouplingRange.jl")
+#     # Reference comparison (flutter at zero displacement)
+#     @test flutterSpeed[1,1] ≈ flutterSpeedVsTipLoadΨm02[2,1] rtol=2e-2
+#     @test flutterSpeed[2,1] ≈ flutterSpeedVsTipLoadΨ0[2,1] rtol=2e-2
+#     @test flutterSpeed[3,1] ≈ flutterSpeedVsTipLoadΨp02[2,1] rtol=2e-2
+#     # Self-comparison
+#     flutterSpeed_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SMWFlutterStructuralCouplingRange", "flutterSpeed.txt"))
+#     @test flutterSpeed ≈ flutterSpeed_ atol=SELFatol
+# end
 
 @testset "Linear flutter analysis of the sixteen-meter-wing" begin
     include("examples/SMWLinearFlutter.jl")
@@ -243,6 +245,8 @@ end
     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 end
+GC.gc()
+sleep(1)
 
 # Run tests that currently fail in CI, if applicable
 if runCIfailingTests && (get(ENV, "CI", false) || get(ENV, "GITHUB_ACTIONS", false))

@@ -57,6 +57,8 @@ end
     @test rootAoA ≈ rootAoA_ atol=SELFatol
     @test Δu3 ≈ Δu3_ atol=SELFatol
 end
+GC.gc()
+sleep(1)
 
 ## Reduce CI time
 # @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin

@@ -46,3 +46,5 @@ end
     @test F3 ≈ F3_ atol=SELFatol
     @test M2 ≈ M2_ atol=SELFatol
 end
+GC.gc()
+sleep(1)

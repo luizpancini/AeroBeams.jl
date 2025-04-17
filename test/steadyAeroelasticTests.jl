@@ -119,3 +119,5 @@ end
     @test tip_u3 ≈ tip_u3_ atol=SELFatol
     @test tip_twist ≈ tip_twist_ atol=SELFatol
 end
+GC.gc()
+sleep(1)

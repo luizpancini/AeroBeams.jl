@@ -157,3 +157,5 @@ end
     @test cn[end] ≈ cn_ atol=SELFatol
     @test cm[end] ≈ cm_ atol=SELFatol
 end
+GC.gc()
+sleep(1)

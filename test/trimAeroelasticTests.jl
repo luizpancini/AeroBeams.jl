@@ -42,3 +42,5 @@ end
     @test trimThrust ≈ trimThrust_ atol=SELFatol
     @test trimδ ≈ trimδ_ atol=SELFatol
 end
+GC.gc()
+sleep(1)
