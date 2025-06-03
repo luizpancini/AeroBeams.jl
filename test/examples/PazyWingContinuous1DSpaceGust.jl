@@ -23,7 +23,7 @@ t0 = 0.5
 σ = U/10
 c0 = [0;t0*U;0]
 pg = [0;-π/2;0]
-gust = create_Continuous1DSpaceGust(spectrum=spectrum,length=τ*U,N=1001,σ=σ,c0=c0,p=pg)
+gust = create_Continuous1DSpaceGust(spectrum=spectrum,gustLength=τ*U,N=1001,σ=σ,c0=c0,p=pg)
 
 # Model
 PazyWingContinuous1DSpaceGust,nElem,_ = create_Pazy(aeroSolver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,upright=upright,θ=θ,airspeed=U,gust=gust)

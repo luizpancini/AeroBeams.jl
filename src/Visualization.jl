@@ -958,6 +958,7 @@ Plots the animated deformation of the model in the given problem
 - `plotAeroSurf`: flag to plot aerodynamic surfaces
 - `surfα::Float64`: transparency factor of aerodynamic surfaces 
 - `plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}`: plot axis limits
+- `followAssembly::Bool`: flag to adjust the plot limits in order to "follow" the assembly of beams with the movement of basis A
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 - `showScale::Bool`: flag to show scale on plot
@@ -966,7 +967,7 @@ Plots the animated deformation of the model in the given problem
 - `timeStampPos::Vector{<:Real}`: position of time stamp on plot
 - `displayProgress::Bool`: flag to display progress of gif creation
 """
-function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Real=30,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotGrid::Bool=true,legendPos=:best,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Real}=[0.1;0.05;0.05],timeStampPos::Vector{<:Real}=[0.5;0.05;0.05],displayProgress::Bool=false)
+function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A", plotFrequency::Int64=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Real=30,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotGrid::Bool=true,legendPos=:best,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,followAssembly::Bool=false,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Real}=[0.1;0.05;0.05],timeStampPos::Vector{<:Real}=[0.5;0.05;0.05],displayProgress::Bool=false)
 
     # Validate
     @assert refBasis in ["I","A"]
@@ -987,7 +988,7 @@ function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A",
     pyplot()
 
     # Unpack
-    @unpack timeVector,sizeOfTime = problem
+    @unpack savedTimeVector,sizeOfTime = problem
     @unpack elements,nElementsTotal,units,u_A,R_A_ofTime = problem.model
 
     # Initialize plot
@@ -1023,13 +1024,13 @@ function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A",
     end
 
     # Initialize plot limits
-    plotMin = plotMax = 0
+    plotMin = plotMax = plotMax_x1 = plotMax_x2 = plotMax_x3 = plotMin_x1 = plotMin_x2 = plotMin_x3 = 0
 
-    # Loop over time
-    anim = @animate for t=1:plotFrequency:length(timeVector)
+    # Loop over time: animate
+    anim = @animate for t=1:plotFrequency:length(savedTimeVector)
 
         # Set current time
-        timeNow = timeVector[t]
+        timeNow = savedTimeVector[t]
 
         # Set current displacement vector and rotation tensor from basis A to reference basis (either basis I or A)
         if refBasis == "I"
@@ -1162,8 +1163,14 @@ function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A",
         end
 
         # Plot extrema
-        plotMax = max(plotMax,maximum(reduce(vcat, x1Def[t,:])),maximum(reduce(vcat, x2Def[t,:])),maximum(reduce(vcat, x3Def[t,:])),maximum(reduce(vcat, x1Undef)),maximum(reduce(vcat, x2Undef)),maximum(reduce(vcat, x3Undef)))
-        plotMin = min(plotMin,minimum(reduce(vcat, x1Def[t,:])),minimum(reduce(vcat, x2Def[t,:])),minimum(reduce(vcat, x3Def[t,:])),minimum(reduce(vcat, x1Undef)),minimum(reduce(vcat, x2Undef)),minimum(reduce(vcat, x3Undef)))
+        plotMax_x1 = max(plotMax_x1,maximum(reduce(vcat, x1Def[t,:])),maximum(reduce(vcat, x1Undef)))
+        plotMax_x2 = max(plotMax_x2,maximum(reduce(vcat, x2Def[t,:])),maximum(reduce(vcat, x2Undef)))
+        plotMax_x3 = max(plotMax_x3,maximum(reduce(vcat, x3Def[t,:])),maximum(reduce(vcat, x3Undef)))
+        plotMin_x1 = min(plotMin_x1,minimum(reduce(vcat, x1Def[t,:])),minimum(reduce(vcat, x1Undef)))
+        plotMin_x2 = min(plotMin_x2,minimum(reduce(vcat, x2Def[t,:])),minimum(reduce(vcat, x2Undef)))
+        plotMin_x3 = min(plotMin_x3,minimum(reduce(vcat, x3Def[t,:])),minimum(reduce(vcat, x3Undef)))
+        plotMax = max(plotMax,plotMax_x1,plotMax_x2,plotMax_x3)
+        plotMin = min(plotMin,plotMin_x1,plotMin_x2,plotMin_x3)
 
         # Set plot limits
         if isPlane
@@ -1178,9 +1185,13 @@ function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A",
             end
         else
             if isnothing(plotLimits)
-                plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+                plot!(xlims=[plotMin_x1,plotMax_x1],ylims=[plotMin_x2,plotMax_x2],zlims=[plotMin_x3,plotMax_x3])
             else
-                plot!(xlims=plotLimits[1],ylims=plotLimits[2],zlims=plotLimits[3])
+                if followAssembly
+                    plot!(xlims=plotLimits[1].+uRefNow[1],ylims=plotLimits[2].+uRefNow[2],zlims=plotLimits[3].+uRefNow[3])
+                else
+                    plot!(xlims=plotLimits[1],ylims=plotLimits[2],zlims=plotLimits[3])
+                end
             end
         end
 
@@ -1256,7 +1267,7 @@ function plot_dynamic_deformation(problem::DynamicProblem; refBasis::String="A",
         
         # Show progress, if applicable
         if displayProgress
-            progress = round(timeNow/timeVector[end]*100,digits=1)
+            progress = round(timeNow/savedTimeVector[end]*100,digits=1)
             println("Animation progress: $progress %")
         end
     end
@@ -1304,8 +1315,8 @@ function plot_snapshots(problem::DynamicProblem; refBasis::String="A",plotBCs::B
 
     # Validate
     @assert refBasis in ["I","A"]
-    @assert snapshots[1] >= problem.timeVector[1] "initial snapshot is out of the time range"
-    @assert snapshots[end] <= problem.timeVector[end] "final snapshot is out of the time range"
+    @assert snapshots[1] >= problem.savedTimeVector[1] "initial snapshot is out of the time range"
+    @assert snapshots[end] <= problem.savedTimeVector[end] "final snapshot is out of the time range"
     @assert snapshots == sort(snapshots) "snapshots must be in ascending order"
     @assert scale > 0
     @assert lw > 0
@@ -1319,7 +1330,7 @@ function plot_snapshots(problem::DynamicProblem; refBasis::String="A",plotBCs::B
     pyplot()
 
     # Unpack
-    @unpack timeVector,sizeOfTime = problem
+    @unpack savedTimeVector,sizeOfTime = problem
     @unpack elements,nElementsTotal,units,u_A,R_A_ofTime = problem.model
 
     # Initialize plot
@@ -1367,7 +1378,7 @@ function plot_snapshots(problem::DynamicProblem; refBasis::String="A",plotBCs::B
         t = argmin(abs.(problem.savedTimeVector .- tsnap))
 
         # Set current time
-        timeNow = timeVector[t]
+        timeNow = savedTimeVector[t]
 
         # Set current displacement vector and rotation tensor from basis A to reference basis (either basis I or A)
         if refBasis == "I"
@@ -1547,7 +1558,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
     gr()
 
     # Unpack 
-    @unpack timeVector,sizeOfTime = problem
+    @unpack savedTimeVector,sizeOfTime = problem
     @unpack units = problem.model
 
     # Initialize plots
@@ -1606,7 +1617,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # u1
         if "u" in elementalOutputs || "u1" in elementalOutputs
             u1 = [problem.elementalStatesOverTime[t][e].u[1] for t in 1:sizeOfTime]
-            plt_u1 = plot_output_of_time!(plt_u1,t=timeVector,output=u1,element=e,units=units,YLabel="u_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_u1 = plot_output_of_time!(plt_u1,t=savedTimeVector,output=u1,element=e,units=units,YLabel="u_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"u1",figureExtension))
             end
@@ -1617,7 +1628,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # u2
         if "u" in elementalOutputs || "u2" in elementalOutputs
             u2 = [problem.elementalStatesOverTime[t][e].u[2] for t in 1:sizeOfTime]
-            plt_u2 = plot_output_of_time!(plt_u2,t=timeVector,output=u2,element=e,units=units,YLabel="u_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_u2 = plot_output_of_time!(plt_u2,t=savedTimeVector,output=u2,element=e,units=units,YLabel="u_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"u2",figureExtension))
             end
@@ -1628,7 +1639,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # u3
         if "u" in elementalOutputs || "u3" in elementalOutputs
             u3 = [problem.elementalStatesOverTime[t][e].u[3] for t in 1:sizeOfTime]
-            plt_u3 = plot_output_of_time!(plt_u3,t=timeVector,output=u3,element=e,units=units,YLabel="u_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_u3 = plot_output_of_time!(plt_u3,t=savedTimeVector,output=u3,element=e,units=units,YLabel="u_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"u3",figureExtension))
             end
@@ -1639,7 +1650,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # p1
         if "p" in elementalOutputs || "p1" in elementalOutputs
             p1 = [problem.elementalStatesOverTime[t][e].p[1] for t in 1:sizeOfTime]
-            plt_p1 = plot_output_of_time!(plt_p1,t=timeVector,output=p1,element=e,units=units,YLabel="p_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_p1 = plot_output_of_time!(plt_p1,t=savedTimeVector,output=p1,element=e,units=units,YLabel="p_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"p1",figureExtension))
             end
@@ -1650,7 +1661,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # p2
         if "p" in elementalOutputs || "p2" in elementalOutputs
             p2 = [problem.elementalStatesOverTime[t][e].p[2] for t in 1:sizeOfTime]
-            plt_p2 = plot_output_of_time!(plt_p2,t=timeVector,output=p2,element=e,units=units,YLabel="p_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_p2 = plot_output_of_time!(plt_p2,t=savedTimeVector,output=p2,element=e,units=units,YLabel="p_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"p2",figureExtension))
             end
@@ -1661,7 +1672,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # p3
         if "p" in elementalOutputs || "p3" in elementalOutputs
             p3 = [problem.elementalStatesOverTime[t][e].p[3] for t in 1:sizeOfTime]
-            plt_p3 = plot_output_of_time!(plt_p3,t=timeVector,output=p3,element=e,units=units,YLabel="p_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_p3 = plot_output_of_time!(plt_p3,t=savedTimeVector,output=p3,element=e,units=units,YLabel="p_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"p3",figureExtension))
             end
@@ -1672,7 +1683,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # F1
         if "F" in elementalOutputs || "F1" in elementalOutputs
             F1 = [problem.elementalStatesOverTime[t][e].F[1] for t in 1:sizeOfTime]
-            plt_F1 = plot_output_of_time!(plt_F1,t=timeVector,output=F1,element=e,units=units,YLabel="F_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_F1 = plot_output_of_time!(plt_F1,t=savedTimeVector,output=F1,element=e,units=units,YLabel="F_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"F1",figureExtension))
             end
@@ -1683,7 +1694,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # F2
         if "F" in elementalOutputs || "F2" in elementalOutputs
             F2 = [problem.elementalStatesOverTime[t][e].F[2] for t in 1:sizeOfTime]
-            plt_F2 = plot_output_of_time!(plt_F2,t=timeVector,output=F2,element=e,units=units,YLabel="F_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_F2 = plot_output_of_time!(plt_F2,t=savedTimeVector,output=F2,element=e,units=units,YLabel="F_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"F2",figureExtension))
             end
@@ -1694,7 +1705,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # F3
         if "F" in elementalOutputs || "F3" in elementalOutputs
             F3 = [problem.elementalStatesOverTime[t][e].F[3] for t in 1:sizeOfTime]
-            plt_F3 = plot_output_of_time!(plt_F3,t=timeVector,output=F3,element=e,units=units,YLabel="F_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_F3 = plot_output_of_time!(plt_F3,t=savedTimeVector,output=F3,element=e,units=units,YLabel="F_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"F3",figureExtension))
             end
@@ -1705,7 +1716,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # M1
         if "M" in elementalOutputs || "M1" in elementalOutputs
             M1 = [problem.elementalStatesOverTime[t][e].M[1] for t in 1:sizeOfTime]
-            plt_M1 = plot_output_of_time!(plt_M1,t=timeVector,output=M1,element=e,units=units,YLabel="M_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_M1 = plot_output_of_time!(plt_M1,t=savedTimeVector,output=M1,element=e,units=units,YLabel="M_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"M1",figureExtension))
             end
@@ -1716,7 +1727,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # M2
         if "M" in elementalOutputs || "M2" in elementalOutputs
             M2 = [problem.elementalStatesOverTime[t][e].M[2] for t in 1:sizeOfTime]
-            plt_M2 = plot_output_of_time!(plt_M2,t=timeVector,output=M2,element=e,units=units,YLabel="M_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_M2 = plot_output_of_time!(plt_M2,t=savedTimeVector,output=M2,element=e,units=units,YLabel="M_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"M2",figureExtension))
             end
@@ -1727,7 +1738,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # M3
         if "M" in elementalOutputs || "M3" in elementalOutputs
             M3 = [problem.elementalStatesOverTime[t][e].M[3] for t in 1:sizeOfTime]
-            plt_M3 = plot_output_of_time!(plt_M3,t=timeVector,output=M3,element=e,units=units,YLabel="M_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_M3 = plot_output_of_time!(plt_M3,t=savedTimeVector,output=M3,element=e,units=units,YLabel="M_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"M3",figureExtension))
             end
@@ -1738,7 +1749,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # V1
         if "V" in elementalOutputs || "V1" in elementalOutputs
             V1 = [problem.elementalStatesOverTime[t][e].V[1] for t in 1:sizeOfTime]
-            plt_V1 = plot_output_of_time!(plt_V1,t=timeVector,output=V1,element=e,units=units,YLabel="V_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_V1 = plot_output_of_time!(plt_V1,t=savedTimeVector,output=V1,element=e,units=units,YLabel="V_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"V1",figureExtension))
             end
@@ -1749,7 +1760,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # V2
         if "V" in elementalOutputs || "V2" in elementalOutputs
             V2 = [problem.elementalStatesOverTime[t][e].V[2] for t in 1:sizeOfTime]
-            plt_V2 = plot_output_of_time!(plt_V2,t=timeVector,output=V2,element=e,units=units,YLabel="V_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_V2 = plot_output_of_time!(plt_V2,t=savedTimeVector,output=V2,element=e,units=units,YLabel="V_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"V2",figureExtension))
             end
@@ -1760,7 +1771,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # V3
         if "V" in elementalOutputs || "V3" in elementalOutputs
             V3 = [problem.elementalStatesOverTime[t][e].V[3] for t in 1:sizeOfTime]
-            plt_V3 = plot_output_of_time!(plt_V3,t=timeVector,output=V3,element=e,units=units,YLabel="V_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_V3 = plot_output_of_time!(plt_V3,t=savedTimeVector,output=V3,element=e,units=units,YLabel="V_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"V3",figureExtension))
             end
@@ -1771,7 +1782,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Ω1
         if "Ω" in elementalOutputs || "Ω1" in elementalOutputs
             Ω1 = [problem.elementalStatesOverTime[t][e].Ω[1] for t in 1:sizeOfTime]
-            plt_Ω1 = plot_output_of_time!(plt_Ω1,t=timeVector,output=Ω1,element=e,units=units,YLabel="\\Omega_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Ω1 = plot_output_of_time!(plt_Ω1,t=savedTimeVector,output=Ω1,element=e,units=units,YLabel="\\Omega_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Ω1",figureExtension))
             end
@@ -1782,7 +1793,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Ω2
         if "Ω" in elementalOutputs || "Ω2" in elementalOutputs
             Ω2 = [problem.elementalStatesOverTime[t][e].Ω[2] for t in 1:sizeOfTime]
-            plt_Ω2 = plot_output_of_time!(plt_Ω2,t=timeVector,output=Ω2,element=e,units=units,YLabel="\\Omega_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Ω2 = plot_output_of_time!(plt_Ω2,t=savedTimeVector,output=Ω2,element=e,units=units,YLabel="\\Omega_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Ω2",figureExtension))
             end
@@ -1793,7 +1804,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Ω3
         if "Ω" in elementalOutputs || "Ω3" in elementalOutputs
             Ω3 = [problem.elementalStatesOverTime[t][e].Ω[3] for t in 1:sizeOfTime]
-            plt_Ω3 = plot_output_of_time!(plt_Ω3,t=timeVector,output=Ω3,element=e,units=units,YLabel="\\Omega_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Ω3 = plot_output_of_time!(plt_Ω3,t=savedTimeVector,output=Ω3,element=e,units=units,YLabel="\\Omega_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Ω3",figureExtension))
             end
@@ -1804,7 +1815,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # γ1
         if "γ" in elementalOutputs || "γ1" in elementalOutputs
             γ1 = [problem.compElementalStatesOverTime[t][e].γ[1] for t in 1:sizeOfTime]
-            plt_γ1 = plot_output_of_time!(plt_γ1,t=timeVector,output=γ1,element=e,units=units,YLabel="\\gamma_1^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_γ1 = plot_output_of_time!(plt_γ1,t=savedTimeVector,output=γ1,element=e,units=units,YLabel="\\gamma_1^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"γ1",figureExtension))
             end
@@ -1815,7 +1826,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # γ2
         if "γ" in elementalOutputs || "γ2" in elementalOutputs
             γ2 = [problem.compElementalStatesOverTime[t][e].γ[2] for t in 1:sizeOfTime]
-            plt_γ2 = plot_output_of_time!(plt_γ2,t=timeVector,output=γ2,element=e,units=units,YLabel="\\gamma_2^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_γ2 = plot_output_of_time!(plt_γ2,t=savedTimeVector,output=γ2,element=e,units=units,YLabel="\\gamma_2^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"γ2",figureExtension))
             end
@@ -1826,7 +1837,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # γ3
         if "γ" in elementalOutputs || "γ3" in elementalOutputs
             γ3 = [problem.compElementalStatesOverTime[t][e].γ[3] for t in 1:sizeOfTime]
-            plt_γ3 = plot_output_of_time!(plt_γ3,t=timeVector,output=γ3,element=e,units=units,YLabel="\\gamma_3^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_γ3 = plot_output_of_time!(plt_γ3,t=savedTimeVector,output=γ3,element=e,units=units,YLabel="\\gamma_3^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"γ3",figureExtension))
             end
@@ -1837,7 +1848,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # κ1
         if "κ" in elementalOutputs || "κ1" in elementalOutputs
             κ1 = [problem.compElementalStatesOverTime[t][e].κ[1] for t in 1:sizeOfTime]
-            plt_κ1 = plot_output_of_time!(plt_κ1,t=timeVector,output=κ1,element=e,units=units,YLabel="\\kappa_1^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_κ1 = plot_output_of_time!(plt_κ1,t=savedTimeVector,output=κ1,element=e,units=units,YLabel="\\kappa_1^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"κ1",figureExtension))
             end
@@ -1848,7 +1859,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # κ2
         if "κ" in elementalOutputs || "κ2" in elementalOutputs
             κ2 = [problem.compElementalStatesOverTime[t][e].κ[2] for t in 1:sizeOfTime]
-            plt_κ2 = plot_output_of_time!(plt_κ2,t=timeVector,output=κ2,element=e,units=units,YLabel="\\kappa_2^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_κ2 = plot_output_of_time!(plt_κ2,t=savedTimeVector,output=κ2,element=e,units=units,YLabel="\\kappa_2^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"κ2",figureExtension))
             end
@@ -1859,7 +1870,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # κ3
         if "κ" in elementalOutputs || "κ3" in elementalOutputs
             κ3 = [problem.compElementalStatesOverTime[t][e].κ[3] for t in 1:sizeOfTime]
-            plt_κ3 = plot_output_of_time!(plt_κ3,t=timeVector,output=κ3,element=e,units=units,YLabel="\\kappa_3^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_κ3 = plot_output_of_time!(plt_κ3,t=savedTimeVector,output=κ3,element=e,units=units,YLabel="\\kappa_3^+",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"κ3",figureExtension))
             end
@@ -1870,7 +1881,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # P1
         if "P" in elementalOutputs || "P1" in elementalOutputs
             P1 = [problem.compElementalStatesOverTime[t][e].P[1] for t in 1:sizeOfTime]
-            plt_P1 = plot_output_of_time!(plt_P1,t=timeVector,output=P1,element=e,units=units,YLabel="P_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_P1 = plot_output_of_time!(plt_P1,t=savedTimeVector,output=P1,element=e,units=units,YLabel="P_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"P1",figureExtension))
             end
@@ -1881,7 +1892,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # P2
         if "P" in elementalOutputs || "P2" in elementalOutputs
             P2 = [problem.compElementalStatesOverTime[t][e].P[2] for t in 1:sizeOfTime]
-            plt_P2 = plot_output_of_time!(plt_P2,t=timeVector,output=P2,element=e,units=units,YLabel="P_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_P2 = plot_output_of_time!(plt_P2,t=savedTimeVector,output=P2,element=e,units=units,YLabel="P_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"P2",figureExtension))
             end
@@ -1892,7 +1903,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # P3
         if "P" in elementalOutputs || "P3" in elementalOutputs
             P3 = [problem.compElementalStatesOverTime[t][e].P[3] for t in 1:sizeOfTime]
-            plt_P3 = plot_output_of_time!(plt_P3,t=timeVector,output=P3,element=e,units=units,YLabel="P_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_P3 = plot_output_of_time!(plt_P3,t=savedTimeVector,output=P3,element=e,units=units,YLabel="P_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"P3",figureExtension))
             end
@@ -1903,7 +1914,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # H1
         if "H" in elementalOutputs || "H1" in elementalOutputs
             H1 = [problem.compElementalStatesOverTime[t][e].H[1] for t in 1:sizeOfTime]
-            plt_H1 = plot_output_of_time!(plt_H1,t=timeVector,output=H1,element=e,units=units,YLabel="H_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_H1 = plot_output_of_time!(plt_H1,t=savedTimeVector,output=H1,element=e,units=units,YLabel="H_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"H1",figureExtension))
             end
@@ -1914,7 +1925,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # H2
         if "H" in elementalOutputs || "H2" in elementalOutputs
             H2 = [problem.compElementalStatesOverTime[t][e].H[2] for t in 1:sizeOfTime]
-            plt_H2 = plot_output_of_time!(plt_H2,t=timeVector,output=H2,element=e,units=units,YLabel="H_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_H2 = plot_output_of_time!(plt_H2,t=savedTimeVector,output=H2,element=e,units=units,YLabel="H_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"H2",figureExtension))
             end
@@ -1925,7 +1936,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # H3
         if "H" in elementalOutputs || "H3" in elementalOutputs
             H3 = [problem.compElementalStatesOverTime[t][e].H[3] for t in 1:sizeOfTime]
-            plt_H3 = plot_output_of_time!(plt_H3,t=timeVector,output=H3,element=e,units=units,YLabel="H_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_H3 = plot_output_of_time!(plt_H3,t=savedTimeVector,output=H3,element=e,units=units,YLabel="H_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"H3",figureExtension))
             end
@@ -1936,7 +1947,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # udot1
         if "udot" in elementalOutputs || "udot1" in elementalOutputs
             udot1 = [problem.elementalStatesRatesOverTime[t][e].udot[1] for t in 1:sizeOfTime]
-            plt_udot1 = plot_output_of_time!(plt_udot1,t=timeVector,output=udot1,element=e,units=units,YLabel="\\dot{u}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_udot1 = plot_output_of_time!(plt_udot1,t=savedTimeVector,output=udot1,element=e,units=units,YLabel="\\dot{u}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"udot1",figureExtension))
             end
@@ -1947,7 +1958,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # udot2
         if "udot" in elementalOutputs || "udot2" in elementalOutputs
             udot2 = [problem.elementalStatesRatesOverTime[t][e].udot[2] for t in 1:sizeOfTime]
-            plt_udot2 = plot_output_of_time!(plt_udot2,t=timeVector,output=udot2,element=e,units=units,YLabel="\\dot{u}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_udot2 = plot_output_of_time!(plt_udot2,t=savedTimeVector,output=udot2,element=e,units=units,YLabel="\\dot{u}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"udot2",figureExtension))
             end
@@ -1958,7 +1969,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # udot3
         if "udot" in elementalOutputs || "udot3" in elementalOutputs
             udot3 = [problem.elementalStatesRatesOverTime[t][e].udot[3] for t in 1:sizeOfTime]
-            plt_udot3 = plot_output_of_time!(plt_udot3,t=timeVector,output=udot3,element=e,units=units,YLabel="\\dot{u}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_udot3 = plot_output_of_time!(plt_udot3,t=savedTimeVector,output=udot3,element=e,units=units,YLabel="\\dot{u}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"udot3",figureExtension))
             end
@@ -1969,7 +1980,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # pdot1
         if "pdot" in elementalOutputs || "pdot1" in elementalOutputs
             pdot1 = [problem.elementalStatesRatesOverTime[t][e].pdot[1] for t in 1:sizeOfTime]
-            plt_pdot1 = plot_output_of_time!(plt_pdot1,t=timeVector,output=pdot1,element=e,units=units,YLabel="\\dot{p}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_pdot1 = plot_output_of_time!(plt_pdot1,t=savedTimeVector,output=pdot1,element=e,units=units,YLabel="\\dot{p}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"pdot1",figureExtension))
             end
@@ -1980,7 +1991,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # pdot2
         if "pdot" in elementalOutputs || "pdot2" in elementalOutputs
             pdot2 = [problem.elementalStatesRatesOverTime[t][e].pdot[2] for t in 1:sizeOfTime]
-            plt_pdot2 = plot_output_of_time!(plt_pdot2,t=timeVector,output=pdot2,element=e,units=units,YLabel="\\dot{p}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_pdot2 = plot_output_of_time!(plt_pdot2,t=savedTimeVector,output=pdot2,element=e,units=units,YLabel="\\dot{p}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"pdot2",figureExtension))
             end
@@ -1991,7 +2002,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # pdot3
         if "pdot" in elementalOutputs || "pdot3" in elementalOutputs
             pdot3 = [problem.elementalStatesRatesOverTime[t][e].pdot[3] for t in 1:sizeOfTime]
-            plt_pdot3 = plot_output_of_time!(plt_pdot3,t=timeVector,output=pdot3,element=e,units=units,YLabel="\\dot{p}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_pdot3 = plot_output_of_time!(plt_pdot3,t=savedTimeVector,output=pdot3,element=e,units=units,YLabel="\\dot{p}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"pdot3",figureExtension))
             end
@@ -2002,7 +2013,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Vdot1
         if "Vdot" in elementalOutputs || "Vdot1" in elementalOutputs
             Vdot1 = [problem.elementalStatesRatesOverTime[t][e].Vdot[1] for t in 1:sizeOfTime]
-            plt_Vdot1 = plot_output_of_time!(plt_Vdot1,t=timeVector,output=Vdot1,element=e,units=units,YLabel="\\dot{V}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Vdot1 = plot_output_of_time!(plt_Vdot1,t=savedTimeVector,output=Vdot1,element=e,units=units,YLabel="\\dot{V}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Vdot1",figureExtension))
             end
@@ -2013,7 +2024,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Vdot2
         if "Vdot" in elementalOutputs || "Vdot2" in elementalOutputs
             Vdot2 = [problem.elementalStatesRatesOverTime[t][e].Vdot[2] for t in 1:sizeOfTime]
-            plt_Vdot2 = plot_output_of_time!(plt_Vdot2,t=timeVector,output=Vdot2,element=e,units=units,YLabel="\\dot{V}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Vdot2 = plot_output_of_time!(plt_Vdot2,t=savedTimeVector,output=Vdot2,element=e,units=units,YLabel="\\dot{V}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Vdot2",figureExtension))
             end
@@ -2024,7 +2035,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Vdot3
         if "Vdot" in elementalOutputs || "Vdot3" in elementalOutputs
             Vdot3 = [problem.elementalStatesRatesOverTime[t][e].Vdot[3] for t in 1:sizeOfTime]
-            plt_Vdot3 = plot_output_of_time!(plt_Vdot3,t=timeVector,output=Vdot3,element=e,units=units,YLabel="\\dot{V}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Vdot3 = plot_output_of_time!(plt_Vdot3,t=savedTimeVector,output=Vdot3,element=e,units=units,YLabel="\\dot{V}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Vdot3",figureExtension))
             end
@@ -2035,7 +2046,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Ωdot1
         if "Ωdot" in elementalOutputs || "Ωdot1" in elementalOutputs
             Ωdot1 = [problem.elementalStatesRatesOverTime[t][e].Ωdot[1] for t in 1:sizeOfTime]
-            plt_Ωdot1 = plot_output_of_time!(plt_Ωdot1,t=timeVector,output=Ωdot1,element=e,units=units,YLabel="\\dot{\\Omega}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Ωdot1 = plot_output_of_time!(plt_Ωdot1,t=savedTimeVector,output=Ωdot1,element=e,units=units,YLabel="\\dot{\\Omega}_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Ωdot1",figureExtension))
             end
@@ -2046,7 +2057,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Ωdot2
         if "Ωdot" in elementalOutputs || "Ωdot2" in elementalOutputs
             Ωdot2 = [problem.elementalStatesRatesOverTime[t][e].Ωdot[2] for t in 1:sizeOfTime]
-            plt_Ωdot2 = plot_output_of_time!(plt_Ωdot2,t=timeVector,output=Ωdot2,element=e,units=units,YLabel="\\dot{\\Omega}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Ωdot2 = plot_output_of_time!(plt_Ωdot2,t=savedTimeVector,output=Ωdot2,element=e,units=units,YLabel="\\dot{\\Omega}_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Ωdot2",figureExtension))
             end
@@ -2057,7 +2068,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # Ωdot3
         if "Ωdot" in elementalOutputs || "Ωdot3" in elementalOutputs
             Ωdot3 = [problem.elementalStatesRatesOverTime[t][e].Ωdot[3] for t in 1:sizeOfTime]
-            plt_Ωdot3 = plot_output_of_time!(plt_Ωdot3,t=timeVector,output=Ωdot3,element=e,units=units,YLabel="\\dot{\\Omega}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_Ωdot3 = plot_output_of_time!(plt_Ωdot3,t=savedTimeVector,output=Ωdot3,element=e,units=units,YLabel="\\dot{\\Omega}_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"Ωdot3",figureExtension))
             end
@@ -2078,7 +2089,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         cd = cn .* sin.(αₑ) .- ct .* cos.(αₑ)
         # α
         if "α" in elementalOutputs
-            plt_α = plot_output_of_time!(plt_α,t=timeVector,output=αₑ,element=e,units=units,YLabel="\\alpha",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_α = plot_output_of_time!(plt_α,t=savedTimeVector,output=αₑ,element=e,units=units,YLabel="\\alpha",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"α",figureExtension))
             end
@@ -2088,7 +2099,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         end
         # cn
         if "cn" in elementalOutputs
-            plt_cn = plot_output_of_time!(plt_cn,t=timeVector,output=cn,element=e,units=units,YLabel="c_n",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_cn = plot_output_of_time!(plt_cn,t=savedTimeVector,output=cn,element=e,units=units,YLabel="c_n",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"cn",figureExtension))
             end
@@ -2098,7 +2109,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         end
         # cm
         if "cm" in elementalOutputs
-            plt_cm = plot_output_of_time!(plt_cm,t=timeVector,output=cm,element=e,units=units,YLabel="c_m",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_cm = plot_output_of_time!(plt_cm,t=savedTimeVector,output=cm,element=e,units=units,YLabel="c_m",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"cm",figureExtension))
             end
@@ -2108,7 +2119,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         end
         # ct
         if "ct" in elementalOutputs
-            plt_ct = plot_output_of_time!(plt_ct,t=timeVector,output=ct,element=e,units=units,YLabel="c_t",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_ct = plot_output_of_time!(plt_ct,t=savedTimeVector,output=ct,element=e,units=units,YLabel="c_t",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"ct",figureExtension))
             end
@@ -2118,7 +2129,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         end
         # cl
         if "cl" in elementalOutputs
-            plt_cl = plot_output_of_time!(plt_cl,t=timeVector,output=cl,element=e,units=units,YLabel="c_l",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_cl = plot_output_of_time!(plt_cl,t=savedTimeVector,output=cl,element=e,units=units,YLabel="c_l",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"cl",figureExtension))
             end
@@ -2128,7 +2139,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         end
         # cd
         if "cd" in elementalOutputs
-            plt_cd = plot_output_of_time!(plt_cd,t=timeVector,output=cd,element=e,units=units,YLabel="c_d",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_cd = plot_output_of_time!(plt_cd,t=savedTimeVector,output=cd,element=e,units=units,YLabel="c_d",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"cd",figureExtension))
             end
@@ -2161,7 +2172,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # u1
         if "u" in nodalOutputs || "u1" in nodalOutputs
             u1 = [getfield(problem.nodalStatesOverTime[t][e],uField)[1] for t in 1:sizeOfTime]
-            plt_u1 = plot_output_of_time!(plt_u1,t=timeVector,output=u1,node=nodeGlobalID,units=units,YLabel="u_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_u1 = plot_output_of_time!(plt_u1,t=savedTimeVector,output=u1,node=nodeGlobalID,units=units,YLabel="u_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"u1",figureExtension))
             end
@@ -2172,7 +2183,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # u2
         if "u" in nodalOutputs || "u2" in nodalOutputs
             u2 = [getfield(problem.nodalStatesOverTime[t][e],uField)[2] for t in 1:sizeOfTime]
-            plt_u2 = plot_output_of_time!(plt_u2,t=timeVector,output=u2,node=nodeGlobalID,units=units,YLabel="u_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_u2 = plot_output_of_time!(plt_u2,t=savedTimeVector,output=u2,node=nodeGlobalID,units=units,YLabel="u_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"u2",figureExtension))
             end
@@ -2183,7 +2194,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # u3
         if "u" in nodalOutputs || "u3" in nodalOutputs
             u3 = [getfield(problem.nodalStatesOverTime[t][e],uField)[3] for t in 1:sizeOfTime]
-            plt_u3 = plot_output_of_time!(plt_u3,t=timeVector,output=u3,node=nodeGlobalID,units=units,YLabel="u_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_u3 = plot_output_of_time!(plt_u3,t=savedTimeVector,output=u3,node=nodeGlobalID,units=units,YLabel="u_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"u3",figureExtension))
             end
@@ -2194,7 +2205,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # p1
         if "p" in nodalOutputs || "p1" in nodalOutputs
             p1 = [getfield(problem.nodalStatesOverTime[t][e],pField)[1] for t in 1:sizeOfTime]
-            plt_p1 = plot_output_of_time!(plt_p1,t=timeVector,output=p1,node=nodeGlobalID,units=units,YLabel="p_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_p1 = plot_output_of_time!(plt_p1,t=savedTimeVector,output=p1,node=nodeGlobalID,units=units,YLabel="p_1",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"p1",figureExtension))
             end
@@ -2205,7 +2216,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # p2
         if "p" in nodalOutputs || "p2" in nodalOutputs
             p2 = [getfield(problem.nodalStatesOverTime[t][e],pField)[2] for t in 1:sizeOfTime]
-            plt_p2 = plot_output_of_time!(plt_p2,t=timeVector,output=p2,node=nodeGlobalID,units=units,YLabel="p_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_p2 = plot_output_of_time!(plt_p2,t=savedTimeVector,output=p2,node=nodeGlobalID,units=units,YLabel="p_2",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"p2",figureExtension))
             end
@@ -2216,7 +2227,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # p3
         if "p" in nodalOutputs || "p3" in nodalOutputs
             p3 = [getfield(problem.nodalStatesOverTime[t][e],pField)[3] for t in 1:sizeOfTime]
-            plt_p3 = plot_output_of_time!(plt_p3,t=timeVector,output=u3,node=nodeGlobalID,units=units,YLabel="p_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_p3 = plot_output_of_time!(plt_p3,t=savedTimeVector,output=u3,node=nodeGlobalID,units=units,YLabel="p_3",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"p3",figureExtension))
             end
@@ -2227,7 +2238,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # F1
         if "F" in nodalOutputs || "F1" in nodalOutputs
             F1 = [getfield(problem.nodalStatesOverTime[t][e],FField)[1] for t in 1:sizeOfTime]
-            plt_F1 = plot_output_of_time!(plt_F1,t=timeVector,output=F1,node=nodeGlobalID,units=units,YLabel="F_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_F1 = plot_output_of_time!(plt_F1,t=savedTimeVector,output=F1,node=nodeGlobalID,units=units,YLabel="F_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"F1",figureExtension))
             end
@@ -2238,7 +2249,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # F2
         if "F" in nodalOutputs || "F2" in nodalOutputs
             F2 = [getfield(problem.nodalStatesOverTime[t][e],FField)[2] for t in 1:sizeOfTime]
-            plt_F2 = plot_output_of_time!(plt_F2,t=timeVector,output=F2,node=nodeGlobalID,units=units,YLabel="F_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_F2 = plot_output_of_time!(plt_F2,t=savedTimeVector,output=F2,node=nodeGlobalID,units=units,YLabel="F_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"F2",figureExtension))
             end
@@ -2249,7 +2260,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # F3
         if "F" in nodalOutputs || "F3" in nodalOutputs
             F3 = [getfield(problem.nodalStatesOverTime[t][e],FField)[3] for t in 1:sizeOfTime]
-            plt_F3 = plot_output_of_time!(plt_F3,t=timeVector,output=F3,node=nodeGlobalID,units=units,YLabel="F_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_F3 = plot_output_of_time!(plt_F3,t=savedTimeVector,output=F3,node=nodeGlobalID,units=units,YLabel="F_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"F3",figureExtension))
             end
@@ -2260,7 +2271,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # M1
         if "M" in nodalOutputs || "M1" in nodalOutputs
             M1 = [getfield(problem.nodalStatesOverTime[t][e],MField)[1] for t in 1:sizeOfTime]
-            plt_M1 = plot_output_of_time!(plt_M1,t=timeVector,output=M1,node=nodeGlobalID,units=units,YLabel="M_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_M1 = plot_output_of_time!(plt_M1,t=savedTimeVector,output=M1,node=nodeGlobalID,units=units,YLabel="M_1^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"M1",figureExtension))
             end
@@ -2271,7 +2282,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # M2
         if "M" in nodalOutputs || "M2" in nodalOutputs
             M2 = [getfield(problem.nodalStatesOverTime[t][e],MField)[2] for t in 1:sizeOfTime]
-            plt_M2 = plot_output_of_time!(plt_M2,t=timeVector,output=M2,node=nodeGlobalID,units=units,YLabel="M_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_M2 = plot_output_of_time!(plt_M2,t=savedTimeVector,output=M2,node=nodeGlobalID,units=units,YLabel="M_2^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"M2",figureExtension))
             end
@@ -2282,7 +2293,7 @@ function plot_time_outputs(problem::Problem; nodes::Vector{Tuple{Int64,Int64}}=V
         # M3
         if "M" in nodalOutputs || "M3" in nodalOutputs
             M3 = [getfield(problem.nodalStatesOverTime[t][e],MField)[3] for t in 1:sizeOfTime]
-            plt_M3 = plot_output_of_time!(plt_M3,t=timeVector,output=M3,node=nodeGlobalID,units=units,YLabel="M_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
+            plt_M3 = plot_output_of_time!(plt_M3,t=savedTimeVector,output=M3,node=nodeGlobalID,units=units,YLabel="M_3^*",lw=lw,colorScheme=colorScheme,showLegend=showLegend,legendPos=legendPos)
             if save
                 savefig(string(pwd(),saveFolder,"M3",figureExtension))
             end

@@ -291,7 +291,14 @@ function solve_linear_system!(problem::Problem)
     #---------------------------------------------------------------------------
     # Trim problem
     if problem isa TrimProblem
-        Δx .= -pinv(Matrix(jacobian))*residual
+        try
+            Δx .= -pinv(Matrix(jacobian))*residual
+        catch
+            ε = 1e-12
+            A = Matrix(jacobian)
+            Ainv = (A'A + ε*I) \ A'
+            Δx .= -Ainv*residual
+        end
     # Problem with hinge axis constraints    
     elseif hasHingeAxisConstraints
         Δx,Δλ = linear_solver_with_constraints(problem,x,jacobian,residual,hingeAxisConstraints)

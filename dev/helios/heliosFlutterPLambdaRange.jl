@@ -1,7 +1,10 @@
 using AeroBeams
 
+# Flag to save figures
+saveFigures = true
+
 # Option for reduced chord
-reducedChord = true
+reducedChord = false
 
 # Option to include beam pods
 beamPods = true
@@ -9,8 +12,11 @@ beamPods = true
 # Option to set payload on wing
 payloadOnWing = false
 
+# Circulatory indicial function
+circulatoryIndicialFunction = "Wagner"
+
 # Aerodynamic solver
-aeroSolver = Indicial()
+aeroSolver = Indicial(circulatoryIndicialFunction=circulatoryIndicialFunction)
 
 # Wing airfoil
 wingAirfoil = deepcopy(NACA23012A)
@@ -19,7 +25,7 @@ wingAirfoil = deepcopy(NACA23012A)
 λRange = [1, 1e4]
 
 # Payload range
-PRange = collect(0:10:500)
+PRange = collect(0:20:500)
 
 # Airspeed
 U = 40*0.3048
@@ -32,7 +38,16 @@ nModes = 10
 
 # System solver for trim problem
 relaxFactor = 0.5
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=100,displayStatus=false)
+maxIter = 100
+relTol = 1e-12
+absTol = 1e-12
+NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,relativeTolerance=relTol,absoluteTolerance=absTol)
+
+# Attachment springs
+μ = 1e-3
+ku = μ*[1; 1; 1]
+kp = ku
+spring = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
 
 # Initialize outputs
 trimProblem = Array{TrimProblem}(undef,length(λRange),length(PRange))
@@ -45,12 +60,6 @@ damps = Array{Vector{Float64}}(undef,length(λRange),length(PRange))
 modeFrequencies =  Array{Vector{Float64}}(undef,length(λRange),nModes)
 modeDampings = Array{Vector{Float64}}(undef,length(λRange),nModes)
 modeDampingRatios = Array{Vector{Float64}}(undef,length(λRange),nModes)
-
-# Attachment springs
-μ = 1e-2
-ku = μ*[1; 1; 1]
-kp = ku
-spring = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
 
 # Sweep stiffness factor
 for (i,λ) in enumerate(λRange)
@@ -68,7 +77,7 @@ for (i,λ) in enumerate(λRange)
         # Set initial guess solution as previous known solution
         x0Trim = (j==1) ? zeros(0) : trimProblem[i,j-1].x
         # Create and solve trim problem
-        trimProblem[i,j] = create_TrimProblem(model=heliosTrim,systemSolver=NR,x0=x0Trim)
+        trimProblem[i,j] = create_TrimProblem(model=heliosTrim,systemSolver=NRtrim,x0=x0Trim)
         solve!(trimProblem[i,j])
         # Extract trim variables
         trimAoA = trimProblem[i,j].aeroVariablesOverσ[end][midSpanElem].flowAnglesAndRates.αₑ*180/π
@@ -124,13 +133,17 @@ grad_flex = :cool
 grad_rigid = :copper
 colors_flex = cgrad(grad_flex, length(PRange), categorical=true)
 colors_rigid = cgrad(grad_rigid, length(PRange), categorical=true)
+if typeof(aeroSolver) == Indicial
+    aeroSolverLabel = "_linear"
+elseif typeof(aeroSolver) == BLi
+    aeroSolverLabel = "_ds"
+end
 
 # Root locus 
 p1 = scatter([NaN], [NaN], zcolor=[NaN], clims=(0,500), label=false, c=grad_flex, colorbar_titlefontsize=12, colorbar_title="\nPayload [lb] - Flexible", right_margin=5.5Plots.mm, xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-5,1], ylims=[0,10], tickfont=font(ts), guidefont=font(fs))
 p2 = scatter([NaN], [NaN], zcolor=[NaN], clims=(0,500), framestyle=:none, axis=false, label=false, grid=false, c=grad_rigid, colorbar_titlefontsize=12, colorbar_title="\n Payload [lb] - Rigid", right_margin=5.5Plots.mm, tickfont=font(ts))
 l = @layout [grid(1,1) a{0.01w}]
 plt_RL = plot(p1,p2,layout=l)
-display(plt_RL)
 for mode in 1:nModes
     for (j,P) in enumerate(PRange)
         scatter!([modeDampings[1,mode][j]], [modeFrequencies[1,mode][j]], c=colors_flex[j], shape=mshape[1], ms=2, msw=msw, label=false)
@@ -138,7 +151,6 @@ for mode in 1:nModes
     end
 end
 display(plt_RL)
-savefig(string(absPath,"/heliosFlutterPLambdaRange_rootlocus.pdf"))
 
 # Root locus (phugoid zoom)
 plt_RLphugoid = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-0.05,0.2], ylims=[0,0.8], tickfont=font(ts), guidefont=font(fs))
@@ -149,7 +161,6 @@ for mode in 1:nModes
     end
 end
 display(plt_RLphugoid)
-savefig(string(absPath,"/heliosFlutterPLambdaRange_phugoid.pdf"))
 
 # Root locus (zoom on low frequency modes)
 plt_RLlow = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-0.75,0.2], ylims=[0,0.8], tickfont=font(ts), guidefont=font(fs))
@@ -160,7 +171,6 @@ for mode in 1:nModes
     end
 end
 display(plt_RLlow)
-savefig(string(absPath,"/heliosFlutterPLambdaRange_low.pdf"))
 
 # Root locus (zoom on short period)
 plt_RLsp = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-5,-2.5], ylims=[2,4], tickfont=font(ts), guidefont=font(fs))
@@ -171,14 +181,20 @@ for mode in 1:nModes
     end
 end
 display(plt_RLsp)
-savefig(string(absPath,"/heliosFlutterPLambdaRange_sp.pdf"))
 
 # Mode shapes of flexible aircraft at highest payload
-modesPlot_flex = plot_mode_shapes(eigenProblem[1,end],interactive=false,ΔuDef=-eigenProblem[1,end].elementalStatesOverσ[end][15].u,scale=10,view=(30,30),legendPos=:topright,nModes=6,modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/heliosFlutterPLambdaRange_modeShapesFlex.pdf"))
+modesPlot_flex = plot_mode_shapes(eigenProblem[1,end],interactive=false,ΔuDef=-eigenProblem[1,end].elementalStatesOverσ[end][15].u,scale=10,view=(30,30),legendPos=:topright,nModes=6,modalColorScheme=:rainbow,save=saveFigures,savePath=string(relPath,"/heliosFlutterPLambdaRange_modeShapesFlex",aeroSolverLabel,".pdf"))
 display(modesPlot_flex)
 
 # Mode shapes of rigid aircraft at highest payload
-modesPlot_rigid = plot_mode_shapes(eigenProblem[2,end],interactive=false,ΔuDef=-eigenProblem[2,end].elementalStatesOverσ[end][15].u,scale=10,view=(45,15),legendPos=:topright,nModes=5,modeLabels=["Dutch roll","Phugoid","Roll","Short-period","1st OOP"],modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/heliosFlutterPLambdaRange_modeShapesRigid.pdf"))
+modesPlot_rigid = plot_mode_shapes(eigenProblem[2,end],interactive=false,ΔuDef=-eigenProblem[2,end].elementalStatesOverσ[end][15].u,scale=10,view=(45,15),legendPos=:topright,nModes=4,modeLabels=["Dutch roll","Phugoid","Roll","Short-period"],modalColorScheme=:rainbow,save=saveFigures,savePath=string(relPath,"/heliosFlutterPLambdaRange_modeShapesRigid",aeroSolverLabel,".pdf"))
 display(modesPlot_rigid)
+
+if saveFigures
+    savefig(string(absPath,"/heliosFlutterPLambdaRange_rootlocus",aeroSolverLabel,".pdf"))
+    savefig(string(absPath,"/heliosFlutterPLambdaRange_phugoid",aeroSolverLabel,".pdf"))
+    savefig(string(absPath,"/heliosFlutterPLambdaRange_low",aeroSolverLabel,".pdf"))
+    savefig(string(absPath,"/heliosFlutterPLambdaRange_sp",aeroSolverLabel,".pdf"))
+end
 
 println("Finished heliosFlutterPLambdaRange.jl")

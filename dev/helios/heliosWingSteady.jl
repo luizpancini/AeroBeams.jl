@@ -1,7 +1,7 @@
 using AeroBeams, DelimitedFiles
 
 # Airspeed range [m/s]
-URange = 0.3048*vcat(0:2:30)
+URange = 0.3048*vcat(0:2:40)
 
 # Wing airfoil
 wingAirfoil = deepcopy(NACA23012A)
@@ -15,8 +15,11 @@ beamPods = false
 # Flag to set payload on wing
 payloadOnWing = false
 
+# Circulatory indicial function
+circulatoryIndicialFunction = "Wagner"
+
 # Aerodynamic solver
-aeroSolver = BLi()
+aeroSolver = BLi(circulatoryIndicialFunction=circulatoryIndicialFunction)
 
 # Root pitch angle
 θ = 0*π/180

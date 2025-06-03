@@ -161,6 +161,8 @@ mode_tracking
 get_FFT_and_PSD
 Newton_solver
 backward_extrapolation
+count_of_exceedance
+frequency_of_exceedance
 NASA_frames_loader
 GU_frames_loader
 ```

@@ -1207,7 +1207,7 @@ Computes the FFT and PSD of signal y(t)
 # Keyword arguments
 - `tol::AbstractFloat`: tolerance for time signal being equally spaced
 """
-function get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::AbstractFloat=1e3*eps())
+function get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::AbstractFloat=1e-9)
     
     @assert length(t) > 1
     @assert maximum(abs.(diff(diff(t)))) < tol "t must be an evenly spaced vector"
@@ -1244,6 +1244,37 @@ function get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::AbstractFloat
     return f,yFFT,yPSD
 end
 export get_FFT_and_PSD
+
+
+"""
+    moving_average(v::Vector{<:Real}, n::Int)
+
+Computes the moving average of a series
+
+# Arguments
+- `v::Vector{<:Real}`: series
+- `n::Int`: moving average window size
+"""
+function moving_average(v::Vector{<:Real}, n::Int)
+
+    if n == 0
+        return v
+    end
+
+    @assert iseven(n) "n must be even"
+    @assert 2 ≤ n ≤ 10 "n must be between 2 and 10"
+
+    k = div(n, 2)
+    result = similar(v, length(v))
+
+    for i in 1:length(v)
+        start_idx = max(1, i - k + 1)
+        end_idx = min(length(v), i + k)
+        result[i] = mean(v[start_idx:end_idx])
+    end
+
+    return result
+end
 
 
 """
@@ -1349,6 +1380,79 @@ function backward_extrapolation(v::Vector{<:Real}; order::Int=5)
     return vEst
 end
 export backward_extrapolation
+
+
+"""
+    count_of_exceedance(time::Vector{<:Real}, series::Vector{<:Real}, datum::Real, marker::Vector{<:Real})
+
+Computes the count of exceedance of the quantities in the marker vector above the datum for the given time series
+
+# Keyword arguments
+- `time::Vector{<:Real}`: time vector
+- `series::Vector{<:Real}`: time series
+- `datum::Real`: datum value for the time series
+- `marker::Vector{<:Real}`: markers for the count of exceedance computation
+"""
+function count_of_exceedance(; time::Vector{<:Real}, series::Vector{<:Real}, datum::Real, marker::Vector{<:Real})
+
+    # Validate
+    @assert length(time) == length(series) "time and series vectors must be of the same length"
+    @assert issorted(marker) "Marker vector must be in ascending order"
+
+    # Initialize
+    n = length(series)
+    counts = zeros(Int, length(marker))
+    aboveDatum = series[1] > datum
+    regionStart = 1
+
+    # Sweep time 
+    for i in 2:n
+        isAbove = series[i] > datum
+        if isAbove != aboveDatum
+            region = series[regionStart:i-1]
+            if aboveDatum
+                peak = maximum(region)
+                for (j, m) in enumerate(marker)
+                    if m < peak
+                        counts[j] += 1
+                    end
+                end
+            end
+            regionStart = i
+            aboveDatum = isAbove
+        end
+    end
+
+    # Handle last region
+    region = series[regionStart:end]
+    if aboveDatum
+        peak = maximum(region)
+        for (j, m) in enumerate(marker)
+            if m < peak
+                counts[j] += 1
+            end
+        end
+    end
+
+    return counts
+end
+export count_of_exceedance
+
+
+"""
+    frequency_of_exceedance(timeLength::Real, count::Vector{<:Real})
+
+Computes the frequency of exceedance
+
+# Keyword arguments
+- `count::Vector{<:Real}`: count of exceedance
+- `timeLength::Real`: length of time
+"""
+function frequency_of_exceedance(; count::Vector{<:Real}, timeLength::Real)
+
+    return count / timeLength
+end
+export frequency_of_exceedance
 
 
 """

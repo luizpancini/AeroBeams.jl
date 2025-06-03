@@ -24,7 +24,7 @@ gustLength = U*τ
 gustWidth = 2*L
 pg = [0;-π/2;0]
 c0 = [0; U*t0; 0]
-gust = create_DiscreteSpaceGust(type="DARPA",length=gustLength,width=gustWidth,verticalVelocity=Ug,c0=c0,p=pg)
+gust = create_DiscreteSpaceGust(type="DARPA",gustLength=gustLength,gustWidth=gustWidth,verticalVelocity=Ug,c0=c0,p=pg)
 
 # Model
 PazyWingDARPAGust,nElem,_ = create_Pazy(aeroSolver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,upright=upright,θ=θ,airspeed=U,gust=gust)

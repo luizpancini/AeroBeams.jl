@@ -28,6 +28,9 @@ ct = Array{Vector{Float64}}(undef,length(frames),length(aeroSolvers))
 
 # Loop frames
 for (i,frame,airfoil,a₀,a₁,b,k,Ma,U) in zip(1:length(frames),frames,airfoil_frames,a₀_frames,a₁_frames,b_frames,k_frames,Ma_frames,U_frames)
+    # Create offset for middle pitch angle
+    Δ = airfoil.attachedFlowParameters.α₀N
+    a₀ += Δ
     # Loop aerodynamic solvers
     for (j,aeroSolver) in enumerate(aeroSolvers)
         # Display progress
@@ -51,7 +54,7 @@ for (i,frame,airfoil,a₀,a₁,b,k,Ma,U) in zip(1:length(frames),frames,airfoil_
         # Model
         model = create_Model(name="pitchingAirfoil",beams=[wing],BCs=[driver,journal],v_A=[0;U;0])
         # Time variables
-        nCycles = 3
+        nCycles = 6
         Δt = τ[i]/1000
         tf = nCycles*τ[i]
         # Initial velocities update options
@@ -62,7 +65,7 @@ for (i,frame,airfoil,a₀,a₁,b,k,Ma,U) in zip(1:length(frames),frames,airfoil_
         # Get outputs
         t[i,j] = problem[i,j].savedTimeVector
         Nt = length(t[i,j])
-        α[i,j] = [problem[i,j].aeroVariablesOverTime[k][1].flowAnglesAndRates.α for k in 1:Nt]
+        α[i,j] = [problem[i,j].aeroVariablesOverTime[k][1].flowAnglesAndRates.α-Δ for k in 1:Nt]
         cn[i,j] = [problem[i,j].aeroVariablesOverTime[k][1].aeroCoefficients.cn for k in 1:Nt]
         cm[i,j] = [problem[i,j].aeroVariablesOverTime[k][1].aeroCoefficients.cm for k in 1:Nt]
         ct[i,j] = [problem[i,j].aeroVariablesOverTime[k][1].aeroCoefficients.ct for k in 1:Nt]
@@ -91,7 +94,7 @@ fs = 16
 lw = 2
 ms = 4
 msw = 0
-labels = ["Linear" "Dynamic stall"]
+labels = ["Attached flow" "Dynamic stall"]
 
 # Set paths
 relPath = "/dev/helios/figures/heliosAirfoilLoads"
@@ -137,7 +140,7 @@ end
 # cn vs alpha - all-in-one figure
 plt_cn_all = plot(xlabel="Pitch angle [deg]", ylabel="\$c_n\$", tickfont=font(ts), guidefont=font(fs), legendfontsize=12, ylims=[-0.25,2.5], legend=:topleft)
 scatter!([NaN],[NaN], c=:black, ms=ms, msw=msw, label="Green & Giuni (2017)")
-plot!([NaN],[NaN], c=:black, lw=lw, ls=lsSolvers[1], label="Linear")
+plot!([NaN],[NaN], c=:black, lw=lw, ls=lsSolvers[1], label="Attached flow")
 plot!([NaN],[NaN], c=:black, lw=lw, ls=lsSolvers[2], label="Dynamic stall")
 for (i,frame,airfoil) in zip(eachindex(frames),frames,airfoil_frames)
     scatter!(cnRef[i][1,:], cnRef[i][2,:], c=frameColors[i], ms=ms, msw=msw, label=false)

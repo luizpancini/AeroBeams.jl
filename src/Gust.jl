@@ -32,7 +32,7 @@ Creates a sharp-edged gust
 - `initialTime::Real`: time when the gust begins
 - `duration::Real`: duration of the gust
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
-- `verticalVelocity::Real`: peak "vertical" velocity of the gust (in lift direction)
+- `verticalVelocity::Real`: peak vertical velocity of the gust (in lift direction)
 - `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
 function create_SharpEdgedGust(; initialTime::Real=0,duration::Real=Inf,convectiveVelocity::Real=0,verticalVelocity::Real,p::Vector{<:Real}=zeros(3))
@@ -90,7 +90,7 @@ Creates a one-minus-cosine gust
 - `initialTime::Real`: time when the gust begins
 - `duration::Real`: duration of the gust
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
-- `verticalVelocity::Real`: peak "vertical" velocity of the gust (in lift direction)
+- `verticalVelocity::Real`: peak vertical velocity of the gust (in lift direction)
 - `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
 function create_OneMinusCosineGust(; initialTime::Real=0,duration::Real,convectiveVelocity::Real=0,verticalVelocity::Real,p::Vector{<:Real}=zeros(3))
@@ -130,6 +130,7 @@ export create_OneMinusCosineGust
     initialTime::Real
     duration::Real
     generationDuration::Real
+    components::Vector{Int}
     L::Real
     ωmin::Real
     ωmax::Real
@@ -144,7 +145,9 @@ export create_OneMinusCosineGust
     isDefinedOverTime::Bool = true
     UGustInertial::Function
     finalTime::Real
+    U::Function
     V::Function
+    W::Function
 
 end
 
@@ -160,21 +163,23 @@ Creates a continuous 1D gust
 - `initialTime::Real`: time when the gust begins
 - `duration::Real`: duration of the gust
 - `generationDuration::Real`: duration of the gust considered for its generation
+- `components::Vector{Int}`: components of gust velocity to consider
 - `L::Real`: turbulence length scale [m]
 - `ωmin::Real`: minimum frequency of the PSD [rad/s]
 - `ωmax::Real`: maximum frequency of the PSD [rad/s]
 - `Uref::Real`: reference airspeed
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
-- `σ::Real`: turbulence intensity (RMS) of "vertical" gust velocity component
+- `σ::Real`: turbulence intensity (RMS) of gust velocity component
 - `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 - `seed::Int64`: seed for random numbers generation (reproducibility)
 - `plotPSD::Bool`: flag to plot the PSD
 """
-function create_Continuous1DGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Real=0,duration::Real,generationDuration::Real=duration,L::Real=762,ωmin::Real=0,ωmax::Real=200π,Uref::Real,convectiveVelocity::Real=0,σ::Real,p::Vector{<:Real}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
+function create_Continuous1DGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Real=0,duration::Real,generationDuration::Real=duration,components::Vector{Int}=[3],L::Real=762,ωmin::Real=0,ωmax::Real=200π,Uref::Real,convectiveVelocity::Real=0,σ::Real,p::Vector{<:Real}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
 
     # Validate
     @assert spectrum in ["vK","Dryden"]
     @assert generationMethod in ["sinusoids","whiteNoise"]
+    @assert components in [[1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
     @assert initialTime >= 0
     @assert 0 < duration <= generationDuration
     @assert L > 0
@@ -192,7 +197,7 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
     # Set random seed
     Random.seed!(seed)
 
-    # Get "vertical" velocity according to generation method
+    # Get vertical velocity according to generation method
     if generationMethod == "sinusoids"
         # Frequency resolution [rad/s]: this ensures a stable value on the RMS of the gust velocity profile
         dω = min(2π/generationDuration, (2π)^2/ωmax) 
@@ -200,44 +205,64 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
         ω = collect(ωmin:dω:ωmax)
         # Spatial frequency vector and resolution [rad/m]
         Ω = ω/Uref
-        dΩ = dω/Uref    
-        # PSD [(m/s)^2/(rad/s)]
+        dΩ = dω/Uref
+        # PSD [(m/s)^2/(rad/m)]
         if spectrum == "vK"
-            Φ = @. σ^2*L/π * ( (1+8/3*(1.339*L*Ω)^2) / (1+(1.339*L*Ω)^2)^(11/6) )
+            Φu = @. σ^2*2*L/π * 1 / ( 1+(1.339*L*Ω)^2 )^(5/6)
+            Φv = Φw = @. σ^2*L/π * ( (1+8/3*(1.339*L*Ω)^2) / (1+(1.339*L*Ω)^2)^(11/6) )
         elseif spectrum == "Dryden"
-            Φ = @. σ^2*L/π * ( (1+3*(L*Ω)^2) / (1+(L*Ω)^2)^2 )
+            Φu = @. σ^2*2*L/π * 1 / (1+(L*Ω)^2)^2
+            Φv = Φw = @. σ^2*L/π * ( (1+3*(L*Ω)^2) / (1+(L*Ω)^2)^2 )
         end
-        sqrt2dΩΦ = sqrt.(2*dΩ*Φ)
-        # Random phase vector
-        ψ = 2π*rand(length(ω))
-        # "Vertical" gust velocity over time
-        V = t -> sum( sqrt2dΩΦ .* cos.(ω*t.+ψ) )
-        # Plot PSD, if applicable
+        sqrt2dΩΦu = sqrt.(2*dΩ*Φu)
+        sqrt2dΩΦv = sqrt.(2*dΩ*Φv)
+        sqrt2dΩΦw = sqrt.(2*dΩ*Φw)
+        # Random phase vectors
+        ψu = 2π*rand(length(ω))
+        ψv = 2π*rand(length(ω))
+        ψw = 2π*rand(length(ω))
+        # Gust velocity components as functions of time
+        U = 1 in components ? t -> sum( sqrt2dΩΦu .* cos.(ω*t.+ψu) ) : t -> 0
+        V = 2 in components ? t -> sum( sqrt2dΩΦv .* cos.(ω*t.+ψv) ) : t -> 0
+        W = 3 in components ? t -> sum( sqrt2dΩΦw .* cos.(ω*t.+ψw) ) : t -> 0
+        # Plot PSD of normal component, if applicable
         if plotPSD
             Δt = π/ωmax
             time = collect(0:Δt:generationDuration-Δt)
-            f,_,yPSD = get_FFT_and_PSD(time,V.(time))
-            plt = plot(xscale=:log10,yscale=:log10,xlims=[L*Ω[2],L*Ω[end]],xlabel="Normalized frequency (\$\\Omega L\$)",ylabel="Normalized PSD")
-            scatter!(L*Ω,Φ/(σ^2*L/π),c=:green,ms=5,msw=0,label="definition")
-            plot!(L*Ω,yPSD/(2π)/(σ^2*L/(π*Uref)),c=:black,lw=2,label="generated")
+            f,_,UPSD = get_FFT_and_PSD(time,U.(time))
+            f,_,WPSD = get_FFT_and_PSD(time,W.(time))
+            plt = plot(xscale=:log10,yscale=:log10,xlims=[L*Ω[2],L*Ω[end]],xticks=[1e0,1e1,1e2,1e3,1e4,1e5,1e6],xlabel="Normalized spatial frequency (\$\\Omega L\$)",ylabel="Normalized PSD",tickfont=font(10),guidefont=font(16),legendfontsize=12)
+            scatter!(L*Ω,Φu/(σ^2*2*L/π),c=:green,ms=5,msw=0,label="Definition - \$\\Phi_u\$")
+            scatter!(L*Ω,Φw/(σ^2*L/π),c=:blue,ms=5,msw=0,label="Definition - \$\\Phi_w\$")
+            plot!(L*Ω,UPSD/(2π)/(σ^2*2*L/(π*Uref)),c=:green,lw=2,label="Generated - \$\\Phi_u\$")
+            plot!(L*Ω,WPSD/(2π)/(σ^2*L/(π*Uref)),c=:blue,lw=2,label="Generated - \$\\Phi_w\$")
             display(plt)
         end
     elseif generationMethod == "whiteNoise"
         # Time vector 
         Δt = π/ωmax
         time = collect(0:Δt:generationDuration-Δt)
-        # Gust velocity array
-        Vwn,f,Φ = stochastic_gust_velocity_from_white_noise(spectrum,time,Uref,L,σ)
-        # Mapping function
-        itp = Interpolate(time, Vwn)
-        # "Vertical" gust velocity over time
-        V = t -> itp(t)
-        # Plot PSD, if applicable
+        # Gust velocity arrays and PSDs
+        Uwn,Vwn,Wwn,f,Φu,Φv,Φw = stochastic_gust_velocity_from_white_noise(spectrum,time,Uref,L,σ)
+        # Mapping functions
+        itpU = Interpolate(time, Uwn)
+        itpV = Interpolate(time, Vwn)
+        itpW = Interpolate(time, Wwn)
+        # Gust velocity components as functions of time
+        U = 1 in components ? t -> itpU(t) : t -> 0
+        V = 2 in components ? t -> itpV(t) .+ convectiveVelocity : t -> 0
+        W = 3 in components ? t -> itpW(t) : t -> 0
+        # Plot PSD of normal gust velocity, if applicable
         if plotPSD
-            f2,_,yPSD = get_FFT_and_PSD(time,Vwn)
-            plt = plot(xscale=:log10,yscale=:log10,xlims=[f[2],f[end]],xlabel="frequency [Hz]",ylabel="Normalized PSD")
-            plot!(f2,yPSD/(σ^2*L/(π*Uref)),lw=2,label="generated")
-            plot!(f,Φ/(σ^2*L/(π*Uref)),lw=2,label="definition")
+            f2,_,UPSD = get_FFT_and_PSD(time,Uwn)
+            f2,_,WPSD = get_FFT_and_PSD(time,Wwn)
+            LΩ = 2π*f/Uref*L
+            LΩ2 = 2π*f2/Uref*L
+            plt = plot(xscale=:log10,yscale=:log10,xlims=[LΩ[2],LΩ[end]],xlabel="Normalized spatial frequency",ylabel="Normalized PSD",tickfont=font(10),guidefont=font(16),legendfontsize=12,legend=:bottomleft)
+            plot!(LΩ2,UPSD/(σ^2*L/(π*Uref)),lw=2,color=:green,label="Generated - \$\\Phi_u\$")
+            plot!(LΩ2,WPSD/(σ^2*L/(π*Uref)),lw=2,color=:blue,label="Generated - \$\\Phi_w\$")
+            scatter!(LΩ,Φu/(σ^2*L/(π*Uref)),lw=2,ms=5,msw=0,color=:green,label="Definition - \$\\Phi_u\$")
+            scatter!(LΩ,Φw/(σ^2*L/(π*Uref)),lw=2,ms=5,msw=0,color=:blue,label="Definition - \$\\Phi_w\$")
             display(plt)
         end
     end
@@ -250,9 +275,9 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
     finalTime = initialTime + duration
 
     # Set vector of gust velocity (in the inertial frame) function over time
-    UGustInertial = t -> initialTime<t<finalTime ? RT*[0; convectiveVelocity; V(t)] : zeros(3)
+    UGustInertial = t -> initialTime<t<finalTime ? RT*[U(t); V(t); W(t)] : zeros(3)
 
-    return Continuous1DGust(spectrum=spectrum,generationMethod=generationMethod,initialTime=initialTime,duration=duration,generationDuration=generationDuration,L=L,ωmin=ωmin,ωmax=ωmax,Uref=Uref,convectiveVelocity=convectiveVelocity,σ=σ,p=p,seed=seed,plotPSD=plotPSD,finalTime=finalTime,UGustInertial=UGustInertial,V=V)
+    return Continuous1DGust(spectrum=spectrum,generationMethod=generationMethod,initialTime=initialTime,duration=duration,generationDuration=generationDuration,components=components,L=L,ωmin=ωmin,ωmax=ωmax,Uref=Uref,convectiveVelocity=convectiveVelocity,σ=σ,p=p,seed=seed,plotPSD=plotPSD,finalTime=finalTime,UGustInertial=UGustInertial,U=U,V=V,W=W)
 
 end
 export create_Continuous1DGust
@@ -268,8 +293,8 @@ export create_Continuous1DGust
 
     # Primary (necessary for gust creation)
     type::String
-    length::Real
-    width::Real
+    gustLength::Real
+    gustWidth::Real
     convectiveVelocity::Real
     verticalVelocity::Real
     c0::Vector{<:Real}
@@ -289,19 +314,19 @@ Creates a discrete space gust
 
 # Keyword arguments
 - `type::String`: type of gust
-- `length::Real`: length of the gust (in longitudinal direction)
-- `width::Real`: width of the gust (in spanwise direction)
+- `gustLength::Real`: length of the gust (in longitudinal direction)
+- `gustWidth::Real`: width of the gust (in spanwise direction)
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
-- `verticalVelocity::Real`: peak "vertical" velocity of the gust (in lift direction)
+- `verticalVelocity::Real`: peak vertical velocity of the gust (in lift direction)
 - `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
 - `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
-function create_DiscreteSpaceGust(; type::String,length::Real,width::Real,convectiveVelocity::Real=0,verticalVelocity::Real,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3))
+function create_DiscreteSpaceGust(; type::String,gustLength::Real,gustWidth::Real,convectiveVelocity::Real=0,verticalVelocity::Real,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3))
 
     # Validate
     @assert type in ["SharpEdged","OneMinusCosine","DARPA"]
-    @assert length > 0
-    @assert width > 0
+    @assert gustLength > 0
+    @assert gustWidth > 0
     @assert size(c0) == (3,)
     @assert size(p) == (3,)
 
@@ -310,33 +335,33 @@ function create_DiscreteSpaceGust(; type::String,length::Real,width::Real,convec
     RT = R'
 
     # Normalized width coordinate (ranges from -1/2 to 1/2 for -width/2 <= x[1] <= width/2)
-    w = x -> (x[1]-c0[1])/width
+    w = x -> (x[1]-c0[1])/gustWidth
 
     # Normalized length coordinate (ranges from 0 to 1 for 0 <= x[2] <= length)
-    l = x -> (x[2]-c0[2])/length
+    l = x -> (x[2]-c0[2])/gustLength
 
     # Gust front longitudinal coordinate as a function of time
     c(t) = c0[2] + convectiveVelocity*t
 
     # TF function for a position vector being inside the gust at a given time
-    isInside(x,t) = -width/2 <= (x[1]-c0[1]) <= width/2 && 0 <= x[2]-c(t) <= length
+    isInside(x,t) = -gustWidth/2 <= (x[1]-c0[1]) <= gustWidth/2 && 0 <= x[2]-c(t) <= gustLength
 
     # Vector transformation from inertial to gust basis
     I2g = x -> RT * x
     
-    # Set "vertical" velocity function according to gust type
+    # Set vertical velocity function according to gust type
     if type == "SharpEdged"
-        V = x -> verticalVelocity
+        W = x -> verticalVelocity
     elseif type == "OneMinusCosine"
-        V = x -> 1/2*verticalVelocity*(1-cos(2π*l(I2g(x))))
+        W = x -> 1/2*verticalVelocity*(1-cos(2π*l(I2g(x))))
     elseif type == "DARPA"
-        V = x -> -1/2*verticalVelocity*cos(2π*w(I2g(x)))*(1-cos(2π*l(I2g(x))))
+        W = x -> -1/2*verticalVelocity*cos(2π*w(I2g(x)))*(1-cos(2π*l(I2g(x))))
     end
 
     # Set vector of gust velocity (in the inertial frame) as a function of position and time
-    UGustInertial(x,t) = isInside(I2g(x),t) ? RT*[0; convectiveVelocity; V(x)] : zeros(3)
+    UGustInertial(x,t) = isInside(I2g(x),t) ? RT*[0; convectiveVelocity; W(x)] : zeros(3)
 
-    return DiscreteSpaceGust(type=type,length=length,width=width,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,c0=c0,p=p,UGustInertial=UGustInertial)
+    return DiscreteSpaceGust(type=type,gustLength=gustLength,gustWidth=gustWidth,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,c0=c0,p=p,UGustInertial=UGustInertial)
 
 end
 export create_DiscreteSpaceGust
@@ -352,7 +377,7 @@ export create_DiscreteSpaceGust
 
     # Primary (necessary for gust creation)
     spectrum::String
-    length::Real
+    gustLength::Real
     N::Int64
     L::Real
     σ::Real
@@ -377,19 +402,20 @@ Creates a continuous 1D space gust
 
 # Keyword arguments
 - `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
-- `length::Real`: length of the gust (in longitudinal direction)
+- `gustLength::Real`: length of the gust (in longitudinal direction)
 - `N::Int64`: number of nodes for length discretization
 - `L::Real`: turbulence length scale
-- `σ::Real`: turbulence intensity (RMS) of "vertical" gust velocity component
+- `σ::Real`: turbulence intensity (RMS) of gust velocity components
 - `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
 - `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 - `seed::Int64`: seed for random numbers generation (reproducibility)
+- `plotPSD::Bool`: flag to plot the PSD
 """
-function create_Continuous1DSpaceGust(; spectrum::String,length::Real,N::Int64=1001,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int64=123456)
+function create_Continuous1DSpaceGust(; spectrum::String,gustLength::Real,N::Int64=1001,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int64=123456,plotPSD::Bool=false)
 
     # Validate
     @assert spectrum in ["vK","Dryden"]
-    @assert length > 0
+    @assert gustLength > 0
     @assert N > 0
     @assert L > 0
     @assert size(c0) == (3,)
@@ -400,7 +426,7 @@ function create_Continuous1DSpaceGust(; spectrum::String,length::Real,N::Int64=1
     RT = R'
 
     # TF function for a position vector being inside the gust
-    isInside(x) = 0 <= x[2]-c0[2] <= length
+    isInside(x) = 0 <= x[2]-c0[2] <= gustLength
 
     # Vector transformation from inertial to gust basis
     I2g = x -> RT * x
@@ -409,7 +435,7 @@ function create_Continuous1DSpaceGust(; spectrum::String,length::Real,N::Int64=1
     I2g2 = x -> I2g(x)[2]
 
     # Non-dimensional spatial frequency vector
-    LΩ = 2π*L/length * LinRange(0,div(N-1,2),N)
+    LΩ = 2π*L/gustLength * LinRange(0,div(N-1,2),N)
 
     # 1D gust PSDs
     if spectrum == "vK"
@@ -435,7 +461,7 @@ function create_Continuous1DSpaceGust(; spectrum::String,length::Real,N::Int64=1
     Vn = fft(vn) .* sqrt.(Φv)
     Wn = fft(wn) .* sqrt.(Φw)
 
-    # Gust velocity components in the time domain
+    # Gust velocity components in the spatial domain (values at the nodes)
     ug = real(ifft(Un))
     vg = real(ifft(Vn))
     wg = real(ifft(Wn))
@@ -446,7 +472,7 @@ function create_Continuous1DSpaceGust(; spectrum::String,length::Real,N::Int64=1
     wg = wg*σ/rms(wg)
 
     # Spatial coordinate 
-    X = c0[2] .+ LinRange(0,length,N)
+    X = c0[2] .+ LinRange(0,gustLength,N)
 
     # Mapping functions
     itpU = Interpolate(X, ug)
@@ -458,10 +484,22 @@ function create_Continuous1DSpaceGust(; spectrum::String,length::Real,N::Int64=1
     V = x -> itpV(I2g2(x))
     W = x -> itpW(I2g2(x))
 
+    # Plot PSD, if applicable
+    if plotPSD
+        time = collect(LinRange(0,gustLength/(2π),N))
+        Ω2,_,yPSD = get_FFT_and_PSD(time,wg,tol=1e-9)
+        yPSDSmoothed = moving_average(yPSD,10)
+        plt = plot(xscale=:log10,yscale=:log10,xlims=[LΩ[2],Inf],xticks=[1e0,1e1,1e2,1e3,1e4,1e5,1e6],xlabel="Normalized spatial frequency (\$\\Omega L\$)",ylabel="Normalized PSD",tickfont=font(10),guidefont=font(16),legendfontsize=12,legend=:bottomleft)
+        plot!(Ω2*L,yPSD/(σ^2*L/π),lw=2,label="Generated")
+        plot!(Ω2*L,yPSDSmoothed/(σ^2*L/π),lw=2,label="Generated - smoothed")
+        plot!(LΩ,Φw/(σ^2*L/π),lw=2,label="Definition")
+        display(plt)
+    end
+
     # Set vector of gust velocity (in the inertial frame) as a function of position
     UGustInertial(x,t) = isInside(I2g(x)) ? RT*[U(x); V(x); W(x)] : zeros(3)
 
-    return Continuous1DSpaceGust(spectrum=spectrum,length=length,N=N,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
+    return Continuous1DSpaceGust(spectrum=spectrum,gustLength=gustLength,N=N,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
 
 end
 export create_Continuous1DSpaceGust
@@ -477,8 +515,8 @@ export create_Continuous1DSpaceGust
 
     # Primary (necessary for gust creation)
     spectrum::String
-    length::Real
-    width::Real
+    gustLength::Real
+    gustWidth::Real
     Nx::Int64
     Ny::Int64
     L::Real
@@ -504,22 +542,22 @@ Creates a continuous 2D space gust
 
 # Keyword arguments
 - `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
-- `length::Real`: length of the gust (in longitudinal direction)
-- `width::Real`: width of the gust (in lateral direction)
+- `gustLength::Real`: length of the gust (in longitudinal direction)
+- `gustWidth::Real`: width of the gust (in lateral direction)
 - `Nx::Int64`: number of nodes for length discretization
 - `Ny::Int64`: number of nodes for width discretization
 - `L::Real`: turbulence length scale
-- `σ::Real`: turbulence intensity (RMS) of "vertical" gust velocity component
+- `σ::Real`: turbulence intensity (RMS) of gust velocity component
 - `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
 - `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 - `seed::Int64`: seed for random numbers generation (reproducibility)
 """
-function create_Continuous2DSpaceGust(; spectrum::String,length::Real,width::Real,Nx::Int64=101,Ny::Int64=101,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int64=123456)
+function create_Continuous2DSpaceGust(; spectrum::String,gustLength::Real,gustWidth::Real,Nx::Int64=101,Ny::Int64=101,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int64=123456)
 
     # Validate
     @assert spectrum in ["vK","Dryden"]
-    @assert length > 0
-    @assert width > 0
+    @assert gustLength > 0
+    @assert gustWidth > 0
     @assert Nx > 0
     @assert Ny > 0
     @assert L > 0
@@ -531,7 +569,7 @@ function create_Continuous2DSpaceGust(; spectrum::String,length::Real,width::Rea
     RT = R'
 
     # TF function for a position vector being inside the gust
-    isInside(x) = -width/2 <= x[1]-c0[1] <= width/2 && 0 <= x[2]-c0[2] <= length
+    isInside(x) = -gustWidth/2 <= x[1]-c0[1] <= gustWidth/2 && 0 <= x[2]-c0[2] <= gustLength
 
     # Vector transformation from inertial to gust basis
     I2g = x -> RT * x
@@ -547,8 +585,8 @@ function create_Continuous2DSpaceGust(; spectrum::String,length::Real,width::Rea
     end
 
     # Non-dimensional spatial frequency vectors
-    aLΩx = 2π*a*L/width * LinRange(0,div(Nx-1,2),Nx)
-    aLΩy = 2π*a*L/length * LinRange(0,div(Ny-1,2),Ny)
+    aLΩx = 2π*a*L/gustWidth * LinRange(0,div(Nx-1,2),Nx)
+    aLΩy = 2π*a*L/gustLength * LinRange(0,div(Ny-1,2),Ny)
 
     # 2D gust PSD matrices
     if spectrum == "vK"
@@ -599,8 +637,8 @@ function create_Continuous2DSpaceGust(; spectrum::String,length::Real,width::Rea
     wg = wg*σ/rms(wg)
 
     # Spatial coordinates
-    X = c0[1] .+ LinRange(0,width,Nx)
-    Y = c0[2] .+ LinRange(0,length,Ny)
+    X = c0[1] .+ LinRange(0,gustWidth,Nx)
+    Y = c0[2] .+ LinRange(0,gustLength,Ny)
 
     # Mapping functions
     itpU = Interpolate((X,Y), ug)
@@ -615,17 +653,17 @@ function create_Continuous2DSpaceGust(; spectrum::String,length::Real,width::Rea
     # Set vector of gust velocity (in the inertial frame) as a function of position
     UGustInertial(x,t) = isInside(I2g(x)) ? RT*[U(x); V(x); W(x)] : zeros(3)
 
-    return Continuous2DSpaceGust(spectrum=spectrum,length=length,width=width,Nx=Nx,Ny=Ny,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
+    return Continuous2DSpaceGust(spectrum=spectrum,gustLength=gustLength,gustWidth=gustWidth,Nx=Nx,Ny=Ny,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
 
 end
 export create_Continuous2DSpaceGust
 
 
 # Computes a stochastic gust velocity array by coloring a white noise signal with the appropriate spectrum
-function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:Real},U::Real,L::Real=762,σ::Real=1)
+function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:Real},URef::Real,L::Real=762,σ::Real=1)
 
     @assert spectrum in ["vK"]
-    @assert maximum(abs.(diff(diff(t)))) < 1e-10 "t must be an evenly spaced vector"
+    @assert maximum(abs.(diff(diff(t)))) < 1e-6 "t must be an evenly spaced vector"
     @assert L > 0
     @assert σ >= 0
 
@@ -640,29 +678,41 @@ function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:
     # Frequency vector [Hz]
     f = LinRange(0,fmax,N)
 
-    # Transfer function and power spectrum
+    # Transfer function and power spectra
     # --------------------------------------------------------------------------
     if spectrum == "vK"
         a = 1.339
-        T = a*L/U
+        T = a*L/URef
         C = σ * sqrt(T/(a*π))
-        G = @. C * ((1+2*sqrt(2/3)*1*im*f*T)/(1+1*im*f*T)^(11/6))
+        Gu = @. C * (sqrt(2)/(1+1*im*f*T)^(5/6))
+        Gvw = @. C * ((1+2*sqrt(2/3)*1*im*f*T)/(1+1*im*f*T)^(11/6))
     end
-    Φ = @. abs(G)^2
+    Φu = @. abs(Gu)^2
+    Φv = Φw = @. abs(Gvw)^2
 
     # FFT and PSD
     # --------------------------------------------------------------------------
-    # White noise signal
-    wn = randn(N)
-    # FFT of white noise
-    wnFFT = fft(wn)
-    # FFT of the gust velocity ("color" white noise with the power spectrum)
-    VFFT = @. wnFFT * sqrt(Φ)
+    # White noise signals
+    wn_u = randn(N)
+    wn_v = randn(N)
+    wn_w = randn(N)
+    # FFT of white noise signals
+    wnFFT_u = fft(wn_u)
+    wnFFT_v = fft(wn_v)
+    wnFFT_w = fft(wn_w)
+    # FFT of the gust velocity components ("color" white noise with the power spectra)
+    UFFT = @. wnFFT_u * sqrt(Φu)
+    VFFT = @. wnFFT_v * sqrt(Φv)
+    WFFT = @. wnFFT_w * sqrt(Φw)
 
-    # Gust velocity in time domain (re-scale to have the exact input RMS)
+    # Gust velocity components in time domain (re-scale to have the exact input RMS)
     # --------------------------------------------------------------------------
+    U = real(ifft(UFFT))
     V = real(ifft(VFFT))
+    W = real(ifft(WFFT))
+    U = U*σ/rms(U)
     V = V*σ/rms(V)
+    W = W*σ/rms(W)
 
-    return V,f,Φ
+    return U,V,W,f,Φu,Φv,Φw
 end

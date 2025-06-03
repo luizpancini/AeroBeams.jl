@@ -10,8 +10,8 @@
 # - `η::Real`
 # - `cd₀::Real`
 # - `cm₀::Real`
-# - `cmα::Real`
 # - `cnα::Real`
+# - `x_ac::Real`
 #
 @with_kw mutable struct AttachedFlowParameters
 
@@ -21,8 +21,8 @@
     η::Real
     cd₀::Real
     cm₀::Real
-    cmα::Real
     cnα::Real
+    x_ac::Real
 
     function AttachedFlowParameters(name::String; Re::Real=0,Ma::Real=0)
 
@@ -42,8 +42,8 @@
             ηRng =         [  1.0;   1.0]
             cd₀Rng =  1e-2*[  0.0;   0.0]
             cm₀Rng =  1e-3*[  0.0;   0.0]
-            cmαRng =       [  0.0;   0.0]
             cnαRng =  2π/β*[  1.0;   1.0]
+            x_acRng =      [ 0.25;  0.25]
         elseif name in ["NACA0012"]
             # Bound Mach and corresponding compressibility factor
             Ma = min(0.3,Ma)
@@ -56,8 +56,8 @@
             ηRng =         [0.95; 0.95;  0.95;  0.95;  0.95;  0.95; 0.95; 0.95; 0.95]
             cd₀Rng =  1e-2*[1.2;  1.2;   1.2;   0.8;   0.5;   0.5;  0.5;  0.5;  0.5]
             cm₀Rng =  1e-3*[0;    0;   -14;    -5;    -5;    -5;   -5;   -5;   -5]
-            cmαRng =       [0.0;  0.0;   0.0;   0.0;   0.0;   0.0;  0.0;  0.0;  0.0]
             cnαRng =  2π/β*[1.049; 1.049; 0.972; 0.998; 0.995; 0.980; 1.00; 1.00; 1.00]
+            x_acRng =      [ 0.25; 0.25; 0.25; 0.25; 0.25; 0.25; 0.25; 0.25; 0.25]
         elseif name in ["NACA0015","NACA0018"]
             # Bound Mach and corresponding compressibility factor
             Ma = min(0.8,Ma)
@@ -70,36 +70,36 @@
             ηRng =         [ 0.95; 0.95]
             cd₀Rng =  1e-2*[  1.0;  0.6] 
             cm₀Rng =  1e-3*[  1.0;  1.0]
-            cmαRng =       [  0.0;  0.0]
             cnαRng =  2π/β*[  1.0;  1.0]
+            x_acRng =      [ 0.25; 0.25]
         elseif name in ["VERTOL23010"]
             # Bound Mach and corresponding compressibility factor
             Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  =       [    0;  0.8]
-            α₀NRng = π/180*[  0.7;  0.7]
-            ϵₙRng =        [  0.7;  0.7]
-            ϵₘRng =        [ 0.96; 0.96]
-            ηRng =         [ 0.95; 0.95]
-            cd₀Rng =  1e-2*[  1.0;  1.0] 
-            cm₀Rng =  1e-2*[  0.0;  0.0]
-            cmαRng =       [  0.0;  0.0]
-            cnαRng =  2π/β*[  1.0;  1.0]    
+            MaRng  =        [    0;  0.8]
+            α₀NRng = -π/180*[  0.7;  0.7]
+            ϵₙRng =         [  0.7;  0.7]
+            ϵₘRng =         [ 0.96; 0.96]
+            ηRng =          [ 0.95; 0.95]
+            cd₀Rng =   1e-2*[  1.0;  1.0] 
+            cm₀Rng =   1e-2*[  0.0;  0.0]
+            cnαRng =   2π/β*[  1.0;  1.0]
+            x_acRng =       [ 0.25; 0.25]  
         elseif name in ["NACA23012A"]
             # Bound Mach and corresponding compressibility factor
             Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
-            MaRng  =       [      0;     0.8]
-            α₀NRng = π/180*[    1.2;     1.2]
-            ϵₙRng =        [    0.7;     0.7]
-            ϵₘRng =        [   0.96;    0.96]
-            ηRng =         [      1;       1]
-            cd₀Rng =  1e-2*[    0.3;     0.3] 
-            cm₀Rng =  1e-2*[    5.0;     5.0]
-            cmαRng =       [-0.0573; -0.0573]
-            cnαRng =    2π*[   1.08;    1.08]
+            MaRng  =       [     0;   0.8]
+            α₀NRng = -π/180*[   1.2;   1.2]
+            ϵₙRng =        [   0.7;   0.7]
+            ϵₘRng =        [  0.96;  0.96]
+            ηRng =         [     1;     1]
+            cd₀Rng =  1e-2*[   0.3;   0.3] 
+            cm₀Rng =  1e-2*[   5.0;   5.0]
+            cnαRng =  2π*[  1.08;  1.08]
+            x_acRng =      [ 0.259; 0.259]
         elseif name in ["HeliosWingAirfoil"]
             # Bound Mach
             Ma = min(0.8,Ma)
@@ -111,35 +111,35 @@
             ηRng =         [ 1.0; 1.0]
             cd₀Rng =  1e-2*[ 1.0; 1.0]  
             cm₀Rng =  1e-2*[ 2.5; 2.5]
-            cmαRng =       [ 0.0; 0.0]
-            cnαRng =    2π*[ 1.0; 1.0]     
+            cnαRng =    2π*[ 1.0; 1.0]
+            x_acRng =      [ 0.25;  0.25]   
         elseif name in ["HeliosPodAirfoil"]
             # Bound Mach
             Ma = min(0.8,Ma)
             # Mach-dependent parameters
-            MaRng  =       [   0; 0.8]
-            α₀NRng = π/180*[ 0.0; 0.0]
-            ϵₙRng =        [ 1.0; 1.0]
-            ϵₘRng =        [ 1.0; 1.0]
-            ηRng =         [ 1.0; 1.0]
-            cd₀Rng =  1e-2*[ 2.0; 2.0]  
-            cm₀Rng =  1e-3*[ 0.0; 0.0]
-            cmαRng =       [ 0.0; 0.0]
-            cnαRng =       [ 5.0; 5.0] 
+            MaRng  =       [   0;   0.8]
+            α₀NRng = π/180*[ 0.0;   0.0]
+            ϵₙRng =        [ 1.0;   1.0]
+            ϵₘRng =        [ 1.0;   1.0]
+            ηRng =         [ 1.0;   1.0]
+            cd₀Rng =  1e-2*[ 2.0;   2.0]  
+            cm₀Rng =  1e-3*[ 0.0;   0.0]
+            cnαRng =       [ 5.0;   5.0]
+            x_acRng =      [ 0.25; 0.25]
         elseif name in ["BWBAirfoil"] 
             # Bound Mach and corresponding compressibility factor
             Ma = min(0.8,Ma)
             β = sqrt(1-Ma^2)    
             # Mach-dependent parameters
-            MaRng  =       [   0; 0.8]
-            α₀NRng = π/180*[ 0.0; 0.0]
-            ϵₙRng =        [ 1.0; 1.0]
-            ϵₘRng =        [ 1.0; 1.0]
-            ηRng =         [ 1.0; 1.0]
-            cd₀Rng =  1e-2*[ 1.0; 1.0]
-            cm₀Rng =  1e-1*[ 1.0; 1.0]
-            cmαRng =       [ 0.0; 0.0]
-            cnαRng =  2π/β*[ 1.0; 1.0]
+            MaRng  =       [   0;   0.8]
+            α₀NRng = π/180*[ 0.0;   0.0]
+            ϵₙRng =        [ 1.0;   1.0]
+            ϵₘRng =        [ 1.0;   1.0]
+            ηRng =         [ 1.0;   1.0]
+            cd₀Rng =  1e-2*[ 1.0;   1.0]
+            cm₀Rng =  1e-1*[ 1.0;   1.0]
+            cnαRng =  2π/β*[ 1.0;   1.0]
+            x_acRng =      [ 0.25; 0.25]
         else
             error("Airfoil not listed")
         end
@@ -151,10 +151,10 @@
         η   = LinearInterpolations.interpolate(MaRng,ηRng,Ma)
         cd₀ = LinearInterpolations.interpolate(MaRng,cd₀Rng,Ma)
         cm₀ = LinearInterpolations.interpolate(MaRng,cm₀Rng,Ma)
-        cmα = LinearInterpolations.interpolate(MaRng,cmαRng,Ma)
         cnα = LinearInterpolations.interpolate(MaRng,cnαRng,Ma)
+        x_ac = LinearInterpolations.interpolate(MaRng,x_acRng,Ma)
 
-        return new(α₀N,ϵₙ,ϵₘ,η,cd₀,cm₀,cmα,cnα)
+        return new(α₀N,ϵₙ,ϵₘ,η,cd₀,cm₀,cnα,x_ac)
     end
 
 end
@@ -444,7 +444,7 @@ end
             β = sqrt(1-Ma^2)
             # Mach-dependent parameters
             MaRng  =       [0.078;   0.117;   0.155]
-            α₀NRng =     π/180*[0.6;     0.6;     0.5]    
+            α₀NRng =     -π/180*[0.0;     0.0;     0.0]    
             αds₀Rng =    π/180*[16.4;    18.8;    19.3]   
             αₛₛRng =     π/180*[14.0;    15.1;    14.9]   
             α1₀NRng =    π/180*[14.3;    15.1;    14.8]
@@ -628,12 +628,12 @@ end
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
             MaRng  =       [  0.001;     0.3]
-            α₀NRng =     π/180*[1.2;      1.2]
+            α₀NRng =     -π/180*[1.2;      1.2]
             αds₀Rng =    π/180*[17.7;     17.7]   
             αₛₛRng =     π/180*[14.4;     14.4]   
             α1₀NRng =    π/180*[14.4;     14.4]
             α1₀MRng =    π/180*[13.7;     13.7]
-            α1₀TRng =    π/180*[14.1;     14.1]
+            α1₀TRng =    π/180*[15.5;     15.5]
             βσ1NRng =          [0.17;     0.17]
             βσ1TRng =          [0.29;     0.29]        
             βσ2NRng =          [2.47;     2.47]         
@@ -675,7 +675,7 @@ end
             ζₐRng =              [0.20;     0.20]
             cd₀Rng =                [0.003;    0.003]  
             cm₀Rng =                [0.050;    0.050]
-            cnαRng =      2π/β*[1.08;     1.08]  
+            cnαRng =      2π*[1.08;     1.08]  
             dtRng =         π/180*[1.8;      1.8]    
             dmRng =         π/180*[-1.9;     -1.9] 
             E₀Rng =                  [1.76;     1.76]  
@@ -688,11 +688,11 @@ end
             fbTRng =                [0.80;     0.80]
             gᵥRng =                 [0.18;     0.18] 
             gᵥ₂Rng =                [-0.48;    -0.48]
-            K₀Rng =                  [-0.0083;   -0.0083]  
+            K₀Rng =                  [-0.009;   -0.009]  
             K₁Rng =                  [-0.171;    -0.171] 
             K₂Rng =                  [0.015;    0.015]   
             r₀Rng =             1e-2*[1.62;     1.62]  
-            S1NRng =         π/180*[2.50;     2.50]
+            S1NRng =         π/180*[1.5;     1.5]
             S1MRng =         π/180*[1.89;     1.89]
             S1TRng =         π/180*[1.27;     1.27]
             S2NRng =         π/180*[2.05;     2.05]
@@ -712,15 +712,107 @@ end
             ztuRng =               [0.10;     0.10]
             zmRng =                [1.72;     1.72]
             # Fixed parameters
-            γbC = [1.5; 1.0]
+            γbC = [1.0; 1.0]
             γbCMat = Diagonal(γbC)
+        elseif name in ["HeliosPodAirfoil"]
+            # Bound Mach and corresponding compressibility factor
+            Ma = max(0.001,min(0.3,Ma))
+            β = sqrt(1-Ma^2) 
+            # Mach-dependent parameters
+            MaRng  =       [  0.001;     0.3]
+            α₀NRng =     π/180*[0.0;     0.0]
+            αds₀Rng =   π/180*[30.0;    30.0]   
+            αₛₛRng =     π/180*[25.0;    25.0]   
+            α1₀NRng =   π/180*[25.0;    25.0]
+            α1₀MRng =   π/180*[25.0;    25.0]
+            α1₀TRng =   π/180*[25.0;    25.0]
+            βσ1NRng =         [ 0.0;     0.0]
+            βσ1TRng =         [ 0.0;     0.0]        
+            βσ2NRng =         [ 0.0;     0.0]         
+            βS2NlprRng =      [ 0.0;     0.0]   
+            βS2TlprRng =      [ 0.0;     0.0]    
+            βS1NuRng =        [ 0.0;     0.0]       
+            βS1MuRng =        [ 0.0;     0.0]        
+            βS1TuRng =        [ 0.0;     0.0]       
+            βS1NdRng =        [ 0.0;     0.0]           
+            βS1MdRng =        [ 0.0;     0.0]      
+            βS1TdRng =        [ 0.0;     0.0]
+            βS2NuRng =        [ 0.0;     0.0]         
+            βS2MuRng =        [ 0.0;     0.0]          
+            βS2TuRng =        [ 0.0;     0.0]                 
+            βS2NdRng =        [ 0.0;     0.0]          
+            βS2MdRng =        [ 0.0;     0.0]         
+            βS2TdRng =        [ 0.0;     0.0]       
+            γLSRng =          [ 1.0;     1.0]
+            δα₀Rng=      π/180*[0.0;     0.0]    
+            δα₁Rng=      π/180*[0.0;     0.0]     
+            ϵₙRng =           [0.70;    0.70]  
+            ϵₘRng =           [0.96;    0.96]   
+            ηRng =             [0.0;     0.0] 
+            κ₀Rng =            [2.0;     2.0]
+            κ₁Rng =             [0.0;     0.0]
+            κ₂Rng =             [0.0;     0.0]
+            κ₃Rng =             [0.0;     0.0]
+            λ₁Rng =            [0.0;     0.0]
+            λ₂Rng =            [1.0;     1.0]
+            μv₂Rng =               [0.0;     0.0]
+            ν₁Rng =                [0.0;     0.0]    
+            ν₂Rng =                [0.0;     0.0]
+            ν₃Rng =                [0.0;     0.0]
+            ν₄Rng =                [1.0;     1.0]
+            ν₅Rng =                [1.0;     1.0]
+            χuRng =               [0.0;     0.0]
+            χdRng =               [0.0;     0.0]
+            ξRng =                [0.0;     0.0]
+            ζₐRng =              [0.0;     0.0]
+            cd₀Rng =                [0.02;     0.02]  
+            cm₀Rng =                [0.0;     0.0]
+            cnαRng =      [5.0;     5.0]  
+            dtRng =         π/180*[0.0;     0.0]    
+            dmRng =         π/180*[0.0;     0.0] 
+            E₀Rng =                  [0.0;     0.0]  
+            E₁Rng =                  [0.0;     0.0]
+            f₀NRng =                [0.0;     0.0]
+            f₀MRng =                [0.0;     0.0]
+            f₀TRng =                [0.0;     0.0]
+            fbNRng =                [0.70;     0.70]
+            fbMRng =                [0.70;     0.70]
+            fbTRng =                [0.70;     0.70]
+            gᵥRng =                 [0.0;     0.0] 
+            gᵥ₂Rng =                [0.0;     0.0]
+            K₀Rng =                  [0.0;     0.0]  
+            K₁Rng =                  [0.0;     0.0] 
+            K₂Rng =                  [0.0;     0.0]   
+            r₀Rng =             1e-2*[1.0;     1.0]  
+            S1NRng =         π/180*[2.0;     2.0]
+            S1MRng =         π/180*[2.0;     2.0]
+            S1TRng =         π/180*[2.0;     2.0]
+            S2NRng =         π/180*[2.0;     2.0]
+            S2MRng =         π/180*[2.0;     2.0]
+            S2TRng =         π/180*[2.0;     2.0]
+            TaRng =                  [4.0;     4.0]    
+            TfRng =                  [3.0;     3.0]
+            TgRng =         5*TaRng    
+            TvRng =                  [4.0;     4.0] 
+            Tv₂Rng =                 [4.0;     4.0]
+            VmRng =                  [0.4;     0.4]
+            VtRng =                  [0.0;     0.0]
+            Vn₁Rng =                 [0.5;     0.5]   
+            Vn₂Rng =                 [0.0;     0.0]
+            Vn₃Rng =                 [0.0;     0.0]
+            ztdRng =               [1.0;     1.0]
+            ztuRng =               [0.0;     0.0]
+            zmRng =                [1.0;     1.0]
+            # Fixed parameters
+            γbC = [1.0; 1.0]
+            γbCMat = Diagonal(γbC)    
         elseif name in ["VERTOL23010"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.2,min(0.6,Ma))
             β = sqrt(1-Ma^2)
             # Mach-dependent parameters
             MaRng  =       [0.2;   0.4;   0.6]
-            α₀NRng =     π/180*[0.7;     0.7;      0.7]    
+            α₀NRng =     -π/180*[0.7;     0.7;      0.7]    
             αds₀Rng =    π/180*[20.0;    17.0;     20.0]   
             αₛₛRng =     π/180*[14.5;    13.5;     17.0]   
             α1₀NRng =    π/180*[14.5;    14.0;     8.0]
@@ -806,7 +898,7 @@ end
             # Fixed parameters
             γbC = [2.5; 0.8]
             γbCMat = Diagonal(γbC)
-        elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
+        elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.8,Ma))
             β = sqrt(1-Ma^2) 
@@ -901,6 +993,13 @@ end
         else
             error("Airfoil not listed")
         end
+
+        # Set effective angles
+        αds₀Rng += α₀NRng   
+        αₛₛRng += α₀NRng   
+        α1₀NRng += α₀NRng
+        α1₀MRng += α₀NRng
+        α1₀TRng += α₀NRng
 
         # Interpolated values
         α₀N = LinearInterpolations.interpolate(MaRng,α₀NRng,Ma)
@@ -1105,21 +1204,21 @@ end
             β = sqrt(1-Ma^2) 
             # Mach-dependent parameters
             MaRng  = [0.001; 0.3]
-            α₀NRng = π/180*[1.2; 1.2]
-            α1₀Rng = π/180*[14.4; 14.4]
-            δαRng = π/180*[0.0; 0.0]
-            ϵₙRng = [0.70; 0.70] 
+            α₀NRng = -π/180*[1.2; 1.2]
+            α1₀Rng = π/180*[13.5; 13.5]
+            δαRng = π/180*[1.0; 1.0]
+            ϵₙRng = [0.70; 0.70]
             ϵₘRng = [0.96; 0.96]
             cd₀Rng = [0.003; 0.003]
             cm₀Rng = [0.05; 0.05]
-            ηRng = [0.95; 0.95]
+            ηRng = [1.0; 1.0]
             cn₁Rng = [1.25; 1.85]
-            cnαRng = 2π/β*[1.0; 1.0]
+            cnαRng = 2π*[1.08; 1.08]
             DfRng = [8.0; 8.0]
-            E₀Rng = [0.0; 0.0]
+            E₀Rng = [0.05; 0.05]
             f₀Rng = [0.02; 0.02]
             fbRng = [0.70; 0.70]
-            K₀Rng = [-0.01; -0.01]
+            K₀Rng = [-0.009; -0.009]
             K₁Rng = [-0.17; -0.17]
             K₂Rng = [0.015; 0.015]
             S1Rng = π/180*[2.5; 2.5]
@@ -1129,9 +1228,41 @@ end
             Tv₀Rng = [5.0; 5.0]
             TvLRng = [5.0; 5.0]
             # Fixed parameters
-            γbC = [1.5; 1.0]
+            γbC = [1.0; 1.0]
             γbCMat = Diagonal(γbC)
-        elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","VERTOL23010","HeliosWingAirfoil","HeliosPodAirfoil","BWBAirfoil"]
+        elseif name in ["HeliosPodAirfoil"]
+            # Bound Mach and corresponding compressibility factor
+            Ma = max(0.001,min(0.8,Ma))
+            β = sqrt(1-Ma^2) 
+            # Mach-dependent parameters
+            MaRng  = [0.001; 0.8]
+            α₀NRng = π/180*[0.0; 0.0]
+            α1₀Rng = π/180*[25.0; 25.0]
+            δαRng = π/180*[0.0; 0.0]
+            ϵₙRng = [0.70; 0.70] 
+            ϵₘRng = [0.96; 0.96]
+            cd₀Rng = [0.02; 0.02]
+            cm₀Rng = [0.0; 0.0]
+            ηRng = [1.0; 1.0]
+            cn₁Rng = [2.0; 2.0]
+            cnαRng = [5.0; 5.0]
+            DfRng = [8.0; 8.0]
+            E₀Rng = [0.0; 0.0]
+            f₀Rng = [0.02; 0.02]
+            fbRng = [0.70; 0.70]
+            K₀Rng = [0.0; 0.0]
+            K₁Rng = [0.0; 0.0]
+            K₂Rng = [0.0; 0.0]
+            S1Rng = π/180*[2.0; 2.0]
+            S2Rng = π/180*[2.0; 2.0]
+            Tf₀Rng = [3.0; 3.0]
+            TpRng = [1.7; 1.7]
+            Tv₀Rng = [6.0; 6.0]
+            TvLRng = [5.0; 5.0]
+            # Fixed parameters
+            γbC = [1.0; 1.0]
+            γbCMat = Diagonal(γbC)    
+        elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","VERTOL23010","HeliosWingAirfoil","BWBAirfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.8,Ma))
             β = sqrt(1-Ma^2) 
@@ -1166,6 +1297,9 @@ end
         else
             error("Airfoil not listed")
         end
+
+        # Set effective angles
+        α1₀Rng += α₀NRng
 
         # Interpolated values
         α₀N = LinearInterpolations.interpolate(MaRng,α₀NRng,Ma)
