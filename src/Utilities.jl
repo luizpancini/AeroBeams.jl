@@ -1275,7 +1275,7 @@ function moving_average(v::Vector{<:Real}, n::Int)
 
     return result
 end
-
+export moving_average
 
 """
     Newton_solver(f::Function, x0::AbstractArray; absTol::Real=1e-9, relTol::Real=1e-9, maxIter::Int=50)

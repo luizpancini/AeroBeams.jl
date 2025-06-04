@@ -159,19 +159,19 @@ ENV["GKSwstype"] = "100" #hide
 nothing #hide
 
 # Root AoA
-plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=[URange[1],URange[end]])
+plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=[0,160], xticks=vcat(0:20:160))
 plot!(URange, trimAoA*180/π, c=:black, lw=2, label="AeroBeams")
 scatter!(trimAoARef[1,:],trimAoARef[2,:], c=:black, ms=4, label="UM/NAST")
 savefig("BWBflutter_AoA.svg") #hide
 
 # Thrust
-plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[URange[1],URange[end]], legend=:bottomright)
+plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[0,160], xticks=vcat(0:20:160), legend=:bottomright)
 plot!(URange, trimThrust, c=:black, lw=2, label="AeroBeams")
 scatter!(trimThrustRef[1,:],trimThrustRef[2,:], c=:black, ms=4, label="UM/NAST")
 savefig("BWBflutter_thrust.svg") #hide
 
 # Elevator deflection
-plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Trim elevator deflection [deg]", xlims=[URange[1],URange[end]], legend=:bottomright)
+plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Trim elevator deflection [deg]", xlims=[0,160], xticks=vcat(0:20:160), legend=:bottomright)
 plot!(URange, trimδ*180/π, c=:black, lw=2, label="AeroBeams")
 scatter!(trimδRef[1,:],trimδRef[2,:], c=:black, ms=4, label="UM/NAST")
 savefig("BWBflutter_delta.svg") #hide
@@ -189,7 +189,7 @@ The stability results can be visualized through the following root locus and V-g
 modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 
 # Root locus
-plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-20,5],ylims=[0,120])
+plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-25,5],ylims=[0,120])
 scatter!([NaN],[NaN], c=:black, shape=:circle, ms=4, msw=0, label="AeroBeams")
 scatter!([NaN],[NaN], c=:black, shape=:utriangle, ms=4, msw=0, label="UM/NAST")
 for mode in 1:nModes
@@ -199,11 +199,11 @@ end
 savefig("BWBflutter_rootlocus.svg") #hide
 
 # V-g-f
-plt51 = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=[0,120])
+plt51 = plot(ylabel="Frequency [rad/s]", xlims=[0,160], xticks=vcat(0:20:160), ylims=[0,120])
 for mode in 1:nModes
 scatter!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
 end
-plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[URange[1],URange[end]], ylims=[-10,5])
+plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[0,160], xticks=vcat(0:20:160), ylims=[-10,5])
 for mode in 1:nModes
 scatter!(URange, modeDampings[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0,label=false)
 end

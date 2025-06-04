@@ -193,7 +193,7 @@ function aero_loads_resultants!(model::Model,element::Element)
     ϕ(n,ζ) = ifelse.(n==1, 1-ζ, ζ)
 
     # Flag for CI: has problems with quadgk() and ForwardDiff
-    inCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
+    # inCI = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
 
     # Loop over nodes - Set aerodynamic loads array, resolved in basis W
     F = zeros(promote_type(typeof(Uᵢ),typeof(Uᵢdot)), 12)
@@ -201,15 +201,15 @@ function aero_loads_resultants!(model::Model,element::Element)
         # Nodal loads array: perform integration only if tip correction is present, otherwise split equally among nodes
         if hasTipCorrection
             integrand(ζ) = f(ζ) .* ϕ(node,ζ)
-            if inCI
+            # if inCI
                 F[6*node-4:6*node-2] = gauss_legendre7(integrand, 0, 1)
-            else
-                try
-                    F[6*node-4:6*node-2], = quadgk(integrand, 0, 1)
-                catch
-                    F[6*node-4:6*node-2] = gauss_legendre7(integrand, 0, 1)
-                end
-            end
+            # else
+            #     try
+            #         F[6*node-4:6*node-2], = quadgk(integrand, 0, 1)
+            #     catch
+            #         F[6*node-4:6*node-2] = gauss_legendre7(integrand, 0, 1)
+            #     end
+            # end
         else
             F[6*node-4:6*node-2] = f(1/2)/2
         end
