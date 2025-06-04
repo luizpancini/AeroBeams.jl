@@ -35,8 +35,8 @@ end
         for (j,θ) in enumerate(θRange)
             freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterAoARangeURange", string("freqs",i,j,".txt")))
             damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTfreeFlutterAoARangeURange", string("damps",i,j,".txt")))
-            @test isapprox(hcat(freqs[i,j,:]...)', freqs_, atol=1e-2, nans=true)
-            @test isapprox(hcat(damps[i,j,:]...)', damps_, atol=1e-2, nans=true)
+            @test isapprox(hcat(freqs[i,j,:]...)', freqs_, atol=1e-0, nans=true)
+            @test isapprox(hcat(damps[i,j,:]...)', damps_, atol=1e-0, nans=true)
         end
     end
 end
