@@ -134,19 +134,19 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md nothing #hide
 
 ## Root AoA
-#md plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=[0,160], xticks=vcat(0:20:160))
+#md plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=[0,160], xticks=vcat(30:10:160))
 #md plot!(URange, trimAoA*180/π, c=:black, lw=2, label="AeroBeams")
 #md scatter!(trimAoARef[1,:],trimAoARef[2,:], c=:black, ms=4, label="UM/NAST")
 #md savefig("BWBflutter_AoA.svg") #hide
 
 ## Thrust
-#md plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[0,160], xticks=vcat(0:20:160), legend=:bottomright)
+#md plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Trim thrust [N]", xlims=[30,160], xticks=vcat(0:10:160), legend=:bottomright)
 #md plot!(URange, trimThrust, c=:black, lw=2, label="AeroBeams")
 #md scatter!(trimThrustRef[1,:],trimThrustRef[2,:], c=:black, ms=4, label="UM/NAST")
 #md savefig("BWBflutter_thrust.svg") #hide
 
 ## Elevator deflection
-#md plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Trim elevator deflection [deg]", xlims=[0,160], xticks=vcat(0:20:160), legend=:bottomright)
+#md plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Trim elevator deflection [deg]", xlims=[30,160], xticks=vcat(0:10:160), legend=:bottomright)
 #md plot!(URange, trimδ*180/π, c=:black, lw=2, label="AeroBeams")
 #md scatter!(trimδRef[1,:],trimδRef[2,:], c=:black, ms=4, label="UM/NAST")
 #md savefig("BWBflutter_delta.svg") #hide
@@ -161,7 +161,7 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 
 ## Root locus
-#md plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-25,5],ylims=[0,120])
+#md plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-30,5],ylims=[0,130])
 #md scatter!([NaN],[NaN], c=:black, shape=:circle, ms=4, msw=0, label="AeroBeams")
 #md scatter!([NaN],[NaN], c=:black, shape=:utriangle, ms=4, msw=0, label="UM/NAST")
 #md for mode in 1:nModes
@@ -171,11 +171,11 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md savefig("BWBflutter_rootlocus.svg") #hide
 
 ## V-g-f
-#md plt51 = plot(ylabel="Frequency [rad/s]", xlims=[0,160], xticks=vcat(0:20:160), ylims=[0,120])
+#md plt51 = plot(ylabel="Frequency [rad/s]", xlims=[30,160], xticks=vcat(0:10:160), ylims=[0,130])
 #md for mode in 1:nModes
 #md scatter!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
 #md end
-#md plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[0,160], xticks=vcat(0:20:160), ylims=[-10,5])
+#md plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[30,160], xticks=vcat(0:10:160), ylims=[-10,5])
 #md for mode in 1:nModes
 #md scatter!(URange, modeDampings[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0,label=false)
 #md end
