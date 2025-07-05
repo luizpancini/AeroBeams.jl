@@ -10,8 +10,9 @@ surf = create_AeroSurface(airfoil=airfoil,c=chord,normSparPos=normSparPos)
 L = 1
 EIy = 1
 nElem = 20
-midElem = div(nElem,2)
-hingedNode = midElem+1
+hingeElemNorm = 3/4
+hingeElem = floor(Int,hingeElemNorm*nElem)
+hingedNode = hingeElem+1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingedNode],hingedNodesDoF=[[true,true,true]],aeroSurface=surf)
 
 # Hinge flare angle and local axis
@@ -26,13 +27,13 @@ hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,b
 
 # Spring
 kSpring = 1e-4
-spring = create_Spring(elementsIDs=[midElem,midElem+1],nodesSides=[1,2],kp=[0,kSpring,0])
+spring = create_Spring(elementsIDs=[hingeElem,hingeElem+1],nodesSides=[1,2],kp=[0,kSpring,0])
 add_spring_to_beams!(beams=[beam,beam],spring=spring)
 
 # BCs
 qᵢ = -10e0
 q₀ = -1e-0
-q = (x1,t) -> ifelse.(x1.<L/2,qᵢ,0) .+ ifelse.(x1.>=L/2,q₀,0)
+q = (x1,t) -> ifelse.(x1.<L*hingeElemNorm,qᵢ,0) .+ ifelse.(x1.>=L*hingeElemNorm,q₀,0)
 add_loads_to_beam!(beam,loadTypes=["f_A_of_x1t"],loadFuns=[(x1,t)->[0; 0; q(x1,t)]])
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 
@@ -40,10 +41,11 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 coastingFoldingWingtip = create_Model(name="coastingFoldingWingtip",beams=[beam],BCs=[clamp],hingeAxisConstraints=[hingeAxisConstraint])
 
 # System solver
-σ0 = 0.1
+σ0 = 1
 maxIter = 100
+desIter = 50
 relTol = 1e-8
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
+NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,desiredIterations=desIter,relativeTolerance=relTol)
 
 # Create and solve problem
 problem = create_SteadyProblem(model=coastingFoldingWingtip,systemSolver=NR)
