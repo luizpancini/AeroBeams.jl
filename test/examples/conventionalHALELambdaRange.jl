@@ -74,7 +74,7 @@ for (i,λ) in enumerate(λRange)
     conventionalHALEeigen.skipValidationMotionBasisA = true
     update_model!(conventionalHALEeigen)
     # Create and solve eigen problem
-    eigenProblem[i] = create_EigenProblem(model=conventionalHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    eigenProblem[i] = create_EigenProblem(model=conventionalHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem[i].frequenciesOscillatory

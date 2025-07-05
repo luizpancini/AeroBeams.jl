@@ -421,9 +421,9 @@ function assemble_model!(model::Model)
         # Update nodal coordinates
         for element in elements
             # Reset element's variables in the assembly
-            element.r_n1 = position_vector_from_curvature(beam.R0,beam.k,element.x1_n1)
-            element.r_n2 = position_vector_from_curvature(beam.R0,beam.k,element.x1_n2)
-            element.r = position_vector_from_curvature(beam.R0,beam.k,element.x1)
+            element.r_n1 = position_vector_from_curvature(beam.R0,element.k,element.x1_n1)
+            element.r_n2 = position_vector_from_curvature(beam.R0,element.k,element.x1_n2)
+            element.r = position_vector_from_curvature(beam.R0,element.k,element.x1)
             # Add the initial position of the beam to element's nodal and midpoint coordinates
             element.r_n1 .+= beam.initialPosition 
             element.r_n2 .+= beam.initialPosition 

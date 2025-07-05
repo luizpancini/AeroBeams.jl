@@ -62,7 +62,7 @@ for (i,U) in enumerate(URange)
     # Set initial solution as trim solution
     x0Eigen = trimProblem.x[1:end-2]
     # Create and solve eigen problem
-    global eigenProblem = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-2],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    global eigenProblem = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory

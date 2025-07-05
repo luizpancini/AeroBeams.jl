@@ -43,7 +43,7 @@ display(plt3)
 savefig(string(absPath,"/BWBflutter_delta.pdf"))
 
 # Root locus
-plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-35,5],ylims=[0,120], tickfont=font(ts), guidefont=font(fs), legend_position=(0.2,0.5), legendfontsize=10)
+plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-35,5],ylims=[0,125], tickfont=font(ts), guidefont=font(fs), legend_position=(0.2,0.5), legendfontsize=10)
 scatter!([NaN],[NaN], c=:black, shape=:circle, ms=ms, msw=msw, label="AeroBeams")
 scatter!([NaN],[NaN], c=:black, shape=:utriangle, ms=ms, msw=msw, label="UM/NAST")
 for mode in 1:nModes
@@ -54,13 +54,13 @@ display(plt4)
 savefig(string(absPath,"/BWBflutter_rootlocus.pdf"))
 
 # V-g-f
-plt51 = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=[0,120], tickfont=font(ts), guidefont=font(12), xticks=30:10:160)
+plt51 = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=[0,125], tickfont=font(ts), guidefont=font(12), xticks=30:10:160)
 for mode in 1:nModes
-    scatter!(URange, modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=msw,  label=false)
+    plot!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
 end
-plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping ratio", xlims=[URange[1],URange[end]], ylims=[-0.3,0.1], tickfont=font(ts), guidefont=font(12), xticks=30:10:160)
+plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping ratio", xlims=[URange[1],URange[end]], ylims=[-0.3,0.2], tickfont=font(ts), guidefont=font(12), xticks=30:10:160, yticks=-0.3:0.1:0.2)
 for mode in 1:nModes
-    scatter!(URange, modeDampings[mode]./modeFrequencies[mode], c=modeColors[mode], ms=ms, msw=msw, label=false)
+    plot!(URange, modeDampings[mode]./modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
 end
 plt5 = plot(plt51,plt52, layout=(2,1))
 display(plt5)

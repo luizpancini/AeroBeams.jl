@@ -78,7 +78,7 @@ for (i,λ) in enumerate(λRange)
         heliosEigen.skipValidationMotionBasisA = true
         update_model!(heliosEigen)
         # Create and solve eigen problem
-        eigenProblem[i,j] = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-2],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+        eigenProblem[i,j] = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],refTrimProblem=trimProblem)
         solve_eigen!(eigenProblem[i,j])
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory

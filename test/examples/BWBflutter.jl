@@ -63,12 +63,6 @@ for (i,U) in enumerate(URange)
     ## The first step of the solution is to trim the aircraft at that flight condition (combination of altitude and airspeed). We leverage the built-in function in AeroBeams to create our model for the trim problem.
     BWBtrim = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
 
-    ## Next, we add the springs to model, and update it (while also skipping the validation of the specified motion of body-attached basis A).
-    add_springs_to_beam!(beam=BWBtrim.beams[2],springs=[spring1])
-    add_springs_to_beam!(beam=BWBtrim.beams[3],springs=[spring2])
-    BWBtrim.skipValidationMotionBasisA = true
-    update_model!(BWBtrim)
-
     ## Now we create and solve the trim problem.
     global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR)
     solve!(trimProblem)
@@ -79,11 +73,28 @@ for (i,U) in enumerate(URange)
     trimδ[i] = trimProblem.x[end]
     println("Trim AoA = $(trimAoA[i]*180/π), trim thrust = $(trimThrust[i]), trim δ = $(trimδ[i]*180/π)") #src
 
-    ## All the variables needed for the stability analysis are now in place. We create the model for the eigenproblem, using the trim variables found previously in order to solve for the stability around that exact state. 
-    BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδ[i],thrust=trimThrust[i])
+    ## Now let's create a new model, add springs to it, and update
+    BWBtrimSpringed = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
+    add_springs_to_beam!(beam=BWBtrimSpringed.beams[2],springs=[spring1])
+    add_springs_to_beam!(beam=BWBtrimSpringed.beams[3],springs=[spring2])
+    BWBtrimSpringed.skipValidationMotionBasisA = true
+    update_model!(BWBtrimSpringed)
 
-    ## Now we create and solve the eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, making use of the known trim solution (composed of the Jacobian and inertia matrices of the system). We apply a filter to find only modes whose frequencies are greater than 5e-2*U rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[5e-2*U,Inf64],jacobian=trimProblem.jacobian[1:end,1:end-trimProblem.model.nTrimVariables],inertia=trimProblem.inertia,refTrimProblem=trimProblem)
+    ## Now we create and solve the trim problem for the springed model.
+    global trimProblemSpringed = create_TrimProblem(model=BWBtrimSpringed,systemSolver=NR)
+    solve!(trimProblemSpringed)
+
+    ## Let's make sure that the trim outputs of the springed model are very close to the one without springs, that is, the springs did not affect the trim solution. Notice that all ratios are very close to 1.
+    trimAoASpringed = trimProblemSpringed.aeroVariablesOverσ[end][BWBtrimSpringed.beams[3].elementRange[1]].flowAnglesAndRates.αₑ
+    trimThrustSpringed = trimProblemSpringed.x[end-1]*BWBtrimSpringed.forceScaling 
+    trimδSpringed = trimProblemSpringed.x[end]
+    println("Trim outputs' ratios springed/nominal: AoA = $(round(trimAoASpringed/trimAoA[i],sigdigits=4)), thrust = $(round(trimThrustSpringed/trimThrust[i],sigdigits=4)), δ = $(round(trimδSpringed/trimδ[i],sigdigits=4))")
+
+    ## All the variables needed for the stability analysis are now in place. We create the model for the eigenproblem, using the trim variables found previously with the springed model in order to solve for the stability around that exact state. 
+    BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδSpringed,thrust=trimThrustSpringed)
+
+    ## Now we create and solve the eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, making use of the known trim solution (with the keyword argument `refTrimProblem`). We apply a filter to find only modes whose frequencies are greater than 5e-2*U rad/s through the keyword argument `frequencyFilterLimits`
+    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[5e-2*U,Inf],refTrimProblem=trimProblemSpringed)
     solve_eigen!(eigenProblem)
 
     ## The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution
@@ -94,9 +105,9 @@ end
 #md nothing #hide
 
 # ### Post-processing
-# We can use the built-in [`mode_tracking`](@ref mode_tracking) function  to enhance the chances of correctly tracking the frequencies and dampings of each mode
+# We can use the AeroBeams built-in function [`mode_tracking_hungarian`](@ref mode_tracking_hungarian) to enhance the chances of correctly tracking the frequencies and dampings of each mode
 ## Mode tracking
-freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+freqs,damps,_,matchedModes = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 ## Separate frequencies and damping ratios by mode
 modeDampings = Array{Vector{Float64}}(undef,nModes)
@@ -107,15 +118,22 @@ for mode in 1:nModes
 end
 #md nothing #hide
 
-# The flutter onset speed is computed as the smallest among all modes
+# The flutter onset speeds and frequencies are computed for all modes
 ## Flutter onset speed of each mode
 flutterOnsetSpeedOfMode = fill(NaN, nModes)
+flutterOnsetFreqOfMode = fill(NaN, nModes)
 for mode in 1:nModes
     iOnset = findfirst(j -> modeDampings[mode][j] < 0 && modeDampings[mode][j+1] > 0, 1:length(URange)-1)
-    flutterOnsetSpeedOfMode[mode] = isnothing(iOnset) ? Inf64 : interpolate(modeDampings[mode][iOnset:iOnset+1],URange[iOnset:iOnset+1],0)
+    flutterOnsetSpeedOfMode[mode] = isnothing(iOnset) ? Inf : interpolate(modeDampings[mode][iOnset:iOnset+1],URange[iOnset:iOnset+1],0)
+    flutterOnsetFreqOfMode[mode] = isnothing(iOnset) ? Inf : interpolate(modeDampings[mode][iOnset:iOnset+1],modeFrequencies[mode][iOnset:iOnset+1],0)
 end
-flutterOnsetSpeed = minimum(filter(!isinf,flutterOnsetSpeedOfMode),init=Inf64)
-println("Flutter speed = $(flutterOnsetSpeed)")
+flutterModes = findall(!isinf, flutterOnsetSpeedOfMode)
+flutterOnsetSpeedsAll = filter(!isinf,flutterOnsetSpeedOfMode)
+flutterOnsetFreqsAll = filter(!isinf,flutterOnsetFreqOfMode)
+flutterOnsetSpeed = minimum(flutterOnsetSpeedsAll)
+for (mode,speed,freq) in zip(flutterModes,flutterOnsetSpeedsAll,flutterOnsetFreqsAll)
+    println("Mode $mode: flutter speed = $(round(speed,sigdigits=4)) m/s, flutter frequency = $(round(freq,digits=2)) rad/s")
+end
 
 # We can load the reference solution found with the University of Michigan's Nonlinear Aeroelastic Simulation Tool (UM/NAST) in its 2024 version (not the version in Su's thesis).
 ## Load reference data
@@ -156,12 +174,12 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md # ![](BWBflutter_thrust.svg)
 #md # ![](BWBflutter_delta.svg)
 
-#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. The flutter speed is computed at approximately 120.6 m/s, whereas the flutter speed predicted by UM/NAST is around 137.7 m/s, yielding a 12% difference. There is, however, qualitatively good agreement among the models for the behavior of the roots.
+#md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. The lowest flutter speed is computed by AeroBeams at approximately 120.7 m/s, at a frequency of 47.4 rad/s. Conversely, the flutter speed and frequency predicted by UM/NAST are around 137.7 m/s and 47.5 rad/s, yielding differences of 12.3% and 0.2%, on speed and frequency, respectively. Despite the flutter speed disagreement, there is qualitatively good agreement among the models for the behavior of the roots.
 ## Colormap
 #md modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
 
 ## Root locus
-#md plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-30,5],ylims=[0,130])
+#md plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-30,5],ylims=[0,125])
 #md scatter!([NaN],[NaN], c=:black, shape=:circle, ms=4, msw=0, label="AeroBeams")
 #md scatter!([NaN],[NaN], c=:black, shape=:utriangle, ms=4, msw=0, label="UM/NAST")
 #md for mode in 1:nModes
@@ -171,13 +189,13 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md savefig("BWBflutter_rootlocus.svg") #hide
 
 ## V-g-f
-#md plt51 = plot(ylabel="Frequency [rad/s]", xlims=[30,160], xticks=vcat(0:10:160), ylims=[0,130])
+#md plt51 = plot(ylabel="Frequency [rad/s]", xlims=[30,160], xticks=0:10:160, ylims=[0,125])
 #md for mode in 1:nModes
-#md scatter!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
+#md plot!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
 #md end
-#md plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping [1/s]", xlims=[30,160], xticks=vcat(0:10:160), ylims=[-10,5])
+#md plt52 = plot(xlabel="Airspeed [m/s]", ylabel="Damping ratio", xlims=[30,160], ylims=[-0.3,0.2], xticks=30:10:160, yticks=-0.3:0.1:0.2)
 #md for mode in 1:nModes
-#md scatter!(URange, modeDampings[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0,label=false)
+#md plot!(URange, modeDampings[mode]./modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=4, msw=0, label=false)
 #md end
 #md plt5 = plot(plt51,plt52, layout=(2,1))
 #md savefig("BWBflutter_Vgf.svg") #hide

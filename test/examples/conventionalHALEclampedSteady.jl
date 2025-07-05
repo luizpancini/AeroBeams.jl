@@ -10,7 +10,7 @@ aeroSolver = Indicial()
 h = 20e3
 
 # Gravity 
-g = -9.80665
+g = 9.80665
 
 # Airspeed [m/s]
 U = 30

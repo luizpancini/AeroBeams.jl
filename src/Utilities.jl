@@ -1106,31 +1106,35 @@ export rotation_between_WM
 
 
 """
-    mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
+    mode_tracking(controlParam::AbstractVector{<:Real},untrackedFreqs::Array{Vector{Float64}},untrackedDamps::Array{Vector{Float64}},untrackedEigenvectors::Array{Matrix{ComplexF64}})
 
-Applies mode tracking based on eigenvectors match
+Applies mode tracking based on eigenvectors match and a greedy search
 
 # Arguments
-- `controlParam::Vector{<:Real}`: vector of control parameter
-- `freqs::Array{Vector{Float64}}`: frequencies vector
-- `damps::Array{Vector{Float64}}`: dampings vector
-- `eigenvectors::Array{Matrix{ComplexF64}}`: complex-valued eigenvectors
+- `controlParam::AbstractVector{<:Real}`: vector of control parameter
+- `untrackedFreqs::Array{Vector{Float64}}`: frequencies vector
+- `untrackedDamps::Array{Vector{Float64}}`: dampings vector
+- `untrackedEigenvectors::Array{Matrix{ComplexF64}}`: complex-valued eigenvectors
 """
-function mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}},damps::Array{Vector{Float64}},eigenvectors::Array{Matrix{ComplexF64}})
+function mode_tracking(controlParam::AbstractVector{<:Real},untrackedFreqs::Array{Vector{Float64}},untrackedDamps::Array{Vector{Float64}},untrackedEigenvectors::Array{Matrix{ComplexF64}})
 
     # Validate inputs
-    @assert length(controlParam) == length(freqs) == length(damps) == length(eigenvectors)
-    for i in eachindex(freqs)
-        @assert length(freqs[i]) == length(damps[i]) == size(eigenvectors[i],2)
+    @assert length(controlParam) == length(untrackedFreqs) == length(untrackedDamps) == length(untrackedEigenvectors)
+    for i in eachindex(untrackedFreqs)
+        @assert length(untrackedFreqs[i]) == length(untrackedDamps[i]) == size(untrackedEigenvectors[i],2)
+    end
+    nModes = length(untrackedFreqs[1])
+    for i in eachindex(untrackedFreqs)
+        @assert length(untrackedFreqs[i]) == length(untrackedDamps[i]) == size(untrackedEigenvectors[i],2) == nModes
     end
 
     # Length of control parameter range
     N = length(controlParam)
- 
-    # Number of modes
-    nModes = length(freqs[1])
 
-    # Initialize array of matched modes
+    # Initialize
+    freqs = deepcopy(untrackedFreqs)
+    damps = deepcopy(untrackedDamps)
+    eigenvectors = deepcopy(untrackedEigenvectors)
     matchedModes = Array{Vector{Int64}}(undef,N)
     matchedModes[1] = collect(1:nModes)
 
@@ -1141,8 +1145,8 @@ function mode_tracking(controlParam::Vector{<:Real},freqs::Array{Vector{Float64}
             continue
         end
         # Mode matching index matrix: eigenvector alignment
-        I = [abs(dot(eigenvectors[c-1][:,m1],eigenvectors[c][:,m2])) for m1 in 1:nModes, m2 in 1:nModes]
-        # Set matched modes by highest index
+        I = abs.(eigenvectors[c-1]'*eigenvectors[c])
+        # Set matched modes by highest index (greedy search)
         matchedModes[c] = highest_in_rowcol(I)
         # Skip if matched modes are in order
         if matchedModes[c] == collect(1:nModes)
@@ -1196,18 +1200,110 @@ end
 
 
 """
-    get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::Float=1e3*eps())
+    mode_tracking_hungarian(controlParam::AbstractVector{<:Real},untrackedFreqs::Array{Vector{Float64}},untrackedDamps::Array{Vector{Float64}},untrackedEigenvectors::Array{Matrix{ComplexF64}}; showProgress::Bool=false,α::Real=1.0,β::Real=0.01,γ::Real=0.01)
+
+Applies mode tracking based on eigenvectors match and frequency and damping continuity, with a Hungarian algorithm
+
+# Arguments
+- `controlParam::AbstractVector{<:Real}`: vector of control parameter
+- `untrackedFreqs::Array{Vector{Float64}}`: frequencies vector
+- `untrackedDamps::Array{Vector{Float64}}`: dampings vector
+- `untrackedEigenvectors::Array{Matrix{ComplexF64}}`: complex-valued eigenvectors
+
+# Keyword arguments:
+- `showProgress::Bool`: flag to show progress over control parameter
+- `α::Real`: weight for eigenvector similarity
+- `β::Real`: weight for frequency continuity
+- `γ::Real`: weight for damping continuity
+"""
+function mode_tracking_hungarian(controlParam::AbstractVector{<:Real},untrackedFreqs::Array{Vector{Float64}},untrackedDamps::Array{Vector{Float64}},untrackedEigenvectors::Array{Matrix{ComplexF64}}; showProgress::Bool=false, α::Real=1.0,β::Real=0.01,γ::Real=0.01)
+
+    # Validate inputs
+    @assert length(controlParam) == length(untrackedFreqs) == length(untrackedDamps) == length(untrackedEigenvectors)
+    for i in eachindex(untrackedFreqs)
+        @assert length(untrackedFreqs[i]) == length(untrackedDamps[i]) == size(untrackedEigenvectors[i],2)
+    end
+    nModes = length(untrackedFreqs[1])
+    for i in eachindex(untrackedFreqs)
+        @assert length(untrackedFreqs[i]) == length(untrackedDamps[i]) == size(untrackedEigenvectors[i],2) == nModes
+    end
+    @assert all(x->x>=0,[α β γ]) 
+
+    # Length of control parameter range
+    N = length(controlParam)
+ 
+    # Number of modes
+    nModes = length(untrackedFreqs[1])
+
+    # Initialize
+    freqs = deepcopy(untrackedFreqs)
+    damps = deepcopy(untrackedDamps)
+    eigenvectors = deepcopy(untrackedEigenvectors)
+    matchedModes = Array{Vector{Int64}}(undef,N)
+    matchedModes[1] = collect(1:nModes)
+
+    # Loop over control parameter
+    for c = 2:N
+        # Skip if eigenvectors are undefined
+        if all(isnan,eigenvectors[c]) || all(isnan,eigenvectors[c-1])
+            continue
+        end
+        # Compute cost matrix
+        C = eigenmatch_cost_matrix(eigenvectors[c-1], eigenvectors[c], freqs[c-1], freqs[c], damps[c-1], damps[c]; α=α, β=β, γ=γ)
+        # Hungarian algorithm for optimal assignment
+        matchedModes[c], _ = hungarian(C)
+        # Show progress, if applicable
+        if showProgress
+            println("Progress: $(round(Int,(c-1)/(N-1)*100)) %")
+        end
+        # Skip if matched modes are in order
+        if matchedModes[c] == collect(1:nModes)
+            continue
+        end
+        # Set frequencies, dampings and eigenvectors in new order of matched modes
+        freqs[c:end] = [freqs[i][matchedModes[c]] for i=c:N]
+        damps[c:end] = [damps[i][matchedModes[c]] for i=c:N]
+        eigenvectors[c:end] = [eigenvectors[i][:,matchedModes[c]] for i=c:N]
+    end
+
+    return freqs,damps,eigenvectors,matchedModes
+end
+export mode_tracking_hungarian
+
+# Computes the cost matrix based on eigenvector similarity, and frequency and damping continuity
+function eigenmatch_cost_matrix(Vprev, Vcurr, fprev, fcurr, dprev, dcurr; α=1.0, β=0.01, γ=0.01)
+
+    # Number of modes
+    n = size(Vcurr, 2)
+
+    # Mode matching index matrix
+    dot_prod = abs.(Vprev' * Vcurr)
+
+    # Compute cost matrix (the closer to -1, the better the match among modes)
+    C = zeros(Float64, n, n)
+    for i in 1:n, j in 1:n
+        Δf = abs(fprev[i] - fcurr[j])
+        Δd = abs(dprev[i] - dcurr[j])
+        C[i,j] = -α * dot_prod[i,j] + β * Δf + γ * Δd
+    end
+
+    return C
+end
+
+
+"""
+    get_FFT_and_PSD(t::AbstractVector{<:Real},y::Vector{<:Real}; tol::Float=1e3*eps())
 
 Computes the FFT and PSD of signal y(t)
 
 # Arguments
-- `t::Vector{<:Real}`: time signal
+- `t::AbstractVector{<:Real}`: time signal
 - `y::Vector{<:Real}`: quantity signal
 
 # Keyword arguments
 - `tol::AbstractFloat`: tolerance for time signal being equally spaced
 """
-function get_FFT_and_PSD(t::Vector{<:Real},y::Vector{<:Real}; tol::AbstractFloat=1e-9)
+function get_FFT_and_PSD(t::AbstractVector{<:Real},y::Vector{<:Real}; tol::AbstractFloat=1e-9)
     
     @assert length(t) > 1
     @assert maximum(abs.(diff(diff(t)))) < tol "t must be an evenly spaced vector"
@@ -1247,15 +1343,15 @@ export get_FFT_and_PSD
 
 
 """
-    moving_average(v::Vector{<:Real}, n::Int)
+    moving_average(v::AbstractVector{<:Real}, n::Int)
 
 Computes the moving average of a series
 
 # Arguments
-- `v::Vector{<:Real}`: series
+- `v::AbstractVector{<:Real}`: series
 - `n::Int`: moving average window size
 """
-function moving_average(v::Vector{<:Real}, n::Int)
+function moving_average(v::AbstractVector{<:Real}, n::Int)
 
     if n == 0
         return v
@@ -1339,17 +1435,17 @@ export Newton_solver
 
 
 """
-    backward_extrapolation(v::Vector{<:Real}; order::Int=5)
+    backward_extrapolation(v::AbstractVector{<:Real}; order::Int=5)
 
 Estimates the values of an array from backward finite difference extrapolation
 
 # Arguments
-- `v::Vector{<:Real}`: vector
+- `v::AbstractVector{<:Real}`: vector
 
 # Keyword arguments
 - `order::Int`: order of the approximation
 """
-function backward_extrapolation(v::Vector{<:Real}; order::Int=5)
+function backward_extrapolation(v::AbstractVector{<:Real}; order::Int=5)
 
     # Size of the vector
     n = length(v)
@@ -1383,17 +1479,17 @@ export backward_extrapolation
 
 
 """
-    count_of_exceedance(time::Vector{<:Real}, series::Vector{<:Real}, datum::Real, marker::Vector{<:Real})
+    count_of_exceedance(time::AbstractVector{<:Real}, series::Vector{<:Real}, datum::Real, marker::Vector{<:Real})
 
 Computes the count of exceedance of the quantities in the marker vector above the datum for the given time series
 
 # Keyword arguments
-- `time::Vector{<:Real}`: time vector
+- `time::AbstractVector{<:Real}`: time vector
 - `series::Vector{<:Real}`: time series
 - `datum::Real`: datum value for the time series
 - `marker::Vector{<:Real}`: markers for the count of exceedance computation
 """
-function count_of_exceedance(; time::Vector{<:Real}, series::Vector{<:Real}, datum::Real, marker::Vector{<:Real})
+function count_of_exceedance(; time::AbstractVector{<:Real}, series::Vector{<:Real}, datum::Real, marker::Vector{<:Real})
 
     # Validate
     @assert length(time) == length(series) "time and series vectors must be of the same length"

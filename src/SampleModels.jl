@@ -494,7 +494,7 @@ Returns the wing model and its span
 - `stiffnessFactor::Real`: stiffness factor for beam structural properties
 - `∞::Real`: value of rigid structural properties
 - `Ψ::Real`: torsion-IP-bending stiffness coupling factor
-- `tipF3::Real`: tip dead transverse force applied at the tip
+- `tipF3::Union{Real,<:Function}`: tip dead transverse force applied at the tip
 - `cd0::Real`: parasite drag coefficient for the wing
 - `cnδ::Real`: cn vs δ slope for the wing
 - `cmδ::Real`: cm vs δ slope for the wing
@@ -503,7 +503,7 @@ Returns the wing model and its span
 - `δAil::Union{Nothing,Real,<:Function}`: aileron deflection
 - `additionalBCs::Vector{BC}`: additional BCs (beyond the clamp and tip load)
 """
-function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil=deepcopy(flatPlate),θ::Real=0,k1::Real=0,k2::Real=0,nElem::Int64=32,altitude::Real=0,airspeed::Real=0,g::Real=standard_atmosphere(altitude).g,stiffnessFactor::Real=1,∞::Real=1e12,Ψ::Real=0,tipF3::Real=0,cd0::Real=0,cnδ::Real=2.5,cmδ::Real=-0.35,cdδ::Real=0.15,hasInducedDrag::Bool=false,δAil::Union{Nothing,Real,<:Function}=nothing,additionalBCs::Vector{BC}=Vector{BC}())
+function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),airfoil::Airfoil=deepcopy(cHALEairfoil),θ::Real=0,k1::Real=0,k2::Union{Real,<:Function}=0,nElem::Int64=32,altitude::Real=0,airspeed::Real=0,g::Real=standard_atmosphere(altitude).g,stiffnessFactor::Real=1,torsionStiffnessFactor::Real=1,∞::Real=1e12,Ψ::Real=0,tipF3::Union{Real,<:Function}=0,cd0::Real=0,cnδ::Real=2.5,cmδ::Real=-0.35,cdδ::Real=0.15,hasInducedDrag::Bool=false,δAil::Union{Nothing,Real,<:Function}=nothing,additionalBCs::Vector{BC}=Vector{BC}())
 
     # Validate
     @assert -π/2 < θ < π/2
@@ -539,6 +539,7 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAer
     # Wing properties
     L = 16
     GJ,EIy,EIz = 1e4,2e4,4e6
+    GJ *= torsionStiffnessFactor
     GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, GJ,EIy,EIz)
     ρA,ρIs = 0.75,0.1
     ρIy,ρIz = (EIy/EIz)*ρIs,(1-EIy/EIz)*ρIs
@@ -547,7 +548,8 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAer
     I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)
 
     # Wing beam
-    beam = create_Beam(name="rightWing",length=L,nElements=nElem,S=[S],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ],k=[k1;k2;0])
+    k = k2 isa Real ? [k1;k2;0] : x1->[k1;k2(x1);0]
+    beam = create_Beam(name="rightWing",length=L,nElements=nElem,S=[S],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ],k=k)
     
     # Update beam of additional BCs, if applicable
     for BC in additionalBCs
@@ -851,7 +853,7 @@ Creates a model based on the conventional HALE aircraft described by Patil, Hodg
 - `stabscdδ::Real`: cd vs δ slope for the stabilizers
 - `hasInducedDrag::Bool`: flag to include induced drag
 """
-function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,wAirfoil::Airfoil=deepcopy(flatPlate),sAirfoil::Airfoil=deepcopy(flatPlate),nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Real=1e12,stiffnessFactor::Real=1,k1::Real=0,k2::Real=0,airspeed::Real=0,δElevIsTrimVariable::Bool=false,δAilIsTrimVariable::Bool=false,δRuddIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Real,<:Function}=nothing,δAil::Union{Nothing,Real,<:Function}=nothing,δRudd::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,g::Real=-9.80665,wingCd0::Real=0,wingcnδ::Real=2.5,wingcmδ::Real=-0.35,wingcdδ::Real=0.15,stabsCd0::Real=0,stabscnδ::Real=2.5,stabscmδ::Real=-0.35,stabscdδ::Real=0.15,hasInducedDrag::Bool=false)
+function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=Indicial(),derivationMethod::DerivationMethod=AD(),flapLoadsSolver::FlapAeroSolver=TableLookup(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),stabilizersAero::Bool=true,includeVS::Bool=true,wAirfoil::Airfoil=deepcopy(cHALEairfoil),sAirfoil::Airfoil=deepcopy(cHALEairfoil),nElemWing::Int64=20,nElemHorzStabilizer::Int64=10,nElemTailBoom::Int64=10,nElemVertStabilizer::Int64=5,∞::Real=1e12,stiffnessFactor::Real=1,torsionStiffnessFactor::Real=1,k1::Real=0,k2::Union{Real,<:Function}=0,airspeed::Real=0,δElevIsTrimVariable::Bool=false,δAilIsTrimVariable::Bool=false,δRuddIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Real,<:Function}=nothing,δAil::Union{Nothing,Real,<:Function}=nothing,δRudd::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,g::Real=standard_atmosphere(altitude).g,wingCd0::Real=0,wingcnδ::Real=2.5,wingcmδ::Real=-0.35,wingcdδ::Real=0.15,stabsCd0::Real=0,stabscnδ::Real=2.5,stabscmδ::Real=-0.35,stabscdδ::Real=0.15,hasInducedDrag::Bool=false)
 
     # Validate
     @assert iseven(nElemWing)
@@ -861,6 +863,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     @assert wingCd0 >= 0
     @assert stabsCd0 >= 0
     @assert airspeed >= 0
+    @assert g >= 0
     δElevIsInput = !isnothing(δElev)
     δAilIsInput = !isnothing(δAil)
     δRuddIsInput = !isnothing(δRudd)
@@ -924,6 +927,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     # Wing properties
     Lw = 16
     wGJ,wEIy,wEIz = 1e4,2e4,4e6
+    wGJ *= torsionStiffnessFactor
     wGJ,wEIy,wEIz = multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
     wρA,wρIs = 0.75,0.1
     wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
@@ -931,20 +935,36 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz,ρIs=wρIs)
 
     # Initial position for first node of left wing
-    ρ = 1/k2
-    θ = Lw/ρ
-    x = ρ*sin(θ)
-    z = ρ*(1-cos(θ))
-    initialPosition = k2 == 0 ? [-Lw; 0; 0] : [-x; 0; -z]
+    if k2 isa Real
+        ρ = 1/k2
+        θ = Lw/ρ
+        x = ρ*sin(θ)
+        z = ρ*(1-cos(θ))
+        initialPosition = k2 == 0 ? [-Lw; 0; 0] : [-x; 0; -z]
+    else
+        nElemLeftWing = div(nElemWing,2) 
+        Δℓ = Lw/nElemLeftWing
+        θ = 0
+        for i in 1:nElemLeftWing
+            ρ = 1/k2(i/nElemLeftWing-1/nElemLeftWing/2)
+            Δθ = Δℓ/ρ
+            θ += Δθ
+        end
+        x = ρ*sin(θ)
+        z = ρ*(1-cos(θ))
+        initialPosition = [-x; 0; -z]
+    end
 
     # Initial angle of twist
     r = 1/k1
     ψ = Lw/r
 
     # Wing beams
-    leftWing = create_Beam(name="leftWing",length=Lw,nElements=div(nElemWing,2),S=[Swing],I=[Iwing],aeroSurface=wingSurfLeft,k=[-k1;k2;0],rotationParametrization="E321",p0=[0;-θ;ψ])
+    kLeft = k2 isa Real ? [-k1;k2;0] : x1->[-k1;k2(x1);0]
+    leftWing = create_Beam(name="leftWing",length=Lw,nElements=div(nElemWing,2),S=[Swing],I=[Iwing],aeroSurface=wingSurfLeft,k=kLeft,rotationParametrization="E321",p0=[0;-θ;ψ])
 
-    rightWing = create_Beam(name="rightWing",length=Lw,nElements=div(nElemWing,2),S=[Swing],I=[Iwing],aeroSurface=wingSurfRight,k=[k1;k2;0],connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
+    kRight = k2 isa Real ? [k1;k2;0] : x1->[k1;k2(x1);0]
+    rightWing = create_Beam(name="rightWing",length=Lw,nElements=div(nElemWing,2),S=[Swing],I=[Iwing],aeroSurface=wingSurfRight,k=kRight,connectedBeams=[leftWing],connectedNodesThis=[1],connectedNodesOther=[div(nElemWing,2)+1])
 
     # Link wing ailerons
     aileronLink = create_FlapLink(masterBeam=rightWing,slaveBeams=[leftWing],δMultipliers=[-1])
@@ -1019,7 +1039,7 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     beams = includeVS ? [leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer] : [leftWing,rightWing,tailBoom,horzStabilizer]
 
     # Aircraft model
-    conventionalHALE = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[aileronLink])
+    conventionalHALE = create_Model(name="conventionalHALE",beams=beams,BCs=[propThrust],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;-g],flapLinks=[aileronLink])
 
     return conventionalHALE,leftWing,rightWing,tailBoom,horzStabilizer,vertStabilizer
 end

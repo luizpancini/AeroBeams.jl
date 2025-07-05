@@ -158,6 +158,7 @@ WM_to_yrp
 yrp_to_WM
 rotation_between_WM
 mode_tracking
+mode_tracking_hungarian
 moving_average
 get_FFT_and_PSD
 Newton_solver

@@ -140,6 +140,20 @@
             cm₀Rng =  1e-1*[ 1.0;   1.0]
             cnαRng =  2π/β*[ 1.0;   1.0]
             x_acRng =      [ 0.25; 0.25]
+        elseif name in ["cHALEairfoil"]
+            # Bound Mach and corresponding compressibility factor
+            Ma = min(0.8,Ma)
+            β = sqrt(1-Ma^2)
+            # Mach-dependent parameters
+            MaRng  =       [    0;   0.8]
+            α₀NRng = π/180*[  0.0;   0.0]
+            ϵₙRng =        [  0.7;   0.7]
+            ϵₘRng =        [ 0.96;  0.96]
+            ηRng =         [ 0.95;  0.95]
+            cd₀Rng =  1e-2*[  0.0;   0.0]
+            cm₀Rng =  1e-3*[  0.0;   0.0]
+            cnαRng =  2π/β*[  1.0;   1.0]
+            x_acRng =      [ 0.25;  0.25]
         else
             error("Airfoil not listed")
         end
@@ -898,7 +912,7 @@ end
             # Fixed parameters
             γbC = [2.5; 0.8]
             γbCMat = Diagonal(γbC)
-        elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","BWBAirfoil"]
+        elseif name in ["flatPlate","NACA0002","NACA0006","HeliosWingAirfoil","BWBAirfoil","cHALEairfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.8,Ma))
             β = sqrt(1-Ma^2) 
@@ -1262,7 +1276,7 @@ end
             # Fixed parameters
             γbC = [1.0; 1.0]
             γbCMat = Diagonal(γbC)    
-        elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","VERTOL23010","HeliosWingAirfoil","BWBAirfoil"]
+        elseif name in ["flatPlate","NACA0002","NACA0006","NACA0012-GU","NACA0015","NACA0015-s","NACA0018","VERTOL23010","HeliosWingAirfoil","BWBAirfoil","cHALEairfoil"]
             # Bound Mach and corresponding compressibility factor
             Ma = max(0.001,min(0.8,Ma))
             β = sqrt(1-Ma^2) 
@@ -1456,7 +1470,19 @@ end
                 cnδ =  1.0
             else
                 error("Unavailable flap site ID")
-            end    
+            end
+        elseif name in ["cHALEairfoil"]
+            if flapSiteID == 100
+                cdδ = 0.0
+                cmδ = 0.0
+                cnδ = 0.0
+            elseif flapSiteID == 75
+                cdδ =  0.15
+                cmδ = -0.35
+                cnδ =  2.5
+            else
+                error("Unavailable flap site ID")
+            end  
         else
             error("Airfoil not listed")
         end
@@ -1469,7 +1495,7 @@ end
 # Gets the coordinates of the airfoil
 function get_airfoil_coordinates(name::String)
 
-    if name in ["flatPlate","NACA0002","NACA0006"]
+    if name in ["flatPlate","NACA0002","NACA0006","cHALEairfoil"]
         coords = [1.000000	-0.000000
                 0.998459	0.000019
                 0.993844	0.000074
@@ -1975,4 +2001,5 @@ NACA23012A = create_Airfoil(name="NACA23012A")
 HeliosWingAirfoil = create_Airfoil(name="HeliosWingAirfoil")
 HeliosPodAirfoil = create_Airfoil(name="HeliosPodAirfoil")
 BWBAirfoil = create_Airfoil(name="BWBAirfoil")
-export flatPlate, NACA0002, NACA0006, NACA0012, NACA0015, NACA0018, NACA23012A, VERTOL23010, HeliosWingAirfoil, HeliosPodAirfoil, BWBAirfoil
+cHALEairfoil = create_Airfoil(name="cHALEairfoil")
+export flatPlate, NACA0002, NACA0006, NACA0012, NACA0015, NACA0018, NACA23012A, VERTOL23010, HeliosWingAirfoil, HeliosPodAirfoil, BWBAirfoil, cHALEairfoil

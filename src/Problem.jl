@@ -344,11 +344,9 @@ Eigen problem constructor
 - `frequencyFilterLimits::Vector{Float64}`: limits of the frequency filter
 - `normalizeModeShapes::Bool`: flag to normalize mode shapes
 - `x0::Vector{Float64}`: initial states
-- `jacobian::SparseMatrixCSC{Float64,Int64}`: Jacobian matrix
-- `inertia::SparseMatrixCSC{Float64,Int64}`: inertia matrix
-- `refTrimProblem::Union{Nothing,TrimProblem}`: reference trim problem contatining steady solution
+- `refTrimProblem::Union{Nothing,TrimProblem}`: reference trim problem containing steady solution
 """
-function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=50,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),jacobian::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),inertia::SparseMatrixCSC{Float64,Int64}=spzeros(0,0),refTrimProblem::Union{Nothing,TrimProblem}=nothing)
+function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=50,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),refTrimProblem::Union{Nothing,TrimProblem}=nothing)
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes,refTrimProblem=refTrimProblem)
@@ -368,13 +366,11 @@ function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_Ne
     end
 
     # Initialize system arrays
-    @assert size(jacobian) == size(inertia) "jacobian and inertia matrices must have the same size"
-    if !isempty(jacobian)
+    if !isnothing(refTrimProblem)
         N = model.systemOrder + length(model.hingeAxisConstraints)
-        @assert size(jacobian) == (N,N) "size of the input jacobian does not correspond to the number of states of the model"
-        @assert !isnothing(refTrimProblem) "when a Jacobian matrix is input, provide a reference trim problem"
-        problem.jacobian = problem.augmentedJacobian = jacobian
-        problem.inertia = problem.augmentedInertia = inertia
+        @assert size(refTrimProblem.jacobian,1) == N "number of states of the model is different from that of the reference trim problem"
+        problem.jacobian = problem.augmentedJacobian = deepcopy(refTrimProblem.jacobian[1:N,1:N])
+        problem.inertia = problem.augmentedInertia = deepcopy(refTrimProblem.inertia)
         # Copy saved solution from reference trim problem
         for field in [:savedσ, :xOverσ, :elementalStatesOverσ, :nodalStatesOverσ, :compElementalStatesOverσ, :aeroVariablesOverσ]
             setfield!(problem, field, getfield(refTrimProblem, field))

@@ -553,7 +553,8 @@ mutable struct Element <: BeamElement
         x1_norm = x1/parent.length
 
         # Initial curvature vector
-        k = parent.k
+        kBeam = parent.k
+        k = kBeam isa Function ? kBeam(1/2) : kBeam
 
         # Get nodal coordinates and add to parent beam
         r_n1 = position_vector_from_curvature(parent.R0,k,x1_n1)

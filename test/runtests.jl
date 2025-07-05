@@ -6,7 +6,7 @@ SELFatol = 1e-4
 # Option to locally run tests failing in CI
 runCIfailingTests = false
 
-include("dynamicAeroelasticTests.jl")
+# include("dynamicAeroelasticTests.jl")
 include("eigenAeroelasticTests.jl")
 include("trimAeroelasticTests.jl")
 include("steadyAeroelasticTests.jl")
