@@ -1,7 +1,7 @@
 using AeroBeams, Documenter, Literate
 
 # Examples to be included in the documentation
-global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALECheckedRollManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","HealyBaselineFFWTfreeFlutterAoARangeURange.jl","HealyBaselineFFWTOMCGustFloating.jl","HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl","typicalSectionFlutterAndDivergence.jl"]
+global included = ["archUnderFollowerPressure.jl","BWBflutter.jl","compositeCantileverMD.jl","conventionalHALECheckedPitchManeuver.jl","conventionalHALEmodel.jl","flyingScissors.jl","HealyBaselineFFWTfreeFlutterAoARangeURange.jl","HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl","heliosTrim.jl","initialDispAndVelBeam.jl","OMCgustTests.jl","PazyWingPitchRange.jl","PazyWingFlutterPitchRange.jl","PazyWingTorsionTest.jl","sweptTipRotor.jl","twoStoryFrame.jl","typicalSectionFlutterAndDivergence.jl"]
 
 # Generate .md files with Literate
 for ex in included
