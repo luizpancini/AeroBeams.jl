@@ -85,10 +85,8 @@ for (i,τ) in enumerate(τRange)
         for (k,U) in enumerate(URange)
             # Update model
             model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=τ,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
-            # Initial guess solution as the one at previous airspeed
-            x0 = (k > 1 && problem[i,j,k-1].systemSolver.convergedFinalSolution) ? problem[i,j,k-1].x : zeros(0)
             # Create and solve problem
-            problem[i,j,k] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2*U,Inf],x0=x0)
+            problem[i,j,k] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2*U,Inf])
         @suppress begin #hide
                 solve!(problem[i,j,k])
         end #hide
