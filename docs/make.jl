@@ -43,8 +43,7 @@ makedocs(;
         "Dynamic analysis of an articulated beam" => "literate/flyingScissors.md",
         "Trimming a flying-wing HALE" => "literate/heliosTrim.md",
         "Flutter of a Blended-Wing-Body" => "literate/BWBflutter.md",
-        "Pitch maneuver of a HALE aircraft" => "literate/conventionalHALECheckedPitchManeuver.md",
-        "Coordinated turn maneuver of a HALE aircraft" => "literate/conventionalHALECheckedRollManeuver.md"
+        "Pitch maneuver of a HALE aircraft" => "literate/conventionalHALECheckedPitchManeuver.md"
         ],
         "Public API" => "publicAPI.md"
     ],
