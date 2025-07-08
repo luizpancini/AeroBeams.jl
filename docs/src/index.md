@@ -45,7 +45,7 @@ A simple built-in post-processing tool allows the visualization of the results. 
 
 ![Pazy Wing Gust Response](assets/PazyWingOMCGust_deformation.gif)
 
-Purely structural problems (in the abscence of aerodynamic loads) can analyzed as well, such as the "flying spaghetti"[^9]:
+Purely structural problems (in the abscence of aerodynamic loads) can be analyzed as well, such as the "flying spaghetti"[^9]:
 
 ![flying spaghetti](assets/flyingSpaghetti2D_deformation.gif)
 
