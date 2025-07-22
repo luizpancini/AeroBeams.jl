@@ -1,189 +1,189 @@
 using AeroBeams, LinearInterpolations, JLD2, Base.Threads
 
-# Aerodynamic solver
-aeroSolver = Indicial()
+# # Aerodynamic solver
+# aeroSolver = Indicial()
 
-# Stiffness factor
-λ = 2
+# # Stiffness factor
+# λ = 1
 
-# Altitude
-h = 20e3
+# # Altitude
+# h = 20e3
 
-# Options for stabilizers
-stabilizersAero = true
-includeVS = true
-wingCd0 = stabsCd0 = 1e-2
+# # Options for stabilizers
+# stabilizersAero = true
+# includeVS = true
+# wingCd0 = stabsCd0 = 1e-2
 
-# Option to include induced drag
-hasInducedDrag = true
+# # Option to include induced drag
+# hasInducedDrag = true
 
-# Discretization
-if λ == 1
-    nElemWing = 80
-elseif λ > 1
-    nElemWing = 40
-end
-nElemTailBoom = 5
-nElemHorzStabilizer = 4
-nElemVertStabilizer = 2
+# # Discretization
+# if λ == 1
+#     nElemWing = 80
+# elseif λ > 1
+#     nElemWing = 40
+# end
+# nElemTailBoom = 5
+# nElemHorzStabilizer = 4
+# nElemVertStabilizer = 2
 
-# System solver for trim problem
-relaxFactor = 0.5
-maxIter = 100
-σ0 = 1.0
-NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,displayStatus=false)
+# # System solver for trim problem
+# relaxFactor = 0.5
+# maxIter = 100
+# σ0 = 1.0
+# NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,displayStatus=false)
 
-# Set number of vibration modes
-nModes = 25
+# # Set number of vibration modes
+# nModes = 25
 
-# Set bending curvature and airspeed ranges
-k2Range = range(-0.015,0.045,5)
-if λ == 1
-    URange = unique(sort(vcat(20:0.5:50,42.3,42.4)))
-elseif λ == 2
-    URange = unique(sort(vcat(20:0.5:60)))
-end
+# # Set bending curvature and airspeed ranges
+# k2Range = range(-0.015,0.045,5)
+# if λ == 1
+#     URange = unique(sort(vcat(20:0.5:50,42.3,42.4)))
+# elseif λ == 2
+#     URange = unique(sort(vcat(20:0.5:60)))
+# end
 
-# Damping ratio shift for T-IP modes (in order to match flutter speeds of dynamic solutions)
-if λ == 1
-    σShift = 3e-2
-elseif λ == 2
-    σShift = 1.5e-2
-end
+# # Damping ratio shift for T-IP modes (in order to match flutter speeds of dynamic solutions)
+# if λ == 1
+#     σShift = 3e-2
+# elseif λ == 2
+#     σShift = 1.5e-2
+# end
 
-# Damping ratio tolerance for flutter detection at lower speed limit
-σtol = 2e-3
+# # Damping ratio tolerance for flutter detection at lower speed limit
+# σtol = 2e-3
 
-# Initialize outputs
-trimProblem = Array{TrimProblem}(undef,length(k2Range),length(URange))
-trimProblemSpringed = Array{TrimProblem}(undef,length(k2Range),length(URange))
-eigenProblem = Array{EigenProblem}(undef,length(k2Range),length(URange))
+# # Initialize outputs
+# trimProblem = Array{TrimProblem}(undef,length(k2Range),length(URange))
+# trimProblemSpringed = Array{TrimProblem}(undef,length(k2Range),length(URange))
+# eigenProblem = Array{EigenProblem}(undef,length(k2Range),length(URange))
 
-trimAoA = fill(NaN, length(k2Range), length(URange))
-trimThrust = fill(NaN, length(k2Range), length(URange))
-trimδ = fill(NaN, length(k2Range), length(URange))
-trimEnduranceFactor = fill(NaN, length(k2Range), length(URange))
+# trimAoA = fill(NaN, length(k2Range), length(URange))
+# trimThrust = fill(NaN, length(k2Range), length(URange))
+# trimδ = fill(NaN, length(k2Range), length(URange))
+# trimEnduranceFactor = fill(NaN, length(k2Range), length(URange))
 
-untrackedFreqs = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
-untrackedDamps = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
-untrackedEigenvectors = [fill(NaN64+im*NaN64, nModes, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
-freqs = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
-damps = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
-modeDampings = [fill(NaN64, length(URange)) for k2 in 1:length(k2Range), mode in 1:nModes]
-modeFrequencies = [fill(NaN64, length(URange)) for k2 in 1:length(k2Range), mode in 1:nModes]
-modeDampingRatios = [fill(NaN64, length(URange)) for k2 in 1:length(k2Range), mode in 1:nModes]
+# untrackedFreqs = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
+# untrackedDamps = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
+# untrackedEigenvectors = [fill(NaN64+im*NaN64, nModes, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
+# freqs = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
+# damps = [fill(NaN64, nModes) for k2 in 1:length(k2Range), U in 1:length(URange)]
+# modeDampings = [fill(NaN64, length(URange)) for k2 in 1:length(k2Range), mode in 1:nModes]
+# modeFrequencies = [fill(NaN64, length(URange)) for k2 in 1:length(k2Range), mode in 1:nModes]
+# modeDampingRatios = [fill(NaN64, length(URange)) for k2 in 1:length(k2Range), mode in 1:nModes]
 
-x1_0 = Array{Vector{Float64}}(undef,length(k2Range))
-x3_0 = Array{Vector{Float64}}(undef,length(k2Range))
-x1_e_wing = Array{Vector{Float64}}(undef,length(k2Range))
-u1_of_x1 = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
-u3_of_x1 = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
-x1_def = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
-x3_def = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
-twist = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
+# x1_0 = Array{Vector{Float64}}(undef,length(k2Range))
+# x3_0 = Array{Vector{Float64}}(undef,length(k2Range))
+# x1_e_wing = Array{Vector{Float64}}(undef,length(k2Range))
+# u1_of_x1 = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
+# u3_of_x1 = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
+# x1_def = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
+# x3_def = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
+# twist = Array{Vector{Float64}}(undef,length(k2Range),length(URange))
 
-# Attachment springs' stiffness
-μu = 1e-2
-μp = 1e-2
+# # Attachment springs' stiffness
+# μu = 1e-2
+# μp = 1e-2
 
-# ELement ranges
-elemRangeRightWing = 1 + div(nElemWing,2) : nElemWing
+# # ELement ranges
+# elemRangeRightWing = 1 + div(nElemWing,2) : nElemWing
 
-# Sweep bending curvature
-for (i,k2) in enumerate(k2Range)
-    # Set attachment springs
-    spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=μu*[1; 1; 1],kp=μp*[1; 1; 1])
-    spring2 = create_Spring(elementsIDs=[nElemTailBoom],nodesSides=[2],ku=μu*[1; 1; 1],kp=μp*[1; 1; 1])
-    # Sweep airspeed
-    for (j,U) in enumerate(URange)
-        println("Solving for k2 = $k2, U = $U m/s")
-        # Model for trim problem
-        cHALEtrim,_,_,tailBoom,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
-        # Set initial guess solution as previous known solution
-        x0Trim = j == 1 ? zeros(0) : trimProblem[i,j-1].x
-        # Create and trim problem
-        trimProblem[i,j] = create_TrimProblem(model=cHALEtrim,systemSolver=NRtrim,x0=x0Trim)
-        solve!(trimProblem[i,j])
-        # Extract trim variables
-        trimAoA[i,j] = trimProblem[i,j].aeroVariablesOverσ[end][div(nElemWing,2)].flowAnglesAndRates.αₑ
-        trimThrust[i,j] = stabilizersAero ? trimProblem[i,j].x[end-1]*trimProblem[i,j].model.forceScaling : trimProblem[i,j].x[end]*trimProblem[i,j].model.forceScaling
-        trimδ[i,j] = stabilizersAero ? trimProblem[i,j].x[end] : 0
-        println("Trim AoA = $(trimAoA[i,j]*180/π), trim thrust = $(trimThrust[i,j]), trim δ = $(trimδ[i,j]*180/π)")
-        lift = trimProblem[i,j].model.mass*trimProblem[i,j].model.atmosphere.g - trimThrust[i,j]*sin(trimAoA[i,j])
-        drag = trimThrust[i,j]*cos(trimAoA[i,j])
-        qS = 1/2*trimProblem[i,j].model.atmosphere.ρ*U^2*(32*1)
-        trimEnduranceFactor[i,j] = lift^1.5/drag*sqrt(1/qS)
-        # Undeformed jig-shape properties
-        if j == 1
-            # Undeformed nodal positions of right wing
-            x1_0[i] = vcat([vcat(cHALEtrim.elements[e].r_n1[1],cHALEtrim.elements[e].r_n2[1]) for e in elemRangeRightWing]...)
-            x3_0[i] = vcat([vcat(cHALEtrim.elements[e].r_n1[3],cHALEtrim.elements[e].r_n2[3]) for e in elemRangeRightWing]...)
-            # Undeformed elemental positions
-            x1_e_wing[i] = [cHALEtrim.elements[e].x1 for e in elemRangeRightWing]
-        end
-        # Displacements over span
-        u1_of_x1[i,j] = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].u_n1[1],trimProblem[i,j].nodalStatesOverσ[end][e].u_n2[1]) for e in elemRangeRightWing]...)
-        u3_of_x1[i,j] = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].u_n1[3],trimProblem[i,j].nodalStatesOverσ[end][e].u_n2[3]) for e in elemRangeRightWing]...)
-        u1_of_x1[i,j] .-= u1_of_x1[i,j][1]
-        u3_of_x1[i,j] .-= u3_of_x1[i,j][1]
-        # Deformed nodal positions
-        x1_def[i,j] = x1_0[i] .+ u1_of_x1[i,j]
-        x3_def[i,j] = x3_0[i] .+ u3_of_x1[i,j]
-        # Angle of twist
-        p1_of_x1 = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].p_n1[1],trimProblem[i,j].nodalStatesOverσ[end][e].p_n2[1]) for e in elemRangeRightWing]...)
-        p2_of_x1 = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].p_n1[2],trimProblem[i,j].nodalStatesOverσ[end][e].p_n2[2]) for e in elemRangeRightWing]...)
-        p3_of_x1 = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].p_n1[3],trimProblem[i,j].nodalStatesOverσ[end][e].p_n2[3]) for e in elemRangeRightWing]...)
-        twist[i,j] = [asind((first(rotation_tensor_WM([p1_of_x1[k],p2_of_x1[k],p3_of_x1[k]]))*AeroBeams.a2)[3]) for k in eachindex(p1_of_x1)]
-        twist[i,j] .-= twist[i,j][1] # discount root angle (rigid-body rotation)
-        # Model for trim problem with springs
-        cHALEtrimSpringed,_,_,tailBoomSpringed,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
-        # Add springs
-        add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1,spring2])
-        # Update model
-        cHALEtrimSpringed.skipValidationMotionBasisA = true
-        update_model!(cHALEtrimSpringed)
-        # Create and solve trim problem with springs
-        trimProblemSpringed[i,j] = create_TrimProblem(model=cHALEtrimSpringed,systemSolver=NRtrim,x0=trimProblem[i,j].x)
-        solve!(trimProblemSpringed[i,j])
-        # Retrieve and compare trim outputs
-        trimAoASpringed = (trimProblemSpringed[i,j].aeroVariablesOverσ[end][cHALEtrimSpringed.beams[1].elementRange[end]].flowAnglesAndRates.αₑ + trimProblemSpringed[i,j].aeroVariablesOverσ[end][cHALEtrimSpringed.beams[2].elementRange[1]].flowAnglesAndRates.αₑ)/2
-        trimThrustSpringed = trimProblemSpringed[i,j].x[end-1]*trimProblemSpringed[i,j].model.forceScaling
-        trimδSpringed = trimProblemSpringed[i,j].x[end]
-        println("Trim outputs ratios springed/nominal: AoA = $(trimAoASpringed/trimAoA[i,j]), T = $(trimThrustSpringed/trimThrust[i,j]), δ = $(trimδSpringed/trimδ[i,j])")
-        # Model for eigen problem
-        cHALEeigen,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElev=trimδSpringed,thrust=trimThrustSpringed,k2=k2,hasInducedDrag=hasInducedDrag)
-        # Create and solve eigen problem
-        eigenProblem[i,j] = create_EigenProblem(model=cHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf],refTrimProblem=trimProblemSpringed[i,j])
-        solve_eigen!(eigenProblem[i,j])
-        # Frequencies, dampings and eigenvectors
-        untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(eigenProblem[i,j].dampingsOscillatory,1e-8)
-        untrackedEigenvectors[i,j] = eigenProblem[i,j].eigenvectorsOscillatoryCplx
-    end
-    # Frequencies and dampings after mode tracking
-    freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
-    # Separate frequencies and dampings by mode
-    for mode in 1:nModes
-        modeFrequencies[i,mode] = [freqs[i,j][mode] for j in eachindex(URange)]
-        modeDampings[i,mode] = [damps[i,j][mode] for j in eachindex(URange)]
-        modeDampingRatios[i,mode] = modeDampings[i,mode]./modeFrequencies[i,mode]
-    end
-end
+# # Sweep bending curvature
+# for (i,k2) in enumerate(k2Range)
+#     # Set attachment springs
+#     spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=μu*[1; 1; 1],kp=μp*[1; 1; 1])
+#     spring2 = create_Spring(elementsIDs=[nElemTailBoom],nodesSides=[2],ku=μu*[1; 1; 1],kp=μp*[1; 1; 1])
+#     # Sweep airspeed
+#     for (j,U) in enumerate(URange)
+#         println("Solving for k2 = $k2, U = $U m/s")
+#         # Model for trim problem
+#         cHALEtrim,_,_,tailBoom,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
+#         # Set initial guess solution as previous known solution
+#         x0Trim = j == 1 ? zeros(0) : trimProblem[i,j-1].x
+#         # Create and trim problem
+#         trimProblem[i,j] = create_TrimProblem(model=cHALEtrim,systemSolver=NRtrim,x0=x0Trim)
+#         solve!(trimProblem[i,j])
+#         # Extract trim variables
+#         trimAoA[i,j] = trimProblem[i,j].aeroVariablesOverσ[end][div(nElemWing,2)].flowAnglesAndRates.αₑ
+#         trimThrust[i,j] = stabilizersAero ? trimProblem[i,j].x[end-1]*trimProblem[i,j].model.forceScaling : trimProblem[i,j].x[end]*trimProblem[i,j].model.forceScaling
+#         trimδ[i,j] = stabilizersAero ? trimProblem[i,j].x[end] : 0
+#         println("Trim AoA = $(trimAoA[i,j]*180/π), trim thrust = $(trimThrust[i,j]), trim δ = $(trimδ[i,j]*180/π)")
+#         lift = trimProblem[i,j].model.mass*trimProblem[i,j].model.atmosphere.g - trimThrust[i,j]*sin(trimAoA[i,j])
+#         drag = trimThrust[i,j]*cos(trimAoA[i,j])
+#         qS = 1/2*trimProblem[i,j].model.atmosphere.ρ*U^2*(32*1)
+#         trimEnduranceFactor[i,j] = lift^1.5/drag*sqrt(1/qS)
+#         # Undeformed jig-shape properties
+#         if j == 1
+#             # Undeformed nodal positions of right wing
+#             x1_0[i] = vcat([vcat(cHALEtrim.elements[e].r_n1[1],cHALEtrim.elements[e].r_n2[1]) for e in elemRangeRightWing]...)
+#             x3_0[i] = vcat([vcat(cHALEtrim.elements[e].r_n1[3],cHALEtrim.elements[e].r_n2[3]) for e in elemRangeRightWing]...)
+#             # Undeformed elemental positions
+#             x1_e_wing[i] = [cHALEtrim.elements[e].x1 for e in elemRangeRightWing]
+#         end
+#         # Displacements over span
+#         u1_of_x1[i,j] = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].u_n1[1],trimProblem[i,j].nodalStatesOverσ[end][e].u_n2[1]) for e in elemRangeRightWing]...)
+#         u3_of_x1[i,j] = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].u_n1[3],trimProblem[i,j].nodalStatesOverσ[end][e].u_n2[3]) for e in elemRangeRightWing]...)
+#         u1_of_x1[i,j] .-= u1_of_x1[i,j][1]
+#         u3_of_x1[i,j] .-= u3_of_x1[i,j][1]
+#         # Deformed nodal positions
+#         x1_def[i,j] = x1_0[i] .+ u1_of_x1[i,j]
+#         x3_def[i,j] = x3_0[i] .+ u3_of_x1[i,j]
+#         # Angle of twist
+#         p1_of_x1 = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].p_n1[1],trimProblem[i,j].nodalStatesOverσ[end][e].p_n2[1]) for e in elemRangeRightWing]...)
+#         p2_of_x1 = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].p_n1[2],trimProblem[i,j].nodalStatesOverσ[end][e].p_n2[2]) for e in elemRangeRightWing]...)
+#         p3_of_x1 = vcat([vcat(trimProblem[i,j].nodalStatesOverσ[end][e].p_n1[3],trimProblem[i,j].nodalStatesOverσ[end][e].p_n2[3]) for e in elemRangeRightWing]...)
+#         twist[i,j] = [asind((first(rotation_tensor_WM([p1_of_x1[k],p2_of_x1[k],p3_of_x1[k]]))*AeroBeams.a2)[3]) for k in eachindex(p1_of_x1)]
+#         twist[i,j] .-= twist[i,j][1] # discount root angle (rigid-body rotation)
+#         # Model for trim problem with springs
+#         cHALEtrimSpringed,_,_,tailBoomSpringed,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
+#         # Add springs
+#         add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1,spring2])
+#         # Update model
+#         cHALEtrimSpringed.skipValidationMotionBasisA = true
+#         update_model!(cHALEtrimSpringed)
+#         # Create and solve trim problem with springs
+#         trimProblemSpringed[i,j] = create_TrimProblem(model=cHALEtrimSpringed,systemSolver=NRtrim,x0=trimProblem[i,j].x)
+#         solve!(trimProblemSpringed[i,j])
+#         # Retrieve and compare trim outputs
+#         trimAoASpringed = (trimProblemSpringed[i,j].aeroVariablesOverσ[end][cHALEtrimSpringed.beams[1].elementRange[end]].flowAnglesAndRates.αₑ + trimProblemSpringed[i,j].aeroVariablesOverσ[end][cHALEtrimSpringed.beams[2].elementRange[1]].flowAnglesAndRates.αₑ)/2
+#         trimThrustSpringed = trimProblemSpringed[i,j].x[end-1]*trimProblemSpringed[i,j].model.forceScaling
+#         trimδSpringed = trimProblemSpringed[i,j].x[end]
+#         println("Trim outputs ratios springed/nominal: AoA = $(trimAoASpringed/trimAoA[i,j]), T = $(trimThrustSpringed/trimThrust[i,j]), δ = $(trimδSpringed/trimδ[i,j])")
+#         # Model for eigen problem
+#         cHALEeigen,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElev=trimδSpringed,thrust=trimThrustSpringed,k2=k2,hasInducedDrag=hasInducedDrag)
+#         # Create and solve eigen problem
+#         eigenProblem[i,j] = create_EigenProblem(model=cHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf],refTrimProblem=trimProblemSpringed[i,j])
+#         solve_eigen!(eigenProblem[i,j])
+#         # Frequencies, dampings and eigenvectors
+#         untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory
+#         untrackedDamps[i,j] = round_off!(eigenProblem[i,j].dampingsOscillatory,1e-8)
+#         untrackedEigenvectors[i,j] = eigenProblem[i,j].eigenvectorsOscillatoryCplx
+#     end
+#     # Frequencies and dampings after mode tracking
+#     freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
+#     # Separate frequencies and dampings by mode
+#     for mode in 1:nModes
+#         modeFrequencies[i,mode] = [freqs[i,j][mode] for j in eachindex(URange)]
+#         modeDampings[i,mode] = [damps[i,j][mode] for j in eachindex(URange)]
+#         modeDampingRatios[i,mode] = modeDampings[i,mode]./modeFrequencies[i,mode]
+#     end
+# end
 
-# Adjusted dampings with damping ratio shift for T-IP modes
-if λ == 1
-    TIP_modes = [[9,14], [9,15], [10,13], [12,13], [13,11]]
-elseif λ == 2
-    TIP_modes = [[9,14], [11,14], [11,14], [11,15], [10,15]]
-end
-modeDampingsAdj = deepcopy(modeDampings)
-modeDampingRatiosAdj = deepcopy(modeDampingRatios)
-for (i,k2) in enumerate(k2Range)
-    for mode in TIP_modes[i]
-        modeDampingRatiosAdj[i,mode] .-= σShift
-        modeDampingsAdj[i,mode] .-= σShift*modeFrequencies[i,mode]
-    end
-end
+# # Adjusted dampings with damping ratio shift for T-IP modes
+# if λ == 1
+#     TIP_modes = [[9,14], [9,15], [10,13], [12,13], [13,11]]
+# elseif λ == 2
+#     TIP_modes = [[9,14], [11,14], [11,14], [11,15], [10,15]]
+# end
+# modeDampingsAdj = deepcopy(modeDampings)
+# modeDampingRatiosAdj = deepcopy(modeDampingRatios)
+# for (i,k2) in enumerate(k2Range)
+#     for mode in TIP_modes[i]
+#         modeDampingRatiosAdj[i,mode] .-= σShift
+#         modeDampingsAdj[i,mode] .-= σShift*modeFrequencies[i,mode]
+#     end
+# end
 
 # Compute flutter variables
 if λ == 1
@@ -250,6 +250,9 @@ for (i,k2) in enumerate(k2Range)
     # Lowest flutter onset speed, corresponding frequency and tip OOP
     if !isempty(flutterOnsetSpeedsAll[i])
         iLowest = sortperm(flutterOnsetSpeedsAll[i])[1]
+        if λ == 1 && k2 == 0.045
+            iLowest = 3 # Neglect phugoid as flutter mode
+        end
         flutterOnsetSpeed[i] = flutterOnsetSpeedsAll[i][iLowest]
         flutterOnsetFreq[i] = flutterOnsetFreqsAll[i][iLowest]
         flutterOnsetTipOOP[i] = flutterOnsetTipOOPAll[iLowest]
@@ -456,10 +459,15 @@ plt_u3 = plot(xlabel="Normalized spanwise direction", ylabel="Normalized vertica
 plot!([NaN], [NaN], ls=:solid, c=:black, lw=lw, label=string("\$U_{\\infty} = ",URange[1],"\$ m/s"))
 plot!([NaN], [NaN], ls=:dash, c=:black, lw=lw, label=string("At flutter"))
 for (i,k2) in enumerate(k2Range)
+    if λ==1 && k2==0.045
+        indFlutterMode = 2 # Neglect phugoid as flutter mode
+    else
+        indFlutterMode = 1
+    end
     plot!(x1_def[i,1]/L, x3_def[i,1]/L, ls=:solid, c=colors[i], lw=lw, label=false)
     plot!(-x1_def[i,1]/L, x3_def[i,1]/L, ls=:solid, c=colors[i], lw=lw, label=false)
-    plot!(x1_def[i,indicesFlutterOnset[i][1]]/L, x3_def[i,indicesFlutterOnset[i][1]]/L, ls=:dash, c=colors[i], lw=lw, label=false)
-    plot!(-x1_def[i,indicesFlutterOnset[i][1]]/L, x3_def[i,indicesFlutterOnset[i][1]]/L, ls=:dash, c=colors[i], lw=lw, label=false)
+    plot!(x1_def[i,indicesFlutterOnset[i][indFlutterMode]]/L, x3_def[i,indicesFlutterOnset[i][indFlutterMode]]/L, ls=:dash, c=colors[i], lw=lw, label=false)
+    plot!(-x1_def[i,indicesFlutterOnset[i][indFlutterMode]]/L, x3_def[i,indicesFlutterOnset[i][indFlutterMode]]/L, ls=:dash, c=colors[i], lw=lw, label=false)
 end
 display(plt_u3)
 savefig(string(absPathFig,"/cHALE_flutter_k2_range_disp_lambda",λ,".pdf"))
