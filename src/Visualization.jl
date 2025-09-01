@@ -702,8 +702,10 @@ Plots the mode shapes of the model in the given eigenproblem
 - `plotBCs::Bool`: flag to plot BCs
 - `view::Union{Nothing,Tuple{Real,Real}}`: view angles
 - `nModes::Union{Nothing,Int64}`: number of modes to plot
+- `modes2plot::Union{Nothing,AbstractArray{Int}}`: array of modes to plot
 - `scale::Real`: displacements and rotations scale
 - `ΔuDef::Vector{<:Real}`: displacement vector for first node of deformed assembly relative to the undeformed one
+- `plotSteady::Bool`: flag to plot steady solution
 - `frequencyLabel::String`: option for frequency label
 - `lw::Real`: linewidth
 - `colorSteady`: color for steadily deformed assembly
@@ -719,18 +721,26 @@ Plots the mode shapes of the model in the given eigenproblem
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,scale::Real=1,ΔuDef::Vector{<:Real}=zeros(3),frequencyLabel::String="frequency&damping",lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{Int64},Vector{Int64}}}=nothing,legendPos=:best,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int64}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,scale::Real=1,ΔuDef::Vector{<:Real}=zeros(3),plotSteady::Bool=true,frequencyLabel::String="frequency&damping",lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{Int64},Vector{Int64}}}=nothing,legendPos=:best,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert frequencyLabel in ["frequency", "frequency&damping"]
     @assert lw > 0
     @assert tolPlane > 0
     @assert 0 < surfα <= 1
-    nModes = isnothing(nModes) ? problem.nModes : nModes
-    @assert nModes <= problem.nModes
     if !isnothing(modeLabels)
-        @assert length(modeLabels) == nModes
+        if !isnothing(nModes)
+            @assert length(modeLabels) == nModes
+        elseif !isnothing(modes2plot)
+            @assert length(modeLabels) == length(modes2plot)
+        end
     end
+    if !isnothing(modes2plot)
+        modes2plot = sort(modes2plot)
+        @assert modes2plot[end] <= problem.nModes
+    end
+    nModes = something(nModes, problem.nModes)
+    @assert nModes <= problem.nModes
 
     # Set backend
     if interactive
@@ -748,8 +758,11 @@ function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs
     # Elements with solution of steady problem
     elementsSteady = isnothing(refTrimProblem) ? problem.model.elements : refTrimProblem.model.elements
 
+    # Modes to be plotted
+    modes2plot = something(modes2plot, 1:nModes)
+
     # Set mode colors
-    modeColors = cgrad(modalColorScheme, nModes, categorical=true)
+    modeColors = cgrad(modalColorScheme, length(modes2plot), categorical=true)
 
     # Set frequency multiplier
     if units.frequency == "rad/s"
@@ -762,13 +775,15 @@ function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs
 
     # Initialize plot
     plt = plot(grid=plotGrid,axis=plotAxes,legend=legendPos)
-    plot!([NaN],[NaN], c=colorSteady, lw=lw, label="Steady")
-    for m in 1:nModes
-        modeLabelNow = isnothing(modeLabels) ? "Mode $m" : modeLabels[m]
+    if plotSteady
+        plot!([NaN],[NaN], c=colorSteady, lw=lw, label="Steady")
+    end
+    for (m,mode) in enumerate(modes2plot)
+        modeLabelNow = isnothing(modeLabels) ? "Mode $mode" : modeLabels[m]
         if frequencyLabel == "frequency"
-            label = string(modeLabelNow, ": ω = $(round(γ*freqs[m],digits=2)) ", units.frequency)
+            label = string(modeLabelNow, ": ω = $(round(γ*freqs[mode],digits=2)) ", units.frequency)
         elseif frequencyLabel == "frequency&damping"
-            label = string(modeLabelNow,": σ = $(round(γ*damps[m],sigdigits=3)) ± $(round(γ*freqs[m],digits=2))i ", units.frequency)
+            label = string(modeLabelNow,": σ = $(round(γ*damps[mode],sigdigits=3)) ± $(round(γ*freqs[mode],digits=2))i ", units.frequency)
         end
         plot!([NaN],[NaN], c=modeColors[m], lw=lw, label=label)
     end
@@ -823,21 +838,21 @@ function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs
     plotMin = plotMax = 0
 
     # Loop over modes
-    for m in 1:nModes
+    for (m,mode) in enumerate(modes2plot)
         # Loop over elements of eigenProblem
         for (e,element) in enumerate(elements)
             # Nodal displacements and rotations    
-            u_n1 = modeShapesAbs[m].nodalStates[e].u_n1
-            u_n2 = modeShapesAbs[m].nodalStates[e].u_n2
-            p_n1 = modeShapesAbs[m].nodalStates[e].p_n1
-            p_n2 = modeShapesAbs[m].nodalStates[e].p_n2
+            u_n1 = modeShapesAbs[mode].nodalStates[e].u_n1
+            u_n2 = modeShapesAbs[mode].nodalStates[e].u_n2
+            p_n1 = modeShapesAbs[mode].nodalStates[e].p_n1
+            p_n2 = modeShapesAbs[mode].nodalStates[e].p_n2
             # Set modal coordinates
-            x1Modal[m,e] = x1Steady[e] .+ scale*[u_n1[1]; u_n2[1]]
-            x2Modal[m,e] = x2Steady[e] .+ scale*[u_n1[2]; u_n2[2]]
-            x3Modal[m,e] = x3Steady[e] .+ scale*[u_n1[3]; u_n2[3]]
+            x1Modal[mode,e] = x1Steady[e] .+ scale*[u_n1[1]; u_n2[1]]
+            x2Modal[mode,e] = x2Steady[e] .+ scale*[u_n1[2]; u_n2[2]]
+            x3Modal[mode,e] = x3Steady[e] .+ scale*[u_n1[3]; u_n2[3]]
             # Skip elements without aero surfaces, or if those are not to be plotted
             if !plotAeroSurf || isnothing(element.aero)
-                modalAirfoilCoords_n1[m,e],modalAirfoilCoords_n2[m,e] = nothing,nothing
+                modalAirfoilCoords_n1[mode,e],modalAirfoilCoords_n2[mode,e] = nothing,nothing
                 continue
             end
             @unpack r_n1,r_n2 = element
@@ -845,14 +860,14 @@ function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs
             R_n1,_ = rotation_tensor_WM(scale*p_n1)
             R_n2,_ = rotation_tensor_WM(scale*p_n2)
             # Modal airfoil coordinates ( bring to origin (-r) and resolve in basis A (R_n*), then throw back to initial position (+r), add scaled modal displacements (+scale*u) and steady position displacement)
-            modalAirfoilCoords_n1[m,e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ (steadyAirfoilCoords_n1[e] - undefAirfoilCoords_n1[e] .- ΔuDef) .+ ΔuDef
-            modalAirfoilCoords_n2[m,e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ (steadyAirfoilCoords_n2[e] - undefAirfoilCoords_n2[e] .- ΔuDef) .+ ΔuDef
+            modalAirfoilCoords_n1[mode,e] = R_n1*(undefAirfoilCoords_n1[e] .- r_n1) .+ r_n1 .+ scale*u_n1 .+ (steadyAirfoilCoords_n1[e] - undefAirfoilCoords_n1[e] .- ΔuDef) .+ ΔuDef
+            modalAirfoilCoords_n2[mode,e] = R_n2*(undefAirfoilCoords_n2[e] .- r_n2) .+ r_n2 .+ scale*u_n2 .+ (steadyAirfoilCoords_n2[e] - undefAirfoilCoords_n2[e] .- ΔuDef) .+ ΔuDef
         end
 
         # Set TFs for plane views
-        x1Plane = maximum(abs.(vcat(x1Modal[m,:]...))) < tolPlane ? true : false
-        x2Plane = maximum(abs.(vcat(x2Modal[m,:]...))) < tolPlane ? true : false
-        x3Plane = maximum(abs.(vcat(x3Modal[m,:]...))) < tolPlane ? true : false
+        x1Plane = maximum(abs.(vcat(x1Modal[mode,:]...))) < tolPlane ? true : false
+        x2Plane = maximum(abs.(vcat(x2Modal[mode,:]...))) < tolPlane ? true : false
+        x3Plane = maximum(abs.(vcat(x3Modal[mode,:]...))) < tolPlane ? true : false
 
         # Plot steady and modal beam assemblies according to view
         if isnothing(view)
@@ -860,33 +875,43 @@ function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs
                 if plotAxes
                     plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
                 end
-                plot!(x2Steady, x3Steady, color=colorSteady,lw=lw,label=false)
-                plot!(x2Modal[m,:], x3Modal[m,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
+                if plotSteady && m==1
+                    plot!(x2Steady, x3Steady, color=colorSteady,lw=lw,label=false)
+                end
+                plot!(x2Modal[mode,:], x3Modal[mode,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
             elseif x2Plane
                 if plotAxes
                     plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
                 end
-                plot!(x1Steady, x3Steady, color=colorSteady,lw=lw,label=false)
-                plot!(x1Modal[m,:], x3Modal[m,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
+                if plotSteady && m==1
+                    plot!(x1Steady, x3Steady, color=colorSteady,lw=lw,label=false)
+                end
+                plot!(x1Modal[mode,:], x3Modal[mode,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
             elseif x3Plane
                 if plotAxes
                     plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
                 end
-                plot!(x1Steady, x2Steady, color=colorSteady,lw=lw,label=false)
-                plot!(x1Modal[m,:], x2Modal[m,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
+                if plotSteady && m==1
+                    plot!(x1Steady, x2Steady, color=colorSteady,lw=lw,label=false)
+                end
+                plot!(x1Modal[mode,:], x2Modal[mode,:], color=modeColors[m],aspect_ratio=:equal,lw=lw,label=false)
             else
                 if plotAxes
                     plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
                 end
-                plot!(x1Steady, x2Steady, x3Steady, camera=(45,45),color=colorSteady,lw=lw,label=false)
-                plot!(x1Modal[m,:], x2Modal[m,:], x3Modal[m,:],color=modeColors[m],lw=lw,label=false)
+                if plotSteady && m==1
+                    plot!(x1Steady, x2Steady, x3Steady, camera=(45,45),color=colorSteady,lw=lw,label=false)
+                end
+                plot!(x1Modal[mode,:], x2Modal[mode,:], x3Modal[mode,:],color=modeColors[m],lw=lw,label=false)
             end
         else
             if plotAxes
                 plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
             end
-            plot!(x1Steady, x2Steady, x3Steady, camera=view,color=colorSteady,lw=lw,label=false)
-            plot!(x1Modal[m,:], x2Modal[m,:], x3Modal[m,:], camera=view,color=modeColors[m],lw=lw,label=false)
+            if plotSteady && m==1
+                plot!(x1Steady, x2Steady, x3Steady, camera=view, color=colorSteady,lw=lw,label=false)
+            end
+            plot!(x1Modal[mode,:], x2Modal[mode,:], x3Modal[mode,:], camera=view,color=modeColors[m],lw=lw,label=false)
         end
 
         # Plot generalized displacements and concentrated loads, if applicable
@@ -896,18 +921,20 @@ function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs
 
         # Plot aerodynamic surfaces, if applicable
         for e in 1:nElementsTotal
-            if isnothing(modalAirfoilCoords_n1[m,e])
+            if isnothing(modalAirfoilCoords_n1[mode,e])
                 continue
             end
             # Plot steady deformed aerodynamic surfaces
-            Xu = [steadyAirfoilCoords_n1[e][1,:] steadyAirfoilCoords_n2[e][1,:]]
-            Yu = [steadyAirfoilCoords_n1[e][2,:] steadyAirfoilCoords_n2[e][2,:]]
-            Zu = [steadyAirfoilCoords_n1[e][3,:] steadyAirfoilCoords_n2[e][3,:]]
-            surface!(Xu,Yu,Zu, color=palette([colorSteady,colorSteady],2), colorbar=false, alpha=surfα)
+            if plotSteady && m==1
+                Xu = [steadyAirfoilCoords_n1[e][1,:] steadyAirfoilCoords_n2[e][1,:]]
+                Yu = [steadyAirfoilCoords_n1[e][2,:] steadyAirfoilCoords_n2[e][2,:]]
+                Zu = [steadyAirfoilCoords_n1[e][3,:] steadyAirfoilCoords_n2[e][3,:]]
+                surface!(Xu,Yu,Zu, color=palette([colorSteady,colorSteady],2), colorbar=false, alpha=surfα)
+            end
             # Plot modal aerodynamic surfaces
-            Xd = [modalAirfoilCoords_n1[m,e][1,:] modalAirfoilCoords_n2[m,e][1,:]]
-            Yd = [modalAirfoilCoords_n1[m,e][2,:] modalAirfoilCoords_n2[m,e][2,:]]
-            Zd = [modalAirfoilCoords_n1[m,e][3,:] modalAirfoilCoords_n2[m,e][3,:]]
+            Xd = [modalAirfoilCoords_n1[mode,e][1,:] modalAirfoilCoords_n2[mode,e][1,:]]
+            Yd = [modalAirfoilCoords_n1[mode,e][2,:] modalAirfoilCoords_n2[mode,e][2,:]]
+            Zd = [modalAirfoilCoords_n1[mode,e][3,:] modalAirfoilCoords_n2[mode,e][3,:]]
             surface!(Xd,Yd,Zd, color=palette([modeColors[m],modeColors[m]],2), colorbar=false, alpha=surfα)
         end
 
@@ -915,8 +942,8 @@ function plot_mode_shapes(problem::EigenProblem; interactive::Bool=false,plotBCs
         if !isnothing(plotLimits)
             plot!(xlims=[plotLimits[1][1],plotLimits[2][1]],ylims=[plotLimits[1][2],plotLimits[2][2]],zlims=[plotLimits[1][3],plotLimits[2][3]])
         elseif !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
-            plotMax = max(plotMax,maximum(reduce(vcat, x1Modal[m,:])),maximum(reduce(vcat, x2Modal[m,:])),maximum(reduce(vcat, x3Modal[m,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
-            plotMin = min(plotMin,minimum(reduce(vcat, x1Modal[m,:])),minimum(reduce(vcat, x2Modal[m,:])),minimum(reduce(vcat, x3Modal[m,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
+            plotMax = max(plotMax,maximum(reduce(vcat, x1Modal[mode,:])),maximum(reduce(vcat, x2Modal[mode,:])),maximum(reduce(vcat, x3Modal[mode,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
+            plotMin = min(plotMin,minimum(reduce(vcat, x1Modal[mode,:])),minimum(reduce(vcat, x2Modal[mode,:])),minimum(reduce(vcat, x3Modal[mode,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
             plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
         end
     end
