@@ -15,12 +15,14 @@ display(plt_swept_modeShapes)
 # Plot configurations
 colors = cgrad(:rainbow, nModes, categorical=true)
 lw = 2
+ms = 4
+msw = 0
 gr()
 
 # Frequencies vs sweep angle
 plt1 = plot(xlabel="Sweep angle [deg]", ylabel="Frequency [Hz]", ylims=[0,50])
 for mode in 1:nModes
-    plot!(ΛRange*180/π, modeFrequencies[mode], c=colors[mode], lw=lw,  label=false)
+    plot!(ΛRange*180/π, modeFrequencies[mode], c=colors[mode], lw=lw, marker=:circle, ms=ms, msw=msw, label=false)
 end
 display(plt1)
 savefig(string(absPath,"/sweptPazyModal.pdf"))

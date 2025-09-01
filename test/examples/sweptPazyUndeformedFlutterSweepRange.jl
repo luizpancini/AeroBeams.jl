@@ -16,7 +16,7 @@ hasTipCorrection = true
 tipLossType = "VLM-def"
 
 # Flag for ad hoc corrections on sectional stiffness matrix
-sweepStructuralCorrections = false
+sweepStructuralCorrections = true
 
 # Aerodynamic solver
 aeroSolver = Indicial()

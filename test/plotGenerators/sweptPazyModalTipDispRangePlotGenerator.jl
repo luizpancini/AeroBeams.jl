@@ -10,15 +10,19 @@ mkpath(absPath)
 
 # Plot configurations
 colors = cgrad(:rainbow, nModes, categorical=true)
+lfs = 12
 lw = 2
 ls = [:solid :dash :dot]
 gr()
 
 # Frequencies vs sweep angle
-plt1 = plot(xlabel="Tip OOP disp. [% semispan]", ylabel="Frequency [Hz]", xlims=[0,50], ylims=[0,50])
+plt1 = plot(xlabel="Normalized tip displacement", ylabel="Frequency [Hz]", xlims=[0,0.5], ylims=[0,50], legendfontsize=lfs, colorbar_title="Mode")
+for (i,Λ) in enumerate(ΛRange)
+    plot!([NaN], [NaN], c=:black, lw=lw, ls=ls[i], label="\$\\Lambda=\$$(round.(Int,Λ*180/π))\$^\\circ\$")
+end
 for (i,Λ) in enumerate(ΛRange)
     for mode in 1:nModes
-        plot!(tipOOP[i,:]/L*100, modeFrequencies[i,mode], c=colors[mode], lw=lw, ls=ls[i], label=false)
+        plot!(tipOOP[i,:]/L, modeFrequencies[i,mode], c=colors, lw=lw, ls=ls[i], lz=mode, label=false)
     end
 end
 display(plt1)
