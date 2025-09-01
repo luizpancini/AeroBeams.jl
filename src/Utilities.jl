@@ -125,6 +125,13 @@ end
 export gauss_legendre7
 
 
+function safe_norm(p)
+    s = sum(abs2, p)
+    δ = eps(Float64) * (1 + abs(ForwardDiff.value(real(s)))) * one(real(s))
+    return sqrt(s + δ)
+end
+
+
 # Divides the input variables in-place
 function divide_inplace!(divisor, vars...)
     return (var ./ divisor for var in vars)
@@ -463,7 +470,7 @@ function rotation_parameter_scaling(p)
     halfRotations = 0
     
     # Norm of the extended parameters vector
-    pNorm = norm(p)
+    pNorm = safe_norm(p)
     
     # Scale according to norm
     if pNorm > 4
@@ -913,7 +920,7 @@ function rotation_parameters_WM(R)
     e = q[2:4]
 
     # Angle of rotation
-    ϕ = 2*asin(norm(e))
+    ϕ = 2*asin(safe_norm(e))
     
     # Bauchau's ν parameter for Wiener-Milenkovic parametrization
     ν = cos(ϕ/4)^2
@@ -943,7 +950,7 @@ function rotation_parameters_Rodrigues(R)
     e = q[2:4]
 
     # Angle of rotation
-    ϕ = 2*asin(norm(e))
+    ϕ = 2*asin(safe_norm(e))
     
     # Bauchau's ν parameter for Rodrigues parametrization
     ν = cos(ϕ/2)
@@ -1092,8 +1099,8 @@ function rotation_between_WM(p1,p2)
     # Check consistency: true rotation parameters might actually be -p12 (since rotations of ϕ about axis n or -ϕ about axis -n are equal)
     R12_check1,_ = rotation_tensor_WM(p12)
     R12_check2,_ = rotation_tensor_WM(-p12)
-    check1 = norm(R12_check1.-R12)
-    check2 = norm(R12_check2.-R12)
+    check1 = safe_norm(R12_check1.-R12)
+    check2 = safe_norm(R12_check2.-R12)
 
     # Select correct rotation parameters vector (the one for which norm(R12.-R12_check) = 0)
     if check2 < check1
