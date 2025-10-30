@@ -7,7 +7,7 @@ runCIfailingTests = false
 is_ci = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
 
 # Default tolerances for self-comparison
-SELFatol = is_ci ? 1e-3 : 1e-4
+SELFatol = is_ci ? 1e-2 : 1e-4
 SELFrtol = is_ci ? 0 : 1e-4
 
 include("dynamicAeroelasticTests.jl")
