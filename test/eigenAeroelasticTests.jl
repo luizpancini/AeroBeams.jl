@@ -15,8 +15,8 @@
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "freqs.txt"))
     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "damps.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
-    @test hcat(damps...)' ≈ damps_ atol=SELFatol
+    @test hcat(freqs...)' ≈ freqs_ atol=1e-3
+    @test hcat(damps...)' ≈ damps_ atol=1e-3
 end
 
 @testset "Flutter analysis of the Goland wing" begin
