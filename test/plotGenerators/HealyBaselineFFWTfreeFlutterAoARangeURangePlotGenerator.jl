@@ -45,8 +45,8 @@ plot!(plt31, [NaN],[NaN], lc=:black, ls=:dashdot, lw=lw, label="Healy (2023) - S
 plot!(plt31, [NaN],[NaN], lc=:black, ls=:solid, lw=lw, label="AeroBeams")
 for (j,θ) in enumerate(θRange)
     for mode in 1:nModes
-        plot!(plt31, URange[range2plot], modeFrequencies[2,j,mode][range2plot]/(2*π), c=colors[j], lw=lw, label=false)
-        plot!(plt32, URange[range2plot], modeDampingRatios[2,j,mode][range2plot], c=colors[j], lw=lw, label=false)
+        plot!(plt31, URange, modeFrequencies[2,j,mode]/(2*π), c=colors[j], lw=lw, label=false)
+        plot!(plt32, URange, modeDampingRatios[2,j,mode], c=colors[j], lw=lw, label=false)
     end
     plot!(plt31, freq1_ST[2*j-1,:], freq1_ST[2*j,:], c=colors[j], ls=:dashdot, lw=lw, label=false)
     plot!(plt31, freq2_ST[2*j-1,:], freq2_ST[2*j,:], c=colors[j], ls=:dashdot, lw=lw, label=false)

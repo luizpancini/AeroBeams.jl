@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,scale=100,plotFrequency=10,view=(90,0),plotLimits=([-L,L],[-15,15],[0,8]),save=true,savePath=string(relPath,"/joinedBeams_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,scale=100,plotFrequency=10,view=(90,0),plotLimits=([-L,L],[-15,15],[0,8]),save=true,savePath=string(relPath,"/joinedBeams_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2

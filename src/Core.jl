@@ -160,7 +160,7 @@ function element_states_rates!(problem::Problem,element::Element)
     end
 
     # Unpack
-    @unpack Δt = problem   
+    @unpack Δt = problem
     @unpack udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv = element
     @unpack u,p,V,Ω,χ = element.states
     @unpack udot,pdot,Vdot,Ωdot,χdot = element.statesRates
@@ -213,7 +213,7 @@ function element_rotation_variables!(problem::Problem,element::Element)
         # Time derivatives of rotation tensor from basis A to basis B, and scaled rotation parameters 
         Rdot,ps1dot,ps2dot,ps3dot = rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot) 
         RdotR0 = Rdot*R0
-                                                                              
+        
         # Derivatives of time derivative of rotation tensor from basis A to basis B w.r.t extended rotation parameters
         Rdot_p1,Rdot_p2,Rdot_p3 = rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,Θ_ps1,Θ_ps2,Θ_ps3,υ,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps1dot,ps2dot,ps3dot,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3)
     else
@@ -365,13 +365,11 @@ end
 # Computes the nodal resultants from the aerodynamic loads on the current element
 function aerodynamic_loads!(problem::Problem,model::Model,element::Element)
 
-    @unpack aero = element
-
     # Initialize 
     f1_χ,f2_χ,m1_χ,m2_χ = zeros(3),zeros(3),zeros(3),zeros(3)
     
     # Skip if there are no aerodynamic loads on the element
-    if isnothing(aero)
+    if isnothing(element.aero)
         @pack! element = f1_χ,f2_χ,m1_χ,m2_χ
         return f1_χ,f2_χ,m1_χ,m2_χ
     end
@@ -380,14 +378,16 @@ function aerodynamic_loads!(problem::Problem,model::Model,element::Element)
     @unpack DOF_δ = element
     @unpack V,Ω,χ = element.states
     @unpack Vdot,Ωdot = element.statesRates
-    @unpack nTotalAeroStates,airfoil,δ,δMultiplier = aero
+    @unpack δ,δMultiplier = element.aero.aeroSurface
+    @unpack airfoil,nTotalAeroStates = element.aero
     δNow = !isempty(DOF_δ) ? x[DOF_δ]*δMultiplier : δ(timeNow)
 
     # Compute aerodynamic nodal resutants and state matrices
     f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
 
     @pack! element = f1_χ,f2_χ,m1_χ,m2_χ
-    @pack! element.aero = A,B,δNow
+    @pack! element.aero = A,B
+    @pack! element.aero.aeroSurface = δNow
 
     return f1_χ,f2_χ,m1_χ,m2_χ
 
@@ -399,7 +399,7 @@ function wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::M
 
     # Unpack states and states' rates
     if isempty(element.DOF_δ)
-        V,Ω,χ,δNow = states[1:3],states[4:6],states[7:end],element.aero.δ(problem.timeNow)
+        V,Ω,χ,δNow = states[1:3],states[4:6],states[7:end],element.aero.aeroSurface.δ(problem.timeNow)
     else
         V,Ω,χ,δNow = states[1:3],states[4:6],states[7:end-1],states[end]
     end
@@ -421,7 +421,7 @@ function wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Probl
     # Unpack states and states' rates
     Vdot,Ωdot = statesRates[1:3],statesRates[4:6]
     @unpack V,Ω,χ = element.states
-    δNow = !isempty(element.DOF_δ) ? problem.x[element.DOF_δ]*element.aero.δMultiplier : element.aero.δ(problem.timeNow)
+    δNow = !isempty(element.DOF_δ) ? problem.x[element.DOF_δ]*element.aero.aeroSurface.δMultiplier : element.aero.aeroSurface.δ(problem.timeNow)
 
     # Nodal resutants and state matrices
     f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
@@ -454,13 +454,18 @@ function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ
     # Update airfoil parameters
     update_airfoil_parameters!(element)
 
-    # Local gust velocity
+    # Update tip loss function, if applicable
+    if problem isa DynamicProblem && element.aero.aeroSurface.tipLossFunctionIsAirspeedDependent
+        update_tip_loss_factor!(problem,model,element)
+    end
+
+    # Get local gust velocity, if applicable
     if !isnothing(model.gust)
         local_gust_velocity!(problem,model,element)
     end
 
-    # Flap deflection rates
-    if !element.aero.δIsZero
+    # Get flap deflection rates, if applicable
+    if !element.parent.aeroSurface.δIsZero
         flap_deflection_rates!(problem,element)
     end
 
@@ -639,7 +644,7 @@ function element_residual!(problem::Problem,model::Model,element::Element)
         F_u1 .+= tmp
         F_u2 .+= tmp
 
-        # --- F_p --- #    
+        # --- F_p --- #
         tmp = Δℓ/2 * (RdotR0*H + RR0*Hdot)
         F_p1 .+= tmp
         F_p2 .+= tmp
@@ -662,15 +667,15 @@ function element_residual!(problem::Problem,model::Model,element::Element)
     # Set or add to residuals for the element's first node
     # --------------------------------------------------------------------------
     # The node's equations have not been set yet
-    if !eqsNode1Set            
+    if !eqsNode1Set
         # Set equilibrium equations' residual
         residual[eqs_Fu1] .= F_u1/forceScaling
         residual[eqs_Fp1] .= F_p1/forceScaling
         # Set compatibility equations' residual
         residual[eqs_FF1] .= F_F1
         residual[eqs_FM1] .= F_M1 
-    # The node's equations have already been set    
-    else                      
+    # The node's equations have already been set
+    else
         # Add to existing equilibrium equations' residual (except for hinged degrees-of-freedom)
         residual[eqs_Fu1] .+= F_u1/forceScaling
         residual[eqs_Fp1] .+= notHingedNode1Mat*F_p1/forceScaling
@@ -678,12 +683,12 @@ function element_residual!(problem::Problem,model::Model,element::Element)
         # ----------------------------------------------------------------------
         # This is a standard node (shares compatibility equations)
         if !isSpecialNode1
-            # Add to existing compatibility equations' residual / set moment equilibrium equations' residual for hinged degrees-of-freedom
+            # Add to existing compatibility equations' residual (except for hinged degrees-of-freedom - discard equations) / set separate moment equilibrium equations' residual for hinged degrees-of-freedom
             residual[eqs_FF1] .+= F_F1
             residual[eqs_FM1] .+= notHingedNode1Mat*F_M1 + hingedNode1Mat*F_p1/forceScaling 
-        # This is a special node (has separate compatibility equations)    
+        # This is a special node (has separate compatibility equations)
         else
-            # Set separate compatibility equations' residual / set moment equilibrium equations' residual for hinged degrees-of-freedomresi
+            # Set separate compatibility equations' residual (except for hinged degrees-of-freedom - discard equations) / set separate moment equilibrium equations' residual for hinged degrees-of-freedom
             residual[eqs_FF1_sep] .= F_F1
             residual[eqs_FM1_sep] .= notHingedNode1Mat*F_M1 + hingedNode1Mat*F_p1/forceScaling
         end
@@ -691,27 +696,27 @@ function element_residual!(problem::Problem,model::Model,element::Element)
     # Set or add to residuals for the element's last node
     # --------------------------------------------------------------------------
     # The node's equations have not been set yet
-    if !eqsNode2Set          
+    if !eqsNode2Set
         # Set equilibrium equations' residual
         residual[eqs_Fu2] .= F_u2/forceScaling
         residual[eqs_Fp2] .= F_p2/forceScaling
-        # Set compatibility equations' residual (except for hinged degrees-of-freedom)
+        # Set compatibility equations' residual (except for hinged degrees-of-freedom - discard equations)
         residual[eqs_FF2] .= F_F2
         residual[eqs_FM2] .= notHingedNode2Mat*F_M2 
-    # The node's equations have already been set    
-    else                    
+    # The node's equations have already been set
+    else
         # Add to existing equilibrium equations' residual
         residual[eqs_Fu2] .+= F_u2/forceScaling
         residual[eqs_Fp2] .+= F_p2/forceScaling
         # Check if is a special node 
         # ----------------------------------------------------------------------
         # This is a standard node (shares compatibility equations)
-        if !isSpecialNode2     
+        if !isSpecialNode2 
             # Add to existing compatibility equations' residual 
             residual[eqs_FF2] .+= F_F2
             residual[eqs_FM2] .+= F_M2
-        # This is a special node (has separate compatibility equations)    
-        else              
+        # This is a special node (has separate compatibility equations)
+        else
             # Set separate compatibility equations' residual 
             residual[eqs_FF2_sep] .= F_F2
             residual[eqs_FM2_sep] .= F_M2
@@ -839,6 +844,7 @@ end
 function aero_derivatives!(problem::Problem,model::Model,element::Element)
 
     @unpack aero = element
+    @unpack aeroSurface = element.parent
 
     # Skip if there are no aero loads, or angle of attack is undefined, or the convergence rate in a dynamic problem is higher than the required minimum
     if isnothing(aero) || isnan(aero.flowAnglesAndRates.α) || (problem isa DynamicProblem && problem.systemSolver.convRate > problem.systemSolver.minConvRateAeroJacUpdate)
@@ -848,8 +854,8 @@ function aero_derivatives!(problem::Problem,model::Model,element::Element)
     # Unpack element data
     @unpack DOF_δ = element
     @unpack V,Ω,χ = element.states
-    @unpack nTotalAeroStates,derivationMethod,A,δMultiplier = aero
-    @unpack f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ = element.aero
+    @unpack derivationMethod,δMultiplier = aeroSurface
+    @unpack nTotalAeroStates,A,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ = aero
 
     # Set input states for aero loads wrapper functions
     states = isempty(DOF_δ) ? vcat([V,Ω,χ]...) : vcat([V,Ω,χ,problem.x[DOF_δ]*δMultiplier]...)
@@ -1070,29 +1076,29 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     # F_p_p
     tmp = Δℓ/2 * (ω_tilde*mul3(R_p1,R_p2,R_p3,R0H) + mul3(R_p1,R_p2,R_p3,R0*cross(V,P)))
     F_p1_p .+= tmp
-    F_p2_p .+= tmp  
+    F_p2_p .+= tmp
     # F_p_V
     tmp = Δℓ/2 * (ω_tilde_RR0*I_21 + RR0*(V_tilde*I_11-tilde(P)))
     F_p1_V .= tmp 
-    F_p2_V .= copy(tmp)   
+    F_p2_V .= copy(tmp)
     # F_p_Ω
     tmp = Δℓ/2 * (ω_tilde_RR0*I_22 + RR0*V_tilde*I_12)
     F_p1_Ω .= tmp 
     F_p2_Ω .= copy(tmp) 
     
-    # --- F_V --- #    
+    # --- F_V --- #
     # F_V_u
-    F_V_u .= -ω_tilde   
+    F_V_u .= -ω_tilde
     # F_V_p
     F_V_p .= mul3(R_p1,R_p2,R_p3,R0*V) 
     # F_V_V
     F_V_V .= RR0
     
-    # --- F_Ω --- #   
+    # --- F_Ω --- #
     # F_Ω_p
-    F_Ω_p .= -R0T * mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),ω)  
+    F_Ω_p .= -R0T * mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),ω)
     # F_Ω_Ω
-    F_Ω_Ω .= I3  
+    F_Ω_Ω .= I3
 
     ## Transient dynamic terms
     # --------------------------------------------------------------------------
@@ -1115,7 +1121,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         # F_u_Ω
         tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_12
         F_u1_Ω .+= tmp
-        F_u2_Ω .+= tmp  
+        F_u2_Ω .+= tmp
 
         # --- F_p --- #
         # F_p_p
@@ -1153,7 +1159,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         F_u2_Ω .-= f2χ_Ω
         # F_p_V
         F_p1_V .-= m1χ_V
-        F_p2_V .-= m2χ_V   
+        F_p2_V .-= m2χ_V
         # F_p_Ω
         F_p1_Ω .-= m1χ_Ω
         F_p2_Ω .-= m2χ_Ω
@@ -1180,8 +1186,8 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     jacobian[eqs_Fp1,DOF_p] .= notHingedNode1Mat*F_p1_p/forceScaling
     jacobian[eqs_Fp1,DOF_F] .= notHingedNode1Mat*F_p1_F
     jacobian[eqs_Fp1,DOF_M] .= notHingedNode1Mat*F_p1_M
-    jacobian[eqs_Fp1,DOF_V] .= F_p1_V/forceScaling
-    jacobian[eqs_Fp1,DOF_Ω] .= F_p1_Ω/forceScaling
+    jacobian[eqs_Fp1,DOF_V] .= notHingedNode1Mat*F_p1_V/forceScaling
+    jacobian[eqs_Fp1,DOF_Ω] .= notHingedNode1Mat*F_p1_Ω/forceScaling
     # Compatibility equations' Jacobian entries for the element's first node. If the shared compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
     if eqsNode1Set && isSpecialNode1
         # --- F_F1 --- #
@@ -1192,7 +1198,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         # --- F_M1 --- #
         jacobian[eqs_FM1_sep,DOF_p] .= notHingedNode1Mat*F_M1_p + hingedNode1Mat*F_p1_p/forceScaling
         jacobian[eqs_FM1_sep,DOF_F] .= notHingedNode1Mat*F_M1_F*forceScaling + hingedNode1Mat*F_p1_F
-        jacobian[eqs_FM1_sep,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling  + hingedNode1Mat*F_p1_M
+        jacobian[eqs_FM1_sep,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling + hingedNode1Mat*F_p1_M
     else
         # --- F_F1 --- #
         jacobian[eqs_FF1,DOF_u] .= F_F1_u
@@ -1202,7 +1208,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
         # --- F_M1 --- #
         jacobian[eqs_FM1,DOF_p] .= notHingedNode1Mat*F_M1_p + hingedNode1Mat*F_p1_p/forceScaling
         jacobian[eqs_FM1,DOF_F] .= notHingedNode1Mat*F_M1_F*forceScaling + hingedNode1Mat*F_p1_F
-        jacobian[eqs_FM1,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling  + hingedNode1Mat*F_p1_M
+        jacobian[eqs_FM1,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling + hingedNode1Mat*F_p1_M
     end
 
     # ---------- Node 2 ----------- #
@@ -1219,7 +1225,7 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
     jacobian[eqs_Fp2,DOF_V] .= F_p2_V/forceScaling
     jacobian[eqs_Fp2,DOF_Ω] .= F_p2_Ω/forceScaling
     # Compatibility equations' Jacobian entries for the element's second node. If the shared compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
-    if eqsNode2Set && isSpecialNode2  
+    if eqsNode2Set && isSpecialNode2
         # --- F_F2 --- #
         jacobian[eqs_FF2_sep,DOF_u] .= F_F2_u
         jacobian[eqs_FF2_sep,DOF_p] .= F_F2_p
@@ -1463,7 +1469,7 @@ function special_node_states!(problem::Problem,model::Model,specialNode::Special
 
     @unpack forceScaling = model
 
-    # Initialize states  
+    # Initialize states
     u,p,F,M = zeros(3),zeros(3),zeros(3),zeros(3)
 
     # Loop boundary conditions
@@ -1479,15 +1485,15 @@ function special_node_states!(problem::Problem,model::Model,specialNode::Special
                 # u[i] is a prescribed value
                 u[i] = σ*currentValue[i]
             elseif !uIsPrescribed[i] && isLoad[i]
-                # u[i] is a nodal state      
-                u[i] = x[DOF_uF[i]]                 
+                # u[i] is a nodal state
+                u[i] = x[DOF_uF[i]]
             end
             if pIsPrescribed[i] && !isLoad[i+3]
                 # p[i] is a prescribed value
-                p[i] = σ*currentValue[i+3]        
+                p[i] = σ*currentValue[i+3]
             elseif !pIsPrescribed[i] && isLoad[i+3]
                 # p[i] is a nodal state 
-                p[i] = x[DOF_pM[i]]       
+                p[i] = x[DOF_pM[i]]
             end
         end
 
@@ -1539,10 +1545,10 @@ function special_node_states!(problem::Problem,model::Model,specialNode::Special
         for i=1:3
             if isLoad[i] && !isTrim[i]
                 # F[i] is a prescribed value
-                F[i] += F̂[i]  
+                F[i] += F̂[i]
             elseif isTrim[i]
                 # F[i] is a trim value
-                F[i] = Ftrim[i]                   
+                F[i] = Ftrim[i]
             elseif !trimIsPrescribed[i]
                 # F[i] is a nodal state
                 F[i] = x[DOF_uF[i]]*forceScaling
@@ -1552,10 +1558,10 @@ function special_node_states!(problem::Problem,model::Model,specialNode::Special
                 M[i] += M̂[i] 
             elseif isTrim[i+3] 
                 # M[i] is a trim value
-                M[i] = Mtrim[i]                   
+                M[i] = Mtrim[i]
             elseif !trimIsPrescribed[i+3]
                 # M[i] is a nodal state
-                M[i] = x[DOF_pM[i]]*forceScaling   
+                M[i] = x[DOF_pM[i]]*forceScaling
             end
         end
     end
@@ -1591,7 +1597,7 @@ function spring_loads!(model::Model,specialNode::SpecialNode)
             M .+= Ms
             # Pack data
             @pack! spring = Fs,Ms,Δu,Δp
-        # Single attachment springs  
+        # Single attachment springs
         else
             # Generalized spring displacements, resolved in basis A (Δp must be scaled)
             Δu = u
@@ -1621,13 +1627,13 @@ function special_node_residual!(problem::Problem,model::Model,specialNode::Speci
     # Loop connected elements of the node
     for e in eachindex(ζonElements)
         # Check if the node has separate compatibility equations
-        if isempty(eqs_FF_sep[e])   
+        if isempty(eqs_FF_sep[e])
             # Add to node's equilibrium and compatibility equations' residuals
             residual[eqs_Fu[e]] .-= F/forceScaling
             residual[eqs_Fp[e]] .-= M/forceScaling
             residual[eqs_FF[e]] .+= ζonElements[e]*u
             residual[eqs_FM[e]] .+= ζonElements[e]*p
-        else                    
+        else
             # Add to node's separate compatibility equations
             residual[eqs_FF_sep[e]] .+= ζonElements[e]*u
             residual[eqs_FM_sep[e]] .+= ζonElements[e]*p
@@ -1673,10 +1679,10 @@ function special_node_follower_loads_derivatives_rotation_parameters!(problem::P
         F₀,M₀ = zeros(3),zeros(3)
         for i=1:3
             # Forces
-            if isTrim[i] && isFollower[i]  
+            if isTrim[i] && isFollower[i]
                 # Trim variable 
                 F₀[i] = x[DOF_trimLoads[i]]*forceScaling
-            elseif isFollower[i]           
+            elseif isFollower[i]
                 # Not a trim variable
                 F₀[i] = σ*currentValue[i]
             end
@@ -1684,7 +1690,7 @@ function special_node_follower_loads_derivatives_rotation_parameters!(problem::P
             if isTrim[i+3] && isFollower[i+3]
                 # Trim variable 
                 M₀[i] = x[DOF_trimLoads[i+3]]*forceScaling
-            elseif isFollower[i+3]       
+            elseif isFollower[i+3]
                 # Not a trim variable
                 M₀[i] = σ*currentValue[i]
             end
@@ -1745,12 +1751,12 @@ function update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElement
                         # Loop over node's moments/rotations DOFs
                         if isLoad[j+3] && !pIsPrescribed[j]
                             # If M(j) is prescribed, p(j) is the nodal state: Set equilibrium equation's Jacobian component (follower load component)
-                            jacobian[eqs_Fu[e][i],DOF_pM[j]] = -F_p[i,j]/forceScaling  
+                            jacobian[eqs_Fu[e][i],DOF_pM[j]] = -F_p[i,j]/forceScaling
                         end
                     end
-                else                                                        
+                else
                     # If u[i] is prescribed, F[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
-                    jacobian[eqs_Fu[e][i],DOF_uF[i]] = -1   
+                    jacobian[eqs_Fu[e][i],DOF_uF[i]] = -1
                 end
                 if isTrim[i]
                     # If F[i] is also a trim variable: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
@@ -1764,10 +1770,10 @@ function update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElement
                         # Loop over node's moments/rotations DOFs
                         if isLoad[j+3] && !pIsPrescribed[j]
                             # If M(j) is prescribed, p(j) is the nodal state: Add equilibrium equation's Jacobian component (follower load component)
-                            jacobian[eqs_Fp[e][i],DOF_pM[j]] = -M_p[i,j]/forceScaling   
+                            jacobian[eqs_Fp[e][i],DOF_pM[j]] = -M_p[i,j]/forceScaling
                         end
                     end
-                else                                                        
+                else
                     # If p[i] is prescribed, M[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-M)/d(M) = -1]
                     jacobian[eqs_Fp[e][i],DOF_pM[i]] = -1
                 end
@@ -1776,12 +1782,13 @@ function update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElement
                     jacobian[eqs_Fp[e][i],DOF_trimLoads[i+3]] = -1
                 end
             end  
-        # Else, set Jacobian components for the node's separate compatibility equations   
-        else                                                                        # Loop over node's forces/displacements DOFs
+        # Else, set Jacobian components for the node's separate compatibility equations
+        else
+            # Loop over node's forces/displacements DOFs
             for i=1:3
-                # If F[i] is prescribed, u[i] is the nodal state: Set separate compatibility equation's Jacobian component [d(-/+u)/d(u) = -/+1 = ζonElements[e]]              
-                if isLoad[i] && !uIsPrescribed[i]                         
-                    jacobian[eqs_FF_sep[e][i],DOF_uF[i]] = ζonElements[e]  
+                # If F[i] is prescribed, u[i] is the nodal state: Set separate compatibility equation's Jacobian component [d(-/+u)/d(u) = -/+1 = ζonElements[e]]
+                if isLoad[i] && !uIsPrescribed[i]
+                    jacobian[eqs_FF_sep[e][i],DOF_uF[i]] = ζonElements[e]
                 end
             end
             # Loop over node's moments/rotations DOFs
@@ -1825,7 +1832,7 @@ function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs
         # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
         jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
         jacobian[eqs_Fp[1],DOF_pM_otherNode] .+= Kp/forceScaling * Δp_pOtherNode * Diagonal(.!otherNode.pIsPrescribed)
-    # Single attachment springs        
+    # Single attachment springs
     else
         # Add translational spring Jacobian (if node's displacements are not prescribed): ∂(-F_spring)/∂(u) = Ku/forceScaling
         jacobian[eqs_Fu[1],DOF_uF] .+= Ku/forceScaling * Diagonal(.!uIsPrescribed)
@@ -1861,7 +1868,7 @@ function reset_spring_loads_jacobians!(problem::Problem,specialNodes)
                 jacobian[eqs_Fu[1],DOF_uF_otherNode] .= zeros(3,3)
                 jacobian[eqs_Fp[1],DOF_pM] .= zeros(3,3)
                 jacobian[eqs_Fp[1],DOF_pM_otherNode] .= zeros(3,3)
-            # Single attachment springs        
+            # Single attachment springs
             else
                 # Reset Jacobians
                 jacobian[eqs_Fu[1],DOF_uF] .= zeros(3,3)
@@ -1885,66 +1892,36 @@ function hinge_rotation_parameters(pM,pS)
     # Hinge rotation tensor
     RH = RS*RM'
 
-    # Hinge rotation tensor and associated parameters
+    # Hinge rotation parameters
     pH = rotation_parameters_WM(RH)
 
     return pH
 end
 
 
-# Computes the hinge rotation parameters, given the master element rotation parameters (pM), the initial hinge axis (n₀), and the rotation magnitude (pHValue)
-function hinge_rotation_parameters_from_hinge_rotation(pM,n₀,pHValue)
-
-    # Master element rotation tensor
-    RM,_ = rotation_tensor_WM(pM)
-
-    # Hinge rotation parameters
-    pH = pHValue * RM * n₀
-
-    return pH
+# Computes the deformed hinge axis, given the master element rotation parameters (pM) and the initial hinge axis (n₀)
+function deformed_hinge_axis(pM,n₀)
+    return first( rotation_tensor_WM(pM) ) * n₀
 end
 
 
-# Computes the current hinge axis
-function current_hinge_axis(pM,initialHingeAxis)
-
-    # Rotation tensor from basis b to basis B of master element
-    RM,_ = rotation_tensor_WM(pM)
-
-    # Current hinge axis (resolved in basis A)
-    return RM * initialHingeAxis
+# Computes the signed magnitude of the rotation, given the hinge rotation parameters (pH) and the deformed hinge axis (n)
+function hinge_rotation_value(pH,n)
+    return dot(pH,n)
 end
-
-
-# Computes the magnitude of the rotation, given the rotation parameters of the master and slave elements (pM and pS) and the initial hinge axis
-function hinge_rotation_value(pM,pS,initialHingeAxis)
-
-    # Current hinge axis
-    RM,_ = rotation_tensor_WM(pM)
-    currentHingeAxis = RM*initialHingeAxis
-
-    # Hinge rotation parameters vector
-    pH = hinge_rotation_parameters(pM,pS)
-
-    # Hinge rotation value (signed magnitude)
-    pHValue = dot(pH,currentHingeAxis)
-
-    return pHValue
-end
-
 
 # Computes the slave rotation parameters, given the master rotation parameters (pM), the initial hinge axis (n₀), and the rotation magnitude (pHValue)
 function pS_from_pM_and_pHValue(pM,n₀,pHValue)
 
-    # Rotation tensor from basis b to basis B of master element
-    RM,_ = rotation_tensor_WM(pM)
-
     # Current hinge rotation axis
-    n = RM*n₀
+    n = deformed_hinge_axis(pM,n₀)
 
     # Hinge rotation parameters and associated rotation tensor
     pH = pHValue*n
     RH,_ = rotation_tensor_WM(pH)
+
+    # Master element rotation tensor
+    RM,_ = rotation_tensor_WM(pM)
 
     # Slave element rotation tensor and associated parameters
     RS = RH*RM
@@ -1954,40 +1931,90 @@ function pS_from_pM_and_pHValue(pM,n₀,pHValue)
 end
 
 
-# Hinge constraint equations residual
-function C(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
-    c = isnothing(pHValue) ? hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,hinge_rotation_value(pM,pS,initialHingeAxis)) : hinge_rotation_parameters(pM,pS) - hinge_rotation_parameters_from_hinge_rotation(pM,initialHingeAxis,pHValue)
-    if isnothing(slaveDOFs)
-        return c
-    else
-        return c[slaveDOFs]
-    end
+# Hinge constraint equations
+function C(pM,pS,initialHingeAxis; pHValue=nothing,slaveDir=[1,2,3])
+    pH = hinge_rotation_parameters(pM,pS)
+    n = deformed_hinge_axis(pM,initialHingeAxis)
+    ψ = something(pHValue, hinge_rotation_value(pH,n))
+    c = pH - ψ*n
+    return c[slaveDir]
 end
 
 
 # Jacobian functions of constraint equations w.r.t. system states
-function ∂C_∂pM(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
-    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pM))
+function ∂C_∂pM(pM,pS,initialHingeAxis; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
+    if method == :AD
+        return ForwardDiff.jacobian(x -> C(x,pS,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir),pM)
+    elseif method == :FD
+        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir), pM))
+    else
+        error("select method as :AD or :FD")
+    end
 end
-function ∂C_∂pS(pM,pS,initialHingeAxis; pHValue=nothing,slaveDOFs=nothing)
-    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs), pS))
+function ∂C_∂pS(pM,pS,initialHingeAxis; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
+    if method == :AD
+        return ForwardDiff.jacobian(x -> C(pM,x,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir),pS)
+    elseif method == :FD
+        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir), pS))
+    else
+        error("select method as :AD or :FD")
+    end
+end
+function ∂C_∂p(pM,pS,initialHingeAxis; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
+    if method == :AD
+        return ForwardDiff.jacobian(x -> C(x[1:3],x[4:6],initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir), vcat(pM,pS))
+    elseif method == :FD
+        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x[1:3],x[4:6],initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir), vcat(pM,pS)))
+    else
+        error("select method as :AD or :FD")
+    end
 end
 
 
 # Constraint Hessian functions
-function ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM))
+function ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
+    if method == :AD
+        return ForwardDiff.jacobian(x -> ∂C_∂pM(x,pS,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir)'*λ, pM)
+    elseif method == :FD
+        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(x,pS,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pM))
+    else
+        error("select method as :AD or :FD")
+    end
 end
-function ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS))
+function ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
+    if method == :AD
+        return ForwardDiff.jacobian(x -> ∂C_∂pS(pM,x,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir)'*λ, pS)
+    elseif method == :FD
+        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pS))
+    else
+        error("select method as :AD or :FD")
+    end
 end
-function ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pS))
+function ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
+    if method == :AD
+        return ForwardDiff.jacobian(x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pS)
+    elseif method == :FD
+        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pS))
+    else
+        error("select method as :AD or :FD")
+    end
 end
-function ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ; pHValue=nothing,slaveDOFs=nothing)
-    return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(x,pS,initialHingeAxis,pHValue=pHValue,slaveDOFs=slaveDOFs)'*λ, pM))
+function ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
+    if method == :AD
+        return ForwardDiff.jacobian(x -> ∂C_∂pS(x,pS,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir)'*λ, pM)
+    elseif method == :FD
+        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(x,pS,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pM))
+    else
+        error("select method as :AD or :FD")
+    end
 end
-
+function ∂2CTλ_∂p2(pM,pS,initialHingeAxis,λ; pHValue=nothing, slaveDir=[1,2,3])
+    Jb = zeros(6,6)
+    for k in eachindex(λ)
+        Jb .+= λ[k] * ForwardDiff.hessian(x -> C(x[1:3],x[4:6],initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)[k], vcat(pM,pS))
+    end
+    return Jb
+end
 
 # Computes the modal states (generalized displacements, forces, strains, velocities and momenta) of the element at midpoint and at the nodes
 function element_modal_states(element::Element,eigenvector::Vector{T},forceScaling::Float64) where T<:Union{Float64,ComplexF64}

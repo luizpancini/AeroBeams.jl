@@ -24,12 +24,15 @@ aeroSolver = Indicial()
 h = 0e3
 
 ## Airspeed range
-URange = collect(30:2:160)
+URange = collect(30:5:160)
 
 ## Number of vibration modes
 nModes = 8
 
 ## Pre-allocate memory and initialize output arrays
+trimProblem = Array{TrimProblem}(undef,length(URange))
+trimProblemSpringed = Array{TrimProblem}(undef,length(URange))
+eigenProblem = Array{EigenProblem}(undef,length(URange))
 trimAoA = Array{Float64}(undef,length(URange))
 trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))
@@ -64,43 +67,42 @@ for (i,U) in enumerate(URange)
     BWBtrim = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
 
     ## Now we create and solve the trim problem.
-    global trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR)
-    solve!(trimProblem)
+    trimProblem[i] = create_TrimProblem(model=BWBtrim,systemSolver=NR)
+    solve!(trimProblem[i])
 
     ## We extract the trim variables at the current airspeed and set them into our pre-allocated arrays. The trimmed angle of attack at the root, `trimAoA[i]`, is not necessary for the flutter analyses, it is merely an output of interest.
-    trimAoA[i] = trimProblem.aeroVariablesOverσ[end][BWBtrim.beams[3].elementRange[1]].flowAnglesAndRates.αₑ
-    trimThrust[i] = trimProblem.x[end-1]*BWBtrim.forceScaling 
-    trimδ[i] = trimProblem.x[end]
+    trimAoA[i] = trimProblem[i].aeroVariablesOverσ[end][BWBtrim.beams[3].elementRange[1]].flowAnglesAndRates.αₑ
+    trimThrust[i] = trimProblem[i].x[end-1]*BWBtrim.forceScaling 
+    trimδ[i] = trimProblem[i].x[end]
     println("Trim AoA = $(trimAoA[i]*180/π), trim thrust = $(trimThrust[i]), trim δ = $(trimδ[i]*180/π)") #src
 
     ## Now let's create a new model, add springs to it, and update
     BWBtrimSpringed = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
     add_springs_to_beam!(beam=BWBtrimSpringed.beams[2],springs=[spring1])
     add_springs_to_beam!(beam=BWBtrimSpringed.beams[3],springs=[spring2])
-    BWBtrimSpringed.skipValidationMotionBasisA = true
     update_model!(BWBtrimSpringed)
 
     ## Now we create and solve the trim problem for the springed model.
-    global trimProblemSpringed = create_TrimProblem(model=BWBtrimSpringed,systemSolver=NR)
-    solve!(trimProblemSpringed)
+    trimProblemSpringed[i] = create_TrimProblem(model=BWBtrimSpringed,systemSolver=NR)
+    solve!(trimProblemSpringed[i])
 
     ## Let's make sure that the trim outputs of the springed model are very close to the one without springs, that is, the springs did not affect the trim solution. Notice that all ratios are very close to 1.
-    trimAoASpringed = trimProblemSpringed.aeroVariablesOverσ[end][BWBtrimSpringed.beams[3].elementRange[1]].flowAnglesAndRates.αₑ
-    trimThrustSpringed = trimProblemSpringed.x[end-1]*BWBtrimSpringed.forceScaling 
-    trimδSpringed = trimProblemSpringed.x[end]
+    trimAoASpringed = trimProblemSpringed[i].aeroVariablesOverσ[end][BWBtrimSpringed.beams[3].elementRange[1]].flowAnglesAndRates.αₑ
+    trimThrustSpringed = trimProblemSpringed[i].x[end-1]*BWBtrimSpringed.forceScaling 
+    trimδSpringed = trimProblemSpringed[i].x[end]
     println("Trim outputs' ratios springed/nominal: AoA = $(round(trimAoASpringed/trimAoA[i],sigdigits=4)), thrust = $(round(trimThrustSpringed/trimThrust[i],sigdigits=4)), δ = $(round(trimδSpringed/trimδ[i],sigdigits=4))")
 
     ## All the variables needed for the stability analysis are now in place. We create the model for the eigenproblem, using the trim variables found previously with the springed model in order to solve for the stability around that exact state. 
     BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδSpringed,thrust=trimThrustSpringed)
 
-    ## Now we create and solve the eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, making use of the known trim solution (with the keyword argument `refTrimProblem`). We apply a filter to find only modes whose frequencies are greater than 5e-2*U rad/s through the keyword argument `frequencyFilterLimits`
-    global eigenProblem = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[5e-2*U,Inf],refTrimProblem=trimProblemSpringed)
-    solve_eigen!(eigenProblem)
+    ## Now we create and solve the eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, making use of the known trim solution (with the keyword argument `refTrimProblem`). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
+    eigenProblem[i] = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1,Inf],refTrimProblem=trimProblemSpringed[i])
+    solve_eigen!(eigenProblem[i])
 
     ## The final step in the loop is extracting the frequencies, dampings and eigenvectors of the solution
-    untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
-    untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
+    untrackedFreqs[i] = eigenProblem[i].frequenciesOscillatory
+    untrackedDamps[i] = eigenProblem[i].dampingsOscillatory
+    untrackedEigenvectors[i] = eigenProblem[i].eigenvectorsOscillatoryCplx
 end
 #md nothing #hide
 
@@ -130,7 +132,10 @@ end
 flutterModes = findall(!isinf, flutterOnsetSpeedOfMode)
 flutterOnsetSpeedsAll = filter(!isinf,flutterOnsetSpeedOfMode)
 flutterOnsetFreqsAll = filter(!isinf,flutterOnsetFreqOfMode)
+
+flutterMode = flutterModes[argmin(flutterOnsetSpeedsAll)]
 flutterOnsetSpeed = minimum(flutterOnsetSpeedsAll)
+flutterSpeedInd = findfirst(x-> x>flutterOnsetSpeed, URange)
 for (mode,speed,freq) in zip(flutterModes,flutterOnsetSpeedsAll,flutterOnsetFreqsAll)
     println("Mode $mode: flutter speed = $(round(speed,sigdigits=4)) m/s, flutter frequency = $(round(freq,digits=2)) rad/s")
 end
@@ -176,7 +181,7 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 
 #md # The stability results can be visualized through the following root locus and V-g-f (frequency and damping evolution) plots. The lowest flutter speed is computed by AeroBeams at approximately 120.7 m/s, at a frequency of 47.4 rad/s. Conversely, the flutter speed and frequency predicted by UM/NAST are around 137.7 m/s and 47.5 rad/s, yielding differences of 12.3% and 0.2%, on speed and frequency, respectively. Despite the flutter speed disagreement, there is qualitatively good agreement among the models for the behavior of the roots.
 ## Colormap
-#md modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes))
+#md modeColors = cgrad(:rainbow, nModes, categorical=true)
 
 ## Root locus
 #md plt4 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-30,5],ylims=[0,125])
@@ -207,7 +212,7 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/BWB/damps.txt")
 #md # Finally, we may visualize the mode shapes of the last eigenproblem (at highest airspeed), making use of the [`plot_mode_shapes`](@ref plot_mode_shapes) function with the appropriate inputs. Modes 1 and 2 seem to respectively be lateral-directional and longitudinal flight dynamic modes, whereas the others are structural.
 ## Plot mode shapes  
 #md @suppress begin #hide
-#md modesPlot = plot_mode_shapes(eigenProblem,scale=2,view=(45,30),ΔuDef=-eigenProblem.elementalStatesOverσ[end][11].u.+[0;0;-2],legendPos=:top,modalColorScheme=:rainbow)
+#md modesPlot = plot_mode_shapes(eigenProblem[end],scale=2,view=(45,30),element2centralize=11,legendPos=:top,modalColorScheme=:rainbow)
 #md end #hide
 #md savefig("BWBflutter_modeShapes.svg") #hide
 #md nothing #hide

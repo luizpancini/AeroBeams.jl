@@ -5,7 +5,7 @@ include("../examples/tipPendulum.jl")
 
 # Print warning, if applicable
 if abs(θ₀) > π/8
-    println("Initial angle of release is large, analytical comparison is not valid")
+    @info "Initial angle of release is large, analytical comparison is not valid"
 end
 
 # Set paths
@@ -14,7 +14,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,plotDistLoads=false,plotLimits=([-L,L],[-L,L],[-L,0]),save=true,savePath=string(relPath,"/tipPendulum_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,plotDistLoads=false,plotLimits=([-L,L],[-L,L],[-L,0]),save=true,savePath=string(relPath,"/tipPendulum_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 gr()

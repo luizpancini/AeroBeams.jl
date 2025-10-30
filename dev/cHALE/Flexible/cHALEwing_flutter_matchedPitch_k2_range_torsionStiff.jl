@@ -30,7 +30,7 @@ nElemVertStabilizer = 5
 relaxFactor = 0.5
 maxIter = 100
 σ0 = 1.0
-NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,displayStatus=false)
+NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,pseudoInverseMethod=:dampedLeastSquares,displayStatus=false)
 NReigen = create_NewtonRaphson(maximumIterations=maxIter,initialLoadFactor=0.5,displayStatus=false)
 
 # Set number of vibration modes
@@ -140,7 +140,7 @@ mkpath(absPath)
 using Plots, ColorSchemes
 
 # Plot configurations
-colors = cgrad(:rainbow, length(k2Range), categorical=true)
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
 ts = 10
 fs = 16
 lfs = 10

@@ -1,11 +1,7 @@
-using AeroBeams, LinearAlgebra, LinearInterpolations, DelimitedFiles
+using AeroBeams, LinearInterpolations, DelimitedFiles
 
-# Option for mode tracking
-modeTracking = true
-
-# Aerodynamic solver and derivatives method
+# Aerodynamic solver
 aeroSolver = Indicial()
-derivationMethod = AD()
 
 # Altitude
 h = 20e3
@@ -21,33 +17,32 @@ nElem = 20
 
 # System solver
 σ0 = 1
-σstep = 0.5
-NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0,pseudoInverseMethod=:dampedLeastSquares)
 
 # Set precurvature, tip force and airspeed ranges, and initialize outputs
-kRange = collect(0:0.018:0.018)
+k2Range = collect(0:0.018:0.018)
 F3Range = collect(0:2:40)
 URange = vcat(1e-3,collect(20:0.5:35))
-untrackedFreqs = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),length(URange))
-untrackedDamps = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),length(URange))
-untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(kRange),length(F3Range),length(URange))
-freqs = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),length(URange))
-damps = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),length(URange))
-tip_u3 = Array{Float64}(undef,length(kRange),length(F3Range),length(URange))
-flutterSpeed = Array{Float64}(undef,length(kRange),length(F3Range))
-flutterFreq = Array{Float64}(undef,length(kRange),length(F3Range))
-flutterMode = Array{Int64}(undef,length(kRange),length(F3Range))
-flutterTipDisp = Array{Float64}(undef,length(kRange),length(F3Range))
-modeDampings = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),nModes)
-modeFrequencies = Array{Vector{Float64}}(undef,length(kRange),length(F3Range),nModes)
+untrackedFreqs = Array{Vector{Float64}}(undef,length(k2Range),length(F3Range),length(URange))
+untrackedDamps = Array{Vector{Float64}}(undef,length(k2Range),length(F3Range),length(URange))
+untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(k2Range),length(F3Range),length(URange))
+freqs = Array{Vector{Float64}}(undef,length(k2Range),length(F3Range),length(URange))
+damps = Array{Vector{Float64}}(undef,length(k2Range),length(F3Range),length(URange))
+tip_u3 = Array{Float64}(undef,length(k2Range),length(F3Range),length(URange))
+flutterSpeed = Array{Float64}(undef,length(k2Range),length(F3Range))
+flutterFreq = Array{Float64}(undef,length(k2Range),length(F3Range))
+flutterMode = Array{Int64}(undef,length(k2Range),length(F3Range))
+flutterTipDisp = Array{Float64}(undef,length(k2Range),length(F3Range))
+modeDampings = Array{Vector{Float64}}(undef,length(k2Range),length(F3Range),nModes)
+modeFrequencies = Array{Vector{Float64}}(undef,length(k2Range),length(F3Range),nModes)
 
-model = Array{Model}(undef,length(kRange),length(F3Range),length(URange))
+model = Array{Model}(undef,length(k2Range),length(F3Range),length(URange))
 
 # Set number of vibration modes
 nModes = 5
 
 # Sweep wing precurvature
-for (ki,k) in enumerate(kRange)
+for (ki,k) in enumerate(k2Range)
     # Sweep tip force
     for (i,F3) in enumerate(F3Range)
         # Sweep airspeed
@@ -55,7 +50,7 @@ for (ki,k) in enumerate(kRange)
             # Display progress
             println("Solving for k=$k, F3 = $F3 N, U = $U m/s")
             # Update model
-            model[ki,i,j],_ = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ*π/180,k2=k,nElem=nElem,altitude=h,g=g,tipF3=F3,airspeed=U)
+            model[ki,i,j],_ = create_SMW(aeroSolver=aeroSolver,θ=θ*π/180,k2=k,nElem=nElem,altitude=h,g=g,tipF3=F3,airspeed=U)
             # Create and solve problem
             problem = create_EigenProblem(model=model[ki,i,j],systemSolver=NR,nModes=nModes,frequencyFilterLimits=[1e-3,Inf64])
             solve!(problem)
@@ -67,11 +62,7 @@ for (ki,k) in enumerate(kRange)
             tip_u3[ki,i,j] = problem.nodalStatesOverσ[end][nElem].u_n2[3]
         end
         # Frequencies and dampings after mode tracking
-        if modeTracking
-            freqs[ki,i,:],damps[ki,i,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[ki,i,:],untrackedDamps[ki,i,:],untrackedEigenvectors[ki,i,:])
-        else
-            freqs[ki,i,:],damps[ki,i,:] = untrackedFreqs[ki,i,:],untrackedDamps[ki,i,:]
-        end
+        freqs[ki,i,:],damps[ki,i,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[ki,i,:],untrackedDamps[ki,i,:],untrackedEigenvectors[ki,i,:])
         # Separate frequencies and dampings by mode
         for mode in 1:nModes
             modeFrequencies[ki,i,mode] = [freqs[ki,i,j][mode] for j in eachindex(URange)]
@@ -126,8 +117,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot configurations
-colors = cgrad(:rainbow, length(kRange), categorical=true)
-modeColors = cgrad(:rainbow, nModes, categorical=true)
+colors = palette([:purple, :darkorange])
+modeColors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], nModes)
 mshape = [:utriangle, :utriangle, :circle, :circle, :utriangle]
 ts = 10
 fs = 16
@@ -140,7 +131,7 @@ gr()
 
 # Flutter speed vs. tip load
 plt1 = plot(xlabel="Tip load [N]", ylabel="Flutter speed [m/s]", xlims=[0,40], ylims=[0,40], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:bottomright)
-for (i,k) in enumerate(kRange)
+for (i,k) in enumerate(k2Range)
     plot!(F3Range, flutterSpeed[i,:], c=colors[i], lw=lw, label="AeroBeams - \$k_2=$k\$")
 end
 plot!(flutterSpeedVsTipLoadk0[1,:], flutterSpeedVsTipLoadk0[2,:], c=:black, ls=:dash, lw=lw, label="Patil et al. (2001)")
@@ -150,7 +141,7 @@ savefig(string(absPath,"/cHALEwing_flutter_compare_Patil_flutterSpeedVsTipLoad.p
 
 # Flutter speed vs. tip disp
 plt2 = plot(xlabel="Tip vertical position [% semispan]", ylabel="Flutter speed [m/s]", xlims=[-20,20], ylims=[0,40], tickfont=font(ts), guidefont=font(fs))
-for (i,k) in enumerate(kRange)
+for (i,k) in enumerate(k2Range)
     plot!((flutterTipDisp[i,:] .+ model[i,1,1].elements[end].r_n2[3])/L*100, flutterSpeed[i,:], c=colors[i], lw=lw, label=false)
 end
 # plot!(flutterSpeedVsTipDispk0[1,:]/L*100, flutterSpeedVsTipDispk0[2,:], c=:black, ls=:dash, lw=lw, label=false)
@@ -165,10 +156,10 @@ plot!([NaN], [NaN], c=:black, lw=lw, ls=:dash, label="Patil et al. (2001)")
 for (i,F3) in enumerate(F3Range)
     for mode in 1:nModes
         # Fix mode swap
-        if mode == 4 && i > 11
+        if mode == 4 && i > 7
             colorNow = modeColors[5]
             shapeNow = mshape[5]
-        elseif mode == 5 && i > 11
+        elseif mode == 5 && i > 7
             colorNow = modeColors[4]
             shapeNow = mshape[4]
         else

@@ -1,4 +1,4 @@
-using AeroBeams, LinearAlgebra
+using AeroBeams, LinearAlgebra, DelimitedFiles
 
 # Beam frame
 L = 0.24

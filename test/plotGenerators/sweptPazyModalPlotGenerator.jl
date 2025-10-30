@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot swept configuration
-plt_swept_modeShapes = plot_mode_shapes(problem[end],view=(30,30),interactive=false,frequencyLabel="frequency",save=true,savePath=string(relPath,"/PazySweepAngleRangeModal_modeShapes.pdf"))
+plt_swept_modeShapes = plot_mode_shapes(problem[end],view=(30,30),save=true,savePath=string(relPath,"/PazySweepAngleRangeModal_modeShapes.pdf"))
 display(plt_swept_modeShapes)
 
 # Plot configurations
@@ -27,4 +27,4 @@ end
 display(plt1)
 savefig(string(absPath,"/sweptPazyModal.pdf"))
 
-println("Finished sweptPazyModal.jl")
+println("Finished sweptPazyModalPlotGenerator.jl")

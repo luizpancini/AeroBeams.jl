@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot configurations
-colors = cgrad(:jet, [0, 0.0001, 0.1])
+colors = cgrad(:rainbow, [0, 0.0001, 0.1])
 lw = 2
 gr()
 

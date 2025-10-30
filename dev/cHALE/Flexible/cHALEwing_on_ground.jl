@@ -67,7 +67,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot configurations
-colors = get(colorschemes[:rainbow], range(0, 1, length(k2Range)))
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
 lw = 2
 labels = ["\$k_2 = $(k2) \$" for k2 in k2Range]
 gr()

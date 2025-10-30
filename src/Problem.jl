@@ -9,7 +9,7 @@ Defines variables for the update of the initial velocities states
 
 # Fields
 - `Δt::Real`: time step
-- `maxIter::Int64`: maximum number of iterations
+- `maxIter::Int`: maximum number of iterations
 - `relaxFactor::Float64`: relaxation factor
 - `tol::Float64`: convergence tolerance
 - `displayProgress::Bool`: flag to display progress
@@ -44,29 +44,14 @@ export InitialVelocitiesUpdateOptions
 mutable struct ModeShape{T<:Union{Float64,ComplexF64}}
     
     # Fields
-    mode::Int64
+    mode::Int
     frequency::Float64
     damping::Float64
     elementalStates::Vector{ElementalStates{T}}
     complementaryElementalStates::Vector{ComplementaryElementalStates{T}}
     nodalStates::Vector{NodalStates{T}}
 
-    # Default constructor 
-    function ModeShape{T}() where T<:Union{Float64,ComplexF64}
-
-        mode = 0
-        frequency = 0.0
-        damping = 0.0
-        elementalStates = Vector{ElementalStates{T}}()
-        complementaryElementalStates = Vector{ComplementaryElementalStates{T}}()
-        nodalStates = Vector{NodalStates{T}}()
-
-        return new{T}(mode,frequency,damping,elementalStates,complementaryElementalStates,nodalStates)
-
-    end
-
-    # Alternate constructor 
-    function ModeShape{T}(mode::Int64,frequency::Float64,damping::Float64,nElementsTotal::Int64) where T<:Union{Float64,ComplexF64}
+    function ModeShape{T}(mode::Int=0,frequency::Float64=0.0,damping::Float64=0.0,nElementsTotal::Int=0) where T<:Union{Float64,ComplexF64}
 
         elementalStates = [ElementalStates{T}() for _ in 1:nElementsTotal]
         complementaryElementalStates = [ComplementaryElementalStates{T}() for _ in 1:nElementsTotal]
@@ -91,7 +76,7 @@ end
     model::Model
     # System solver
     systemSolver::SystemSolver
-    # TF to get linear solution
+    # Flag to get linear solution
     getLinearSolution::Bool
     # Secondary (outputs from problem creation)
     # -----------------------------------------
@@ -99,17 +84,15 @@ end
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
-    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    jacobian::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
     σ::Float64 = 1.0
-    # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
+    # Flag to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF for initial states being input
-    initialStatesInput::Bool = false
-    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    # Flag to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
     skipJacobianUpdate::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
@@ -148,7 +131,6 @@ function create_SteadyProblem(; model::Model,systemSolver::SystemSolver=create_N
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder
-        problem.initialStatesInput = true
         problem.x = x0*problem.σ
         set_initial_hinge_axis_constraints!(problem)
     else
@@ -179,9 +161,9 @@ export create_SteadyProblem
     model::Model
     # System solver
     systemSolver::SystemSolver
-    # TF to get linear solution
+    # Flag to get linear solution
     getLinearSolution::Bool
-    # TF to get the inertia matrix upon converged solution
+    # Flag to get the inertia matrix upon converged solution
     getInertiaMatrix::Bool
     # Secondary (outputs from problem creation)
     # -----------------------------------------
@@ -189,17 +171,15 @@ export create_SteadyProblem
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
-    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    jacobian::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
     σ::Float64 = 1.0
-    # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
+    # Flag to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF for initial states being input
-    initialStatesInput::Bool = false
-    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    # Flag to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
     skipJacobianUpdate::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
@@ -239,7 +219,6 @@ function create_TrimProblem(; model::Model,systemSolver::SystemSolver=create_New
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder+model.nTrimVariables
-        problem.initialStatesInput = true
         problem.x = x0*problem.σ
         set_initial_hinge_axis_constraints!(problem)
     else
@@ -269,13 +248,13 @@ export create_TrimProblem
     model::Model
     # System solver
     systemSolver::SystemSolver
-    # TF to get linear solution
+    # Flag to get linear solution
     getLinearSolution::Bool
     # Real of desired oscillatory modes
-    nModes::Int64
+    nModes::Int
     # Frequency filter limits
     frequencyFilterLimits::Vector{Float64}
-    # TF to normalize mode shapes
+    # Flag to normalize mode shapes
     normalizeModeShapes::Bool
     # Reference trim problem, containing the steady solution
     refTrimProblem::Union{Nothing,TrimProblem}
@@ -285,19 +264,17 @@ export create_TrimProblem
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
-    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
-    augmentedJacobian::SparseMatrixCSC{Float64,Int64} = jacobian
-    augmentedInertia::SparseMatrixCSC{Float64,Int64} = inertia
+    jacobian::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
+    augmentedJacobian::SparseMatrixCSC{Float64,Int} = jacobian
+    augmentedInertia::SparseMatrixCSC{Float64,Int} = inertia
     # Dummy time
     timeNow::Float64 = 0.0
     # Load factor
     σ::Float64 = 1.0
-    # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
+    # Flag to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF for initial states being input
-    initialStatesInput::Bool = false
-    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    # Flag to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
     skipJacobianUpdate::Bool = false
     # Array of partial load steps and respective solutions
     savedσ::Vector{Float64} = Vector{Float64}()
@@ -340,13 +317,13 @@ Eigen problem constructor
 - `model::Model`: model
 - `systemSolver::systemSolver`: nonlinear system solver
 - `getLinearSolution::Bool`: flag to solve for linear structural solution
-- `nModes::Int64=Inf64`: number of modes to be computed
+- `nModes::Int=Inf64`: number of modes to be computed
 - `frequencyFilterLimits::Vector{Float64}`: limits of the frequency filter
 - `normalizeModeShapes::Bool`: flag to normalize mode shapes
 - `x0::Vector{Float64}`: initial states
 - `refTrimProblem::Union{Nothing,TrimProblem}`: reference trim problem containing steady solution
 """
-function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int64=50,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),refTrimProblem::Union{Nothing,TrimProblem}=nothing)
+function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,nModes::Int=50,frequencyFilterLimits::Vector{Float64}=[0,Inf64],normalizeModeShapes::Bool=true,x0::Vector{Float64}=zeros(0),refTrimProblem::Union{Nothing,TrimProblem}=nothing)
 
     # Initialize problem
     problem = EigenProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,nModes=nModes,frequencyFilterLimits=frequencyFilterLimits,normalizeModeShapes=normalizeModeShapes,refTrimProblem=refTrimProblem)
@@ -357,7 +334,6 @@ function create_EigenProblem(; model::Model,systemSolver::SystemSolver=create_Ne
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder
-        problem.initialStatesInput = true
         problem.x = x0*problem.σ
         set_initial_hinge_axis_constraints!(problem)
     else
@@ -398,7 +374,7 @@ export create_EigenProblem
     model::Model
     # System solver
     systemSolver::SystemSolver
-    # TF to get linear solution
+    # Flag to get linear solution
     getLinearSolution::Bool
     # Time variables
     initialTime::Real
@@ -413,12 +389,14 @@ export create_EigenProblem
     # Initial states update options
     skipInitialStatesUpdate::Bool
     initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions
-    # TF to track partial solutions at time steps and its frequency
+    # Flag to track partial solutions at time steps and its frequency
     trackingTimeSteps::Bool
-    trackingFrequency::Int64
-    # TF to display progress and its frequency
+    trackingFrequency::Int
+    # Flag to display progress and its frequency
     displayProgress::Bool
-    displayFrequency::Int64
+    displayFrequency::Int
+    # Flag to save initial time solution
+    saveInitialSolution::Bool
 
     # Secondary (outputs from problem creation)
     # -----------------------------------------
@@ -426,22 +404,20 @@ export create_EigenProblem
     x::Vector{Float64} = zeros(0)
     Δx::Vector{Float64} = zeros(0)
     residual::Vector{Float64} = zeros(0)
-    jacobian::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
-    inertia::SparseMatrixCSC{Float64,Int64} = spzeros(0,0)
+    jacobian::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
+    inertia::SparseMatrixCSC{Float64,Int} = spzeros(0,0)
     # Time variables
     timeNow::Real = 0
     timeBeginTimeStep::Real = 0
     timeEndTimeStep::Real = 0
-    indexBeginTimeStep::Int64 = 1
-    indexEndTimeStep::Int64 = 2
-    sizeOfTime::Int64 = 1
+    indexBeginTimeStep::Int = 1
+    indexEndTimeStep::Int = 2
+    sizeOfTime::Int = 1
     # Load factor
     σ::Float64 = 1.0
-    # TF to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
+    # Flag to compute only the external forces array at the current nonlinear step (used only for arclength system solver)
     getExternalForcesArray::Bool = false
-    # TF for initial states being input
-    initialStatesInput::Bool = false
-    # TF to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
+    # Flag to compute only residual array and skip Jacobian update at the current nonlinear step (used only in line search's Newton step)
     skipJacobianUpdate::Bool = false
     # Arrays of saved time steps, respective solutions and states
     savedTimeVector::Vector{Float64} = Vector{Float64}()
@@ -481,15 +457,17 @@ Dynamic problem constructor
 - `skipInitialStatesUpdate::Bool`: flag to skip update of initial states
 - `initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions`: options for the initial velocities update
 - `trackingTimeSteps::Bool`: flag to track time step solutions
-- `trackingFrequency::Int64`: frequency of time steps in which to track solution
+- `trackingFrequency::Int`: frequency of time steps in which to track solution
 - `displayProgress::Bool`: flag to display progress
-- `displayFrequency::Int64`: frequency of time steps in which to display progress
+- `displayFrequency::Int`: frequency of time steps in which to display progress
+- `saveInitialSolution::Bool`: flag to save initial time solution
 - `x0::Vector{Float64}`: initial states
+- `refDynamicProblem::Union{DynamicProblem,Nothing}`: reference problem
 """
-function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Real=0.0,Δt::Union{Nothing,Real}=nothing,finalTime::Union{Nothing,Real}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Real}=nothing,maxΔt::Union{Nothing,Real}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int64=1,displayProgress::Bool=true,displayFrequency::Int64=0,x0::Vector{Float64}=zeros(0))
+function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_NewtonRaphson(),getLinearSolution::Bool=false,initialTime::Real=0.0,Δt::Union{Nothing,Real}=nothing,finalTime::Union{Nothing,Real}=nothing,timeVector::Union{Nothing,Vector{Float64}}=nothing,adaptableΔt::Bool=false,minΔt::Union{Nothing,Real}=nothing,maxΔt::Union{Nothing,Real}=nothing,δb::Float64=-1e-5,skipInitialStatesUpdate::Bool=false,initialVelocitiesUpdateOptions::InitialVelocitiesUpdateOptions=InitialVelocitiesUpdateOptions(),trackingTimeSteps::Bool=true,trackingFrequency::Int=1,displayProgress::Bool=true,saveInitialSolution::Bool=true,displayFrequency::Int=0,x0::Vector{Float64}=zeros(0),refDynamicProblem::Union{DynamicProblem,Nothing}=nothing)
 
     # Initialize problem
-    problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,adaptableΔt=adaptableΔt,minΔt=minΔt,maxΔt=maxΔt,δb=δb,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency)
+    problem = DynamicProblem(model=model,systemSolver=systemSolver,getLinearSolution=getLinearSolution,initialTime=initialTime,Δt=Δt,finalTime=finalTime,timeVector=timeVector,adaptableΔt=adaptableΔt,minΔt=minΔt,maxΔt=maxΔt,δb=δb,skipInitialStatesUpdate=skipInitialStatesUpdate,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,trackingTimeSteps=trackingTimeSteps,trackingFrequency=trackingFrequency,displayProgress=displayProgress,displayFrequency=displayFrequency,saveInitialSolution=saveInitialSolution)
 
     # Check time step data
     if !isnothing(Δt)
@@ -513,11 +491,17 @@ function create_DynamicProblem(; model::Model,systemSolver::SystemSolver=create_
     # Set initial elemental and nodal states
     if !isempty(x0)
         @assert length(x0) == model.systemOrder
-        problem.initialStatesInput = true
+        problem.skipInitialStatesUpdate = true
         problem.x = x0*problem.σ
-        problem.Δt = Inf64
-        update_states!(problem)
-        problem.Δt = Δt
+        # Reference dynamic problem is input: set same equivalent states rates (by equalling the elements)
+        if !isnothing(refDynamicProblem)
+            problem.model.elements = refDynamicProblem.model.elements
+        # Reference dynamic problem is not input: update initial states corresponding to the steady reference solution    
+        else
+            problem.Δt = Inf64
+            update_states!(problem)
+            problem.Δt = Δt
+        end
         set_initial_hinge_axis_constraints!(problem)
     else
         set_initial_states!(problem)
@@ -545,13 +529,8 @@ export create_DynamicProblem
 # Sets the initial elemental and nodal states into the states array
 function set_initial_states!(problem::Problem)
 
-    @unpack x,model,σ,initialStatesInput = problem
+    @unpack x,model,σ = problem
     @unpack elements,specialNodes,systemOrder,nTrimVariables,forceScaling,hingeAxisConstraints = model
-
-    # Skip if states were input
-    if initialStatesInput
-        return
-    end
 
     # Initialize states array
     x = zeros(systemOrder+nTrimVariables)
@@ -567,7 +546,7 @@ function set_initial_states!(problem::Problem)
         x[DOF_V] = V
         x[DOF_Ω] = Ω
         x[DOF_χ] = χ
-        x[DOF_δ] = isempty(DOF_δ) ? Vector{Float64}() : element.aero.δNow
+        x[DOF_δ] = isempty(DOF_δ) ? Vector{Float64}() : element.aero.aeroSurface.δNow
     end
 
     # Loop over special nodes and assign initial states
@@ -605,22 +584,22 @@ function set_initial_hinge_axis_constraints!(problem::Problem)
 
     # Set hinge axis constraints
     for constraint in hingeAxisConstraints
-        @unpack initialHingeAxis,pHValue,masterElementGlobalDOFs,slaveElementGlobalDOFs = constraint
+        @unpack initialHingeAxis,pHValue,masterGlobalDOFs,slaveGlobalDOFs = constraint
         # Set rotation parameters vectors of master and slave elements
-        pM = x[masterElementGlobalDOFs]
-        pS = x[slaveElementGlobalDOFs]
+        pM = x[masterGlobalDOFs]
+        pS = x[slaveGlobalDOFs]
+        # Deformed hinge axis
+        deformedHingeAxis = deformed_hinge_axis(pM,initialHingeAxis)
         # Set value of hinge rotation as zero, if not input
-        if isnothing(pHValue)
-            pHValue = 0
-        end
+        pHValue = something(pHValue, 0)
         # Update initial value of slave element rotation
-        x[slaveElementGlobalDOFs] = pS = pS_from_pM_and_pHValue(pM,initialHingeAxis,pHValue)
-        # Update current hinge axis (resolved in basis A), rotation parameters vector and angle of rotation across the hinge
-        currentHingeAxis = current_hinge_axis(pM,initialHingeAxis)
+        x[slaveGlobalDOFs] = pS = pS_from_pM_and_pHValue(pM,initialHingeAxis,pHValue)
+        # Hinge rotation parameters
         pH = hinge_rotation_parameters(pM,pS)
+        # Angle of rotation across the hinge
         ϕ = rotation_angle_limited(pH)
         # Pack data
-        @pack! constraint = currentHingeAxis,pH,ϕ,pHValue
+        @pack! constraint = pH,pHValue,deformedHingeAxis,ϕ
     end
 
     @pack! problem = x
@@ -657,14 +636,6 @@ function solve!(problem::Problem)
     # Check limitations
     if problem isa TrimProblem
         @assert isempty(problem.model.hingeAxisConstraints) "hinge axis constraints not implemented yet for trim problems"
-    end
-    if problem isa DynamicProblem
-        for constraint in problem.model.hingeAxisConstraints
-            if constraint.solutionMethod == "appliedMoment"
-                display("Setting solutionMethod for hingeAxisConstraints as 'addedResidual' instead of 'appliedMoment' in dynamic problem")
-                constraint.solutionMethod = "addedResidual"
-            end
-        end
     end
 
     # Precompute distributed loads
@@ -756,7 +727,7 @@ function precompute_distributed_loads!(problem::Problem)
                     end
                 end
             end
-            # Update TFs for any nonzero loads on the element over time
+            # Update flags for any nonzero loads on the element over time
             if any(!iszero(f_A))
                 hasDistributedDeadForcesBasisA = true
             end
@@ -795,7 +766,7 @@ function solve_steady!(problem::Problem)
 
     # Check if linear or nonlinear solution is required
     if getLinearSolution
-        # Linear solution
+        # --- Linear solution ---
         # Set full load factor
         problem.σ = 1.0
         # Solve linear system and update states
@@ -807,7 +778,7 @@ function solve_steady!(problem::Problem)
         # Save data
         save_load_factor_data!(problem,problem.σ,problem.x)
     else
-        # Nonlinear solution
+        # --- Nonlinear solution ---
         if typeof(systemSolver) == NewtonRaphson
             solve_NewtonRaphson!(problem)
         end
@@ -1048,8 +1019,10 @@ function solve_dynamic!(problem::Problem)
     if !problem.skipInitialStatesUpdate
         solve_initial_dynamic!(problem)
     end
-    # Save initial states
-    save_time_step_data!(problem,problem.timeNow)
+    # Save initial states, if applicable
+    if problem.saveInitialSolution
+        save_time_step_data!(problem,problem.timeNow)
+    end
     # Time march
     if problem.adaptableΔt
         adaptable_time_march!(problem)
@@ -1145,12 +1118,10 @@ function solve_initial_dynamic!(problem::Problem)
     # Update model as if all nodes were BC'ed to the specified initial displacements
     modelCopy.BCs = initialDisplacementsBCs
     set_BCed_nodes!(modelCopy)
-    modelCopy.skipValidationMotionBasisA = true
     update_model!(modelCopy)
     problemCopy.model = modelCopy
  
     # Set initial states
-    problemCopy.initialStatesInput = false
     set_initial_states!(problemCopy)
     set_initial_hinge_axis_constraints!(problemCopy)
 
@@ -1371,11 +1342,11 @@ function time_march!(problem::Problem)
             break
         end
         # Save time step data, if applicable    
-        if trackingTimeSteps && rem(timeIndex,trackingFrequency) == 0
+        if trackingTimeSteps && iszero(rem(timeIndex-1,trackingFrequency))
             save_time_step_data!(problem,timeNow)           
         end
         # Display progress, if applicable
-        if displayProgress && (rem(timeIndex,displayFrequency) == 0 || timeIndex == sizeOfTime)
+        if displayProgress && (iszero(rem(timeIndex-1,displayFrequency)) || timeIndex == sizeOfTime)
             progress = round(timeIndex/sizeOfTime*100,digits=1)
             println("Simulation progress: $progress %")
         end
@@ -1467,7 +1438,7 @@ function copy_state(problem::Problem)
     x = deepcopy(problem.x)
     elementBLiCompVars = Vector{BLiComplementaryVariables}(undef,problem.model.nElementsTotal)
     for (e,element) in enumerate(problem.model.elements)
-        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+        if isnothing(element.aero) || !(typeof(element.aero.aeroSurface.solver) in [BLi])
             continue
         end
         elementBLiCompVars[e] = deepcopy(element.aero.BLiCompVars)
@@ -1483,7 +1454,7 @@ function restore_state!(problem::Problem,stepInitState)
     for (e,element) in enumerate(problem.model.elements)
         element.states = stepInitState[1][e]
         element.statesRates = stepInitState[2][e]
-        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+        if isnothing(element.aero) || !(typeof(element.aero.aeroSurface.solver) in [BLi])
             continue
         end
         element.aero.BLiCompVars = stepInitState[5][e]
@@ -1495,7 +1466,7 @@ end
 
 
 # Updates the time variables (time, time step, time indices)
-function update_time_variables!(problem::Problem,timeIndex::Int64)
+function update_time_variables!(problem::Problem,timeIndex::Int)
 
     @unpack timeVector = problem
 
@@ -1564,7 +1535,7 @@ function update_BL_complementary_variables!(problem::Problem)
     # Loop elements
     for element in problem.model.elements
         # Skip elements without an aerodynamic surface with dynamic stall solver
-        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi,BLo])
+        if isnothing(element.aero) || !(typeof(element.aero.aeroSurface.solver) in [BLi,BLo])
             continue
         end
         # Unpack variables for BLi model
@@ -1594,7 +1565,7 @@ function BL_stall_boundary(problem::Problem)
     # Loop elements
     for (e,element) in enumerate(problem.model.elements)
         # Skip elements without an aerodynamic surface with dynamic stall solver
-        if isnothing(element.aero) || !(typeof(element.aero.solver) in [BLi])
+        if isnothing(element.aero) || !(typeof(element.aero.aeroSurface.solver) in [BLi])
             continue
         end
         # Set flag
@@ -1693,7 +1664,7 @@ function save_time_step_data!(problem::Problem,timeNow::Real)
     # Add current hinge axis constraint data
     currenthingeAxisConstraintsData = Vector{HingeAxisConstraintData}()
     for constraint in hingeAxisConstraints
-        push!(currenthingeAxisConstraintsData,HingeAxisConstraintData(deepcopy(constraint.balanceMoment),deepcopy(constraint.pH),deepcopy(constraint.ϕ)))
+        push!(currenthingeAxisConstraintsData,HingeAxisConstraintData(deepcopy(constraint.balanceMoment),deepcopy(constraint.hingeMoment),deepcopy(constraint.pH),deepcopy(constraint.ϕ)))
     end
     push!(hingeAxisConstraintsDataOverTime,currenthingeAxisConstraintsData)
 

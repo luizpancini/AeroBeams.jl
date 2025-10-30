@@ -1,11 +1,9 @@
 using AeroBeams, LinearAlgebra
 
 # Beam
-L = 12.0
-EA = 30e6
-EIy = 30e6*1/12
-∞ = 1e14
-stiffnessMatrix = diagm([EA,∞,∞,∞,EIy,∞])
+L = 1
+EIy = 1
+stiffnessMatrix = isotropic_stiffness_matrix(EIy=EIy)
 nElem = 40
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix])
 

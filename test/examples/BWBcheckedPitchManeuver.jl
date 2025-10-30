@@ -10,13 +10,13 @@ h = 0e3
 U = 80
 
 # Set NR system solver for trim problem
-NR = create_NewtonRaphson(ρ=0.5,relativeTolerance=1e-12,maximumIterations=100,displayStatus=false)
+NRtrim = create_NewtonRaphson(ρ=0.5,relativeTolerance=1e-12,maximumIterations=100,displayStatus=false)
 
 # Model for trim problem
 BWBtrim = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h,airspeed=U)
 
 # Create and solve trim problem
-trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NR)
+trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NRtrim)
 solve!(trimProblem)
 
 # Extract trim variables
@@ -53,10 +53,10 @@ tf = 5
 
 # Set NR system solver for dynamic problem
 maxit = 100
-NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
+NRdyn = create_NewtonRaphson(maximumIterations=maxit,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
 
 # Create and solve dynamic problem
-dynamicProblem = create_DynamicProblem(model=BWBdynamic,x0=trimProblem.x[1:end-2],finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true,systemSolver=NR)
+dynamicProblem = create_DynamicProblem(model=BWBdynamic,x0=trimProblem.x[1:end-2],finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true,systemSolver=NRdyn)
 solve!(dynamicProblem)
 
 # Unpack numerical solution

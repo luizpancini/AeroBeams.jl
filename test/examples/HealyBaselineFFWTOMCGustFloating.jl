@@ -9,7 +9,7 @@
 #md #     The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/HealyBaselineFFWTOMCGustFloating.jl).
 
 # ### Problem setup
-# Let's begin by setting the variables of our problem. In this example we will analyze the response of the coasting (fold) angle and wing root bending moment (WRBM) to a series of one-minus-cosine gusts with different frequencies (meaning different durations). The hinge is assumed as a universal joint (allowing movement about the three axes), but the restriction of the in-plane bending DOF is modeled through a stiff spring with value `kIPBendingHinge`.
+# Let's begin by setting the variables of our problem. In this example we will analyze the response of the coasting (fold) angle and wing root bending moment (WRBM) to a series of one-minus-cosine gusts with different frequencies (meaning different durations).
 using AeroBeams, DelimitedFiles
 
 ## Gust frequency range [Hz]
@@ -21,23 +21,11 @@ Ug = 0.5
 ## Hinge configuration
 hingeConfiguration = "free"
 
-## Fold angle [rad]
-foldAngle = nothing
-
-## Flare angle [rad]
-Λ = 15*π/180
-
 ## Root pitch angle [rad]
 θ = 7.5*π/180
 
 ## Airspeed [m/s]
 U = 18
-
-## Stiffness of the spring around the hinge for in-plane bending
-kIPBendingHinge = 1e4
-
-## Gravity
-g = 9.80665
 
 ## Discretization
 nElementsInner = 16
@@ -50,16 +38,22 @@ tipLossDecayFactor = 12
 
 ## Solution method for hinge constraint
 solutionMethod = "addedResidual"
+updateAllDOFinResidual = true
 
 ## Time variables
-Δt = 1e-3
+Δt = 2e-3
 tf = 2
 
-## System solver
-σ0 = 1
-maxIter = 200
-relTol = 1e-7
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
+## System solvers
+σ0steady = 1
+maxIterSteady = 200
+relTolSteady = 1e-8
+NRsteady = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0steady,maximumIterations=maxIterSteady,relativeTolerance=relTolSteady)
+
+σ0dyn = 1
+maxIterDyn = 200
+relTolDyn = 1e-8
+NRdyn = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0dyn,maximumIterations=maxIterDyn,relativeTolerance=relTolDyn)
 
 ## Initialize outputs
 t = Array{Vector{Float64}}(undef,length(ωRange))
@@ -69,7 +63,7 @@ problem = Array{DynamicProblem}(undef,length(ωRange))
 #md nothing #hide
 
 # ### Solving the problem
-# In the following loop, we create new gust and model instances for each gust frequency, create and solve the dynamic problem, and then extract the coasting angle of the FFWT (`ϕ`) and the out-of-plane bending moment at the root (`M2root`). The model creation process is streamlined with the function [`create_HealyBaselineFFWT`](@ref create_HealyBaselineFFWT), taking the appropriate inputs. For nonzero pitch angles, the algorithm fails to converge at low airspeed values.
+# In the following loop, we create new gust and model instances for each gust frequency, create and solve the initial steady problem to use as the initial solution to the dynamic problem, which yields the time responses of the coasting angle of the FFWT (`ϕ`) and the out-of-plane bending moment at the root (`M2root`). The model creation process is streamlined with the function [`create_HealyBaselineFFWT`](@ref create_HealyBaselineFFWT), taking the appropriate inputs.
 #md using Suppressor #hide
 ## Loop gust frequency range
 for (i,ω) in enumerate(ωRange)
@@ -78,12 +72,12 @@ for (i,ω) in enumerate(ωRange)
     ## Gust
     gust = create_OneMinusCosineGust(initialTime=0,duration=1/ω,verticalVelocity=Ug)
     ## Model
-    model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,foldAngle=foldAngle,flareAngle=Λ,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,g=g,gust=gust) 
+    model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeConfiguration=hingeConfiguration,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,gust=gust) 
     ## Solve steady problem for initial conditions
-    steadyProblem = create_SteadyProblem(model=model,systemSolver=NR)
+    global steadyProblem = create_SteadyProblem(model=model,systemSolver=NRsteady)
     solve!(steadyProblem)
     ## Create and solve dynamic problem
-    problem[i] = create_DynamicProblem(model=model,finalTime=tf,Δt=Δt,systemSolver=NR,skipInitialStatesUpdate=true,x0=steadyProblem.x)
+    problem[i] = create_DynamicProblem(model=model,finalTime=tf,Δt=Δt,systemSolver=NRdyn,x0=steadyProblem.x)
 #md     @suppress begin #hide
             solve!(problem[i])
 #md     end #hide
@@ -97,7 +91,7 @@ end
 # ### Post-processing
 # First, we choose which of Healy's reference model we will use. Then, we load the corresponding data.
 ## Select reference data (choose between "baseline" or "ASMVLM")
-refModel = "baseline"
+refModel = "ASMVLM"
 
 ## Load reference data
 if refModel == "baseline"
@@ -127,7 +121,7 @@ end
 #md lw = 2
 
 ## Fold angle increment
-#md plt_ϕ = plot(xlabel="Time [s]", ylabel="Fold angle increment [deg]", ylims=[-20,20], legendfontsize=10, legend=:topright)
+#md plt_ϕ = plot(xlabel="Time [s]", ylabel="Fold angle increment [deg]", ylims=[-20,20], tickfont=font(10), guidefont=font(16), legendfontsize=12, legend=:topright)
 #md plot!([NaN],[NaN], c=:black, lw=lw, ls=:solid, label="AeroBeams")
 #md plot!([NaN],[NaN], c=:black, lw=lw, ls=:dashdot, label="Healy (2023)")
 #md for (i,ω) in enumerate(ωRange)
@@ -143,7 +137,7 @@ end
 #md savefig("HealyBaselineFFWTOMCGustFloating_phi.svg")
 
 ## Root OOP bending moment increment
-#md plt_ΔWRBM = plot(xlabel="Time [s]", ylabel="ΔWRBM [N.m]")
+#md plt_ΔWRBM = plot(xlabel="Time [s]", ylabel="ΔWRBM [N.m]", tickfont=font(10), guidefont=font(16))
 #md for (i,ω) in enumerate(ωRange)
 #md     plot!(t[i], -(M2root[i] .- M2root[i][1]), c=colors[i], lw=lw, ls=:solid, label=false)
 #md     if ω==1

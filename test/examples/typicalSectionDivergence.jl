@@ -62,27 +62,9 @@ for (i,U) in enumerate(URange)
     dampingsNonOscillatory[i] = problem[i].dampingsNonOscillatory[1:nNOModes]
 end
 
-# Initialize divergence speed and flag for divergence being found
-global UD = nothing
-global divergenceFound = false
-
-# Separate dampings by mode
-modeDampings = Array{Vector{Float64}}(undef,nNOModes)
-modeDampingsEst = Array{Vector{Float64}}(undef,nNOModes)
-for mode in 1:nNOModes
-    # Mode dampings
-    modeDampings[mode] = [dampingsNonOscillatory[i][mode] for i in eachindex(URange)]
-    # Estimated mode dampings from backward finite difference extrapolation
-    modeDampingsEst[mode] = backward_extrapolation(modeDampings[mode])
-    # Divergence is found when the sign of the estimated value is different from the actual
-    if !divergenceFound
-        iDiv = findfirst(i -> modeDampings[mode][i]*modeDampingsEst[mode][i] < 0, 1:length(URange))
-        if !isnothing(iDiv)
-            global UD = URange[iDiv]
-            global divergenceFound = true
-        end
-    end
-end
+# Get divergence speed
+UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory)
+UD = minimum(UDvec)
 
 # Analytical divergence speed - Eq. 4.8 of Hodges and Pierce
 UDRef = sqrt(kα/(1/2*ρ*c*L*2π*c*(normSparPos-1/4)))

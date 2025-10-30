@@ -15,7 +15,7 @@ using AeroBeams, LinearInterpolations, DelimitedFiles
 aeroSolver = Inflow(nInflowStates=6)
 
 ## Derivation method
-derivationMethod = FD(nothing)
+derivationMethod = AD()
 
 ## Atmosphere 
 altitude = 0
@@ -62,15 +62,17 @@ journal2 = create_BC(name="journal-2",beam=wing,node=nElem+1,types=["u1A","u2A",
 typicalSectionFlutterAndDivergence = create_Model(name="typicalSectionFlutterAndDivergence",beams=[wing],BCs=[journal1,journal2])
 
 ## Airspeed range
-URange = b*ωα*collect(0.25:0.025:2.5)
+URange = b*ωα*collect(0.2:0.025:3)
 
-## Number of oscillatory modes
+## Number of oscillatory and non-oscillatory modes
 nModes = 2
+nNOmodes = 2
 
 ## Pre-allocate memory and initialize output arrays
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
+dampingsNonOscillatory = Array{Vector{Float64}}(undef,length(URange))
 problem = Array{EigenProblem}(undef,length(URange))
 #md nothing #hide
 
@@ -82,19 +84,20 @@ for (i,U) in enumerate(URange)
     ## Update airspeed on model
     set_motion_basis_A!(model=typicalSectionFlutterAndDivergence,v_A=[0;U;0])
     ## Create and solve eigenproblem
-    problem[i] = create_EigenProblem(model=typicalSectionFlutterAndDivergence,nModes=nModes,frequencyFilterLimits=[1e-3,1e3])
+    problem[i] = create_EigenProblem(model=typicalSectionFlutterAndDivergence,nModes=nModes,frequencyFilterLimits=[1e-3,Inf])
     solve!(problem[i])
     ## Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem[i].frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-8)
+    untrackedDamps[i] = problem[i].dampingsOscillatory
     untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
+    dampingsNonOscillatory[i] = problem[i].dampingsNonOscillatory[1:nNOmodes]
 end
 #md nothing #hide
 
 # ### Post-processing
 # The first post-processing step is to use the built-in mode tracking algorithm to enhance our chances of correctly tracking the oscillatory modes. We then set arrays for the frequecies and dampings of each mode, and find the flutter onset and offset (actually absent in this case) speeds. To identify the divergence, we have to look at the damping of the non-oscillatory (zero-frequency) modes.
 ## Apply mode tracking
-freqs,damps,_ = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+freqs,damps,_ = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 ## Separate frequencies and damping ratios by mode
 modeFrequencies = Array{Vector{Float64}}(undef,nModes)
@@ -130,8 +133,10 @@ for mode in 1:nModes
     end
 end
 
-## Damping of non-oscillatory modes
-dampingsNonOscillatory = [problem[i].dampingsNonOscillatory for i in eachindex(URange)]
+## Divergence speed
+UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory)
+divergenceSpeed = minimum(UDvec)
+println("Nondimensional divergence speed = $(divergenceSpeed/(b*ωα))")
 #md nothing #hide
 
 # We also load a reference solution obtained using the ``p`` method for stability analysis using the unsteady aerodynamic theory of [Peters et al.](https://doi.org/10.2514/3.46718), as proposed in problem 5.7 of [Hodges and Pierce](https://doi.org/10.1017/CBO9780511997112). 
@@ -140,14 +145,14 @@ freqsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/typicalSectionFlutterA
 dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/typicalSectionFlutterAndDivergence/damps.txt")
 #md nothing #hide
 
-#md # We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly! Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be computed in spite of it. See [this](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/typicalSectionDivergence.jl) example to learn how.
+#md # We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly! Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be computed in spite of it.
 #md using Plots, ColorSchemes
 #md gr()
 #md ENV["GKSwstype"] = "100" #hide
 #md nothing #hide
 
 ## Plot configurations
-#md modeColors = get(colorschemes[:rainbow], LinRange(0, 1, nModes+1))
+#md modeColors = cgrad(:rainbow, nModes+1, categorical=true)
 #md modeLabels = ["Plunge" "Pitch"]
 #md lw = 3
 #md ms = 2

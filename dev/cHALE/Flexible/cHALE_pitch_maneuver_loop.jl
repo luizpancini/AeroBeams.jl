@@ -53,7 +53,7 @@ relaxFactor = 0.5
 maxIter = 100
 σ0 = 1
 relTol = 1e-8
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,relativeTolerance=relTol,displayStatus=true)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,pseudoInverseMethod=:dampedLeastSquares,relativeTolerance=relTol,displayStatus=true)
 
 # Model for trim problem without springs
 cHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=UprelimTrim[1],nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
@@ -61,7 +61,6 @@ cHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,
 # Solve trim problem at smaller airspeed for better initial guess, if applicable
 global x0 = zeros(0)
 if solvePrelimTrim
-    cHALEtrim.skipValidationMotionBasisA = false
     for Uprelim in UprelimTrim
         println("Solving preliminary trim problem at U=$Uprelim")
         set_motion_basis_A!(model=cHALEtrim,v_A=[0;Uprelim;0])
@@ -109,7 +108,6 @@ for (i,U) in enumerate(URange)
     add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1])
 
     # Update model
-    cHALEtrimSpringed.skipValidationMotionBasisA = true
     update_model!(cHALEtrimSpringed)
 
     # Create and solve trim problem with springs

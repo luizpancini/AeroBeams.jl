@@ -28,4 +28,4 @@ end
 display(plt1)
 savefig(string(absPath,"/sweptPazyModalTipDispRange.pdf"))
 
-println("Finished sweptPazyModalTipDispRange.jl")
+println("Finished sweptPazyModalTipDispRangePlotGenerator.jl")

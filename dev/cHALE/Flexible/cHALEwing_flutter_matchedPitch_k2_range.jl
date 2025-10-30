@@ -12,7 +12,7 @@ wingCd0 = stabsCd0 = 1e-2
 hasInducedDrag = true
 
 # Stiffness factor
-λ = 2
+λ = 1
 
 # Altitude
 h = 20e3
@@ -23,16 +23,18 @@ if λ == 1
 elseif λ > 1
     nElemWing = 40
 end
-nElemTailBoom = 5
-nElemHorzStabilizer = 4
-nElemVertStabilizer = 2
+nElemTailBoom = 1
+nElemHorzStabilizer = 2
+nElemVertStabilizer = 1
 
 # System solvers
 relaxFactor = 0.5
-maxIter = 100
-σ0 = 1.0
-NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,displayStatus=false)
-NReigen = create_NewtonRaphson(maximumIterations=maxIter,initialLoadFactor=1,displayStatus=false)
+maxIter = 1000
+σ0Trim = 1
+σ0Eig = 1
+NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0Trim,pseudoInverseMethod=:dampedLeastSquares,displayStatus=false)
+NReigenInit = create_NewtonRaphson(maximumIterations=maxIter,initialLoadFactor=σ0Eig/2,displayStatus=false)
+NReigen = create_NewtonRaphson(maximumIterations=maxIter,initialLoadFactor=σ0Eig,displayStatus=false)
 
 # Set number of vibration modes
 nModes = 5
@@ -76,10 +78,15 @@ for (i,k2) in enumerate(k2Range)
     for (j,U) in enumerate(URange)
         println("Solving for k2 = $k2, U = $U m/s")
         # Model for trim problem
-        cHALEtrim,_,_,tailBoom,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag,altitude=h)
+        cHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag,altitude=h)
         # Set initial guess solution as previous known solution
         x0Trim = j == 1 ? zeros(0) : trimProblem[i,j-1].x
-        if λ == 2 && k2 == 0.015 && U ≈ 68.5
+        if λ == 1 && k2 == 0.045 && U ≈ 42.4
+            @load string(pwd(),"/dev/cHALE/Flexible/outputs/data/cHALE_trim_k2_range/cHALE_trim_lambda",λ,"_k20045_U424.jld2") trimProblem_k2_0045_U424
+            if length(trimProblem_k2_0045_U424.x) == (cHALEtrim.systemOrder+cHALEtrim.nTrimVariables)
+                x0Trim = trimProblem_k2_0045_U424.x
+            end
+        elseif λ == 2 && k2 == 0.015 && U ≈ 68.5
             jU325 = findfirst(x->x≈32.5,URange)
             x0Trim = trimProblem[i,jU325].x
         end
@@ -113,8 +120,10 @@ for (i,k2) in enumerate(k2Range)
         elseif λ == 2
             fLower = 1e-1
         end
+        # System solver
+        NReigenNow = j == 1 ? NReigenInit : NReigen
         # Create and solve eigen problem
-        eigenProblem[i,j] = create_EigenProblem(model=wingModel,nModes=nModes,frequencyFilterLimits=[fLower,Inf],systemSolver=NReigen,x0=x0Eig)
+        eigenProblem[i,j] = create_EigenProblem(model=wingModel,nModes=nModes,frequencyFilterLimits=[fLower,Inf],systemSolver=NReigenNow,x0=x0Eig)
         solve!(eigenProblem[i,j])
         # Skip if unconverged
         if !eigenProblem[i,j].systemSolver.convergedFinalSolution
@@ -125,7 +134,7 @@ for (i,k2) in enumerate(k2Range)
         end
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(eigenProblem[i,j].dampingsOscillatory,1e-8)
+        untrackedDamps[i,j] = eigenProblem[i,j].dampingsOscillatory
         untrackedEigenvectors[i,j] = eigenProblem[i,j].eigenvectorsOscillatoryCplx
         # Undeformed jig-shape properties
         if j == 1
@@ -251,7 +260,7 @@ flutterOnsetTipOOPWingMatched = flutterOnsetTipOOP
 using Plots, ColorSchemes
 
 # Plot configurations
-colors = cgrad(:rainbow, length(k2Range), categorical=true)
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
 ts = 10
 fs = 16
 lfs = 10
@@ -259,6 +268,9 @@ tsz = 10
 lw = 2
 ms = 3
 msw = 0
+DPI = 300
+fps = 10
+L = 16
 mshape = [:circle, :star, :utriangle, :pentagon, :diamond]
 labels = ["\$k_2 = $(k2)\$" for k2 in k2Range]
 gr()
@@ -272,14 +284,7 @@ elseif λ == 2
     freqLim = [0,80]
 end
 plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
-scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label=string("\$U_{\\infty} = ",URange[1],"\$ m/s"))
-for (i,k2) in enumerate(k2Range)
-    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
-    for mode in 1:nModes
-        plot!(modeDampings[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
-        plot!([modeDampings[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-    end
-end
+plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
 if λ == 1
     OOPtext = "OOP"
     TIP1text = "1st T-IP"
@@ -294,8 +299,34 @@ if λ == 1
     annotate!(TIP2textPos[1], TIP2textPos[2], text(TIP2text, tsz))
     quiver!([OOPtextPos[1],OOPtextPos[1]+0.5,OOPtextPos[1]+0.5], [OOPtextPos[2]-2,OOPtextPos[2]-0.5,OOPtextPos[2]+1], quiver=([0,1.75,2.0], [-10,-3.5,8]), arrow=:closed, linecolor=:black)
 end
+plt_RL_base = deepcopy(plt_RL)
+scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label="\$U_{\\infty} = $(URange[1])\\;\\mathrm{m/s}\$")
+for (i,k2) in enumerate(k2Range)
+    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
+    for mode in 1:nModes
+        plot!(modeDampings[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        plot!([modeDampings[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+end
 display(plt_RL)
 savefig(string(absPath,"/cHALEwing_flutter_matchedPitch_k2_range_rootlocus_lambda",λ,".pdf"))
+
+# Animated root locus plot
+plt_RL_anim = plot(plt_RL_base)
+plot!(dpi=DPI)
+for (i,k2) in enumerate(k2Range)
+    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
+end
+anim = @animate for (j,U) in enumerate(URange)
+    title!("\$U_{\\infty} = $U\$ m/s")
+    for (i,k2) in enumerate(k2Range)
+        for mode in 1:nModes
+            plot!([modeDampings[i,mode][j]], [modeFrequencies[i,mode][j]], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        end
+    end
+end
+gif_handle = gif(anim, string(absPath,"/cHALEwing_flutter_matchedPitch_k2_range_RL.gif"), fps=fps)
+display(gif_handle)
 
 # Root locus - focus on 1st T-IP mode
 if λ == 1
@@ -306,6 +337,7 @@ elseif λ == 2
     freqLim = [0,50]
 end
 plt_RL_TIP1 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
+plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
 for (i,k2) in enumerate(k2Range)
     scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
     for mode in 1:nModes
@@ -325,6 +357,7 @@ elseif λ == 2
     freqLim = [20,80]
 end
 plt_RL_TIP2 = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
+plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
 for (i,k2) in enumerate(k2Range)
     scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
     for mode in 1:nModes
@@ -380,18 +413,25 @@ for (i,k2) in enumerate(k2Range)
 end
 
 # V-g-f: colored by mode
+modes2plot = [[1,2,5],[1,2,5],[1,2,5],[1,2,4],[1,3,4]]
 if λ == 1
-    modeColors = [:blue, :orange, :green, :red, :purple]
+    modeColors = colors
     modeLabels = ["OOP1" "T-IP1" "OOP2" "OOP3" "T-IP2"]
     modeColorOrder = [vcat(1:nModes), vcat(1:nModes), vcat(1:nModes), vcat(1,2,3,5,4), vcat(1,3,2,5,4)]
     for (i,k2) in enumerate(k2Range)
         plt_Vf = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=[0,50], tickfont=font(ts), guidefont=font(12))
         for mode in 1:nModes
+            if !(mode in modes2plot[i])
+                continue
+            end
             plot!(URange, modeFrequencies[i,mode], c=modeColors[modeColorOrder[i][mode]], lw=lw, label=false)
         end
-        plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[URange[1],URange[end]], ylims=[-0.2,0.2], yticks=-0.2:.05:0.2, tickfont=font(ts), guidefont=font(12), legendfontsize=lfs, legend=(0.15,1.1))
+        plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[URange[1],URange[end]], ylims=[-0.2,0.2], yticks=-0.2:.05:0.2, tickfont=font(ts), guidefont=font(12), legendfontsize=lfs, legend=:topleft)
         plot!(URange,zeros(length(URange)), c=:gray, lw=lw, ls=:dash, label=false)
         for mode in 1:nModes
+            if !(mode in modes2plot[i])
+                continue
+            end
             if i==2
                 plot!(URange, modeDampings[i,mode]./modeFrequencies[i,mode], c=modeColors[modeColorOrder[i][mode]], lw=lw, label=modeLabels[mode])
             else
@@ -401,26 +441,33 @@ if λ == 1
         plt_Vgf = plot(plt_Vf,plt_Vg, layout=(2,1))
         display(plt_Vgf)
         savefig(string(absPath,"/cHALEwing_flutter_matchedPitch_k2_range_Vgf",i,"_byMode_lambda",λ,".pdf"))
+        display(plt_Vg)
+        savefig(plt_Vg,string(absPath,"/cHALEwing_flutter_matchedPitch_k2_range_Vg",i,"_lambda",λ,".pdf"))
     end
 end
 
 # Flutter onset speeds vs k2
+levelColors = [:green :orange]
 if λ == 1
     ULim = [0,45]
 elseif λ == 2
     ULim = [0,65]
 end
 plt_Uf = plot(xlabel="\$k_2\$ [1/m]", ylabel="Flutter speed [m/s]", ylims=ULim, xticks=k2Range, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:bottomleft)
-plot!(k2Range,flutterOnsetSpeedWingg0, marker=(:circle, 10), msw=msw, c=:black, lw=lw, ls=:dash, label="Wing - zero pitch, no gravity")
-plot!(k2Range,flutterOnsetSpeedWingMatched, marker=(:square, 10), msw=msw, c=:black, lw=lw, ls=:solid, label="Wing - trim-matched pitch")
+plot!(k2Range,flutterOnsetSpeedWingg0, marker=(:circle, 10), msw=msw, c=levelColors[1], lw=lw, ls=:dash, label="Wing - zero pitch, no gravity")
+plot!(k2Range,flutterOnsetSpeedWingMatched, marker=(:square, 10), msw=msw, c=levelColors[2], lw=lw, ls=:solid, label="Wing - trim-matched pitch")
 display(plt_Uf)
 savefig(string(absPath,"/cHALEwing_flutter_matchedPitch_k2_range_speedOn_lambda",λ,".pdf"))
 
 # Flutter onset speeds vs tip OOP position
 plt_Uf = plot(xlabel="Tip OOP position [% semispan]", ylabel="Flutter speed [m/s]", xlims=[-40,100], ylims=[0,80], xticks=vcat(-40:10:100), tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
-plot!(flutterOnsetTipOOPWingg0,flutterOnsetSpeedWingg0, marker=(:circle, 5), msw=msw, c=:black, lw=lw, ls=:dash, label="Wing - zero pitch, no gravity")
-plot!(flutterOnsetTipOOPWingMatched,flutterOnsetSpeedWingMatched, marker=(:square, 5), msw=msw, c=:black, lw=lw, ls=:solid, label="Wing - trim matched pitch")
+plot!(flutterOnsetTipOOPWingg0,flutterOnsetSpeedWingg0, marker=(:circle, 5), msw=msw, c=levelColors[1], lw=lw, ls=:dash, label="Wing - zero pitch, no gravity")
+plot!(flutterOnsetTipOOPWingMatched,flutterOnsetSpeedWingMatched, marker=(:square, 5), msw=msw, c=levelColors[2], lw=lw, ls=:solid, label="Wing - trim matched pitch")
 display(plt_Uf)
 savefig(string(absPath,"/cHALEwing_flutter_matchedPitch_k2_range_speedOn_OOP_lambda",λ,".pdf"))
+
+# # Steady plot of straight wing at lowest airspeed
+# plt_steady = plot_steady_deformation(eigenProblem[2,1],backendSymbol=:gr,plotUndeformed=false,plotBCs=true,plotDistLoads=false,plotLegend=false,plotAxes=false,plotGrid=false,view=(30,30),plotLimits=([-L*1/4,L*3/4],[-L*1/2,L*1/2],[-L*1/2,L*1/2]),save=true,savePath=string(relPath,"/cHALEwing_flutter_matchedPitch_k2_range_steady_k0U0_lambda",λ,".pdf"))
+# display(plt_steady)
 
 println("Finished cHALEwing_flutter_matchedPitch_k2_range.jl")

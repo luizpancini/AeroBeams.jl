@@ -20,10 +20,11 @@ flareAngle = 20*π/180
 localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * AeroBeams.a2
 
 # Solution method for hinge constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Hinge axis
-hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,beam=beam,localHingeAxis=localHingeAxis)
+hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,beam=beam,localHingeAxis=localHingeAxis)
 
 # Spring
 kSpring = 1e-4
@@ -31,8 +32,8 @@ spring = create_Spring(elementsIDs=[hingeElem,hingeElem+1],nodesSides=[1,2],kp=[
 add_spring_to_beams!(beams=[beam,beam],spring=spring)
 
 # BCs
-qᵢ = -10e0
-q₀ = -1e-0
+qᵢ = -1e1
+q₀ = -1e-1
 q = (x1,t) -> ifelse.(x1.<L*hingeElemNorm,qᵢ,0) .+ ifelse.(x1.>=L*hingeElemNorm,q₀,0)
 add_loads_to_beam!(beam,loadTypes=["f_A_of_x1t"],loadFuns=[(x1,t)->[0; 0; q(x1,t)]])
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

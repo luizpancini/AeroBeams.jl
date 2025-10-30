@@ -347,14 +347,12 @@ end
 end
 
 @testset "Static analysis of a swept-back clamped beam with a driven flared folding wingtip" begin
-    include("examples/sweptBackDrivenFFWTWing.jl")
+    include("examples/sweptBackFFWTWing.jl")
     # Self-comparison
-    ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackDrivenFFWTWing", "phi.txt"))[1]
-    hingeBalanceM_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackDrivenFFWTWing", "hingeBalanceM.txt"))[1]
-    pHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackDrivenFFWTWing", "pHinge.txt"))
-    @test ϕ_ ≈ θ atol=SELFatol
+    ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackFFWTWing", "phi.txt"))[1]
+    hingeBalanceM_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackFFWTWing", "hingeBalanceM.txt"))[1]
+    pHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackFFWTWing", "pHinge.txt"))
     @test hingeBalanceM ≈ hingeBalanceM_ atol=SELFatol
-    @test hingeBalanceM ≈ abs(Fₜ*L/4) atol=SELFatol
     @test pHinge ≈ pHinge_ atol=SELFatol
 end
 

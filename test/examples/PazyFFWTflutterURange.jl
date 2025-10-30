@@ -1,7 +1,7 @@
 using AeroBeams
 
 # Airspeed range [m/s]
-URange = collect(1:1:60)
+URange = collect(1:1:40)
 
 # Hinge node
 hingeNode = 13
@@ -22,16 +22,18 @@ foldAngle = nothing
 tipMass = 10e-3
 ηtipMass = 1e-3*[0;50;0]
 
-# Spring stiffness [Nm/rad] (as kSpring → ∞, the hingeless behavior is obtained, as expected!)
+# Spring stiffness [Nm/rad]
 kSpring = 1e-4
+kIPBendingHinge = 1e1
 
 # Solution method for hinge constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = true
 
 # System solver
 σ0 = 1
 maxIter = 100
-relTol = 1e-6
+relTol = 1e-8
 NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Number of modes
@@ -52,20 +54,22 @@ for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U=$U m/s")
     # Update model
-    model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,airspeed=U,pitchAngle=θ,foldAngle=foldAngle,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,ηtipMass=ηtipMass)
+    model = create_PazyFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeNode=hingeNode,flareAngle=Λ,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,foldAngle=foldAngle,flightDirection=[sin(β);cos(β);0],tipMass=tipMass,ηtipMass=ηtipMass)
+    # Initial guess solution
+    x0 = i==1 ? zeros(0) : problem[i-1].x
     # Create and solve problem
-    problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1,Inf])
+    problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1,Inf],x0=x0)
     solve!(problem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem[i].frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-8)
+    untrackedDamps[i] = problem[i].dampingsOscillatory
     untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
     # Coast (or fold) angle
     ϕHinge[i] = problem[i].model.hingeAxisConstraints[1].ϕ*180/π
 end
 
 # Apply mode tracking
-freqs,damps,_ = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+freqs,damps,_ = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 for mode in 1:nModes

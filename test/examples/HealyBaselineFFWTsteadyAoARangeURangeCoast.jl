@@ -2,6 +2,7 @@ using AeroBeams, DelimitedFiles
 
 # Solution method for constraint
 solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Hinge configuration
 hingeConfiguration = "free"
@@ -12,11 +13,9 @@ hingeConfiguration = "free"
 # Airspeed Range
 URange = vcat(1:1:40)
 
-# Flare angle [rad]
-Λ = 15*π/180
-
-# Gravity
-g = 9.80665
+# Stiffness of the spring around the hinge
+kSpring = 1e-4
+kIPBendingHinge = 1e0
 
 # Discretization
 nElementsInner = 16
@@ -28,7 +27,7 @@ hasTipCorrection = true
 tipLossDecayFactor = 12
 
 # Initialize model
-HealyBaselineFFWTsteadyAoARangeURangeCoast = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,pitchAngle=0,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+HealyBaselineFFWTsteadyAoARangeURangeCoast = create_HealyBaselineFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeConfiguration=hingeConfiguration,pitchAngle=0,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
 
 # System solver
 σ0 = 1
@@ -56,7 +55,7 @@ for (i,θ) in enumerate(θRange)
     for (j,U) in enumerate(URange)
         println("Solving for θ = $(round(θ*180/π,digits=1)) deg, U = $U m/s")
         # Update model
-        model = create_HealyBaselineFFWT(hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,g=g,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+        model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeConfiguration=hingeConfiguration,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge)
         # Create and solve problem
         problem[i,j] = create_SteadyProblem(model=model,systemSolver=NR)
         solve!(problem[i,j])

@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot mode shapes
-modesPlot = plot_mode_shapes(problem,scale=0.5,legendPos=:topleft,frequencyLabel="frequency",save=true,savePath=string(relPath,"/pinnedSpringedBeamEigen_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(problem,scale=0.5,legendPos=:topleft,save=true,savePath=string(relPath,"/pinnedSpringedBeamEigen_modeShapes.pdf"))
 display(modesPlot)
 
 println("Finished pinnedSpringedBeamEigenPlotGenerator.jl")

@@ -26,7 +26,7 @@ nModes = 10
 
 # System solver for trim problem
 relaxFactor = 0.5
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=100,displayStatus=false)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=100,pseudoInverseMethod=:MoorePenrose,displayStatus=false)
 
 # Set stiffness factor and payload ranges, and initialize outputs
 λRange = [1,5,100]
@@ -42,7 +42,7 @@ modeDampingRatios = Array{Vector{Float64}}(undef,length(λRange),nModes)
 eigenProblem = Array{EigenProblem}(undef,length(λRange),length(PRange))
 
 # Attachment springs
-μ = 1e-2
+μ = 1e-1
 ku = μ*[1; 1; 1]
 kp = ku
 spring = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
@@ -58,7 +58,6 @@ for (i,λ) in enumerate(λRange)
         # Add springs at wing root
         add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
         # Update model
-        heliosTrim.skipValidationMotionBasisA = true
         update_model!(heliosTrim)
         # Set initial guess solution as previous known solution
         x0Trim = (j==1) ? zeros(0) : trimProblem.x
@@ -75,19 +74,18 @@ for (i,λ) in enumerate(λRange)
         # Add springs at wing root
         add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
         # Update model
-        heliosEigen.skipValidationMotionBasisA = true
         update_model!(heliosEigen)
         # Create and solve eigen problem
         eigenProblem[i,j] = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],refTrimProblem=trimProblem)
         solve_eigen!(eigenProblem[i,j])
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(eigenProblem[i,j].dampingsOscillatory,1e-12)
+        untrackedDamps[i,j] = eigenProblem[i,j].dampingsOscillatory
         untrackedEigenvectors[i,j] = eigenProblem[i,j].eigenvectorsOscillatoryCplx
     end
     # Apply mode tracking, if applicable
     if modeTracking
-        freqs[i,:],damps[i,:],_,matchedModes = mode_tracking(PRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
+        freqs[i,:],damps[i,:],_,matchedModes = mode_tracking_hungarian(PRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
     else
         freqs[i,:],damps[i,:] = untrackedFreqs[i,:],untrackedDamps[i,:]
     end

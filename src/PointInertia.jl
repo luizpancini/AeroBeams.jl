@@ -2,7 +2,7 @@
     PointInertia composite type
 
 # Fields
-- `elementID::Int64`: local element ID to which the point inertia is attached
+- `elementID::Int`: local element ID to which the point inertia is attached
 - `mass::Real`: mass
 - `η::Vector{Real}`: position relative to element's midpoint's reference line
 - `Ixx::Real`: mass moment of inertia about the x1-axis
@@ -15,7 +15,7 @@
 """
 @with_kw mutable struct PointInertia
 
-    elementID::Int64
+    elementID::Int
     η::Vector{<:Real} = zeros(3)
     mass::Real = 0
     Iyy::Real = 0
@@ -27,7 +27,7 @@
     inertiaMatrix::Union{Matrix{<:Real},Matrix{Nothing}} = fill(nothing,3,3)
 
     # Constructor
-    function PointInertia(elementID::Int64,η::Vector{<:Real},mass::Real,Iyy::Real,Izz::Real,Ixx::Real,Ixy::Real,Ixz::Real,Iyz::Real,inertiaMatrix::Union{Matrix{<:Real},Matrix{Nothing}})
+    function PointInertia(elementID::Int,η::Vector{<:Real},mass::Real,Iyy::Real,Izz::Real,Ixx::Real,Ixy::Real,Ixz::Real,Iyz::Real,inertiaMatrix::Union{Matrix{<:Real},Matrix{Nothing}})
 
         # Validate inputs
         @assert mass >= 0

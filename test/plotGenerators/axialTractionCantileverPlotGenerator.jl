@@ -9,11 +9,13 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,scale=1e4,plotLimits=([0,2*L],[-0.1,0.1],[0,1]),save=true,savePath=string(relPath,"/axialTractionCantilever_deformation.gif"))
+anim = plot_dynamic_deformation(problem,scale=1e4,plotFrequency=10,plotLimits=([0,2*L],[-L,L],[-L,L]),view=(30,30),lw=5,save=true,savePath=string(relPath,"/axialTractionCantilever_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2
 ms = 5
+msw = 0
 colors = [:blue,:orange]
 labels = ["\$t\$ = 0.8 s" "\$t\$ = 1.0 s"]
 gr()

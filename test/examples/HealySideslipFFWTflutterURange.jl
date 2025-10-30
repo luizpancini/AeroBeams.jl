@@ -1,0 +1,76 @@
+using AeroBeams
+
+# Solution method
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = true
+
+# Airspeed range [m/s]
+URange = collect(5:0.5:40)
+
+# Flare angle [rad]
+Λ = 30*π/180
+
+# Pitch angle [rad]
+θ = 3*π/180
+
+# Sideslip angle [rad]
+β = 0*π/180
+
+# Spring stiffness [Nm/rad]
+kSpring = 1e-4
+kIPBendingHinge = 1e2
+
+# Discretization
+nElementsInner = 15
+nElementsFFWT = 5
+
+# Tip loss options
+hasTipCorrection = true
+tipLossDecayFactor = 10
+
+# System solver
+σ0 = 1
+maxIter = 100
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
+
+# Number of modes
+nModes = 6
+
+# Initialize outputs
+untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
+untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
+untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
+modeFrequencies = Array{Vector{Float64}}(undef,nModes)
+modeDampings = Array{Vector{Float64}}(undef,nModes)
+modeDampingRatios = Array{Vector{Float64}}(undef,nModes)
+problem = Array{EigenProblem}(undef,length(URange))
+
+# Sweep airspeed
+for (i,U) in enumerate(URange)
+    # Display progress
+    println("Solving for U=$U m/s")
+    # Update model
+    model = create_HealySideslipFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,flareAngle=Λ,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β);cos(β);0])
+    # Set initial guess solution as the one from previous sideslip angle
+    x0 = (i>1 && problem[i-1].systemSolver.convergedFinalSolution) ? problem[i-1].x : zeros(0)
+    # Create and solve problem
+    problem[i] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,x0=x0,frequencyFilterLimits=[1e-0,Inf])
+    solve!(problem[i])
+    # Frequencies, dampings and eigenvectors
+    untrackedFreqs[i] = problem[i].frequenciesOscillatory
+    untrackedDamps[i] = problem[i].dampingsOscillatory
+    untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
+end
+
+# Apply mode tracking
+freqs,damps,_ = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+
+# Separate frequencies and damping ratios by mode
+for mode in 1:nModes
+    modeFrequencies[mode] = [freqs[i][mode] for i in eachindex(URange)]
+    modeDampings[mode] = [damps[i][mode] for i in eachindex(URange)]
+    modeDampingRatios[mode] = modeDampings[mode]./modeFrequencies[mode]
+end
+
+println("Finished HealySideslipFFWTflutterURange.jl")

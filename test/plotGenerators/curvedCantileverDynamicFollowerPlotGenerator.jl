@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,scale=1,plotFrequency=5,plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/curvedCantileverDynamicFollower_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,scale=1,plotFrequency=5,plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/curvedCantileverDynamicFollower_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2

@@ -1,7 +1,7 @@
  using AeroBeams, LinearAlgebra
 
 # Hinge angle
-θ = π/4
+θ = π/2
 
 # Beam 
 L = 1
@@ -11,7 +11,9 @@ hingeNode = div(nElem,2)+1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingeNode],hingedNodesDoF=[[false,true,false]])
 
 # Hinge axis constraint
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,localHingeAxis=[0;1;0],pHValue=4*tan(θ/4))
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
+hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,localHingeAxis=[0;1;0],pHValue=4*tan(θ/4))
 
 # BCs
 Fₕ = -1
@@ -28,7 +30,7 @@ clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","
 clampedHingedBeam = create_Model(name="clampedHingedBeam",beams=[beam],BCs=[clamp,hingeForce,tipForce],hingeAxisConstraints=[hingeAxisConstraint])
 
 # System solver
-σ0 = 0.5
+σ0 = 1
 σstep = 0.5
 maxIter = 100
 relTol = 1e-8

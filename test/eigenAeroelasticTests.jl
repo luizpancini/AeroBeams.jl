@@ -63,22 +63,22 @@ end
 #     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 # end
 
-# Reduce CI time
+# # Reduce CI time
 # @testset "Flutter analysis of the Healy FFWT wing with sideslip angle as the varying parameter" begin
-#     include("examples/HealyFFWTflutterSideslipRange.jl")
+#     include("examples/HealySideslipFFWTflutterSideslipRange.jl")
 #     # Self-comparison
-#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterSideslipRange", "freqs.txt"))
-#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterSideslipRange", "damps.txt"))
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealySideslipFFWTflutterSideslipRange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealySideslipFFWTflutterSideslipRange", "damps.txt"))
 #     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
 #     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 # end
 
-# Reduce CI time
-# @testset "Flutter analysis of the Healy FFWT wing with airspeed as the varying parameter" begin
-#     include("examples/HealyFFWTflutterURange.jl")
+# # Reduce CI time
+# @testset "Flutter analysis of the Healy sideslip FFWT wing with airspeed as the varying parameter" begin
+#     include("examples/HealySideslipFFWTflutterURange.jl")
 #     # Self-comparison
-#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterURange", "freqs.txt"))
-#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTflutterURange", "damps.txt"))
+#     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealySideslipFFWTflutterURange", "freqs.txt"))
+#     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealySideslipFFWTflutterURange", "damps.txt"))
 #     @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
 #     @test hcat(damps...)' ≈ damps_ atol=SELFatol
 # end
@@ -249,7 +249,8 @@ GC.gc()
 sleep(1)
 
 # Run tests that currently fail in CI, if applicable
-if runCIfailingTests && (get(ENV, "CI", false) || get(ENV, "GITHUB_ACTIONS", false))
+is_ci = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
+if runCIfailingTests && !is_ci
 
     @testset "Flutter analysis of the Blended-Wing-Body flying wing" begin
         include("examples/BWBflutter.jl")

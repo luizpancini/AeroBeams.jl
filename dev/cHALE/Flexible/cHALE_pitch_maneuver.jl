@@ -1,5 +1,13 @@
 using AeroBeams, JLD2
 
+# Set paths
+relPathFig = "/dev/cHALE/Flexible/outputs/figures/cHALE_pitch_maneuver"
+relPathData = "/dev/cHALE/Flexible/outputs/data/cHALE_pitch_maneuver"
+absPathFig = string(pwd(),relPathFig)
+absPathData= string(pwd(),relPathData)
+mkpath(absPathFig)
+mkpath(absPathData)
+
 # Aerodynamic solver
 aeroSolver = Indicial()
 
@@ -7,10 +15,10 @@ aeroSolver = Indicial()
 h = 20e3
 
 # Airspeed [m/s]
-U = 45
+U = 20
 
 # Stiffness factor
-λ = 2
+λ = 1
 
 # Options for stabilizers
 stabilizersAero = true
@@ -21,11 +29,11 @@ wingCd0 = stabsCd0 = 1e-2
 hasInducedDrag = true
 
 # Flag to solve preliminary trim problem at smaller airspeed
-solvePrelimTrim = true
+solvePrelimTrim = false
 UprelimTrim = [20,30]
 
 # Bending pre-curvature
-k2 = 0.030
+k2 = 0.0
 
 # Discretization
 if λ == 1
@@ -49,7 +57,7 @@ relaxFactor = 0.5
 maxIter = 100
 σ0 = 1
 relTol = 1e-8
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,relativeTolerance=relTol,displayStatus=true)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,pseudoInverseMethod=:dampedLeastSquares,relativeTolerance=relTol,displayStatus=true)
 
 # Model for trim problem without springs
 cHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
@@ -57,7 +65,6 @@ cHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,
 # Solve trim problem at smaller airspeed for better initial guess, if applicable
 global x0 = zeros(0)
 if solvePrelimTrim
-    cHALEtrim.skipValidationMotionBasisA = false
     for Uprelim in UprelimTrim
         println("Solving preliminary trim problem at U=$Uprelim")
         set_motion_basis_A!(model=cHALEtrim,v_A=[0;Uprelim;0])
@@ -73,6 +80,11 @@ trimProblem = create_TrimProblem(model=cHALEtrim,systemSolver=NR,x0=x0)
 println("Solving trim problem")
 solve!(trimProblem)
 
+# Steady plot of trimmed shape
+L = 16
+plt_steady = plot_steady_deformation(trimProblem,backendSymbol=:gr,plotUndeformed=false,plotBCs=false,plotDistLoads=false,plotLegend=false,plotAxes=false,plotGrid=false,view=(30,30),plotLimits=([-L*2/3,L*2/3],[-L*2/3,L*2/3],[-L*2/3,L*2/3]),save=true,savePath=string(relPathFig,"/cHALE_trimmedShape_lambda",λ,"_U",U,"_k2",k2,".pdf"))
+display(plt_steady)
+
 # Extract trim variables and outputs
 trimAoA = (trimProblem.aeroVariablesOverσ[end][cHALEtrim.beams[1].elementRange[end]].flowAnglesAndRates.αₑ + trimProblem.aeroVariablesOverσ[end][cHALEtrim.beams[2].elementRange[1]].flowAnglesAndRates.αₑ)/2
 trimThrust = trimProblem.x[end-1]*trimProblem.model.forceScaling
@@ -86,7 +98,6 @@ cHALEtrimSpringed,_,_,tailBoomSpringed,_ = create_conventional_HALE(aeroSolver=a
 add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1])
 
 # Update model
-cHALEtrimSpringed.skipValidationMotionBasisA = true
 update_model!(cHALEtrimSpringed)
 
 # Create and solve trim problem with springs
@@ -110,7 +121,7 @@ solve_eigen!(eigenProblem)
 
 # Frequencies and dampings
 freqs = eigenProblem.frequenciesOscillatory
-damps = round_off!(eigenProblem.dampingsOscillatory,1e-8)
+damps = eigenProblem.dampingsOscillatory
 dampRatio = damps./freqs
 
 # Show whether flutter is expected from eigenanalysis
@@ -124,7 +135,7 @@ else
 end
 
 # Set checked elevator deflection profile for dynamic problem
-Δδ = -.1*π/180
+Δδ = -0.1*π/180
 tδinit = 0.5
 tδramp = 0.5
 tδpeak = tδinit+tδramp
@@ -147,8 +158,8 @@ tδfinal = tδpeak+tδramp
 cHALEdynamic,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,δElev=δ,thrust=trimThrust)
 
 # Time variables
-Δt = 5e-2
-tf = 120
+Δt = 1e-2
+tf = 90
 
 # Set NR system solver for dynamic problem
 maxIter = 50
@@ -164,16 +175,11 @@ rRootElem = lRootElem+1
 
 # Unpack numerical solution
 t = dynamicProblem.savedTimeVector
-wingAoA = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowAnglesAndRates.αₑ+dynamicProblem.aeroVariablesOverTime[i][rRootElem].flowAnglesAndRates.αₑ)/2 for i in 1:length(t)]
-airspeed = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowVelocitiesAndRates.U∞+dynamicProblem.aeroVariablesOverTime[i][rRootElem].flowVelocitiesAndRates.U∞)/2 for i in 1:length(t)]
-
-# Set paths
-relPathFig = "/dev/cHALE/Flexible/outputs/figures/cHALE_pitch_maneuver"
-relPathData = "/dev/cHALE/Flexible/outputs/data/cHALE_pitch_maneuver"
-absPathFig = string(pwd(),relPathFig)
-absPathData= string(pwd(),relPathData)
-mkpath(absPathFig)
-mkpath(absPathData)
+wingAoA = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowAnglesAndRates.αₑ+dynamicProblem.aeroVariablesOverTime[i][rRootElem].flowAnglesAndRates.αₑ)/2 for i in eachindex(t)]
+airspeed = [(dynamicProblem.aeroVariablesOverTime[i][lRootElem].flowVelocitiesAndRates.U∞+dynamicProblem.aeroVariablesOverTime[i][rRootElem].flowVelocitiesAndRates.U∞)/2 for i in eachindex(t)]
+Δu1 = [dynamicProblem.nodalStatesOverTime[i][div(nElemWing,2)+1].u_n2[1] for i in eachindex(t)] .- dynamicProblem.nodalStatesOverTime[1][div(nElemWing,2)+1].u_n2[1]
+Δu2 = [dynamicProblem.nodalStatesOverTime[i][div(nElemWing,2)+1].u_n2[2] for i in eachindex(t)] .- dynamicProblem.nodalStatesOverTime[1][div(nElemWing,2)+1].u_n2[2]
+Δu3 = [dynamicProblem.nodalStatesOverTime[i][div(nElemWing,2)+1].u_n2[3] for i in eachindex(t)] .- dynamicProblem.nodalStatesOverTime[1][div(nElemWing,2)+1].u_n2[3]
 
 # Plots
 using Plots, DelimitedFiles
@@ -209,5 +215,11 @@ end
 # plt_AoA2 = plot(xlabel="Time [s]", ylabel="Normalized wing root angle of attack", xticks=0:30:tf)
 # plot!(t, wingAoA./wingAoA[1], c=:black, lw=lw, label=false)
 # display(plt_AoA2)
+# Plots.reset_defaults()
+
+# Animation
+animTimeStep = 0.10
+anim = plot_dynamic_deformation(dynamicProblem,refBasis="I",view=(60,15),plotDistLoads=false,plotBCs=false,plotFrequency=ceil(Int,animTimeStep/Δt),followAssembly=true,plotLimits=([-20,20],[-20,20],[-20,20]),fps=30,save=true,savePath=string(relPathFig,"/cHALE_pitch_maneuver_lambda",λ,"_U",U,"_k2",k2,".gif"),displayProgress=true)
+display(anim)
 
 println("Finished cHALE_pitch_maneuver.jl")

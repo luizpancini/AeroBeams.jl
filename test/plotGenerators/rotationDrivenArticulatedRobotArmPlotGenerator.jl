@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,plotFrequency=1,plotLimits=([-L/2,L],[-L/2,L/2],[-L/10,L]),save=true,savePath=string(relPath,"/rotationDrivenArticulatedRobotArm_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,plotFrequency=1,plotLimits=([-L/2,L],[-L/2,L/2],[-L/10,L]),save=true,savePath=string(relPath,"/rotationDrivenArticulatedRobotArm_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Snapshots
 plt_snap = plot_snapshots(problem,refBasis="I",plotBCs=false,plotAxes=false,plotGrid=false,snapshots=vcat(0,0.6:0.1:2.2),plotLimits=([-L/2,L],[-L/2,L/2],[-L/10,L]),save=true,savePath=string(relPath,"/rotationDrivenArticulatedRobotArm_snapshots.pdf"))

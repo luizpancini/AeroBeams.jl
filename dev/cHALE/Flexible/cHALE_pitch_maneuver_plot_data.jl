@@ -1,7 +1,7 @@
 using Plots, DelimitedFiles, ColorSchemes
 
 # k2
-k2 = 0.030
+k2 = 0.045
 
 # Airspeeds
 URange = k2 == 0.045 ? [33,25,24] : [30,32]
@@ -11,8 +11,8 @@ t = Array{Vector{Float64}}(undef,length(URange))
 wingAoA = Array{Vector{Float64}}(undef,length(URange))
 
 # Load data
-relPathFig = "/dev/cHALE/outputs/figures/cHALE_pitch_maneuver"
-relPathData = "/dev/cHALE/outputs/data/cHALE_pitch_maneuver"
+relPathFig = "/dev/cHALE/Flexible/outputs/figures/cHALE_pitch_maneuver"
+relPathData = "/dev/cHALE/Flexible/outputs/data/cHALE_pitch_maneuver"
 absPathFig = string(pwd(),relPathFig)
 absPathData= string(pwd(),relPathData)
 for i in eachindex(URange)
@@ -31,7 +31,7 @@ xlims = k2 == 0.045 ? [0,120] : [0,180]
 ylims = k2 == 0.045 ? [0,2] : [0.5,1.5]
 
 # Wing root AoA
-colors = get(colorschemes[:rainbow], range(0, 1, length(URange)))
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], length(URange))
 plt_AoA = plot(xlabel="Time [s]", ylabel="Normalized root AoA", xlims=xlims, ylims=ylims, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
 for i in eachindex(URange)
     plot!(t[i], wingAoA[i]./wingAoA[i][1], c=colors[i], lw=lw, label=string("\$U_{\\infty} = ",URange[i],"\$ m/s"))

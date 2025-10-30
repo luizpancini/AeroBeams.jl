@@ -1,32 +1,31 @@
 using AeroBeams, LinearAlgebra
 
 # Solution method for constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Hinge node, fold angle [rad] and flare angle [rad]
 hingeNode = 12
-foldAngle = -30*π/180
+foldAngle = -10*π/180
 flareAngle = 20*π/180
 
 # Spring stiffness
 kSpring = 1e-4
+kIPBendingHinge = 1e0
 
 # Root pitch angle
 θ = 7*pi/180
 
 # Airspeed
-U = 50
-
-# Gravity
-g = 9.80665
+U = 35
 
 # Pazy wing with flared folding tip
-PazyFFWTsteadyFixedFold = create_PazyFFWT(solutionMethod=solutionMethod,hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
+PazyFFWTsteadyFixedFold = create_PazyFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ)
 
 # System solver
-σ0 = 0.75
-maxIter = 200
-relTol = 1e-6
+σ0 = .75
+maxIter = 1_000
+relTol = 1e-8
 NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Create and solve problem
@@ -50,14 +49,15 @@ M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOve
 cn = [problem.aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
 
 # Compute rotations, displacement and balance moment at the hinge node
-ϕHinge = problem.model.hingeAxisConstraints[1].ϕ*180/π
+hingeAxisConstraint = problem.model.hingeAxisConstraints[1]
+ϕHinge = hingeAxisConstraint.ϕ*180/π
+hingeBalance = hingeAxisConstraint.hingeMoment
 u3HingeNode = u3[2*hingeNode-1]
 u3Tip = u3[end]
-hingeBalanceM = norm(problem.model.hingeAxisConstraints[1].balanceMoment)
 
 # Display results
 println("Total rotation at hinge node = $ϕHinge deg")
+println("Moment necessary to impose the hinge angle = $hingeBalance")
 println("OOP displacements: at hinge node = $u3HingeNode m, at tip = $u3Tip m")
-println("Moment necessary to impose the hinge angle = $hingeBalanceM")
 
 println("Finished PazyFFWTsteadyFixedFold.jl")

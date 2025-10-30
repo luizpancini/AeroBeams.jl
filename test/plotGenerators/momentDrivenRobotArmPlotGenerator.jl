@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,plotFrequency=1,showScale=false,timeStampPos=[0.15;-0.05;0],plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/momentDrivenRobotArm_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,plotFrequency=1,showScale=false,timeStampPos=[0.15;-0.05;0],plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/momentDrivenRobotArm_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2

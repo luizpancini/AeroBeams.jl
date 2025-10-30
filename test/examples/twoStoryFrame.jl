@@ -114,7 +114,7 @@ println("Relative errors: $ϵ_rel")
 
 #md # We can also visualize the mode shapes using the function [`plot_mode_shapes`](@ref plot_mode_shapes) with the appropriate arguments. They compare well to thosed described in the reference.
 #md using Plots #hide
-#md modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),frequencyLabel="frequency",modalColorScheme=:rainbow)
+#md modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),modalColorScheme=:rainbow)
 #md savefig("twoStoryFrame_modeShapes.svg") #hide
 #md nothing #hide
 #md # ![](twoStoryFrame_modeShapes.svg)

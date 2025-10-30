@@ -15,7 +15,7 @@ msw = 0
 gr()
 
 # Mode shapes at highest airspeed
-modesPlot = plot_mode_shapes(problem,scale=1,view=(15,15),frequencyLabel="frequency",legendPos=:outerright,save=true,savePath=string(relPath,"/HealyFFWTBeamModal_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(problem,scale=1,view=(15,15),legendPos=:outerright,save=true,savePath=string(relPath,"/HealyFFWTBeamModal_modeShapes.pdf"))
 display(modesPlot)
 
 println("Finished HealyBaselineFFWTModalFreePlotGenerator.jl")

@@ -20,26 +20,26 @@ end
     @test M2root ≈ M2root_ atol=1e-3
 end
 
-# Reduce CI time
-# @testset "Steady analysis of the Healy FFWT wing with varying flare angle and root pitch angle" begin
-#     include("examples/HealyFFWTsteadyFlareRangeAoARangeCoast.jl")
+# # Reduce CI time
+# @testset "Steady analysis of the Healy sideslip FFWT wing with varying flare angle and root pitch angle" begin
+#     include("examples/HealySideslipFFWTsteadyFlareRangeAoARangeCoast.jl")
 #     # Self-comparison
-#     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyFlareRangeAoARangeCoast", "phiHinge.txt"))
+#     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealySideslipFFWTsteadyFlareRangeAoARangeCoast", "phiHinge.txt"))
 #     @test ϕHinge ≈ ϕHinge_ atol=1e-3
 # end
 
-# Reduce CI time
-# @testset "Steady analysis of the Healy FFWT wing with varying flare angle, root pitch angle and airspeed" begin
-#     include("examples/HealyFFWTsteadyFlareRangeURangeAoARangeCoast.jl")
+# # Reduce CI time
+# @testset "Steady analysis of the Healy sideslip FFWT wing with varying flare angle, root pitch angle and airspeed" begin
+#     include("examples/HealySideslipFFWTsteadyFlareRangeURangeAoARangeCoast.jl")
 #     # Self-comparison
-#     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyFlareRangeURangeAoARangeCoast", "phiHinge.txt"))
+#     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealySideslipFFWTsteadyFlareRangeURangeAoARangeCoast", "phiHinge.txt"))
 #     @test hcat(ϕHinge...)' ≈ ϕHinge_ atol=1e-3
 # end
 
-@testset "Steady analysis of the Healy FFWT wing with varying wingtip twist, root pitch angle and sideslip angle" begin
-    include("examples/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl")
+@testset "Steady analysis of the Healy sideslip FFWT wing with varying wingtip twist, root pitch angle and sideslip angle" begin
+    include("examples/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl")
     # Self-comparison
-    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast", "phiHinge.txt"))
+    ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast", "phiHinge.txt"))
     @test isapprox(hcat(ϕHinge...)', ϕHinge_, atol=1e-3, nans=true)
 end
 

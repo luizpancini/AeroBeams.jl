@@ -353,10 +353,10 @@ mutable struct Element <: BeamElement
     # Parent beam
     parent::Beam
     # IDs
-    localID::Int64
-    globalID::Int64
-    nodesLocalID::Vector{Int64}
-    nodesGlobalID::Vector{Int64}
+    localID::Int
+    globalID::Int
+    nodesLocalID::Vector{Int}
+    nodesGlobalID::Vector{Int}
     # Point inertias attached to the element
     attachedPointInertias::Vector{PointInertia}
     # Geometric/material element variables
@@ -486,29 +486,29 @@ mutable struct Element <: BeamElement
     hasDistributedFollowerForcesBasisb::Bool
     hasDistributedFollowerMomentsBasisb::Bool
     # Indices on system of equations and related variables
-    eqs_Fu1::Vector{Int64} 
-    eqs_Fu2::Vector{Int64}
-    eqs_Fp1::Vector{Int64}
-    eqs_Fp2::Vector{Int64}
-    eqs_FF1::Vector{Int64}
-    eqs_FF2::Vector{Int64}
-    eqs_FM1::Vector{Int64}
-    eqs_FM2::Vector{Int64}
-    eqs_FV::Vector{Int64}
-    eqs_FΩ::Vector{Int64}
-    eqs_Fχ::Vector{Int64}
-    eqs_FF1_sep::Vector{Int64}
-    eqs_FF2_sep::Vector{Int64}
-    eqs_FM1_sep::Vector{Int64}
-    eqs_FM2_sep::Vector{Int64}
-    DOF_u::Vector{Int64}
-    DOF_p::Vector{Int64}
-    DOF_F::Vector{Int64}
-    DOF_M::Vector{Int64}
-    DOF_V::Vector{Int64}
-    DOF_Ω::Vector{Int64}
-    DOF_χ::Vector{Int64} 
-    DOF_δ::Union{Vector{Int64},Int64}
+    eqs_Fu1::Vector{Int} 
+    eqs_Fu2::Vector{Int}
+    eqs_Fp1::Vector{Int}
+    eqs_Fp2::Vector{Int}
+    eqs_FF1::Vector{Int}
+    eqs_FF2::Vector{Int}
+    eqs_FM1::Vector{Int}
+    eqs_FM2::Vector{Int}
+    eqs_FV::Vector{Int}
+    eqs_FΩ::Vector{Int}
+    eqs_Fχ::Vector{Int}
+    eqs_FF1_sep::Vector{Int}
+    eqs_FF2_sep::Vector{Int}
+    eqs_FM1_sep::Vector{Int}
+    eqs_FM2_sep::Vector{Int}
+    DOF_u::Vector{Int}
+    DOF_p::Vector{Int}
+    DOF_F::Vector{Int}
+    DOF_M::Vector{Int}
+    DOF_V::Vector{Int}
+    DOF_Ω::Vector{Int}
+    DOF_χ::Vector{Int} 
+    DOF_δ::Union{Vector{Int},Int}
     isSpecialNode1::Bool
     isSpecialNode2::Bool
     eqsNode1Set::Bool
@@ -644,7 +644,7 @@ mutable struct Element <: BeamElement
         hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = false,false,false,false,false,false,false,false
 
         # Initialize system indices
-        eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ = Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}(),Vector{Int64}()
+        eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ = Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}(),Vector{Int}()
 
         isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set = false,false,false,false
 
@@ -654,9 +654,9 @@ mutable struct Element <: BeamElement
         # Update aerodynamic states and rates vectors to correct size
         if !isnothing(aero)
             states.χ = zeros(aero.nTotalAeroStates)
-            if typeof(aero.solver) == BLi
+            if typeof(aero.aeroSurface.solver) == BLi
                 states.χ[aero.nonlinearPitchPlungeStatesRange[2:4]] .= 1.0
-            elseif typeof(aero.solver) == BLo
+            elseif typeof(aero.aeroSurface.solver) == BLo
                 states.χ[aero.nonlinearPitchPlungeStatesRange[2:3]] .= 1.0
             end
             statesRates.χdot = zeros(aero.nTotalAeroStates)
@@ -679,7 +679,7 @@ end
 
 
 # Gets the TF matrices resulting from hinged and not hinged nodal DoFs times the identity matrix
-function get_hinged_nodes_matrices(parent::Beam,nodesLocalID::Vector{Int64})
+function get_hinged_nodes_matrices(parent::Beam,nodesLocalID::Vector{Int})
 
     @unpack hingedNodes,hingedNodesDoF = parent
 

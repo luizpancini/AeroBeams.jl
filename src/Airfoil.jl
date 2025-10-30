@@ -138,7 +138,7 @@
             ηRng =         [ 1.0;   1.0]
             cd₀Rng =  1e-2*[ 1.0;   1.0]
             cm₀Rng =  1e-1*[ 1.0;   1.0]
-            cnαRng =  2π/β*[ 1.0;   1.0]
+            cnαRng =    2π*[ 1.0;   1.0]
             x_acRng =      [ 0.25; 0.25]
         elseif name in ["cHALEairfoil"]
             # Bound Mach and corresponding compressibility factor
@@ -1369,7 +1369,7 @@ end
     cmδ::Real
     cnδ::Real
 
-    function FlapParameters(name::String; flapSiteID::Int64)
+    function FlapParameters(name::String; flapSiteID::Int)
 
         # Validate
         @assert 0 < flapSiteID <= 100
@@ -1946,13 +1946,13 @@ Airfoil constructor (with a trailing-edge flap)
 
 # Arguments
 - `name::String`: name of the airfoil
-- `flapSiteID::Int64`: flap site ID
+- `flapSiteID::Int`: flap site ID
 - `Re::Real`: Reynolds number
 - `Ma::Real`: Mach number
 - `U::Real`: relative airspeed
 - `b::Real`: semichord
 """
-function create_flapped_Airfoil(; name::String,flapSiteID::Int64,Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
+function create_flapped_Airfoil(; name::String,flapSiteID::Int,Re::Real=0,Ma::Real=0,U::Real=0,b::Real=0)
 
     coordinates = get_airfoil_coordinates(name)
     attachedFlowParameters = AttachedFlowParameters(name,Re=Re,Ma=Ma)

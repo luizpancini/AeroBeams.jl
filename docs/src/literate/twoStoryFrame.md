@@ -138,7 +138,7 @@ We can also visualize the mode shapes using the function [`plot_mode_shapes`](@r
 
 ````@example twoStoryFrame
 using Plots #hide
-modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),frequencyLabel="frequency",modalColorScheme=:rainbow)
+modesPlot = plot_mode_shapes(problem,scale=1,view=(45,30),legendPos=(0.3,0.1),modalColorScheme=:rainbow)
 savefig("twoStoryFrame_modeShapes.svg") #hide
 nothing #hide
 ````

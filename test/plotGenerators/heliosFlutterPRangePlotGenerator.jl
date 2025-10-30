@@ -8,12 +8,16 @@ relPath = "/test/outputs/figures/heliosFlutterPRange"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
 
-# Mode shapes
-modesPlot = plot_mode_shapes(eigenProblem,scale=10,view=(30,30),legendPos=:outerright,nModes=6,save=true,savePath=string(relPath,"/heliosFlutterPRange_modeShapes.pdf"))
+# Static mode shapes
+modesPlot = plot_mode_shapes(eigenProblem,element2centralize=15,scale=10,view=(30,30),legendPos=:outerright,save=true,savePath=string(relPath,"/heliosFlutterPRange_modeShapes.pdf"))
 display(modesPlot)
 
+# # Phugoid mode animation
+# phugoidAnim = plot_mode_shapes_animation(eigenProblem,element2centralize=15,scale=20,nFramesPerCycle=21,view=(30,30),showLegend=false,modes2plot=[3],plotSteady=false,plotBCs=false,plotAxes=false,displayProgress=true,save=true,savePath=string(relPath,"/heliosFlutterPRange_phugoid.gif"))
+# display(phugoidAnim)
+
 # Plot configurations
-modeColors = get(colorschemes[:jet1], LinRange(0, 1, nModes))
+modeColors = cgrad(:rainbow, nModes, categorical=true)
 lw = 2
 ms = 3
 gr()

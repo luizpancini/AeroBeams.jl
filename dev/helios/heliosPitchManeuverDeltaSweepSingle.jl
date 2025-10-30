@@ -4,7 +4,7 @@ using AeroBeams
 saveFigures = true
 
 # Elevator perturbation range
-ΔδRange = -π/180*vcat(3:1:6)
+ΔδRange = π/180*vcat(11:1:13)
 
 # Circulatory indicial function
 circulatoryIndicialFunction = "Wagner"
@@ -33,7 +33,7 @@ nElemDihedralSemispan = 5
 nElemPod = 2
 
 # Payload [lb]
-P = 200
+P = 0
 
 # Airspeed [m/s]
 U = 40*0.3048
@@ -46,7 +46,7 @@ tδfinal = tδpeak+tδramp
 
 # Time variables
 Δt = 5e-2
-tf = 120
+tf = 60
 t_len = round(Int,tf/Δt+1)
 
 # Set NR system solver for trim problem
@@ -79,7 +79,7 @@ root_κ2 = [fill(NaN, t_len) for _ in 1:length(ΔδRange)]
 
 # Sweep elevator perturbation
 for (i,Δδ) in enumerate(ΔδRange)
-    println("Solving for Δδ = $(Δδ*180/pi) deg")
+    println("Solving for Δδ = $(round(Int,Δδ*180/pi)) deg")
     # Model for trim problem
     trimModel,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,stiffnessFactor=λ,nElemStraightSemispan=nElemStraightSemispan,nElemDihedralSemispan=nElemDihedralSemispan,nElemPod=nElemPod,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
     # Create and solve trim problem
@@ -107,7 +107,7 @@ for (i,Δδ) in enumerate(ΔδRange)
     # Model for dynamic problem
     dynamicModel,_ = create_Helios(aeroSolver=aeroSolver,reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,stiffnessFactor=λ,nElemStraightSemispan=nElemStraightSemispan,nElemDihedralSemispan=nElemDihedralSemispan,nElemPod=nElemPod,payloadPounds=P,airspeed=U,δ=δ,thrust=trimThrust)
     # Create and solve dynamic problem
-    dynamicProblem[i] = create_DynamicProblem(model=dynamicModel,x0=trimProblem[i].x[1:end-2],finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true,systemSolver=NRdyn)
+    dynamicProblem[i] = create_DynamicProblem(model=dynamicModel,x0=trimProblem[i].x[1:end-2],finalTime=tf,Δt=Δt,systemSolver=NRdyn)
     solve!(dynamicProblem[i])
     # Outputs
     Nt = length(dynamicProblem[i].savedTimeVector)
@@ -135,9 +135,12 @@ lfs = 12
 lw = 2
 ms = 3
 msw = 0
+plotFrequency = 10
+fps = 30
+DPI = 300
 colors = cgrad(:rainbow, length(ΔδRange), categorical=true)
 δistr = round(Int,ΔδRange[1]*180/π)
-δfstr = round(ΔδRange[end]*180/π)
+δfstr = round(Int,ΔδRange[end]*180/π)
 if typeof(aeroSolver) == Indicial
     aeroSolverStr = "AF"
 else
@@ -145,19 +148,41 @@ else
 end
 
 # Root angle of attack
-plt_AoA = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]", xlims=[0,tf], ylims=[0,45], yticks=vcat(-90:15:90), tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:topright)
+plt_AoA = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]", xlims=[0,tf], ylims=[-5,30], yticks=vcat(-90:15:90), tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:topleft)
 for (i,Δδ) in enumerate(ΔδRange)
     plot!(t[i], rootAoA[i]*180/π, c=colors[i], lw=lw, label=string("\$\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
 end
 display(plt_AoA)
 savefig(plt_AoA,string(absPath,"/heliosPitchManeuverDeltaSweepSingle_AoAcurves_",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".pdf"))
 
+# Animated root angle of attack
+plt_AoA_anim = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]", xlims=[0,tf], ylims=[-5,30], yticks=vcat(-90:15:90), tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:topleft, dpi=DPI)
+for (i,Δδ) in enumerate(ΔδRange)
+    plot!([NaN], [NaN], c=colors[i], lw=lw, label=string("\$\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
+end
+anim = @animate for (j,timeNow) in enumerate(t[1])
+    if j > 1 && rem(j,plotFrequency) > 0
+        continue
+    end
+    plot(plt_AoA_anim)
+    title!("\$t = $timeNow\$ s")
+    for (i,Δδ) in enumerate(ΔδRange)
+        plot!(t[i][1:j], rootAoA[i][1:j]*180/π, c=colors[i], lw=lw, label=false)
+    end
+end
+gif_handle = gif(anim, string(absPath,"/heliosPitchManeuverDeltaSweepSingle_AoA_",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".gif"), fps=fps)
+display(gif_handle)
+
 # cm
-plt_cma = plot(xlabel="Steady angle of attack [deg]", ylabel="\$c_m\$", tickfont=font(ts), guidefont=font(fs))
+plt_cma = plot(xlabel="Steady angle of attack [deg]", ylabel="\$c_m\$", tickfont=font(ts), guidefont=font(fs), xlims=[-5,30], ylims=[-0.5,0.1])
 for (i,Δδ) in enumerate(ΔδRange)
     plot!(rootPitch[i]*180/π, cm[i], c=colors[i], lw=lw, label=false)
 end
 display(plt_cma)
 savefig(plt_cma,string(absPath,"/heliosPitchManeuverDeltaSweepSingle_cmcurves_",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".pdf"))
+
+# Animation
+anim = plot_dynamic_deformations(dynamicProblem,refBasis="I",followAssembly=true,view=(60,15),fps=fps,plotFrequency=plotFrequency,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[0,500],[-200,50]),legendEntries=["\$ \\delta_f = $(round(Int,δ*180/π)) ^\\circ \$" for δ in ΔδRange],legendPos=(0.1,0.8),save=true,savePath=string(relPath,"/heliosPitchManeuverDeltaSweepSingle__",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".gif"),displayProgress=true)
+display(anim)
 
 println("Finished heliosPitchManeuverDeltaSweepSingle.jl")

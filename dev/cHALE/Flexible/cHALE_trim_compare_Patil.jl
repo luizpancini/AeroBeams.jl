@@ -17,9 +17,9 @@ hasInducedDrag = false
 h = 20e3
 
 # Discretization
-nElemWing = 40
-nElemTailBoom = 10
-nElemHorzStabilizer = 10
+nElemWing = 20
+nElemTailBoom = 5
+nElemHorzStabilizer = 4
 
 # Wing precurvature
 k2 = 0.0
@@ -28,11 +28,19 @@ k2 = 0.0
 relaxFactor = 0.5
 maxIter = 100
 displayStatus = false
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=displayStatus)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,pseudoInverseMethod=:dampedLeastSquares,displayStatus=displayStatus)
 
 # Set stiffness factor and airspeed ranges
 λRange = [1; 20]
 URange = collect(20:1:35)
+
+# Dummy model
+model,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,altitude=h,stiffnessFactor=1,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,airspeed=20)
+
+# Get element ranges and nodal arclength positions of right wing
+x1_0 = vcat([vcat(rightWing.elements[e].r_n1[1],rightWing.elements[e].r_n2[1]) for e in 1:rightWing.nElements]...)
+x3_0 = vcat([vcat(rightWing.elements[e].r_n1[3],rightWing.elements[e].r_n2[3]) for e in 1:rightWing.nElements]...)
+rWGlobalElemRange = rightWing.elementRange[1]:rightWing.elementRange[end]
 
 # Initialize outputs
 trimProblem = Array{TrimProblem}(undef,length(λRange),length(URange))
@@ -42,22 +50,16 @@ trim_u3 = Array{Vector{Float64}}(undef,length(λRange),length(URange))
 
 # Sweep stiffness factor
 for (i,λ) in enumerate(λRange)
-    # Model
-    conventionalHALE,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,altitude=h,stiffnessFactor=λ,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2)
-    # Get element ranges and nodal arclength positions of right wing
-    global x1_0 = vcat([vcat(rightWing.elements[e].r_n1[1],rightWing.elements[e].r_n2[1]) for e in 1:rightWing.nElements]...)
-    global x3_0 = vcat([vcat(rightWing.elements[e].r_n1[3],rightWing.elements[e].r_n2[3]) for e in 1:rightWing.nElements]...)
-    rWGlobalElemRange = rightWing.elementRange[1]:rightWing.elementRange[end]
     # Sweep airspeed
     for (j,U) in enumerate(URange)
         # Display progress
         println("Trimming for λ = $λ, U = $U m/s")
-        # Update airspeed on model
-        set_motion_basis_A!(model=conventionalHALE,v_A=[0;U;0])
+        # Model
+        model,_ = create_conventional_HALE(aeroSolver=aeroSolver,altitude=h,stiffnessFactor=λ,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,airspeed=U)
         # Set initial guess solution as previous known solution
         x0 = j == 1 ? zeros(0) : trimProblem[i,j-1].x
         # Create and solve trim problem
-        trimProblem[i,j] = create_TrimProblem(model=conventionalHALE,systemSolver=NR,x0=x0)
+        trimProblem[i,j] = create_TrimProblem(model=model,systemSolver=NR,x0=x0)
         solve!(trimProblem[i,j])
         # Trim results
         trimAoA[i,j] = trimProblem[i,j].aeroVariablesOverσ[end][rWGlobalElemRange[1]].flowAnglesAndRates.αₑ*180/π
@@ -80,7 +82,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot configurations
-colors = cgrad(:rainbow, 2, categorical=true)
+colors = palette([:purple, :darkorange])
 labels = ["Elastic" "Rigid"]
 ts = 10
 fs = 16
@@ -92,7 +94,7 @@ L = 16
 gr()
 
 # Trim root angle of attack vs airspeed
-plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root angle of attack [deg]", xlims=[URange[1],URange[end]], ylims=[0,15], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
+plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root angle of attack [deg]", xlims=[20,35], ylims=[0,15], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
 plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], c=:black, ms=ms, msw=msw, label="Patil et al. (2001)")
 for (i,λ) in enumerate(λRange)
@@ -107,7 +109,7 @@ display(plt1)
 savefig(string(absPath,"/cHALE_trim_compare_Patil_AoA.pdf"))
 
 # Trim deflected wingspan at U = 25 m/s
-U2plot = 25.0
+U2plot = 25
 indU = findfirst(x->x==U2plot,URange)
 if !isnothing(indU)
     plt2 = plot(xlabel="Spanwise length [m]", ylabel="Vertical displacement [m]", xlims=[0,16], ylims=[0,16], xticks=collect(0:4:16), yticks=collect(0:4:16), tickfont=font(ts), guidefont=font(fs))

@@ -34,7 +34,8 @@ aeroSolver = Indicial()
 
 # Set NR system solver
 relaxFactor = 0.5
-NR = create_NewtonRaphson(ρ=relaxFactor)
+pseudoInverseMethod = :dampedLeastSquares
+NR = create_NewtonRaphson(ρ=relaxFactor,pseudoInverseMethod=pseudoInverseMethod)
 
 # Airspeed (40 ft/s) [m]
 U = 40*0.3048

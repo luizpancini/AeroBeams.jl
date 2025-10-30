@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Mode shapes of flexible aircraft at highest payload
-modesPlot = plot_mode_shapes(eigenProblem[1,end],scale=10,view=(30,30),legendPos=:outerright,nModes=6,save=true,savePath=string(relPath,"/heliosFlutterPLambdaRange_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(eigenProblem[1,end],element2centralize=15,scale=10,view=(30,30),legendPos=:outerright,nModes=6,save=true,savePath=string(relPath,"/heliosFlutterPLambdaRange_modeShapes.pdf"))
 display(modesPlot)
 
 # Plot configurations

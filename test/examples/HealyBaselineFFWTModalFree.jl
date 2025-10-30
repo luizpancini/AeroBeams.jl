@@ -1,4 +1,4 @@
-using AeroBeams
+using AeroBeams, PrettyTables
 
 # Hinge configuration
 hingeConfiguration = "free"
@@ -11,7 +11,7 @@ nElementsFFWT = 8
 g = 0
 
 # Stiffness of the spring around the hinge for in-plane bending
-kIPBendingHinge = 1e12
+kIPBendingHinge = 1e6
 
 # System solver
 σ0 = 1
@@ -35,9 +35,17 @@ freqs = problem.frequenciesOscillatory/(2π)
 # Reference frequencies [Hz] - see Table 3.3 of Healy's thesis
 freqsRef = [0.04; 3.72; 23.24; 23.45; 65.43; 126.44; 135.01; 204.85; 257.86]
 
-# Show frequency comparison
+# Compute relative differences
 order = [1,2,4,5,6,8,9,10,11]
-ϵ_rel = freqs[order]./freqsRef .- 1.0
-println("Relative frequency errors: $ϵ_rel")
+ϵ_rel = freqs[order]./freqsRef .- 1
+
+# Build table
+data = hcat(freqs[order], freqsRef, 100*ϵ_rel)
+pretty_table(
+    data,
+    header = ["AeroBeams [Hz]", "Healy [Hz]", "Rel. Error [%]"],
+    formatters = ft_round(2), # round to 2 decimals
+    alignment = :c
+)
 
 println("Finished HealyBaselineFFWTModalFree.jl")

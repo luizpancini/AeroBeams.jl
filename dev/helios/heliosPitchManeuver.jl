@@ -30,21 +30,23 @@ nElemDihedralSemispan = 5
 nElemPod = 2
 
 # Payload [lb]
-P = 200
+P = 150
 
 # Airspeed [m/s]
 U = 40*0.3048
 
 # Elevator profile variables
-Δδ = .1*π/180
-tδinit = .1
+Δδ = 10*π/180
+tδinit = 1
 tδramp = 1
 tδpeak = tδinit+tδramp
 tδfinal = tδpeak+tδramp
 
 # Time variables
-Δt = [5e-2 5e-2; 5e-2 5e-2]
-tf = [10 10; 10 10]
+Δt = [5e-2 5e-2; 
+      5e-2 5e-2]
+tf = [60 60; 
+      60 60]
 
 # Set NR system solver for trim problem
 relaxFactor = 0.5
@@ -81,7 +83,7 @@ tip_Δu3 = Array{Vector{Float64}}(undef,length(aeroSolvers),length(λRange))
 for (i,aeroSolver) in enumerate(aeroSolvers)
     # Sweep stiffness factors
     for (j,λ) in enumerate(λRange)
-        println("Solving for aeroSolver $i, λ = $λ")
+        println("Solving for $(aeroSolver.name) solver, λ = $λ")
         # Model for trim problem
         trimModel,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,stiffnessFactor=λ,nElemStraightSemispan=nElemStraightSemispan,nElemDihedralSemispan=nElemDihedralSemispan,nElemPod=nElemPod,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
         # Create and solve trim problem
@@ -247,7 +249,13 @@ if saveFigures
 end
 
 # Animations
-plot_dynamic_deformation(dynamicProblem[1,1],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=4,plotLimits=([-40,40],[-5,800],[-80,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_attached_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
-plot_dynamic_deformation(dynamicProblem[2,1],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,600],[-250,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_ds_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
+anim_af = plot_dynamic_deformation(dynamicProblem[1,1],refBasis="I",followAssembly=true,view=(60,15),plotDistLoads=false,plotFrequency=4,plotLimits=([-40,40],[-40,40],[-80,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_attached_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
+display(anim_af)
+
+anim_ds = plot_dynamic_deformation(dynamicProblem[2,1],refBasis="I",followAssembly=true,view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-40,40],[-250,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_ds_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
+display(anim_ds)
+
+anim_both = plot_dynamic_deformations(dynamicProblem[:,1],refBasis="I",followAssembly=true,view=(60,15),plotFrequency=10,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[-5,190],[-200,10]),legendEntries=["Attached flow", "Dynamic stall"],legendPos=(0.1,0.75),save=true,savePath=string(relPath,"/heliosPitchManeuver_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
+display(anim_both)
 
 println("Finished heliosPitchManeuver.jl")

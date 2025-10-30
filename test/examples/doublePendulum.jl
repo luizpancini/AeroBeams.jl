@@ -3,7 +3,7 @@ using AeroBeams, LinearAlgebra
 # Gravity
 g = 9.80665
 
-# Initial angles of release
+# Initial angle of release
 θ₀ = π/2
 
 # Beam 
@@ -27,7 +27,7 @@ tf = 1
 Δt = tf/1e3
 
 # Create and solve the problem
-problem = create_DynamicProblem(model=doublePendulum,finalTime=tf,Δt=Δt)
+problem = create_DynamicProblem(model=doublePendulum,finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true)
 solve!(problem)
 
 # Unpack numerical solution

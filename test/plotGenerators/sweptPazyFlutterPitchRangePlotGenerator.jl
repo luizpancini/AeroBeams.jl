@@ -30,17 +30,17 @@ for (i,θ) in enumerate(θRange)
     for mode in 1:nModes
         plot!(URange, modeFrequencies[i,mode]/(2π), c=modeColors[mode], lw=lw, alpha=0.1+0.9*i/length(θRange), label=false)
         if θ == 0 && mode <= size(freqs_aoa0_ref,1)-1
-            scatter!(sqrt.(2*freqs_aoa0_ref[1,:]/ρref), freqs_aoa0_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
+            scatter!(freqs_aoa0_ref[1,:], freqs_aoa0_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
         elseif θ == 1*π/180 && mode <= size(freqs_aoa1_ref,1)-1
-            scatter!(sqrt.(2*freqs_aoa1_ref[1,:]/ρref), freqs_aoa1_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
+            scatter!(freqs_aoa1_ref[1,:], freqs_aoa1_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
         elseif θ == 3*π/180 && mode <= size(freqs_aoa3_ref,1)-1
-            scatter!(sqrt.(2*freqs_aoa3_ref[1,:]/ρref), freqs_aoa3_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
+            scatter!(freqs_aoa3_ref[1,:], freqs_aoa3_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
         elseif θ == 5*π/180 && mode <= size(freqs_aoa5_ref,1)-1
-            scatter!(sqrt.(2*freqs_aoa5_ref[1,:]/ρref), freqs_aoa5_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
+            scatter!(freqs_aoa5_ref[1,:], freqs_aoa5_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
         elseif θ == 7*π/180 && mode <= size(freqs_aoa7_ref,1)-1
-            scatter!(sqrt.(2*freqs_aoa7_ref[1,:]/ρref), freqs_aoa7_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
+            scatter!(freqs_aoa7_ref[1,:], freqs_aoa7_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)
         elseif θ == 10*π/180 && mode <= size(freqs_aoa10_ref,1)-1
-            scatter!(sqrt.(2*freqs_aoa10_ref[1,:]/ρref), freqs_aoa10_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)      
+            scatter!(freqs_aoa10_ref[1,:], freqs_aoa10_ref[mode+1,:], ms=ms, msw=msw, mc=:white, msc=modeColors[mode], label=false)      
         end
     end
 end
@@ -59,4 +59,4 @@ savefig(plt_Vf,string(absPath,"/sweptPazyFlutterPitchRange_freq_",tipLossStr,"_L
 savefig(plt_Vg,string(absPath,"/sweptPazyFlutterPitchRange_damp_",tipLossStr,"_Lambda",string(round(Int,Λ*180/pi)),".pdf"))
 savefig(plt_Vgf,string(absPath,"/sweptPazyFlutterPitchRange_Vgf_",tipLossStr,"_Lambda",string(round(Int,Λ*180/pi)),".pdf"))
 
-println("Finished sweptPazyFlutterPitchRange.jl")
+println("Finished sweptPazyFlutterPitchRangePlotGenerator.jl")

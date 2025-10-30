@@ -46,7 +46,7 @@ gustLength = U*τ
 L = 0.3048*40*(2+cosd(10))
 gustWidth = 2*L
 c0 = [0; U*t0; 0]
-gust = create_DiscreteSpaceGust(type="DARPA",length=gustLength,width=gustWidth,verticalVelocity=Ug,c0=c0)
+gust = create_DiscreteSpaceGust(type="DARPA",gustLength=gustLength,gustWidth=gustWidth,verticalVelocity=Ug,c0=c0)
 
 # Time variables
 Δt = [5e-2 5e-2; 5e-2 5e-2]

@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,plotFrequency=5,scalePos=[1;-0.05;0],timeStampPos=[1;-0.15;0],plotLimits=([-0.1,0.1],[0,L],[0,L]),plotDistLoads=false,save=true,savePath=string(relPath,"/rootExcitationBeam1_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,plotFrequency=5,scalePos=[1;-0.05;0],timeStampPos=[1;-0.15;0],plotLimits=([-0.1,0.1],[0,L],[0,L]),plotDistLoads=false,save=true,savePath=string(relPath,"/rootExcitationBeam1_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2

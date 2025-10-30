@@ -4,9 +4,6 @@ using AeroBeams
 aeroSolver = Inflow()
 gustLoadsSolver = IndicialGust("Kussner")
 
-# Derivation method
-derivationMethod = AD()
-
 # Flag for upright position
 upright = true
 
@@ -26,7 +23,7 @@ pg = [0;-π/2;0]
 gust = create_Continuous1DSpaceGust(spectrum=spectrum,gustLength=τ*U,N=1001,σ=σ,c0=c0,p=pg)
 
 # Model
-PazyWingContinuous1DSpaceGust,nElem,_ = create_Pazy(aeroSolver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,upright=upright,θ=θ,airspeed=U,gust=gust)
+PazyWingContinuous1DSpaceGust,nElem,L,_ = create_Pazy(aeroSolver=aeroSolver,gustLoadsSolver=gustLoadsSolver,upright=upright,θ=θ,airspeed=U,gust=gust)
 
 # Set system solver options
 σ0 = 1.0
@@ -41,11 +38,11 @@ tf = 5*t0 + τ
 initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)
 
 # Create and solve dynamic problem
-problem = create_DynamicProblem(model=PazyWingContinuous1DSpaceGust,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,adaptableΔt=false)
+problem = create_DynamicProblem(model=PazyWingContinuous1DSpaceGust,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
 solve!(problem)
 
 # Unpack numerical solution
-t = problem.timeVector
+t = problem.savedTimeVector
 tipAoA = [problem.aeroVariablesOverTime[i][nElem].flowAnglesAndRates.αₑ for i in 1:length(t)]
 tipOOP = -[problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
 tqSpan_cn = [problem.aeroVariablesOverTime[i][12].aeroCoefficients.cn for i in 1:length(t)]

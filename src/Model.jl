@@ -29,27 +29,31 @@
     # Secondary (outputs from model creation)
     # ---------------------------------------
     elements::Vector{Element} = Vector{Element}()
-    nElementsTotal::Int64 = 0
-    nNodesTotal::Int64 = 0
-    elementNodes::Vector{Vector{Int64}} = Vector{Vector{Int64}}()
+    nElementsTotal::Int = 0
+    nNodesTotal::Int = 0
+    elementNodes::Vector{Vector{Int}} = Vector{Vector{Int}}()
     r_n::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
-    BCedNodes::Vector{Int64} = Vector{Int64}()
-    springedNodes::Vector{Int64} = Vector{Int64}()
+    BCedNodes::Vector{Int} = Vector{Int}()
+    springedNodes::Vector{Int} = Vector{Int}()
     specialNodes::Vector{SpecialNode} = Vector{SpecialNode}()
-    specialNodesGlobalIDs::Vector{Int64} = Vector{Int64}()
+    specialNodesGlobalIDs::Vector{Int} = Vector{Int}()
     springsOnNodes::Vector{Vector{Spring}} = Vector{Vector{Spring}}()
-    systemOrder::Int64 = 0
+    systemOrder::Int = 0
     forceScaling::Float64 = 1.0
     R_A::Matrix{Float64} = I3
     R_AT::Matrix{Float64} = I3
     R_A_ofTime::Vector{Matrix{Float64}} = Vector{Matrix{Float64}}()
-    skipValidationMotionBasisA::Bool = false
-    nTrimVariables::Int64 = 0
+    uAIsInput::Bool = false
+    vAIsInput::Bool = false
+    ωAIsInput::Bool = false
+    vdotAIsInput::Bool = false
+    ωdotAIsInput::Bool = false
+    nTrimVariables::Int = 0
     hasHingeAxisConstraints::Bool = false
     mass::Real = 0
     centerOfMass::Vector{<:Real} = zeros(3)
     I::Vector{<:Real} = zeros(3)
-    DOF_χ_all::Vector{Int64} = Vector{Int64}()
+    DOF_χ_all::Vector{Int} = Vector{Int}()
 
 end
 export Model
@@ -85,6 +89,9 @@ function create_Model(; name::String="",units::UnitsSystem=create_UnitsSystem(),
     # Initialize 
     self = Model(name=name,units=units,beams=beams,initialPosition=initialPosition,gravityVector=gravityVector,BCs=BCs,p_A0=p_A0,u_A=u_A,v_A=v_A,ω_A=ω_A,vdot_A=vdot_A,ωdot_A=ωdot_A,altitude=altitude,atmosphere=atmosphere,gust=gust,trimLoadsLinks=trimLoadsLinks,flapLinks=flapLinks,hingeAxisConstraints=hingeAxisConstraints)
 
+    # Set flags for motion of basis A being inputs
+    set_basis_A_motion_input_flags!(self)
+
     # Update  
     update_model!(self)
 
@@ -105,6 +112,9 @@ function update_model!(model::Model)
 
     # Validate inputs
     validate_model!(model)
+
+    # Compute motion of basis A
+    compute_motion_basis_A!(model)
 
     # Assemble the beams into model  
     assemble_model!(model)
@@ -142,6 +152,9 @@ function update_model!(model::Model)
     # Update initial conditions and states
     update_initial_conditions!(model)
 
+    # Update initial tip loss factor over the elements
+    update_initial_tip_loss_factor!(model)
+
     # Get system indices
     get_system_indices!(model)
 
@@ -152,6 +165,34 @@ function update_model!(model::Model)
 
 end
 export update_model!
+
+
+"""
+    set_motion_basis_A!(; kwargs...)
+
+Sets/updates the motion of basis A into the model
+
+# Keyword arguments
+- `model::Model`: model
+- `u_A::Union{Vector{<:Real},<:Function,Nothing}`: displacement of basis A relative to basis I
+- `v_A::Union{Vector{<:Real},<:Function,Nothing}`: velocity of basis A relative to basis I
+- `ω_A::Union{Vector{<:Real},<:Function,Nothing}`: angular velocity of basis A relative to basis I
+- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}`: acceleration of basis A relative to basis I
+- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}`: angular acceleration of basis A relative to basis I
+"""
+function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing)
+
+    # Reset values that were not input back to nothing on model
+    @pack! model = u_A,v_A,ω_A,vdot_A,ωdot_A
+
+    # Set flags for motion of basis A being inputs
+    set_basis_A_motion_input_flags!(model)
+
+    # Update
+    update_model!(model)
+    
+end
+export set_motion_basis_A!
 
 
 # Validates the inputs to the model
@@ -171,9 +212,6 @@ function validate_model!(model::Model)
     # Validate initial rotation of basis A
     @assert length(p_A0) == 3
 
-    # Validate basis A displacements, velocities and accelerations
-    validate_and_update_motion_basis_A!(model)
-
     # Validate altitude
     if !isnothing(altitude) 
         @assert altitude >= 0
@@ -182,134 +220,70 @@ function validate_model!(model::Model)
 end
 
 
-# Validates and updates the motion variables of basis A
-function validate_and_update_motion_basis_A!(model::Model)
+# Set flags for displacements, velocities and accelerations of basis A being user inputs
+function set_basis_A_motion_input_flags!(model::Model)
 
-    @unpack u_A,v_A,ω_A,vdot_A,ωdot_A,skipValidationMotionBasisA = model
+    @unpack u_A,v_A,ω_A,vdot_A,ωdot_A = model
 
-    # Check flag
-    if skipValidationMotionBasisA
-        return
-    end
+    # Set flags
+    uAIsInput    = !isnothing(u_A)
+    vAIsInput    = !isnothing(v_A)
+    ωAIsInput    = !isnothing(ω_A)
+    vdotAIsInput = !isnothing(vdot_A)
+    ωdotAIsInput = !isnothing(ωdot_A)
 
-    # Initialize TFs
-    uIsInput,vIsInput,ωIsInput,vdotIsInput,ωdotIsInput = false,false,false,false,false
+    # Consistency checks
+    @assert count([uAIsInput, vAIsInput, vdotAIsInput]) ≤ 1 "Specify only one of u_A, v_A, vdot_A"
+    @assert count([ωAIsInput, ωdotAIsInput]) ≤ 1 "Specify only one of ω_A, ωdot_A"
 
-    # Assert variables' lengths and update TFs 
-    if u_A isa Function && isequal(u_A(1),(t -> zeros(3))(1))
-        uIsInput = false
-    elseif !isnothing(u_A)
-        if u_A isa Function
-            @assert length(u_A(0)) == 3
+    @pack! model = uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput
+
+end
+
+
+# Helper function for the update of the motion of basis A: outputs the kinematics as a function of time
+function set_basis_A_motion_as_time_functions(x, name)
+    if !isnothing(x)
+        val = x isa Function ? x(0) : x
+        @assert length(val) == 3 "$name must have length 3"
+        if x isa Function
+            return x
         else
-            @assert length(u_A) == 3
+            constVal = deepcopy(val)
+            return (t -> constVal)
         end
-        uIsInput = true
     else
-        u_A = t -> zeros(3)
+        return (t -> zeros(3))
     end
-    if v_A isa Function && isequal(v_A(1),(t -> zeros(3))(1))
-        vIsInput = false 
-    elseif !isnothing(v_A)
-        if v_A isa Function
-            @assert length(v_A(0)) == 3
-        else
-            @assert length(v_A) == 3
-        end
-        vIsInput = true   
-    else
-        v_A = t -> zeros(3)    
-    end
-    if ω_A isa Function && isequal(ω_A(1),(t -> zeros(3))(1))
-        ωIsInput = false 
-    elseif !isnothing(ω_A)
-        if ω_A isa Function
-            @assert length(ω_A(0)) == 3
-        else
-            @assert length(ω_A) == 3
-        end
-        ωIsInput = true   
-    else
-        ω_A = t -> zeros(3)    
-    end
-    if vdot_A isa Function && isequal(vdot_A(1),(t -> zeros(3))(1))
-        vdotIsInput = false
-    elseif !isnothing(vdot_A)
-        if vdot_A isa Function
-            @assert length(vdot_A(0)) == 3
-        else
-            @assert length(vdot_A) == 3
-        end
-        vdotIsInput = true    
-    else
-        vdot_A = t -> zeros(3)    
-    end
-    if ωdot_A isa Function && isequal(ωdot_A(1),(t -> zeros(3))(1))
-        ωdotIsInput = false
-    elseif !isnothing(ωdot_A)
-        if ωdot_A isa Function
-            @assert length(ωdot_A(0)) == 3
-        else
-            @assert length(ωdot_A) == 3
-        end
-        ωdotIsInput = true    
-    else
-        ωdot_A = t -> zeros(3)    
-    end
+end
 
-    # Check consistency
-    @assert !(uIsInput && vIsInput) "Both u_A and v_A cannot be input at the same time"
-    @assert !(uIsInput && vdotIsInput) "Both u_A and vdot_A cannot be input at the same time"
-    @assert !(vIsInput && vdotIsInput) "Both v_A and vdot_A cannot be input at the same time"
-    @assert !(ωIsInput && ωdotIsInput) "Both ω_A and ωdot_A cannot be input at the same time"
 
-    # Set motion variables as functions of time, if they aren't already
-    if !(u_A isa Function)
-        u_A_const = deepcopy(u_A)
-        u_A = t -> u_A_const
-    end
-    if !(v_A isa Function)
-        v_A_const = deepcopy(v_A)
-        v_A = t -> v_A_const
-    end
-    if !(ω_A isa Function)
-        ω_A_const = deepcopy(ω_A)
-        ω_A = t -> ω_A_const
-    end
-    if !(vdot_A isa Function)
-        vdot_A_const = deepcopy(vdot_A)
-        vdot_A = t -> vdot_A_const
-    end
-    if !(ωdot_A isa Function)
-        ωdot_A_const = deepcopy(ωdot_A)
-        ωdot_A = t -> ωdot_A_const
-    end
+# Updates the motion variables of basis A
+function compute_motion_basis_A!(model::Model)
 
-    # If u_A(t) was input, get v_A(t) and vdot_A(t)
-    if uIsInput
-        v_A = t -> ForwardDiff.derivative(u_A, t)
+    @unpack u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,vdotAIsInput,ωAIsInput,ωdotAIsInput = model
+
+    # Check inputs: set as functions of time and get flag for being user input
+    u_A    = set_basis_A_motion_as_time_functions(u_A, "u_A")
+    v_A    = set_basis_A_motion_as_time_functions(v_A, "v_A")
+    ω_A    = set_basis_A_motion_as_time_functions(ω_A, "ω_A")
+    vdot_A = set_basis_A_motion_as_time_functions(vdot_A, "vdot_A")
+    ωdot_A = set_basis_A_motion_as_time_functions(ωdot_A, "ωdot_A")
+
+    # Compute missing motion variables from given ones
+    if uAIsInput
+        v_A    = t -> ForwardDiff.derivative(u_A, t)
         vdot_A = t -> ForwardDiff.derivative(v_A, t)
-    end
-
-    # If v_A(t) was input, get u_A(t) and vdot_A(t)
-    if vIsInput
-        u_A = t -> quadgk(v_A, 0, t)[1]
+    elseif vAIsInput
+        u_A    = t -> quadgk(v_A, 0, t)[1]
         vdot_A = t -> ForwardDiff.derivative(v_A, t)
-    end
-
-    # If vdot_A(t) was input, get u_A(t) and v_A(t)
-    if vdotIsInput
+    elseif vdotAIsInput
         v_A = t -> quadgk(vdot_A, 0, t)[1]
         u_A = t -> quadgk(v_A, 0, t)[1]
     end
-
-    # If ω_A(t) was input, get ωdot_A(t)
-    if ωIsInput
+    if ωAIsInput
         ωdot_A = t -> ForwardDiff.derivative(ω_A, t)
-    end
-
-    # If ωdot_A(t) was input, get ω_A(t)
-    if ωdotIsInput
+    elseif ωdotAIsInput
         ω_A = t -> quadgk(ωdot_A, 0, t)[1]
     end
 
@@ -330,7 +304,7 @@ function assemble_model!(model::Model)
     # Reset assembly variables
     nElementsTotal = 0
     nNodesTotal = 0
-    elementNodes = Vector{Vector{Int64}}()
+    elementNodes = Vector{Vector{Int}}()
     r_n = Vector{Vector{Float64}}()
     forceScaling = 1.0
     C = Vector{Matrix{Float64}}()
@@ -443,10 +417,13 @@ function assemble_model!(model::Model)
                 element.r .+= coordinatesOfFirstNode
             end
             # Push current element's nodal coordinates
-            push!(r_n,element.r_n1,element.r_n2)  
+            push!(r_n,element.r_n1,element.r_n2)
+            # Deal with floating point errors
+            round_off!.(r_n, 1e-8)
+            # Deal with signed zeros 
+            r_n = [map(x -> x == 0.0 ? 0.0 : x, v) for v in r_n]
             # Take out repeated nodal coordinates
-            round_off!.(r_n,1e-8)
-            r_n = unique(r_n)
+            unique!(r_n)
         end
 
         # Reset and update nodal coordinates on beam level
@@ -468,8 +445,8 @@ function assemble_model!(model::Model)
     # Update total number of nodes
     nNodesTotal = maximum(vcat(elementNodes...))
 
-    # Get force scaling (only for problems without hinge axis constraints)
-    forceScaling = !isempty(hingeAxisConstraints) ? 1 : force_scaling(C)
+    # Get force scaling
+    forceScaling = force_scaling(C)
 
     @pack! model = beams,nElementsTotal,nNodesTotal,elementNodes,r_n,forceScaling
 
@@ -535,20 +512,15 @@ function update_linked_flap_deflections!(model::Model)
     # Loop flap links
     for flapLink in flapLinks
         @unpack masterBeam,slaveBeams,δMultipliers = flapLink
-        # Get first flapped element of master beam
-        flappedElementsMaster = masterBeam.elements[[element.aero.flapped for element in masterBeam.elements]]
-        e = flappedElementsMaster[1].localID
         # Loop slave beams
         for (i,slaveBeam) in enumerate(slaveBeams)
             # Flapped elements of the slave beam
-            flappedElements = slaveBeam.elements[[element.aero.flapped for element in slaveBeam.elements]]
-            # Update TFs for flap deflection being null and for trim flap deflection 
-            [setfield!(element.aero, :δIsZero, false) for element in flappedElements]
-            [setfield!(element.aero, :δIsTrimVariable, masterBeam.elements[1].aero.δIsTrimVariable) for element in flappedElements]
+            flappedElements = slaveBeam.elements[[element.aero.isFlapped for element in slaveBeam.elements]]
             # Loop flapped elements with flap states
             for element in flappedElements
-                if isnothing(element.aero.flapStatesRange) && typeof(element.aero.flapLoadsSolver) in [ThinAirfoilTheory]
-                    @unpack solver,flapLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,airfoil,c,normSparPos = element.aero
+                if isnothing(element.aero.flapStatesRange) && typeof(slaveBeam.aeroSurface.flapLoadsSolver) in [ThinAirfoilTheory]
+                    @unpack solver,flapLoadsSolver = slaveBeam.aeroSurface
+                    @unpack airfoil,c,normSparPos,nTotalAeroStates,pitchPlungeStatesRange = element.aero
                     # Update aerodynamic states data
                     nFlapStates = flapLoadsSolver.nStates
                     flapStatesRange = nTotalAeroStates+1:nTotalAeroStates+nFlapStates
@@ -575,19 +547,19 @@ function update_linked_flap_deflections!(model::Model)
                     @pack! element.resultants = F_χ
                 end
             end
-            # Get flap deflection and rates of elements equal to the values of the master beam times the slave's deflection multiplier
-            δSlave = t -> masterBeam.elements[e].aero.δ(t)*δMultipliers[i]
-            δdotSlave = t -> masterBeam.elements[e].aero.δdot(t)*δMultipliers[i]
-            δddotSlave = t -> masterBeam.elements[e].aero.δddot(t)*δMultipliers[i]
-            # Set flap deflection, its rates and deflection multipliers of the slave elements 
-            [setfield!(element.aero, :δ, δSlave) for element in flappedElements]
-            [setfield!(element.aero, :δdot, δdotSlave) for element in flappedElements]
-            [setfield!(element.aero, :δddot, δddotSlave) for element in flappedElements]
-            [setfield!(element.aero, :δNow, element.aero.δ(0)) for element in flappedElements]
-            [setfield!(element.aero, :δdotNow, element.aero.δdot(0)) for element in flappedElements]
-            [setfield!(element.aero, :δddotNow, element.aero.δddot(0)) for element in flappedElements]
-            [setfield!(element.aero, :δMultiplier, δMultipliers[i]) for element in flappedElements]
-            [setfield!(element.aero, :flapped, true) for element in flappedElements]
+            # Get flap deflection and rates of slave surfaces as function of master surface's value
+            δSlave = t -> masterBeam.aeroSurface.δ(t)*δMultipliers[i]
+            δdotSlave = t -> masterBeam.aeroSurface.δdot(t)*δMultipliers[i]
+            δddotSlave = t -> masterBeam.aeroSurface.δddot(t)*δMultipliers[i]
+            # Set flap deflection and its rates on slave surface 
+            setfield!(slaveBeam.aeroSurface, :δ, δSlave)
+            setfield!(slaveBeam.aeroSurface, :δdot, δdotSlave)
+            setfield!(slaveBeam.aeroSurface, :δddot, δddotSlave)
+            setfield!(slaveBeam.aeroSurface, :δNow, δSlave(0))
+            setfield!(slaveBeam.aeroSurface, :δdotNow, δdotSlave(0))
+            setfield!(slaveBeam.aeroSurface, :δddotNow, δddotSlave(0))
+            # Update δMultiplier of slave surface
+            setfield!(slaveBeam.aeroSurface, :δMultiplier, δMultipliers[i])
         end
         # Loop beams
         for beam in vcat(masterBeam,slaveBeams...)
@@ -612,11 +584,13 @@ function update_number_gust_states!(model::Model)
     # Loop over elements
     for element in elements
         @unpack aero = element
+        @unpack aeroSurface = element.parent
         # Skip if element does not have aerodynamic surface, or if gust states have already been set
         if isnothing(aero) || !isnothing(aero.gustStatesRange)
             continue
         end
-        @unpack solver,gustLoadsSolver,nTotalAeroStates,pitchPlungeStatesRange,nonlinearPitchPlungeStatesRange,airfoil,c,normSparPos = aero
+        @unpack solver,gustLoadsSolver = aeroSurface
+        @unpack airfoil,c,normSparPos,nTotalAeroStates,pitchPlungeStatesRange,nonlinearPitchPlungeStatesRange = aero
         # Update gust states range
         if typeof(solver) == BLi
             nGustStates = gustLoadsSolver.nStates+1
@@ -659,7 +633,7 @@ function update_number_gust_states!(model::Model)
         χdot = zeros(nTotalAeroStates)
         χdotEquiv = zeros(nTotalAeroStates)
         # Pack data
-        @pack! element.aero = nTotalAeroStates,nGustStates,gustStatesRange,linearGustStatesRange,nonlinearGustStatesRange,A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot
+        @pack! element.aero = A,B,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot,nTotalAeroStates,nGustStates,gustStatesRange,linearGustStatesRange,nonlinearGustStatesRange
         @pack! element.states = χ
         @pack! element.statesRates = χdot
         @pack! element = χdotEquiv
@@ -681,7 +655,7 @@ function update_loads_trim_links_global_ids!(model::Model)
         # Update master node global IDs 
         masterNodeGlobalID = model.beams[masterBeam.ID].nodeRange[masterNodeLocalID]
         # Update slave node global IDs 
-        slaveNodesGlobalIDs = Vector{Int64}()
+        slaveNodesGlobalIDs = Vector{Int}()
         for (slaveBeam,slaveNodeLocalID) in zip(slaveBeams,slaveNodesLocalIDs)
             slaveNodeGlobalID = model.beams[slaveBeam.ID].nodeRange[slaveNodeLocalID]
             push!(slaveNodesGlobalIDs,slaveNodeGlobalID)
@@ -700,13 +674,13 @@ function update_spring_nodes_ids!(model::Model)
     @unpack beams,nNodesTotal = model
 
     # Initialize list of springed nodes
-    springedNodes = Vector{Int64}()
+    springedNodes = Vector{Int}()
 
     # Initialize list of springs on nodes
     springsOnNodes = [Vector{Spring}() for _ in 1:nNodesTotal]
 
     # Reset nodesGlobalIDs of all springs
-    [setfield!(spring, :nodesGlobalIDs, Vector{Int64}()) for beam in beams for spring in beam.springs]
+    [setfield!(spring, :nodesGlobalIDs, Vector{Int}()) for beam in beams for spring in beam.springs]
 
     # Loop beams 
     for beam in beams
@@ -864,6 +838,46 @@ function update_initial_conditions!(model::Model)
 end
 
 
+# Updates the initial tip loss factor over the elements
+function update_initial_tip_loss_factor!(model::Model)
+
+    @unpack v_A,elements = model
+
+    # Loop over elements
+    for element in elements
+
+        @unpack aero = element
+        
+        # Skip elements without aero surface
+        if isnothing(aero)
+            continue
+        end
+
+        @unpack tipLossFunctionIsAirspeedDependent,tipLossFunction = element.aero.aeroSurface
+        @unpack x1_n1_norm,x1_n2_norm = element
+
+        # Skip if tip loss function is not airspeed dependent
+        if !tipLossFunctionIsAirspeedDependent
+            continue
+        end
+
+        # Arclength coordinate over element domain
+        s = ζ -> x1_n1_norm + ζ * (x1_n2_norm-x1_n1_norm)
+
+        # Reference airspeed at time zero
+        Uref = norm(v_A(0))
+
+        # Tip loss factor over element span and midspan value
+        currentTipLoss = tipLossFunction(Uref)
+        ϖ = ζ -> currentTipLoss(s(ζ))
+        ϖMid = ϖ(1/2)
+
+        @pack! element.aero = ϖ,ϖMid
+    end
+
+end
+
+
 # Initializes the balance loads on the assigned nodes of the hinge axis constraints
 function initialize_hinge_axis_constraints_balance_load!(model::Model)
 
@@ -913,7 +927,7 @@ function get_special_nodes!(model::Model)
     # List of all nodes
     nodesList = 1:nNodesTotal
 
-    # Initialize TF for nodes being special
+    # Initialize flag for nodes being special
     special = falses(nNodesTotal)
 
     # Initialize special nodes counter
@@ -936,8 +950,8 @@ function get_special_nodes!(model::Model)
         nConnectedElements = length(connectedElements)
 
         # Find in which side and ζ position of the elements that node is 
-        sideOnElements = Vector{Int64}(undef, nConnectedElements)
-        ζonElements = Vector{Int64}(undef, nConnectedElements)
+        sideOnElements = Vector{Int}(undef, nConnectedElements)
+        ζonElements = Vector{Int}(undef, nConnectedElements)
         for (i, e) in enumerate(connectedElementsGlobalIDs)
             sideOnElements[i] = elementNodes[e][1] == node ? 1 : 2
             ζonElements[i] = elementNodes[e][1] == node ? -1 : 1
@@ -1002,7 +1016,7 @@ function get_system_indices!(model::Model)
     # Flag indicating whether indices of a node's equations/states indices have been assigned
     assigned = falses(nNodesTotal)
     # Array with element on which node's equations have been assigned (first column contains the elements, and second column which local node it is in that element)
-    e_assigned = Vector{Vector{Int64}}()
+    e_assigned = Vector{Vector{Int}}()
     # Indices for next equations/states
     i_equations = 1                   
     i_states = 1
@@ -1199,7 +1213,7 @@ function get_system_indices!(model::Model)
     # Set nodal trim loads indices for master nodes
     for (specialNode,specialNodeGlobalID) in zip(specialNodes,specialNodesGlobalIDs)
         # Initialize trim loads state indices
-        DOF_trimLoads = zeros(Int64,6)
+        DOF_trimLoads = zeros(Int,6)
         @pack! specialNode = DOF_trimLoads
         # Skip non-BC'ed nodes
         if !(specialNodeGlobalID in BCedNodes)
@@ -1294,7 +1308,7 @@ function get_system_indices!(model::Model)
             # Increment trim flap deflections count
             nTrimδ += 1
             # Flapped elements of the beam
-            flappedElements = beam.elements[[element.aero.flapped for element in beam.elements]]
+            flappedElements = beam.elements[[element.aero.isFlapped for element in beam.elements]]
             # Set the same DOF_δ for all flapped elements of the beam
             [setfield!(element, :DOF_δ, systemOrder+nTrimLoads+nTrimδ) for element in flappedElements]
         else
@@ -1307,7 +1321,7 @@ function get_system_indices!(model::Model)
                 # Increment trim flap deflections count
                 nTrimδ += 1
                 # Flapped elements of the beam
-                flappedElements = beam.elements[[element.aero.flapped for element in beam.elements]]
+                flappedElements = beam.elements[[element.aero.isFlapped for element in beam.elements]]
                 # Set the same DOF_δ for all flapped elements of the beam
                 [setfield!(element, :DOF_δ, systemOrder+nTrimLoads+nTrimδ) for element in flappedElements]
             end
@@ -1327,7 +1341,7 @@ function get_system_indices!(model::Model)
                 continue
             end
             # Flapped elements of the beam
-            flappedElements = beam.elements[[element.aero.flapped for element in beam.elements]]
+            flappedElements = beam.elements[[element.aero.isFlapped for element in beam.elements]]
             # Set DOF_δ for flapped element of the beam as that of the master beam
             [setfield!(element, :DOF_δ, flapLink.masterBeam.elements[1].DOF_δ) for element in flappedElements]
         end
@@ -1350,41 +1364,23 @@ function update_hinge_axis_constraint_data!(model::Model)
     model.hasHingeAxisConstraints = length(hingeAxisConstraints) > 0
 
     # Loop hinge axis constraints
-    for constraint in hingeAxisConstraints
-        @unpack beam,masterElementLocalID,slaveElementLocalID = constraint
+    for (i,constraint) in enumerate(hingeAxisConstraints)
+        @unpack beam,masterLocalID,slaveLocalID,λ = constraint
         # Get global ID of elements
-        masterElementGlobalID = beam.elements[masterElementLocalID].globalID
-        slaveElementGlobalID = beam.elements[slaveElementLocalID].globalID
-        # Set global DOFs
-        masterElementGlobalDOFs = model.elements[masterElementGlobalID].DOF_p
-        slaveElementGlobalDOFs = model.elements[slaveElementGlobalID].DOF_p
+        masterGlobalID = beam.elements[masterLocalID].globalID
+        slaveGlobalID = beam.elements[slaveLocalID].globalID
+        # Get elements
+        masterElement = model.elements[masterGlobalID]
+        slaveElement = model.elements[slaveGlobalID]
+        # Set global DOFs of master and slave elements
+        masterGlobalDOFs = masterElement.DOF_p
+        slaveGlobalDOFs = slaveElement.DOF_p
+        constraintGlobalDOFs = [masterGlobalDOFs; slaveGlobalDOFs]
+        # Set range of Lagrange multiplier equations (considering all constraints) and update the last in range for the next constraint
+        λEqs = (i == 1) ? (1:length(λ)) : (lastInRange+1):(lastInRange+length(λ))
+        lastInRange = λEqs[end]
         # Pack data
-        @pack! constraint = masterElementGlobalID,slaveElementGlobalID,masterElementGlobalDOFs,slaveElementGlobalDOFs
+        @pack! constraint = masterGlobalID,slaveGlobalID,masterGlobalDOFs,slaveGlobalDOFs,constraintGlobalDOFs,λEqs
     end
 
 end
-
-
-"""
-    set_motion_basis_A!(; kwargs...)
-
-Sets the motion of basis A into the model
-
-# Keyword arguments
-- `model::Model`: model
-- `u_A::Union{Vector{<:Real},<:Function,Nothing}`: displacement of basis A relative to basis I
-- `v_A::Union{Vector{<:Real},<:Function,Nothing}`: velocity of basis A relative to basis I
-- `ω_A::Union{Vector{<:Real},<:Function,Nothing}`: angular velocity of basis A relative to basis I
-- `vdot_A::Union{Vector{<:Real},<:Function,Nothing}`: acceleration of basis A relative to basis I
-- `ωdot_A::Union{Vector{<:Real},<:Function,Nothing}`: angular acceleration of basis A relative to basis I
-"""
-function set_motion_basis_A!(; model::Model,u_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,v_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ω_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,vdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing,ωdot_A::Union{Vector{<:Real},<:Function,Nothing}=nothing)
-
-    # Reset values that were not input back to nothing on model
-    @pack! model = u_A,v_A,ω_A,vdot_A,ωdot_A 
-
-    # Update model
-    update_model!(model)
-    
-end
-export set_motion_basis_A!

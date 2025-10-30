@@ -1,8 +1,5 @@
 using AeroBeams
 
-# Mode tracking option
-modeTracking = false
-
 # Airspeed
 U = 25
 
@@ -10,9 +7,9 @@ U = 25
 aeroSolver = Indicial()
 
 # Discretization
-nElemWing = 20
-nElemTailBoom = 10
-nElemHorzStabilizer = 10
+nElemWing = 40
+nElemTailBoom = 1
+nElemHorzStabilizer = 2
 
 # Options for stabilizers
 stabilizersAero = true
@@ -22,7 +19,8 @@ wingCd0 = stabsCd0 = 1e-2
 # System solver for trim problem
 relaxFactor = 0.5
 maxIter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=false)
+pseudoInverseMethod = :dampedLeastSquares
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,pseudoInverseMethod=pseudoInverseMethod,displayStatus=false)
 
 # Set number of vibration modes
 nModes = 12
@@ -54,7 +52,6 @@ for (i,λ) in enumerate(λRange)
     # Add springs
     add_springs_to_beam!(beam=tailBoom,springs=[spring1,spring2])
     # Update model
-    conventionalHALEtrim.skipValidationMotionBasisA = true
     update_model!(conventionalHALEtrim)
     # Set initial guess solution as previous known solution
     x0Trim = i == 1 ? zeros(0) : trimProblem.x
@@ -71,23 +68,18 @@ for (i,λ) in enumerate(λRange)
     # Add springs
     add_springs_to_beam!(beam=tailBoom,springs=[spring1,spring2])
     # Update model
-    conventionalHALEeigen.skipValidationMotionBasisA = true
     update_model!(conventionalHALEeigen)
     # Create and solve eigen problem
     eigenProblem[i] = create_EigenProblem(model=conventionalHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem[i].frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem[i].dampingsOscillatory,1e-8)
+    untrackedDamps[i] = eigenProblem[i].dampingsOscillatory
     untrackedEigenvectors[i] = eigenProblem[i].eigenvectorsOscillatoryCplx
 end
 
 # Frequencies and dampings after mode tracking
-if modeTracking
-    freqs,damps,_,matchedModes = mode_tracking(λRange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
-else
-    freqs,damps = untrackedFreqs,untrackedDamps
-end
+freqs,damps,_,matchedModes = mode_tracking_hungarian(λRange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 modeDampings = Array{Vector{Float64}}(undef,nModes)

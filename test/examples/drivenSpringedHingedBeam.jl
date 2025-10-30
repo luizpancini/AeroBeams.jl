@@ -2,8 +2,8 @@ using AeroBeams
 
 # Beam 
 L = 1
-EIy = 1
-nElem = 20
+EIy = 1e0
+nElem = 40
 midElem = div(nElem,2)
 hingedNode = midElem+1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingedNode],hingedNodesDoF=[[true,true,true]])
@@ -12,10 +12,11 @@ beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_m
 hingeAngle = 90*π/180
 
 # Solution method for hinge constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Hinge constraint
-hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,beam=beam,localHingeAxis=AeroBeams.a2,pHValue=4*tan(hingeAngle/4))
+hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,beam=beam,localHingeAxis=AeroBeams.a2,pHValue=4*tan(hingeAngle/4))
 
 # Spring
 kSpring = hingeAngle/(4*tan(hingeAngle/4))
@@ -30,8 +31,8 @@ drivenSpringedHingedBeam = create_Model(name="drivenSpringedHingedBeam",beams=[b
 
 # System solver
 σ0 = 1
-maxIter = 100
-relTol = 1e-9
+maxIter = 1_000
+relTol = 1e-8
 NR = create_NewtonRaphson(displayStatus=true,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
 # Create and solve problem
@@ -55,12 +56,12 @@ F3 = vcat([vcat(problem.nodalStatesOverσ[end][e].F_n1[3],problem.nodalStatesOve
 M2 = vcat([vcat(problem.nodalStatesOverσ[end][e].M_n1[2],problem.nodalStatesOverσ[end][e].M_n2[2]) for e in 1:nElem]...)
 
 # Get rotation at the hinge node
-pHinge = problem.model.hingeAxisConstraints[1].pH
-ϕHinge = problem.model.hingeAxisConstraints[1].ϕ*180/π
+pHinge = hingeAxisConstraint.pH
+ϕHinge = hingeAxisConstraint.ϕ*180/π
 
 # Analytical root moment and relative error
 M2rootAnalytical = hingeAngle
-ϵM2root = 1 - M2[1]/M2rootAnalytical
+ϵM2root = M2[1]/M2rootAnalytical - 1
 
 # Check results
 println("Hinge angle = $ϕHinge deg")

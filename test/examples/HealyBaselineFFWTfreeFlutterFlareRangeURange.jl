@@ -7,7 +7,7 @@ hingeConfiguration = "free"
 ΛRange = π/180*[10,15,20]
 
 # Airspeed range [m/s]
-URange = collect(0:0.5:40)
+URange = vcat(0.1,0.5:0.5:40)
 
 # Pitch angle [rad]
 θ = 0*π/180
@@ -16,7 +16,7 @@ URange = collect(0:0.5:40)
 g = 0
 
 # Stiffness of the spring around the hinge for in-plane bending
-kIPBendingHinge = 1e12
+kIPBendingHinge = 1e1
 
 # Discretization
 nElementsInner = 16
@@ -27,7 +27,8 @@ hasTipCorrection = true
 tipLossDecayFactor = 12
 
 # Solution method for hinge constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # System solver
 σ0 = 1
@@ -62,11 +63,11 @@ for (i,Λ) in enumerate(ΛRange)
         solve!(problem[i,j])
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = problem[i,j].frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(problem[i,j].dampingsOscillatory,1e-8)
+        untrackedDamps[i,j] = problem[i,j].dampingsOscillatory
         untrackedEigenvectors[i,j] = problem[i,j].eigenvectorsOscillatoryCplx
     end
     # Apply mode tracking
-    freqs[i,:],damps[i,:],_ = mode_tracking(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
+    freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
     # Separate frequencies and damping ratios by mode
     for mode in 1:nModes
         modeFrequencies[i,mode] = [freqs[i,j][mode] for j in eachindex(URange)]

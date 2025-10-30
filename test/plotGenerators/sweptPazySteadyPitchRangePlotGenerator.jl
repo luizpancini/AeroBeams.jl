@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed state of selected condition (AoA = 5 deg and U = 60 m/s)
-deformationPlot = plot_steady_deformation(problem[3,60], interactive=true,view=(30,15),plotDistLoads=false,save=true,savePath="/test/outputs/figures/sweptPazySteadyPitchRange/sweptPazySteadyPitchRange_deformation.pdf")
+deformationPlot = plot_steady_deformation(problem[3,60],view=(30,15),plotDistLoads=false,save=true,savePath="/test/outputs/figures/sweptPazySteadyPitchRange/sweptPazySteadyPitchRange_deformation.pdf")
 display(deformationPlot)
 
 # Plot configurations

@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot mode shapes
-modesPlot = plot_mode_shapes(problem[end],scale=5,view=(30,30),legendPos=:best,frequencyLabel="frequency",save=true,savePath=string(relPath,"/SMWLinearFlutter_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(problem[end],scale=5,view=(30,30),legendPos=:best,save=true,savePath=string(relPath,"/SMWLinearFlutter_modeShapes.pdf"))
 display(modesPlot)
 
 # Plot configurations

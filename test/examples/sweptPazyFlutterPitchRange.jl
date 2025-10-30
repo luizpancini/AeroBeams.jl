@@ -42,10 +42,10 @@ if tipMassConfig == "none"
     tipMassPos = 0
 elseif tipMassConfig == "TE"
     tipMass = 15.5e-3
-    tipMassPos = -chord*(1-normSparPos) - 0.01 # Assume about 10 cm behind TE
+    tipMassPos = -chord*(1-normSparPos) - 0.01 # Assume about 1 cm behind TE
 elseif tipMassConfig == "LE"
     tipMass = 15.5e-3
-    tipMassPos = chord*normSparPos + 0.01 # Assume about 10 cm ahead of TE
+    tipMassPos = chord*normSparPos + 0.01 # Assume about 1 cm ahead of TE
 else
     error("Select tipMassConfig as 'none', 'TE' or 'LE'")
 end

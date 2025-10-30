@@ -2,25 +2,24 @@ using AeroBeams
 
 # Hinge node, fold angle [rad] and flare angle [rad]
 hingeNode = 12
-flareAngle = 30*π/180
+flareAngle = 20*π/180
 
 # Spring stiffness
 kSpring = 1e-4
+kIPBendingHinge = 1e0
 
 # Root pitch angle
 θ = 7*π/180
 
-# Gravity
-g = 9.8
-
 # Airspeed
-U = 60
+U = 35
 
 # Solution method for constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Pazy wing with flared folding tip
-PazyFFWTsteadyCoast = create_PazyFFWT(solutionMethod=solutionMethod,hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
+PazyFFWTsteadyCoast = create_PazyFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ)
 
 # System solver
 σ0 = 1
