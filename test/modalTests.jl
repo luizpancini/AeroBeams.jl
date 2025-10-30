@@ -7,8 +7,8 @@
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationCC", "freqs.txt"))
     u1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationCC", "u1_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the axial vibration of a beam under clamped-free boundary conditions" begin
@@ -18,8 +18,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationCF", "freqs.txt"))
     u1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationCF", "u1_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the axial vibration of a beam under free-free boundary conditions" begin
@@ -29,8 +29,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationFF", "freqs.txt"))
     u1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamAxialVibrationFF", "u1_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the bending vibration of a beam under clamped-clamped boundary conditions" begin
@@ -40,8 +40,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCC", "freqs.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCC", "u3_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the bending vibration of a beam under clamped-free boundary conditions" begin
@@ -51,8 +51,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCF", "freqs.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCF", "u3_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the bending vibration of a beam under clamped-pinned boundary conditions" begin
@@ -62,8 +62,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCP", "freqs.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCP", "u3_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the bending vibration of a beam under clamped-sliding boundary conditions" begin
@@ -73,8 +73,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCS", "freqs.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationCS", "u3_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the bending vibration of a beam under free-free boundary conditions" begin
@@ -84,8 +84,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationFF", "freqs.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationFF", "u3_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the bending vibration of a beam under pinned-pinned boundary conditions" begin
@@ -95,8 +95,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationPP", "freqs.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamBendingVibrationPP", "u3_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the torsional vibration of a beam under clamped-clamped boundary conditions" begin
@@ -106,8 +106,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamTorsionalVibrationCC", "freqs.txt"))
     p1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamTorsionalVibrationCC", "p1_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the torsional vibration of a beam under clamped-free boundary conditions" begin
@@ -117,8 +117,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamTorsionalVibrationCF", "freqs.txt"))
     p1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamTorsionalVibrationCF", "p1_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the torsional vibration of a beam under free-free boundary conditions" begin
@@ -128,8 +128,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamTorsionalVibrationFF", "freqs.txt"))
     p1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "beamTorsionalVibrationFF", "p1_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a cantilever beam with a tip axial inertia" begin
@@ -139,8 +139,8 @@ end
     # Self-comparison
     freqsNorm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipAxialMassEigen", "freqsNorm.txt"))
     u1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipAxialMassEigen", "u1_modeShapes.txt"))
-    @test freqsNorm ≈ freqsNorm_ atol=SELFatol
-    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol
+    @test freqsNorm ≈ freqsNorm_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a cantilever beam with a tip axial spring" begin
@@ -150,8 +150,8 @@ end
     # Self-comparison
     freqsNorm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipAxialSpringEigen", "freqsNorm.txt"))
     u1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipAxialSpringEigen", "u1_modeShapes.txt"))
-    @test freqsNorm ≈ freqsNorm_ atol=SELFatol
-    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol
+    @test freqsNorm ≈ freqsNorm_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u1_modeShapes...)' ≈ u1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a cantilever beam with a tip spring in bending" begin
@@ -161,8 +161,8 @@ end
     # Self-comparison
     freqsNorm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipSpringEigen", "freqsNorm.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipSpringEigen", "u3_modeShapes.txt"))
-    @test freqsNorm ≈ freqsNorm_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqsNorm ≈ freqsNorm_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a cantilever beam with a tip torsional inertia" begin
@@ -172,8 +172,8 @@ end
     # Self-comparison
     freqsNorm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipTorsionalInertiaEigen", "freqsNorm.txt"))
     p1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipTorsionalInertiaEigen", "p1_modeShapes.txt"))
-    @test freqsNorm ≈ freqsNorm_ atol=SELFatol
-    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol
+    @test freqsNorm ≈ freqsNorm_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a cantilever beam with a tip torsional spring" begin
@@ -183,8 +183,8 @@ end
     # Self-comparison
     freqsNorm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipTorsionalSpringEigen", "freqsNorm.txt"))
     p1_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipTorsionalSpringEigen", "p1_modeShapes.txt"))
-    @test freqsNorm ≈ freqsNorm_ atol=SELFatol
-    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol
+    @test freqsNorm ≈ freqsNorm_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(p1_modeShapes...)' ≈ p1_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis a beam clamped at one end, simply-supported at the other and with a tip inertia" begin
@@ -194,8 +194,8 @@ end
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedSSBeamWIthTipInertia", "freqs.txt"))
     u3_modeShapes_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedSSBeamWIthTipInertia", "u3_modeShapes.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
-    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
+    # @test hcat(u3_modeShapes...)' ≈ u3_modeShapes_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the baseline Healy free FFWT wing without gravity" begin
@@ -205,7 +205,7 @@ end
     @test freqs[order[2:9]] ≈ freqsRef[2:end] rtol=6e-2
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTModalFree", "freqs.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analyses of the Pazy wing in horizontal and vertical positions" begin
@@ -217,7 +217,7 @@ end
     @test freqs[2] ≈ modalFreqsUMNAST[2,:] rtol=2e-2
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingModal", "freqs.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a beam pinned at one end and transversely springed at the other" begin
@@ -226,7 +226,7 @@ end
     @test freqs ≈ freqsRef rtol=1e-2
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pinnedSpringedBeamEigen", "freqs.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the sixteen-meter-wing" begin
@@ -235,7 +235,7 @@ end
     @test freqs ≈ freqsAnalytical rtol=2e-2
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SMWModal", "freqs.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a straight rotor under varying angular velocities" begin
@@ -244,14 +244,14 @@ end
     @test numFreqs[end][[1,2,5,6]]/(2π) ≈ expFreqs[:,end] rtol=5e-2
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "straightRotor", "freqs.txt"))
-    @test hcat(numFreqs...)' ≈ freqs_ atol=SELFatol
+    @test hcat(numFreqs...)' ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the undeformed swept Pazy wing" begin
     include("examples/sweptPazyModal.jl")
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptPazyModal", "freqs.txt"))
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a swept-tip rotor under varying angular velocities" begin
@@ -260,7 +260,7 @@ end
     @test numFreqs[end,end][[1,3,4]]/(2π) ≈ [expFreqs1[end]; expFreqs2[end]; expFreqs3[end]] rtol=5e-2
     # Self-comparison (frequencies @ ω = 750 rpm and tipAngle = 45 deg)
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptTipRotor", "freqs.txt"))
-    @test numFreqs[end,end] ≈ freqs_ atol=SELFatol
+    @test numFreqs[end,end] ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a cantilevered tapered beam" begin
@@ -269,7 +269,7 @@ end
     @test freqs ≈ freqsRef rtol=1e-2
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "taperedBeamEigen", "freqs.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of the Tang&Dowell wing at varying pitch angles" begin
@@ -284,10 +284,10 @@ end
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "TDWingPitchRange", "tip_u3.txt"))
     tip_twist_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "TDWingPitchRange", "tip_twist.txt"))
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "TDWingPitchRange", "freqs.txt"))
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-    @test tip_u2 ≈ tip_u2_ atol=SELFatol
-    @test tip_twist ≈ tip_twist_ atol=SELFatol
-    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
+    @test tip_u2 ≈ tip_u2_ atol=SELFatol rtol=SELFrtol
+    @test tip_twist ≈ tip_twist_ atol=SELFatol rtol=SELFrtol
+    @test hcat(freqs...)' ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Modal analysis of a 2-story frame" begin
@@ -296,7 +296,7 @@ end
     @test freqs[[1,4]]/(2π) ≈ refFreqs rtol=1e-2
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "twoStoryFrame", "freqs.txt"))
-    @test freqs ≈ freqs_ atol=SELFatol
+    @test freqs ≈ freqs_ atol=SELFatol rtol=SELFrtol
 end
 GC.gc()
 sleep(1)

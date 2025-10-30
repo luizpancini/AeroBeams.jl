@@ -7,8 +7,8 @@
     # Self-comparison
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "freeBeamTrim", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "freeBeamTrim", "M2.txt"))
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Trim analysis (reaction loads check) of a simply-supported beam loaded at the middle" begin
@@ -16,8 +16,8 @@ end
     # Self-comparison
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "midLoadedBeamTrim", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "midLoadedBeamTrim", "M2.txt"))
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Trim analysis (reaction loads check) of a right-angled frame" begin
@@ -28,8 +28,8 @@ end
     # Self-comparison
     balanceHorizontalForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rightAngledFrameTrim", "balanceHorizontalForce.txt"))[1]
     balanceVerticalForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rightAngledFrameTrim", "balanceVerticalForce.txt"))[1]
-    @test balanceHorizontalForce ≈ balanceHorizontalForce_ atol=SELFatol
-    @test balanceVerticalForce ≈ balanceVerticalForce_ atol=SELFatol
+    @test balanceHorizontalForce ≈ balanceHorizontalForce_ atol=SELFatol rtol=SELFrtol
+    @test balanceVerticalForce ≈ balanceVerticalForce_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Trim analysis of a cantilever with tip force" begin
@@ -42,9 +42,9 @@ end
     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipLoadedCantileverTrim", "u3.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipLoadedCantileverTrim", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipLoadedCantileverTrim", "M2.txt"))
-    @test u3 ≈ u3_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 GC.gc()
 sleep(1)

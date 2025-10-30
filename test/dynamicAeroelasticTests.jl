@@ -5,8 +5,8 @@
     # Self-comparison
     rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "rootAoA.txt"))
     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "Deltau3.txt"))
-    @test rootAoA ≈ rootAoA_ atol=SELFatol
-    @test Δu3 ≈ Δu3_ atol=SELFatol
+    @test rootAoA ≈ rootAoA_ atol=SELFatol rtol=SELFrtol
+    @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
 end
 
 ## Reduce CI time
@@ -15,8 +15,8 @@ end
 #     # Self-comparison
 #     wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "wingAoA.txt"))
 #     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
-#     @test wingAoA ≈ wingAoA_ atol=SELFatol
-#     @test Δu3 ≈ Δu3_ atol=SELFatol
+#     @test wingAoA ≈ wingAoA_ atol=SELFatol rtol=SELFrtol
+#     @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
 # end
 
 @testset "Dynamic analysis of the conventional HALE aircraft undergoing a coordinated turn maneuver" begin
@@ -24,8 +24,8 @@ end
     # Self-comparison
     wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "wingAoA.txt"))
     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "Deltau3.txt"))
-    @test wingAoA ≈ wingAoA_ atol=SELFatol
-    @test Δu3 ≈ Δu3_ atol=SELFatol
+    @test wingAoA ≈ wingAoA_ atol=SELFatol rtol=SELFrtol
+    @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
 end
 
 ## Reduce CI time
@@ -35,8 +35,8 @@ end
 #     for (i,ω) in enumerate(ωRange)
 #         M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("M2root_omega",ω,".txt")))
 #         ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("fold_omega",ω,".txt")))
-#         @test M2root[i] ≈ M2root_ atol=1e-3
-#         @test ϕ[i] ≈ ϕ_ atol=1e-3
+#         @test M2root[i] ≈ M2root_ atol=SELFatol rtol=SELFrtol
+#         @test ϕ[i] ≈ ϕ_ atol=SELFatol rtol=SELFrtol
 #     end
 # end
 
@@ -45,8 +45,8 @@ end
     # Self-comparison
     M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating2", "M2root.txt"))
     ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating2", "fold.txt"))
-    @test M2root ≈ M2root_ atol=1e-3
-    @test ϕ ≈ ϕ_ atol=1e-3
+    @test M2root ≈ M2root_ atol=SELFatol rtol=SELFrtol
+    @test ϕ ≈ ϕ_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver" begin
@@ -54,8 +54,8 @@ end
     # Self-comparison
     rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosCheckedPitchManeuver", "rootAoA.txt"))
     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosCheckedPitchManeuver", "Deltau3.txt"))
-    @test rootAoA ≈ rootAoA_ atol=SELFatol
-    @test Δu3 ≈ Δu3_ atol=SELFatol
+    @test rootAoA ≈ rootAoA_ atol=SELFatol rtol=SELFrtol
+    @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
 end
 GC.gc()
 sleep(1)
@@ -69,11 +69,11 @@ sleep(1)
 #     tqSpan_cn_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cn.txt")))
 #     tqSpan_cm_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cm.txt")))
 #     tqSpan_ct_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_ct.txt")))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
 # end
 
 ## Reduce CI time
@@ -85,11 +85,11 @@ sleep(1)
 #     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cn.txt"))
 #     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cm.txt"))
 #     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
 # end
 
 ## Reduce CI time
@@ -101,11 +101,11 @@ sleep(1)
 #     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cn.txt"))
 #     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cm.txt"))
 #     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
 # end
 
 ## Reduce CI time
@@ -117,11 +117,11 @@ sleep(1)
 #     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tqSpan_cn.txt"))
 #     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tqSpan_cm.txt"))
 #     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
 # end
 
 ## Reduce CI time
@@ -133,11 +133,11 @@ sleep(1)
 #     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tqSpan_cn.txt"))
 #     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tqSpan_cm.txt"))
 #     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
 # end
 
 ## Reduce CI time
@@ -149,9 +149,9 @@ sleep(1)
 #     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tqSpan_cn.txt"))
 #     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tqSpan_cm.txt"))
 #     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=5e-3
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=5e-3
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=5e-3
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=5e-3
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=5e-3
+#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
+#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
+#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
 # end

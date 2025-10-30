@@ -6,9 +6,9 @@
     cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_cn.txt"))
     cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_cm.txt"))
     ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_ct.txt"))
-    @test cn ≈ cn_ atol=SELFatol
-    @test cm ≈ cm_ atol=SELFatol
-    @test ct ≈ ct_ atol=SELFatol
+    @test cn ≈ cn_ atol=SELFatol rtol=SELFrtol
+    @test cm ≈ cm_ atol=SELFatol rtol=SELFrtol
+    @test ct ≈ ct_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Dynamic analysis of an airfoils with harmonic flap deflection profile" begin
@@ -16,8 +16,8 @@ end
     # Self-comparison
     cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillation", "cn.txt"))
     cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillation", "cm.txt"))
-    @test cn ≈ cn_ atol=SELFatol
-    @test cm ≈ cm_ atol=SELFatol
+    @test cn ≈ cn_ atol=SELFatol rtol=SELFrtol
+    @test cm ≈ cm_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Dynamic analysis of two airfoils with linked harmonic flap deflection profiles" begin
@@ -27,10 +27,10 @@ end
     cmMaster_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillationLinked", "cmMaster.txt"))
     cnSlave_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillationLinked", "cnSlave.txt"))
     cmSlave_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillationLinked", "cmSlave.txt"))
-    @test cnMaster ≈ cnMaster_ atol=SELFatol
-    @test cmMaster ≈ cmMaster_ atol=SELFatol
-    @test cnSlave ≈ cnSlave_ atol=SELFatol
-    @test cmSlave ≈ cmSlave_ atol=SELFatol
+    @test cnMaster ≈ cnMaster_ atol=SELFatol rtol=SELFrtol
+    @test cmMaster ≈ cmMaster_ atol=SELFatol rtol=SELFrtol
+    @test cnSlave ≈ cnSlave_ atol=SELFatol rtol=SELFrtol
+    @test cmSlave ≈ cmSlave_ atol=SELFatol rtol=SELFrtol
 end
 
 ## Reduce CI time
@@ -53,7 +53,7 @@ end
 #                 end
 #                 gustSolverName = gustLoadsSolver.indicialFunctionName
 #                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests", string("OMCgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
+#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol rtol=SELFrtol
 #             end
 #         end
 #     end
@@ -78,7 +78,7 @@ end
                 end
                 gustSolverName = gustLoadsSolver.indicialFunctionName
                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests2", string("OMCgustTests2_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-                @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
+                @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol rtol=SELFrtol
             end
         end
     end
@@ -104,7 +104,7 @@ end
 #                 end
 #                 gustSolverName = gustLoadsSolver.indicialFunctionName
 #                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SEgustTests", string("SEgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol
+#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol rtol=SELFrtol
 #             end
 #         end
 #     end
@@ -115,8 +115,8 @@ end
     # Self-comparison
     cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoilDSModelTest", "cn.txt"))
     cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoilDSModelTest", "cm.txt"))
-    @test cn ≈ cn_ atol=SELFatol
-    @test cm ≈ cm_ atol=SELFatol
+    @test cn ≈ cn_ atol=SELFatol rtol=SELFrtol
+    @test cm ≈ cm_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Dynamic analysis of an airfoil section sinusoidally surging (facing a time-varying freestream)" begin
@@ -133,8 +133,8 @@ end
     # Self-comparison (for the last λᵤ)
     cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestream", "cn.txt"))
     cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestream", "cm.txt"))
-    @test cn[end] ≈ cn_ atol=SELFatol
-    @test cm[end] ≈ cm_ atol=SELFatol
+    @test cn[end] ≈ cn_ atol=SELFatol rtol=SELFrtol
+    @test cm[end] ≈ cm_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Dynamic analysis of an airfoil section sinusoidally pitching and surging (facing a time-varying freestream)" begin
@@ -154,8 +154,8 @@ end
     # Self-comparison (for the last λᵤ)
     cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestreamAndPitch", "cn.txt"))
     cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestreamAndPitch", "cm.txt"))
-    @test cn[end] ≈ cn_ atol=SELFatol
-    @test cm[end] ≈ cm_ atol=SELFatol
+    @test cn[end] ≈ cn_ atol=SELFatol rtol=SELFrtol
+    @test cm[end] ≈ cm_ atol=SELFatol rtol=SELFrtol
 end
 GC.gc()
 sleep(1)

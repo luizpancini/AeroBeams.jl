@@ -15,8 +15,6 @@
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "freqs.txt"))
     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "damps.txt"))
-    # @test hcat(freqs...)' ≈ freqs_ atol=SELFatol rtol=SELFrtol
-    # @test hcat(damps...)' ≈ damps_ atol=SELFatol rtol=SELFrtol
     @test maximum(abs.(hcat(freqs...)' .- freqs_)) ≤ SELFatol
     @test maximum(abs.(hcat(damps...)' .- damps_)) ≤ SELFatol
 end
