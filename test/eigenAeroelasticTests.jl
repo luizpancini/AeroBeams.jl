@@ -15,10 +15,20 @@
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "freqs.txt"))
     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "damps.txt"))
-    println("Maximum difference in freq: $(maximum(abs.(freqs_ .- hcat(freqs...)')))")
-    println("Maximum difference in damp: $(maximum(abs.(damps_ .- hcat(damps...)')))")
-    @test hcat(freqs...)' ≈ freqs_ atol=1e-3
-    @test hcat(damps...)' ≈ damps_ atol=1e-3
+    computed_freqs = hcat(freqs...)'
+    computed_damps = hcat(damps...)'
+    # Debug info
+    println("Shapes - Computed: $(size(computed_freqs)), Reference: $(size(freqs_))")
+    println("Any NaN in computed? $(any(isnan, computed_freqs))")
+    println("Any Inf in computed? $(any(isinf, computed_freqs))")
+    freq_diff = abs.(computed_freqs .- freqs_)
+    damp_diff = abs.(computed_damps .- damps_)  
+    println("Maximum difference in freq: $(maximum(freq_diff))")
+    println("Maximum difference in damp: $(maximum(damp_diff))")
+    println("Number of freq elements > 1e-3: $(count(>(1e-3), freq_diff))")
+    println("Number of damp elements > 1e-3: $(count(>(1e-3), damp_diff))")
+    @test computed_freqs ≈ freqs_ atol=1e-3
+    @test computed_damps ≈ damps_ atol=1e-3
 end
 
 @testset "Flutter analysis of the Goland wing" begin
