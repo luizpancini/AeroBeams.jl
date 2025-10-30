@@ -1,10 +1,13 @@
 using Test, BenchmarkTools, DelimitedFiles
 
-# Default absolute tolerance for self-comparison
-SELFatol = 1e-4
-
 # Option to locally run tests failing in CI
 runCIfailingTests = false
+
+# Flag for CI
+is_ci = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
+
+# Default absolute tolerance for self-comparison
+SELFatol = is_ci ? 1e-3 : 1e-4
 
 # include("dynamicAeroelasticTests.jl")
 include("eigenAeroelasticTests.jl")

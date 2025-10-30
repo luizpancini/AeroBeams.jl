@@ -15,6 +15,8 @@
     # Self-comparison
     freqs_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "freqs.txt"))
     damps_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALEURange", "damps.txt"))
+    println("Maximum difference in freq: $(maximum(abs.(freqs_ .- hcat(freqs...)')))")
+    println("Maximum difference in damp: $(maximum(abs.(damps_ .- hcat(damps...)')))")
     @test hcat(freqs...)' ≈ freqs_ atol=1e-3
     @test hcat(damps...)' ≈ damps_ atol=1e-3
 end
@@ -249,7 +251,6 @@ GC.gc()
 sleep(1)
 
 # Run tests that currently fail in CI, if applicable
-is_ci = get(ENV, "CI", "false") == "true" || get(ENV, "GITHUB_ACTIONS", "false") == "true"
 if runCIfailingTests && !is_ci
 
     @testset "Flutter analysis of the Blended-Wing-Body flying wing" begin
