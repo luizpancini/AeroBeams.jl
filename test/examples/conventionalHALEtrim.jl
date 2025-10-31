@@ -21,7 +21,7 @@ k2 = 0.0
 # NR system solver 
 maxit = 100
 displayStatus = true
-NR = create_NewtonRaphson(maximumIterations=maxit,displayStatus=displayStatus)
+NR = create_NewtonRaphson(maximumIterations=maxit,pseudoInverseMethod=:dampedLeastSquares,displayStatus=displayStatus)
 
 # Set stiffness factor and airspeed ranges, and initialize outputs
 λRange = [1; 50]

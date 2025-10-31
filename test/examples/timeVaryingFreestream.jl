@@ -38,6 +38,7 @@ timeVaryingFreestream = create_Model(name="timeVaryingFreestream",beams=[wing],B
 
 # Set normalized airspeed amplitude range and initialize outputs
 λᵤRange = collect(0.2:0.2:0.8)
+problem = Array{DynamicProblem}(undef,length(λᵤRange))
 t = Array{Vector{Float64}}(undef,length(λᵤRange))
 tNorm = Array{Vector{Float64}}(undef,length(λᵤRange))
 cn = Array{Vector{Float64}}(undef,length(λᵤRange))
@@ -64,15 +65,15 @@ for (i,λᵤ) in enumerate(λᵤRange)
     # Initial velocities update options
     initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,displayProgress=false, relaxFactor=0.5, Δt=Δt/1e3)
     # Create and solve problem
-    global problem = create_DynamicProblem(model=timeVaryingFreestream,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
-    solve!(problem)
+    problem[i] = create_DynamicProblem(model=timeVaryingFreestream,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
+    solve!(problem[i])
     # Unpack numerical solution
-    t[i] = problem.timeVector
+    t[i] = problem[i].savedTimeVector
     tNorm[i] = t[i]/T
-    cn[i] = [problem.aeroVariablesOverTime[j][1].aeroCoefficients.cn for j in 1:length(t[i])]
-    cm[i] = [problem.aeroVariablesOverTime[j][1].aeroCoefficients.cm for j in 1:length(t[i])]
-    Vdot2[i] = [problem.elementalStatesRatesOverTime[j][1].Vdot[2] for j in 1:length(t[i])]
-    Vdot3[i] = [problem.elementalStatesRatesOverTime[j][1].Vdot[3] for j in 1:length(t[i])]
+    cn[i] = [problem[i].aeroVariablesOverTime[j][1].aeroCoefficients.cn for j in 1:length(t[i])]
+    cm[i] = [problem[i].aeroVariablesOverTime[j][1].aeroCoefficients.cm for j in 1:length(t[i])]
+    Vdot2[i] = [problem[i].elementalStatesRatesOverTime[j][1].Vdot[2] for j in 1:length(t[i])]
+    Vdot3[i] = [problem[i].elementalStatesRatesOverTime[j][1].Vdot[3] for j in 1:length(t[i])]
     rangeLastCycle[i] = ceil(Int,(tf-T)/Δt):length(t[i])
     # Analytical solution for relative wind acceleration 
     Udot = t -> ForwardDiff.derivative(U,t)

@@ -18,19 +18,19 @@ abstract type BeamElement end
     k::Union{Vector{<:Real},<:Function}
     initialPosition::Vector{<:Real}
     # Discretization
-    nElements::Int64 
+    nElements::Int 
     normalizedNodalPositions::Vector{Float64}
     # Sectional properties (stiffness and inertia matrices)
     S::Vector{<:Matrix{<:Real}} 
     I::Vector{<:Matrix{<:Real}}
     # Connection relative to other beams
     connectedBeams::Union{Nothing,Vector{Beam}}
-    connectedNodesThis::Vector{Int64}
-    connectedNodesOther::Vector{Int64}
+    connectedNodesThis::Vector{Int}
+    connectedNodesOther::Vector{Int}
     # Attached point inertias
     pointInertias::Vector{PointInertia}
     # Hinged nodes and hinged DoF
-    hingedNodes::Vector{Int64}
+    hingedNodes::Vector{Int}
     hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}
     # Initial generalized displacements and velocities
     u0_of_x1::Union{Vector{<:Real},<:Function,Nothing}
@@ -58,9 +58,9 @@ abstract type BeamElement end
     # Rotation tensor from basis A to basis b
     R0::Matrix{Float64} = I3
     # Assembly variables
-    ID::Int64 = 0
-    elementRange::Vector{Int64} = Vector{Int64}()
-    nodeRange::Vector{Int64} = Vector{Int64}()
+    ID::Int = 0
+    elementRange::Vector{Int} = Vector{Int}()
+    nodeRange::Vector{Int} = Vector{Int}()
     r_n::Vector{Vector{Float64}} = Vector{Vector{Float64}}()
     # Velocity DoFs to update on initial conditions
     velDoFToUpdate::BitVector = trues(6)
@@ -93,15 +93,15 @@ Beam constructor
 - `p0::Vector{<:Real}`: rotation parameters from basis A to basis b
 - `k::Union{Vector{<:Real},<:Function}`: undeformed beam's curvatures per unit length
 - `initialPosition::Vector{<:Real}`: initial position of the beam's first node relative to the beam's origin (which may be another beam's node)
-- `nElements::Int64`: number of elements for discretization
+- `nElements::Int`: number of elements for discretization
 - `normalizedNodalPositions::Vector{Float64}`: normalized nodal positions of beam elements
 - `S::Vector{<:Matrix{<:Real}}`: array of sectional stiffness matrices
 - `I::Vector{<:Matrix{<:Real}}`: array of sectional inertia matrices
 - `connectedBeams::Union{Nothing,Vector{Beam}}`: array of beams to which this beam is connected (a non-recursive property)
-- `connectedNodesThis::Vector{Int64}`: nodes of this beam which are connected to other beams' nodes
-- `connectedNodesOther::Vector{Int64}`: respective nodes of the other beams
+- `connectedNodesThis::Vector{Int}`: nodes of this beam which are connected to other beams' nodes
+- `connectedNodesOther::Vector{Int}`: respective nodes of the other beams
 - `pointInertias::Vector{PointInertia}`: attached point inertias
-- `hingedNodes::Vector{Int64}`: nodes with a hinge
+- `hingedNodes::Vector{Int}`: nodes with a hinge
 - `hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}`: respective hinged degrees-of-freedom
 - `u0_of_x1::Union{Vector{<:Real},<:Function,Nothing}`: initial displacement (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
 - `p0_of_x1::Union{Vector{<:Real},<:Function,Nothing}`: initial rotation parameters (resolved in the undeformed beam basis, b) of the beam as a function of its arclength coordinate (x1)
@@ -118,7 +118,7 @@ Beam constructor
 - `aeroSurface::Union{Nothing,AeroSurface}`: attached aerodynamic surface
 - `springs::Vector{Spring}`: array of attached springs
 """
-function create_Beam(; name::String="",length::Real,rotationParametrization::String="E321",p0::Vector{<:Real}=zeros(3),k::Union{Vector{<:Real},<:Function}=zeros(3),initialPosition::Vector{<:Real}=zeros(3),nElements::Int64,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),S::Vector{<:Matrix{<:Real}},I::Vector{<:Matrix{<:Real}}=[I6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int64}=Vector{Int64}(),connectedNodesOther::Vector{Int64}=Vector{Int64}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int64}=Vector{Int64}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing,aeroSurface::Union{Nothing,AeroSurface}=nothing,springs::Vector{Spring}=Vector{Spring}())
+function create_Beam(; name::String="",length::Real,rotationParametrization::String="E321",p0::Vector{<:Real}=zeros(3),k::Union{Vector{<:Real},<:Function}=zeros(3),initialPosition::Vector{<:Real}=zeros(3),nElements::Int,normalizedNodalPositions::Vector{Float64}=Vector{Float64}(),S::Vector{<:Matrix{<:Real}},I::Vector{<:Matrix{<:Real}}=[I6*1e-6],connectedBeams::Union{Nothing,Vector{Beam}}=nothing,connectedNodesThis::Vector{Int}=Vector{Int}(),connectedNodesOther::Vector{Int}=Vector{Int}(),pointInertias::Vector{PointInertia}=Vector{PointInertia}(),hingedNodes::Vector{Int}=Vector{Int}(),hingedNodesDoF::Union{Vector{Vector{Bool}},Vector{BitVector}}=Vector{BitVector}(),u0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,p0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,udot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,pdot0_of_x1::Union{Vector{<:Real},<:Function,Nothing}=nothing,f_A_of_x1t::Union{Nothing,<:Function}=nothing,m_A_of_x1t::Union{Nothing,<:Function}=nothing,f_b_of_x1t::Union{Nothing,<:Function}=nothing,m_b_of_x1t::Union{Nothing,<:Function}=nothing,ff_A_of_x1t::Union{Nothing,<:Function}=nothing,mf_A_of_x1t::Union{Nothing,<:Function}=nothing,ff_b_of_x1t::Union{Nothing,<:Function}=nothing,mf_b_of_x1t::Union{Nothing,<:Function}=nothing,aeroSurface::Union{Nothing,AeroSurface}=nothing,springs::Vector{Spring}=Vector{Spring}())
 
     # Initialize the beam
     self = Beam(name=name,length=length,rotationParametrization=rotationParametrization,p0=p0,k=k,initialPosition=initialPosition,nElements=nElements,normalizedNodalPositions=normalizedNodalPositions,S=S,I=I,connectedBeams=connectedBeams,connectedNodesThis=connectedNodesThis,connectedNodesOther=connectedNodesOther,pointInertias=pointInertias,hingedNodes=hingedNodes,hingedNodesDoF=hingedNodesDoF,u0_of_x1=u0_of_x1,p0_of_x1=p0_of_x1,udot0_of_x1=udot0_of_x1,pdot0_of_x1=pdot0_of_x1,f_A_of_x1t=f_A_of_x1t,m_A_of_x1t=m_A_of_x1t,f_b_of_x1t=f_b_of_x1t,m_b_of_x1t=m_b_of_x1t,ff_A_of_x1t=ff_A_of_x1t,mf_A_of_x1t=mf_A_of_x1t,ff_b_of_x1t=ff_b_of_x1t,mf_b_of_x1t=mf_b_of_x1t,aeroSurface=aeroSurface,springs=springs)

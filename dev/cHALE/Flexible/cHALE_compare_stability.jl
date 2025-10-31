@@ -32,7 +32,7 @@ relaxFactor = 0.5
 maxIter = 100
 σ0 = 1.0
 relTol = 1e-8
-NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,relativeTolerance=relTol,displayStatus=false)
+NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,relativeTolerance=relTol,pseudoInverseMethod=:dampedLeastSquares,displayStatus=false)
 NReigen = create_NewtonRaphson(maximumIterations=maxIter,initialLoadFactor=σ0,displayStatus=false)
 NReigenWing = create_NewtonRaphson(maximumIterations=maxIter,initialLoadFactor=0.5,displayStatus=false)
 
@@ -135,7 +135,6 @@ for (i,U) in enumerate(URange)
     # Add springs
     add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1,spring2])
     # Update model
-    cHALEtrimSpringed.skipValidationMotionBasisA = true
     update_model!(cHALEtrimSpringed)
     # Create and solve trim problem with springs
     trimProblemSpringed = create_TrimProblem(model=cHALEtrimSpringed,systemSolver=NRtrim,x0=trimProblem[i].x)
@@ -314,9 +313,9 @@ mkpath(absPathData)
 
 # Plot configurations
 using Plots, ColorSchemes
-modecolorsA = cgrad(:rainbow, nModesAircraft, categorical=true)
-modecolorsW = cgrad(:rainbow, nModesWing, categorical=true)
-colors = cgrad(:rainbow, categorical=true)
+modecolorsA = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], nModesAircraft)
+modecolorsW = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], nModesWing)
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
 ts = 10
 fs = 16
 lfs = 10

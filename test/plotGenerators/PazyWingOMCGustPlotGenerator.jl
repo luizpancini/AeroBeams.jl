@@ -1,4 +1,4 @@
-using Plots
+using Plots, ColorSchemes
 
 # Run the script
 include("../examples/PazyWingOMCGust.jl")
@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=10,plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/PazyWingOMCGust_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,refBasis="A",plotFrequency=round(Int,1e-2/Δt),plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/PazyWingOMCGust_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2

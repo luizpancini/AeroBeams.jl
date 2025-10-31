@@ -6,6 +6,9 @@ using AeroBeams
 # Tip load
 F3TipRange = vcat(0:1:35)
 
+# Flag for ad hoc sectional stiffness corrections with sweep angle
+sweepStructuralCorrections = true
+
 # Number of modes
 nModes = 3
 
@@ -32,13 +35,13 @@ NR = create_NewtonRaphson(displayStatus=false,absoluteTolerance=absTol)
 # Loop sweep angle
 for (i,Λ) in enumerate(ΛRange)
     for (j,F3) in enumerate(F3TipRange)
-        display("Solving for Λ = $(round(Λ*180/π)) deg, tip force = $F3")
+        display("Solving for Λ = $(round(Λ*180/π)) deg, tip force = $F3 N")
         # Dummy beam for the BC
         dummyBeam = create_Beam(length=1,nElements=nElem,S=[isotropic_stiffness_matrix(∞=1)])
         # Tip force BC
         tipForce = create_BC(name="tipForce",beam=dummyBeam,node=nElem+1,types=["F3b"],values=[F3])
         # Model
-        sweptPazyModalTipDispRange,_ = create_Pazy(Λ=Λ,upright=false,g=g,additionalBCs=[tipForce])
+        sweptPazyModalTipDispRange,_ = create_Pazy(Λ=Λ,upright=false,g=g,sweepStructuralCorrections=sweepStructuralCorrections,additionalBCs=[tipForce])
         # Create and solve problem
         problem[i,j] = create_EigenProblem(model=sweptPazyModalTipDispRange,nModes=nModes,systemSolver=NR)
         solve!(problem[i,j])
@@ -49,7 +52,7 @@ for (i,Λ) in enumerate(ΛRange)
         tipOOP[i,j] = problem[i,j].nodalStatesOverσ[end][nElem].u_n2_b[3]
     end
     # Apply mode tracking
-    freqs[i,:],damps[i,:],_ = mode_tracking(F3TipRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
+    freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(F3TipRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
     # Separate frequencies by mode
     for mode in 1:nModes
         modeFrequencies[i,mode] = [freqs[i,j][mode] for j in eachindex(F3TipRange)]

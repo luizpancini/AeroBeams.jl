@@ -12,6 +12,9 @@ aeroSolver = Indicial()
 # Discretization
 nElem = 20
 
+# Number of non-oscillatory modes of interest
+nNOModes = 5
+
 # Atmosphere 
 altitude = 0
 atmosphere = standard_atmosphere(altitude)
@@ -36,16 +39,11 @@ EIy = 10
 # Airspeed range
 URange = collect(10:0.5:35)
 
-# Number of non-oscillatory modes of interest
-nNOModes = 5
-
 # Pre-allocate memory and initialize output arrays
 dampingsNonOscillatory = Array{Vector{Float64}}(undef,length(ΛRange),length(URange))
 modeDampings = Array{Vector{Float64}}(undef,length(ΛRange),nNOModes)
 modeDampingsEst = Array{Vector{Float64}}(undef,length(ΛRange),nNOModes)
 UD = Array{Float64}(undef,length(ΛRange))
-iD = Array{Int}(undef,length(ΛRange))
-divergenceFound = falses(length(ΛRange))
 
 # Sweep angle of sweep
 for (i,Λ) in enumerate(ΛRange)
@@ -68,22 +66,10 @@ for (i,Λ) in enumerate(ΛRange)
         # Damping of non-oscillatory modes
         dampingsNonOscillatory[i,j] = problem.dampingsNonOscillatory[1:nNOModes]
     end
-    # Separate dampings by mode and find divergence speed
-    for mode in 1:nNOModes
-        # Mode dampings
-        modeDampings[i,mode] = [dampingsNonOscillatory[i,j][mode] for j in eachindex(URange)]
-        # Estimated mode dampings from backward finite difference extrapolation
-        modeDampingsEst[i,mode] = backward_extrapolation(modeDampings[i,mode])
-        # Divergence is found when the sign of the estimated value is different from the actual
-        if !divergenceFound[i]
-            iD[i] = findfirst(j -> modeDampings[i,mode][j]*modeDampingsEst[i,mode][j] < 0, 1:length(URange))
-            if !isnothing(iD[i])
-                UD[i] = LinearInterpolations.interpolate(modeDampingsEst[i,mode][iD[i]-1:iD[i]],URange[iD[i]-1:iD[i]],0)
-                divergenceFound[i] = true
-                println("UD = $(UD[i]) m/s at Λ = $(round(Λ*180/π)) deg")
-            end
-        end
-    end
+    # Get divergence speed
+    UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory[i,:])
+    UD[i] = minimum(UDvec)
+    println("UD = $(UD[i]) m/s at Λ = $(round(Λ*180/π)) deg")
 end
 
 # Approximate divergence speed - Eq. 4.103 of Hodges and Pierce

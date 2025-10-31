@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Deformed shape
-deformationPlot = plot_steady_deformation(problem,interactive=false,σ2plot=vcat(0.2:0.2:1),legendPos=(0.5,0.6),view=(135,15),save=true,savePath=string(relPath,"/curvedCantileverStaticFollower_deformation.pdf"))
+deformationPlot = plot_steady_deformation(problem,σ2plot=vcat(0.2:0.2:1),legendPos=(0.5,0.6),view=(135,15),save=true,savePath=string(relPath,"/curvedCantileverStaticFollower_deformation.pdf"))
 display(deformationPlot)
 
 # Plot configurations

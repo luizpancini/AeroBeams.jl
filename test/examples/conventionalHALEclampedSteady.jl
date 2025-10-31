@@ -34,7 +34,6 @@ conventionalHALEclampedSteady,_ = create_conventional_HALE(aeroSolver=aeroSolver
 # Set clamped BC
 clamp = create_BC(name="clamp",beam=conventionalHALEclampedSteady.beams[2],node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
 push!(conventionalHALEclampedSteady.BCs,clamp)
-conventionalHALEclampedSteady.skipValidationMotionBasisA = true
 update_model!(conventionalHALEclampedSteady)
 
 # Create and solve steady problem

@@ -34,7 +34,7 @@ ylims = [0,2]
 legPos = k2 == 0.03 ? (0.15,0.3) : (0.2,0.3)
 
 # Wing root AoA
-colors = cgrad(:rainbow, length(URange), categorical=true)
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
 plt_AoA = plot(xlabel="Time [s]", ylabel="Normalized tip AoA", xlims=xlims, ylims=ylims, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=legPos)
 for i in eachindex(URange)
     plot!(t[i], wingAoA[i]./wingAoA[i][1], c=colors[i], lw=lw, label=string("\$U_{\\infty} = ",URange[i],"\$ m/s"))

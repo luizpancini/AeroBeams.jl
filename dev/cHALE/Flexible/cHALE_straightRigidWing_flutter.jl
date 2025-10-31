@@ -30,7 +30,7 @@ nElemVertStabilizer = 5
 relaxFactor = 0.5
 maxIter = 100
 σ0 = 1
-NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,displayStatus=false)
+NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,pseudoInverseMethod=:dampedLeastSquares,displayStatus=false)
 
 # Set number of vibration modes
 nModes = 6
@@ -80,7 +80,6 @@ for (i,U) in enumerate(URange)
     # Add springs
     add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1,spring2])
     # Update model
-    cHALEtrimSpringed.skipValidationMotionBasisA = true
     update_model!(cHALEtrimSpringed)
     # Create and solve trim problem with springs
     trimProblemSpringed = create_TrimProblem(model=cHALEtrimSpringed,systemSolver=NRtrim,x0=trimProblem[i].x)
@@ -127,7 +126,7 @@ plt_modes = plot_mode_shapes(eigenProblem[iU25],nModes=6,scale=5,view=(30,30),mo
 display(plt_modes)
 
 # Plot configurations
-modeColors = cgrad(:rainbow, nModes, categorical=true)
+modeColors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
 ts = 10
 fs = 16
 lfs = 10

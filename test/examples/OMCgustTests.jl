@@ -182,19 +182,18 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
 end
 #md nothing #hide
 
-#md # Let's compare the accuracy of the aerodynamic formulations by plotting the development of the lift coefficient. The indicial functions by Kussner (approximation of analytical) and by [Berci and Righi](https://doi.org/10.1016/j.ast.2017.03.004) (semi-analytical) compare well to the CFD data by [Mallik and Raveh](https://doi.org/10.2514/1.J057546). The linear models show good results (except the quasi-steady one) for test 2, in which the airfoil is pitched by 10 degrees. However, at test 6 the dynamic stall models fare better, since the airfoil is at a high angle of attack (15 degrees) and stalls upon encountering the gust.
+#md # Let's compare the accuracy of the aerodynamic formulations by plotting the development of the lift coefficient. The indicial functions by Kussner (approximation of analytical) and by [Berci and Righi](https://doi.org/10.1016/j.ast.2017.03.004) (semi-analytical) compare well to the CFD data by [Mallik and Raveh](https://doi.org/10.2514/1.J057546). The attached-flow models show good results (except the quasi-steady one, which assumes instantaneous changes in the angle of attack) for test 2, in which the airfoil is pitched by 10 degrees. However, at test 6 the dynamic stall models fare better, since the airfoil is at a high angle of attack (15 degrees) and stalls upon encountering the gust.
 #md using Plots, ColorSchemes
-#md colors = get(colorschemes[:rainbow], LinRange(0, 1, length(aeroSolvers)))
+#md colors = cgrad(:rainbow, length(aeroSolvers), categorical=true)
+#md linestyles = [:solid :dash :dot :dashdot :dashdotdot]
 #md gr()
 #md ENV["GKSwstype"] = "100" #hide
-#md labels = ["QS" "Indicial" "Inflow" "BLi" "BLo"]
-#md linestyles = [:solid :dash :dot :dashdot :dashdotdot]
 
 ## Test 2 - Kussner indicial function
-#md plt21 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", title="Test 2 - Kussner indicial function")
+#md plt12 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", title="Test 2 - Kussner indicial function")
 #md scatter!(ΔclRef[1,1,2][1,:], ΔclRef[1,1,2][2,:], color=:black, ms=4, label="Mallik & Raveh (2019)")
 #md for (i,aeroSolver) in enumerate(aeroSolvers)
-#md     plot!(τ[i,1,2], Δcl[i,1,2], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+#md     plot!(τ[i,1,2], Δcl[i,1,2], color=colors[i], lw=2, ls=linestyles[i], label=aeroSolver.name)
 #md end
 #md savefig("OMCgustTests_test2K.svg") #hide
 #md nothing #hide
@@ -203,25 +202,25 @@ end
 #md plt22 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", title="Test 2 - Berci and Righi indicial function")
 #md scatter!(ΔclRef[1,1,2][1,:], ΔclRef[1,1,2][2,:], color=:black, ms=4, label="Mallik & Raveh (2019)")
 #md for (i,aeroSolver) in enumerate(aeroSolvers)
-#md     plot!(τ[i,1,2], Δcl[i,1,2], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+#md     plot!(τ[i,1,2], Δcl[i,1,2], color=colors[i], lw=2, ls=linestyles[i], label=aeroSolver.name)
 #md end
 #md savefig("OMCgustTests_test2BR.svg") #hide
 #md nothing #hide
 
 ## Test 6 - Kussner indicial function
-#md plt61 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", title="Test 6 - Kussner indicial function")
+#md plt16 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", title="Test 6 - Kussner indicial function")
 #md scatter!(ΔclRef[1,1,6][1,:], ΔclRef[1,1,6][2,:], color=:black, ms=4, label="Mallik & Raveh (2019)")
 #md for (i,aeroSolver) in enumerate(aeroSolvers)
-#md     plot!(τ[i,1,6], Δcl[i,1,6], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+#md     plot!(τ[i,1,6], Δcl[i,1,6], color=colors[i], lw=2, ls=linestyles[i], label=aeroSolver.name)
 #md end
 #md savefig("OMCgustTests_test6K.svg") #hide
 #md nothing #hide
 
 ## Test 6 - Berci and Righi indicial function
-#md plt62 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", title="Test 6 - Berci and Righi indicial function")
+#md plt26 = plot(xlabel="\$\\tau\$ [semichords]", ylabel="\$\\Delta c_l\$", title="Test 6 - Berci and Righi indicial function")
 #md scatter!(ΔclRef[1,1,6][1,:], ΔclRef[1,1,6][2,:], color=:black, ms=4, label="Mallik & Raveh (2019)")
 #md for (i,aeroSolver) in enumerate(aeroSolvers)
-#md     plot!(τ[i,2,6], Δcl[i,2,6], color=colors[i], lw=2, ls=linestyles[i], label=labels[i])
+#md     plot!(τ[i,2,6], Δcl[i,2,6], color=colors[i], lw=2, ls=linestyles[i], label=aeroSolver.name)
 #md end
 #md savefig("OMCgustTests_test6BR.svg") #hide
 #md nothing #hide

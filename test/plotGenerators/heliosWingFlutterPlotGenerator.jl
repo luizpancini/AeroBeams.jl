@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Mode shapes
-modesPlot = plot_mode_shapes(eigenProblem,scale=5,view=(30,30),frequencyLabel="frequency",save=true,savePath=string(relPath,"/heliosWingFlutter_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(eigenProblem,scale=5,view=(30,30),save=true,savePath=string(relPath,"/heliosWingFlutter_modeShapes.pdf"))
 display(modesPlot)
 
 # Plot configurations

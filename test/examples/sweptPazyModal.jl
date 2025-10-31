@@ -1,13 +1,16 @@
 using AeroBeams
 
 # Number of modes
-nModes = 3
+nModes = 5
 
 # Gravity
 g = 0
 
 # Sweep angle [rad] range
 ΛRange = vcat(0:5:30)*π/180
+
+# Flag for ad hoc sectional stiffness corrections with sweep angle
+sweepStructuralCorrections = true
 
 # Initialize outputs
 problem = Array{EigenProblem}(undef,length(ΛRange))
@@ -21,7 +24,7 @@ NR = create_NewtonRaphson(displayStatus=true,absoluteTolerance=absTol)
 for (i,Λ) in enumerate(ΛRange)
     display("Solving for Λ = $(round(Λ*180/π)) deg")
     # Model
-    sweptPazyModal,_ = create_Pazy(Λ=Λ,upright=false,g=g)
+    sweptPazyModal,_ = create_Pazy(Λ=Λ,upright=false,g=g,sweepStructuralCorrections=sweepStructuralCorrections)
     # Create and solve problem
     problem[i] = create_EigenProblem(model=sweptPazyModal,nModes=nModes,systemSolver=NR)
     solve!(problem[i])

@@ -15,7 +15,7 @@ absPathData = string(pwd(),relPathData)
 mkpath(absPathData)
 
 # Plot configurations
-colors = cgrad(:rainbow, 2, categorical=true)
+colors = palette([:purple, :darkorange])
 ts = 10
 fs = 16
 lfs = 10

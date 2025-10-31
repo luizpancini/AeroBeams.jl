@@ -193,8 +193,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot configurations
-modeColors = cgrad(:rainbow, nModes, categorical=true)
-colors = cgrad(:rainbow, length(indicesFlutterOnset), categorical=true)
+modeColors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], nModes)
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], length(indicesFlutterOnset))
 ts = 10
 fs = 16
 lfs = 10

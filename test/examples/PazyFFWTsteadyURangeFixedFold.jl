@@ -6,22 +6,24 @@ foldAngle = -30*π/180
 flareAngle = 20*π/180
 
 # Spring stiffness
-kSpring = 0
+kSpring = 1e-4
+kIPBendingHinge = 1e-1
 
 # Root pitch angle
 θ = 7*pi/180
 
-# Gravity
-g = 9.80665
-
 # Airspeed range
 URange = collect(1:1:60)
+
+# Solution method for constraint
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Flag to use previous solution as initial guess
 usePreviousSolution = true
 
 # Initialize model
-PazyFFWTsteadyURangeFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
+PazyFFWTsteadyURangeFixedFold = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,pitchAngle=θ)
 
 # System solver
 σ0 = 1
@@ -56,7 +58,7 @@ problem = Array{SteadyProblem}(undef,length(URange))
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s")
     # Update airspeed
-    model = create_PazyFFWT(hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g,airspeed=U)
+    model = create_PazyFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeNode=hingeNode,foldAngle=foldAngle,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,pitchAngle=θ,airspeed=U)
     # Set initial guess solution as the one from previous airspeed
     if usePreviousSolution
         x0 = (i==1) ? zeros(0) : problem[i-1].x
@@ -78,7 +80,7 @@ for (i,U) in enumerate(URange)
     cn[i] = [problem[i].aeroVariablesOverσ[end][e].aeroCoefficients.cn for e in 1:15]
     pHinge[i] = problem[i].model.hingeAxisConstraints[1].pH
     ϕHinge[i] = problem[i].model.hingeAxisConstraints[1].ϕ*180/π
-    hingeMoment[i] = norm(problem[i].model.hingeAxisConstraints[1].balanceMoment)
+    hingeMoment[i] = problem[i].model.hingeAxisConstraints[1].hingeMoment
 end
 
 println("Finished PazyFFWTsteadyURangeFixedFold.jl")

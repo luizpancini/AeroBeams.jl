@@ -8,7 +8,7 @@
     # Primary fields (inputs)
     name::String = " "
     beam::Beam 
-    node::Int64 
+    node::Int 
     types::Vector{String} 
     values
     toBeTrimmed::Union{BitVector,Vector{Bool}}
@@ -26,7 +26,7 @@
     followerLoadsOnb::Vector{Float64}
     initialTrimValue::Vector{Float64}
     R0_n::Matrix{Float64}
-    globalNodeID::Int64
+    globalNodeID::Int
     Fmax::Real
     Mmax::Real
 
@@ -42,12 +42,12 @@ BC constructor
 # Keyword arguments
 - `name::String`: name of the BC
 - `beam::Beam`: beam at which the BC is applied
-- `node::Int64`: node of the beam at which the BC is applied
+- `node::Int`: node of the beam at which the BC is applied
 - `types::Vector{String} `= types of BCs applied to the node (generalized forces and displacements)
 - `values`: corresponding values of the applied BCs (constants or functions of time)
 - `toBeTrimmed::Union{BitVector,Vector{Bool}}`: TF on whether the BC is to be trimmed
 """
-function create_BC(; name::String="",beam::Beam,node::Int64,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
+function create_BC(; name::String="",beam::Beam,node::Int,types::Vector{String},values,toBeTrimmed::Union{BitVector,Vector{Bool}}=falses(length(types)))
 
     # Validate inputs
     @assert 1 <= node <= beam.nElements+1 "the BC'ed beam does not contain the BC'ed node"

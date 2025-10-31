@@ -36,11 +36,11 @@ P = 150
 U = 40*0.3048
 
 # Gust variables
-seeds = 31:1:33
+seeds = [10]
 τ = 360
 γ = 0.15
 t0 = 1
-tAfter = 180
+tAfter = 120
 gustResolution = 0.005 # [m]
 σ = U*γ
 gustLength = U*τ
@@ -82,6 +82,7 @@ dynamicProblem = Array{DynamicProblem}(undef,length(seeds),length(aeroSolvers))
 t = Array{Vector{Float64}}(undef,length(seeds),length(aeroSolvers))
 rootPitch = Array{Vector{Float64}}(undef,length(seeds),length(aeroSolvers))
 rootAoA = Array{Vector{Float64}}(undef,length(seeds),length(aeroSolvers))
+Δu1 = Array{Vector{Float64}}(undef,length(seeds),length(aeroSolvers))
 Δu2 = Array{Vector{Float64}}(undef,length(seeds),length(aeroSolvers))
 Δu3 = Array{Vector{Float64}}(undef,length(seeds),length(aeroSolvers))
 airspeed = Array{Vector{Float64}}(undef,length(seeds),length(aeroSolvers))
@@ -105,7 +106,7 @@ Pstr = round(P)
 relPath = "/dev/helios/figures/heliosVKGust"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
-mkpath(string(pwd(),"/dev/helios/outputs/heliosVKGust"))
+mkpath(string(pwd(),"/dev/helios/data/heliosVKGust"))
 
 # Plot configurations
 using Plots, ColorSchemes
@@ -116,7 +117,8 @@ lfs = 12
 lw = 2
 ms = 3
 msw = 0
-labels = ["Attached flow" "Dynamic stall"]
+fps = 15
+labels = ["Attached-flow" "Dynamic stall"]
 colors = cgrad(:rainbow, length(aeroSolvers), categorical=true)
 
 # Sweep seeds
@@ -125,7 +127,7 @@ for (i,seed) in enumerate(seeds)
     gust = create_Continuous1DSpaceGust(spectrum="vK",gustLength=gustLength,N=N,σ=σ,c0=c0,seed=seed,plotPSD=false)
     # Sweep aero solvers
     for (j,aeroSolver) in enumerate(aeroSolvers)
-        println("Solving for seed $seed, aeroSolver $j")
+        println("Solving for seed $seed, $(aeroSolver.name) solver")
         # Model for trim problem
         trimModel,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,stiffnessFactor=λ,nElemStraightSemispan=nElemStraightSemispan,nElemDihedralSemispan=nElemDihedralSemispan,nElemPod=nElemPod,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true,gust=gust)
         # Create and solve trim problem
@@ -146,7 +148,8 @@ for (i,seed) in enumerate(seeds)
         Nt = length(t[i,j])
         rootPitch[i,j] = [dynamicProblem[i,j].aeroVariablesOverTime[k][midSpanElem].flowAnglesAndRates.α-wingAirfoil.attachedFlowParameters.α₀N for k in 1:Nt]
         rootAoA[i,j] = [dynamicProblem[i,j].aeroVariablesOverTime[k][midSpanElem].flowAnglesAndRates.αₑ-wingAirfoil.attachedFlowParameters.α₀N for k in 1:Nt]
-        Δu2[i,j] = [dynamicProblem[i,j].nodalStatesOverTime[k][midSpanElem].u_n2[2] for k in 1:Nt]
+        Δu1[i,j] = [dynamicProblem[i,j].nodalStatesOverTime[k][midSpanElem].u_n2[1] for k in 1:Nt] .- dynamicProblem[i,j].nodalStatesOverTime[1][midSpanElem].u_n2[1]
+        Δu2[i,j] = [dynamicProblem[i,j].nodalStatesOverTime[k][midSpanElem].u_n2[2] for k in 1:Nt] .- dynamicProblem[i,j].nodalStatesOverTime[1][midSpanElem].u_n2[2]
         Δu3[i,j] = [dynamicProblem[i,j].nodalStatesOverTime[k][midSpanElem].u_n2[3] for k in 1:Nt] .- dynamicProblem[i,j].nodalStatesOverTime[1][midSpanElem].u_n2[3]
         airspeed[i,j] = [dynamicProblem[i,j].aeroVariablesOverTime[k][midSpanElem].flowVelocitiesAndRates.U∞/.3048 for k in 1:Nt]
         cn[i,j] = [dynamicProblem[i,j].aeroVariablesOverTime[k][midSpanElem].aeroCoefficients.cn for k in 1:Nt]
@@ -176,17 +179,17 @@ for (i,seed) in enumerate(seeds)
         COE_rootκ2[i,j] = count_of_exceedance(time=timeInGust, series=-(rootκ2InGust.-rootκ2InGust[1]), datum=0, marker=root_κ2Markers)
         COE_tipu3[i,j] = count_of_exceedance(time=timeInGust, series=(tipu3InGust.-tipu3InGust[1])/L*100, datum=0, marker=tip_u3Markers)
         # Save
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("COE_rootAoA_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootAoA[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("COE_rootκ1_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ1[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("COE_rootκ2_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ2[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("COE_tipu3_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_tipu3[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("gustDur_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",gustDur[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("COE_rootAoA_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootAoA[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("COE_rootκ1_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ1[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("COE_rootκ2_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ2[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("COE_tipu3_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_tipu3[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("gustDur_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",gustDur[i,j])
 
-        @save pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("timeInGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" timeInGust
-        @save pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("rootAoAInGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" rootAoAInGust
-        @save pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("airspeedInGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" airspeedInGust
-        @save pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("rootκ1InGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" rootκ1InGust
-        @save pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust/"*string("rootκ2InGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" rootκ2InGust
+        @save pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("timeInGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" timeInGust
+        @save pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("rootAoAInGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" rootAoAInGust
+        @save pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("airspeedInGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" airspeedInGust
+        @save pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("rootκ1InGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" rootκ1InGust
+        @save pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust/"*string("rootκ2InGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".jld2" rootκ2InGust
     end
 
     # Plots for current seed
@@ -205,6 +208,20 @@ for (i,seed) in enumerate(seeds)
         plot!(t[i,j], airspeed[i,j], c=colors[j], lw=lw, label=false)
     end
     display(plt_U)
+    
+    # Spanwise-direction change
+    plt_deltax = plot(xlabel="Time [s]", ylabel="Spanwise-direction change [m]", xlims=[0,tf], tickfont=font(ts), guidefont=font(fs))
+    for (j,aeroSolver) in enumerate(aeroSolvers)
+        plot!(t[i,j], Δu1[i,j], c=colors[j], lw=lw, label=false)
+    end
+    display(plt_deltax)
+
+    # Flight-direction change
+    plt_deltay = plot(xlabel="Time [s]", ylabel="Forward-direction change [m]", xlims=[0,tf], tickfont=font(ts), guidefont=font(fs))
+    for (j,aeroSolver) in enumerate(aeroSolvers)
+        plot!(t[i,j], Δu2[i,j], c=colors[j], lw=lw, label=false)
+    end
+    display(plt_deltay)
 
     # Elevation change
     plt_deltaz = plot(xlabel="Time [s]", ylabel="Elevation change [m]", xlims=[0,tf], tickfont=font(ts), guidefont=font(fs))
@@ -263,11 +280,26 @@ for (i,seed) in enumerate(seeds)
     end
     display(plt_cma)
 
+    # Plot gust velocity components
+    X = c0[2] .+ LinRange(0,gustLength,N)
+    Xarray = [[0; x; 0] for x in X]
+    u = [gust.U(Xarray[i]) for i in eachindex(Xarray)]
+    v = [gust.V(Xarray[i]) for i in eachindex(Xarray)]
+    w = [gust.W(Xarray[i]) for i in eachindex(Xarray)]
+    plt_uvw = plot(xlabel="\$x_2\$ [m]", ylabel="Gust velocity [m/s]",tickfont=font(ts),guidefont=font(fs),legendfontsize=12,legend=:topright, xlims=[0,4500])
+    plot!(X,u, lw=2, c=:purple, label="\$u\$")
+    plot!(X,v, lw=2, c=:green, label="\$v\$")
+    plot!(X,w, lw=2, c=:red, label="\$w\$")
+    display(plt_uvw)
+    savefig(plt_uvw,string(absPath,"/heliosVKGust_seed",seed,"_gustVelocities.pdf"))
+
     # Save figures, if applicable
     if saveFigures
         savefig(plt_AoA,string(absPath,"/heliosVKGust_AoA_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
         savefig(plt_U,string(absPath,"/heliosVKGust_U_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
-        savefig(plt_deltaz,string(absPath,"/heliosVKGust_tauz_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
+        savefig(plt_deltax,string(absPath,"/heliosVKGust_deltax_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
+        savefig(plt_deltay,string(absPath,"/heliosVKGust_deltay_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
+        savefig(plt_deltaz,string(absPath,"/heliosVKGust_deltaz_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
         savefig(plt_k1,string(absPath,"/heliosVKGust_k1_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
         savefig(plt_k2,string(absPath,"/heliosVKGust_k2_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
         savefig(plt_OOP,string(absPath,"/heliosVKGust_OOP_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
@@ -275,17 +307,24 @@ for (i,seed) in enumerate(seeds)
         savefig(plt_cmt,string(absPath,"/heliosVKGust_cmt_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
         savefig(plt_cna,string(absPath,"/heliosVKGust_cna_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
         savefig(plt_cma,string(absPath,"/heliosVKGust_cma_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".pdf"))
-        # Maximum altitude and forward distance changes for animation plot limits
-        Δforward_DS = max(100,round(Int,maximum(Δu2[i,2])))
-        Δalt_min_DS = min(-20,round(Int,minimum(Δu3[i,2])))
-        Δalt_max_DS = max(+20,round(Int,maximum(Δu3[i,2])))
-        # Animations
-        # plot_dynamic_deformation(dynamicProblem[i,2],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=5,followAssembly=true,plotLimits=([-40,40],[-10,Δforward_DS],[Δalt_min_DS,Δalt_max_DS]),save=saveFigures,savePath=string(relPath,"/heliosVKGust_ds_elastic_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".gif"),displayProgress=true)
     end
 
+    # Maximum and minimum position changes for animation plot limits
+    Δu1_min = min(-40,round(Int,minimum(Δu1[i,1])),round(Int,minimum(Δu1[i,2])))
+    Δu1_max = max(40,round(Int,maximum(Δu1[i,1])),round(Int,maximum(Δu1[i,2])))
+    Δu2_min = min(-40,round(Int,minimum(Δu2[i,1])),round(Int,minimum(Δu2[i,2])))
+    Δu2_max = max(40,round(Int,maximum(Δu2[i,1])),round(Int,maximum(Δu2[i,2])))
+    Δu3_min = min(-40,round(Int,minimum(Δu3[i,1])),round(Int,minimum(Δu3[i,2])))
+    Δu3_max = max(40,round(Int,maximum(Δu3[i,1])),round(Int,maximum(Δu3[i,2])))
+
+    # Animation
+    Δtanim = 1
+    anim = plot_dynamic_deformations(dynamicProblem[i,:],refBasis="I",view=(60,15),legendEntries=["Attached-flow", "Dynamic stall"],plotBCs=false,plotDistLoads=false,plotFrequency=ceil(Int,Δtanim/Δt),fps=fps,followAssembly=true,plotLimits=([Δu1_min,Δu1_max],[Δu2_min,Δu2_max],[Δu3_min,Δu3_max]),save=true,savePath=string(relPath,"/heliosVKGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".gif"),displayProgress=true)
+    display(anim)
+
     # GC
-    dynamicProblem[i,1] = dynamicProblem[i,2] = create_DynamicProblem(model=dummyDynamicModel,finalTime=tf,Δt=Δt)
-    GC.gc()
+    # dynamicProblem[i,1] = dynamicProblem[i,2] = create_DynamicProblem(model=dummyDynamicModel,finalTime=tf,Δt=Δt)
+    # GC.gc()
 end
 
 println("Finished heliosVKGust.jl")

@@ -8,15 +8,15 @@
 
     # Primary (inputs to spring creation)
     basis::String
-    elementsIDs::Vector{Int64}
-    nodesSides::Vector{Int64}
+    elementsIDs::Vector{Int}
+    nodesSides::Vector{Int}
     ku::Vector{<:Real}
     kp::Vector{<:Real}
 
     # Secondary (outputs from spring creation)
     hasDoubleAttachment::Bool
-    nodesSpecialIDs::Vector{Int64}
-    nodesGlobalIDs::Vector{Int64}
+    nodesSpecialIDs::Vector{Int}
+    nodesGlobalIDs::Vector{Int}
     Ku::Matrix{Float64}
     Kp::Matrix{Float64}
     Fs::Vector{Float64}
@@ -35,12 +35,12 @@ Creates a spring
 
 # Keyword arguments
 - `basis::String`: basis on which stiffnesses are defined ("b" or "A")
-- `elementsIDs::Vector{Int64}`: local IDs of the element(s)' node(s) to which the spring is attached
-- `nodesSides::Vector{Int64}`: sides (1 or 2) of the node(s) to which the spring is attached
+- `elementsIDs::Vector{Int}`: local IDs of the element(s)' node(s) to which the spring is attached
+- `nodesSides::Vector{Int}`: sides (1 or 2) of the node(s) to which the spring is attached
 - `ku::Vector{<:Real}`: translational stiffness vector, resolved in basis A
 - `kp::Vector{<:Real}`: rotational stiffness vector, resolved in basis A
 """
-function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides::Vector{Int64},ku::Vector{<:Real}=zeros(3),kp::Vector{<:Real}=zeros(3))
+function create_Spring(; basis::String="A",elementsIDs::Vector{Int},nodesSides::Vector{Int},ku::Vector{<:Real}=zeros(3),kp::Vector{<:Real}=zeros(3))
 
     # Number of attachments
     N = length(elementsIDs)
@@ -60,10 +60,10 @@ function create_Spring(; basis::String="A",elementsIDs::Vector{Int64},nodesSides
     hasDoubleAttachment = N == 2
 
     # Initialize IDs of attachment nodes on list of special nodes (updated later on model assembly)
-    nodesSpecialIDs = Vector{Int64}()
+    nodesSpecialIDs = Vector{Int}()
 
     # Initialize global IDs of attachment nodes (updated later on model assembly)
-    nodesGlobalIDs = Vector{Int64}()
+    nodesGlobalIDs = Vector{Int}()
 
     # Initialize spring stiffness matrices, resolved in basis A
     Ku = [ku[1] 0 0; 0 ku[2] 0; 0 0 ku[3]]

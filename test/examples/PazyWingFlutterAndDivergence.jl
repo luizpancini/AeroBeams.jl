@@ -24,11 +24,11 @@ tipMass = 0.00
 
 # Set system solver options
 σ0 = 1
-σstep = 0.5
-NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+NR = create_NewtonRaphson(initialLoadFactor=σ0)
 
 # Number of modes
 nModes = 3
+nNOmodes = 3
 
 # Set airspeed range, and initialize outputs
 URange = collect(5:0.5:120)
@@ -51,9 +51,9 @@ for (i,U) in enumerate(URange)
     solve!(problem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem.dampingsOscillatory,1e-8)
+    untrackedDamps[i] = problem.dampingsOscillatory
     untrackedEigenvectors[i] = problem.eigenvectorsOscillatoryCplx
-    nonOscillatoryDampings[i] = problem.dampingsNonOscillatory
+    nonOscillatoryDampings[i] = problem.dampingsNonOscillatory[1:nNOmodes]
     # Get OOP displacement at midchord
     tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
     R,_ = rotation_tensor_WM(tip_p)
@@ -63,7 +63,7 @@ for (i,U) in enumerate(URange)
 end
 
 # Apply mode tracking, if applicable
-freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+freqs,damps,_,matchedModes = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 modeFrequencies = Array{Vector{Float64}}(undef,nModes)
@@ -116,29 +116,9 @@ for mode in 1:nModes
     flutterOffsetDispOfMode[mode] = flutterOffsetDisp
 end
 
-# Initialize divergence speed, its index, and flag for divergence being found
-global divergenceFound = nothing
-global iD = nothing
-global divergenceFound = false
-
-# Separate non-oscillatory dampings by mode
-nNOModes = 1
-modeNonOscillatoryDampings = Array{Vector{Float64}}(undef,nNOModes)
-modeNonOscillatoryDampingsEst = Array{Vector{Float64}}(undef,nNOModes)
-for mode in 1:nNOModes
-    # Mode dampings
-    modeNonOscillatoryDampings[mode] = [nonOscillatoryDampings[i][mode] for i in eachindex(URange)]
-    # Estimated mode dampings from backward finite difference extrapolation
-    modeNonOscillatoryDampingsEst[mode] = backward_extrapolation(modeNonOscillatoryDampings[mode])
-    # Divergence is found when the sign of the estimated value is different from the actual
-    if !divergenceFound
-        global iD = findfirst(i -> modeNonOscillatoryDampings[mode][i]*modeNonOscillatoryDampingsEst[mode][i] < 0, 1:length(URange))
-        if !isnothing(iD)
-            global divergenceSpeed = LinearInterpolations.interpolate(modeNonOscillatoryDampingsEst[mode][iD-1:iD],URange[iD-1:iD],0)
-            global divergenceFound = true
-            println("Divergence speed = $divergenceSpeed m/s")
-        end
-    end
-end
+# Get divergence speed
+UDvec,_ = find_non_oscillatory_instability(URange,nonOscillatoryDampings)
+divergenceSpeed = minimum(UDvec)
+println("Divergence speed = $divergenceSpeed m/s")
 
 println("Finished PazyWingFlutterAndDivergence.jl")

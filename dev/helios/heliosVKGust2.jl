@@ -101,7 +101,7 @@ Pstr = round(P)
 relPath = "/dev/helios/figures/heliosVKGust2"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
-mkpath(string(pwd(),"/dev/helios/outputs/heliosVKGust2"))
+mkpath(string(pwd(),"/dev/helios/data/heliosVKGust2"))
 
 # Plot configurations
 using Plots, ColorSchemes
@@ -160,11 +160,11 @@ for (i,seed) in enumerate(seeds)
         COE_rootκ2[i,j] = count_of_exceedance(time=t[i,j][tig:tfg], series=-(root_κ2[i,j][tig:tfg].-root_κ2[i,j][1]), datum=0, marker=root_κ2Markers)
         COE_tipu3[i,j] = count_of_exceedance(time=t[i,j][tig:tfg], series=(tip_Δu3[i,j][tig:tfg].-tip_Δu3[i,j][1])/L*100, datum=0, marker=tip_u3Markers)
         # Save
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust2/"*string("COE_rootAoA_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootAoA[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust2/"*string("COE_rootκ1_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ1[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust2/"*string("COE_rootκ2_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ2[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust2/"*string("COE_tipu3_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_tipu3[i,j])
-        writedlm(pkgdir(AeroBeams)*"/dev/helios/outputs/heliosVKGust2/"*string("gustDur_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",gustDur[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust2/"*string("COE_rootAoA_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootAoA[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust2/"*string("COE_rootκ1_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ1[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust2/"*string("COE_rootκ2_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_rootκ2[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust2/"*string("COE_tipu3_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",COE_tipu3[i,j])
+        writedlm(pkgdir(AeroBeams)*"/dev/helios/data/heliosVKGust2/"*string("gustDur_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,"_",j)*".txt",gustDur[i,j])
     end
 
     # Plots for current seed

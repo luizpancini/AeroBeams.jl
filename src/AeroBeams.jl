@@ -1,6 +1,6 @@
 module AeroBeams
 
-using FFTW, FiniteDifferences, ForwardDiff, LinearAlgebra, LinearInterpolations, Interpolations, Parameters, QuadGK, Random, Revise, SparseArrays, Statistics, Hungarian
+using DSP, FFTW, FiniteDifferences, ForwardDiff, LinearAlgebra, LinearInterpolations, Interpolations, Parameters, QuadGK, Random, Revise, SparseArrays, Statistics, Hungarian
 
 include("UnitsSystem.jl")
 include("PointInertia.jl")

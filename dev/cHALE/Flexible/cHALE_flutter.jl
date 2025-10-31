@@ -7,7 +7,7 @@ aeroSolver = Indicial()
 λ = 1
 
 # Bending pre-curvature
-k2 = 0.045
+k2 = 0.0
 
 # Altitude
 h = 20e3
@@ -22,28 +22,30 @@ hasInducedDrag = true
 
 # Discretization
 if λ == 1
-    nElemWing = 80
+    nElemWing = 40
 elseif λ > 1
     nElemWing = 40
 end
-nElemTailBoom = 10
-nElemHorzStabilizer = 10
-nElemVertStabilizer = 5
+nElemTailBoom = 5
+nElemHorzStabilizer = 4
+nElemVertStabilizer = 2
 
 # System solver for trim problem
 relaxFactor = 0.5
 maxIter = 100
 σ0 = 1
-NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,displayStatus=true)
+NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,initialLoadFactor=σ0,pseudoInverseMethod=:dampedLeastSquares,displayStatus=true)
 
 # Set number of vibration modes
-nModes = 30
+nModes = 10
 
 # Airspeed range
 if λ == 1
-    URange = unique(sort(vcat(20:0.5:50,42.3,42.4)))
+    URange = [20]
 elseif λ == 2
-    URange = unique(sort(vcat(20:0.5:65,46.5:0.25:47.5,60:0.25:65)))
+    URange = [20]
+else
+    URange = [20]
 end
 
 # Damping ratio tolerance for flutter detection
@@ -91,7 +93,6 @@ for (i,U) in enumerate(URange)
     # Add springs
     add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1,spring2])
     # Update model
-    cHALEtrimSpringed.skipValidationMotionBasisA = true
     update_model!(cHALEtrimSpringed)
     # Create and solve trim problem with springs
     trimProblemSpringed = create_TrimProblem(model=cHALEtrimSpringed,systemSolver=NRtrim,x0=trimProblem[i].x)
@@ -171,17 +172,23 @@ end
 
 using Plots, ColorSchemes
 
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
+
 # Set paths
 relPath = "/dev/cHALE/Flexible/outputs/figures/cHALE_flutter"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # # Mode shapes at lowest airspeed
-# plt_modes = plot_mode_shapes(eigenProblem[1],nModes=6,scale=5,view=(30,30),modalColorScheme=:rainbow,modeLabels=["Phugoid","1st LD","1st Sym OOP","2nd LD","2nd Sym OOP","1st Asym OOP"],legendPos=:top,plotLimits=([-20,-20,-20],[20,20,20]),ΔuDef=[-5,10,25],save=true,savePath=string(relPath,string("/cHale_flutter_k2_",k2,"_modeShapes_lambda",λ,".pdf")))
+# plt_modes = plot_mode_shapes(eigenProblem[1],nModes=6,scale=5,view=(30,30),modalColorScheme=colors,modeLabels=["Phugoid","1st LD","1st Sym OOP","2nd LD","2nd Sym OOP","1st Asym OOP"],legendPos=:top,plotLimits=([-20,-20,-20],[20,20,20]),ΔuDef=[-5,10,25],save=true,savePath=string(relPath,string("/cHALE_flutter_k2_",k2,"_modeShapes_lambda",λ,".pdf")))
 # display(plt_modes)
 
+# Modes animation
+modesAnim = plot_mode_shapes_animation(eigenProblem[1],scale=10,view=(60,15),modalColorScheme=colors,legendPos=:top,modes2plot=[3,5],nFramesPerCycle=41,plotSteady=false,plotBCs=false,plotAxes=false,legendFontSize=10,fps=20,save=true,savePath=string(relPath,"/cHALE_flutter_modes_k2_",k2,"_lambda",λ,".gif"),displayProgress=true)
+display(modesAnim)
+
 # Plot configurations
-modeColors = cgrad(:rainbow, nModes, categorical=true)
+modeColors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], nModes)
 ts = 10
 fs = 16
 lfs = 10
@@ -197,6 +204,9 @@ if λ == 1
 elseif λ == 2
     dampLim = [-10,2]
     freqLim = [0,80]
+else
+    dampLim = [-10,2]
+    freqLim = [0,100]
 end
 plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
 for mode in 1:nModes

@@ -652,25 +652,9 @@ end
 # AeroProperties composite type: defines the aerodynamic properties of an element
 @with_kw mutable struct AeroProperties
 
-    # Aerodynamic solvers 
-    solver::AeroSolver
-    flapLoadsSolver::FlapAeroSolver
-    gustLoadsSolver::GustAeroSolver
-    # Total number of aerodynamic, flap and gust states, and respective ranges
-    nTotalAeroStates::Int64
-    nFlapStates::Int64
-    nGustStates::Int64
-    pitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
-    linearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
-    nonlinearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
-    circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
-    inertialPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}}
-    flapStatesRange::Union{Nothing,UnitRange{Int64}}
-    gustStatesRange::Union{Nothing,UnitRange{Int64}}
-    linearGustStatesRange::Union{Nothing,UnitRange{Int64}}
-    nonlinearGustStatesRange::Union{Nothing,UnitRange{Int64}}
-    # Aerodynamic derivatives calculation method
-    derivationMethod::DerivationMethod
+    # --- Immutable properties ---
+    # Parent aerodynamic surface
+    aeroSurface::AeroSurface
     # Geometry
     airfoil::Airfoil
     b::Real
@@ -680,33 +664,34 @@ end
     Λ::Real
     φ::Real
     cosΛ::Real
+    # Rotation tensors
     Rw::Matrix{Float64}
     RwT::Matrix{Float64}
     RwR0::Matrix{Float64}
     RwR0T::Matrix{Float64}
-    flapSiteID::Int64
-    normFlapPos::Float64
-    flapped::Bool
-    # Zero flap deflection TF, trim TF, values and its rates as functions of time
-    δIsZero::Bool
-    δIsTrimVariable::Bool
-    δ::Function
-    δdot::Function
-    δddot::Function
-    # Current values of flap deflection and its rates
-    δNow::Real
-    δdotNow::Real
-    δddotNow::Real
-    # Flap deflection multiplier for slave surfaces
-    δMultiplier::Real
-    # TF to update airfoil parameters according to flow parameters
-    updateAirfoilParameters::Bool
-    # TF for tip loss correction, tip loss correction factor as a function of the element's local coordinate (ζ), and value at midpoint
-    hasTipCorrection::Bool
+    # Flag for being flapped
+    isFlapped::Bool
+    # Theodorsen's flap constants
+    Th::Union{Nothing,Vector{Float64}}
+    # Tip loss correction factor as a function of the element's local coordinate (ζ)
     ϖ::Function
-    ϖMid::Real = ϖ(1/2)
-    # TF for small angle of attack approximations
-    smallAngles::Bool
+    # Total number of aerodynamic, flap and gust states, and respective ranges
+    nTotalAeroStates::Int
+    nFlapStates::Int
+    nGustStates::Int
+    pitchPlungeStatesRange::Union{Nothing,UnitRange{Int}}
+    linearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int}}
+    nonlinearPitchPlungeStatesRange::Union{Nothing,UnitRange{Int}}
+    circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int}}
+    inertialPitchPlungeStatesRange::Union{Nothing,UnitRange{Int}}
+    flapStatesRange::Union{Nothing,UnitRange{Int}}
+    gustStatesRange::Union{Nothing,UnitRange{Int}}
+    linearGustStatesRange::Union{Nothing,UnitRange{Int}}
+    nonlinearGustStatesRange::Union{Nothing,UnitRange{Int}}
+
+    # --- Mutable properties ----
+    # Tip loss correction factor at the element's midpoint
+    ϖMid = ϖ(1/2)
     # State matrices
     A = zeros(nTotalAeroStates,nTotalAeroStates)
     B = zeros(nTotalAeroStates)
@@ -750,7 +735,7 @@ end
     m2χ_δ::Vector{Float64} = zeros(3)
     F_χ_V::Matrix{Float64} = zeros(nTotalAeroStates,3)
     F_χ_Ω::Matrix{Float64} = zeros(nTotalAeroStates,3)
-    F_χ_χ::Matrix{Float64} = initial_F_χ_χ(solver,nTotalAeroStates)
+    F_χ_χ::Matrix{Float64} = initial_F_χ_χ(aeroSurface.solver,nTotalAeroStates)
     # Aerodynamic derivatives w.r.t. elemental states' rates
     f1χ_Vdot::Matrix{Float64} = zeros(3,3)
     f2χ_Vdot::Matrix{Float64} = zeros(3,3)
@@ -760,8 +745,8 @@ end
     m2χ_Vdot::Matrix{Float64} = zeros(3,3)
     m1χ_Ωdot::Matrix{Float64} = zeros(3,3)
     m2χ_Ωdot::Matrix{Float64} = zeros(3,3)
-    F_χ_Vdot::Matrix{Float64} = initial_F_χ_Vdot(solver,nTotalAeroStates,circulatoryPitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
-    F_χ_Ωdot::Matrix{Float64} = initial_F_χ_Ωdot(solver,nTotalAeroStates,circulatoryPitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
+    F_χ_Vdot::Matrix{Float64} = initial_F_χ_Vdot(aeroSurface.solver,nTotalAeroStates,circulatoryPitchPlungeStatesRange,airfoil.attachedFlowParameters.cnα)
+    F_χ_Ωdot::Matrix{Float64} = initial_F_χ_Ωdot(aeroSurface.solver,nTotalAeroStates,circulatoryPitchPlungeStatesRange,c,normSparPos,airfoil.attachedFlowParameters.cnα)
     F_χ_χdot::Matrix{Float64} = Matrix(1.0*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
 
 end
@@ -769,7 +754,7 @@ end
 # AeroProperties constructor
 function AeroProperties(aeroSurface::AeroSurface,rotationParametrization::String,R0::Matrix{Float64},x1::Real,x1_norm::Float64,x1_n1_norm::Float64,x1_n2_norm::Float64)
 
-    # Set geometric properties 
+    # Possibly spanwise-variable geometric properties 
     airfoil = aeroSurface.airfoil
     c = aeroSurface.c isa Real ? aeroSurface.c : aeroSurface.c(x1)
     b = c/2
@@ -778,6 +763,8 @@ function AeroProperties(aeroSurface::AeroSurface,rotationParametrization::String
     Λ = aeroSurface.Λ isa Real ? aeroSurface.Λ : aeroSurface.Λ(x1)
     φ = aeroSurface.φ isa Real ? aeroSurface.φ : aeroSurface.φ(x1)
     cosΛ = cos(Λ)
+
+    # Rotation tensors
     if rotationParametrization == "E321"
         Rw = rotation_tensor_E321([Λ; 0; φ])
     elseif rotationParametrization == "E213"
@@ -788,30 +775,45 @@ function AeroProperties(aeroSurface::AeroSurface,rotationParametrization::String
     RwT = Matrix(Rw')
     RwR0 = Rw*R0
     RwR0T = Matrix(RwR0')
-    flapSiteID = !isnothing(aeroSurface.flapSiteID) ? aeroSurface.flapSiteID : 100
-    if !isnothing(aeroSurface.normFlapSpan)
-        normFlapPos = minimum(aeroSurface.normFlapSpan) < x1_norm < maximum(aeroSurface.normFlapSpan) ? aeroSurface.normFlapPos : 1.0
+
+    # Flag for being flapped (element's midpoint is inside the flapped portion of span)
+    isFlapped = !isnothing(aeroSurface.normFlapSpan) && minimum(aeroSurface.normFlapSpan) < x1_norm < maximum(aeroSurface.normFlapSpan)
+
+    # Set Theodorsen's flap constants, if applicable
+    Th = isFlapped ? theodorsen_flap_constants(normSparPos,aeroSurface.normFlapPos) : nothing
+
+    # Set tip loss correction variables
+    hasTipCorrection = aeroSurface.hasTipCorrection
+    tipLossFunction = aeroSurface.tipLossFunction
+    tipLossDecayFactor = aeroSurface.tipLossDecayFactor
+    if !hasTipCorrection
+        # No tip correction -> ϖ is constant and equal to one
+        ϖ = ζ -> 1
     else
-        normFlapPos = 1.0
+        # Arclength coordinates
+        s = ζ -> x1_n1_norm + ζ * (x1_n2_norm-x1_n1_norm)
+        sFlip = ζ -> (1-x1_n1_norm) + ζ * ((1-x1_n2_norm)-(1-x1_n1_norm))
+        if isnothing(tipLossFunction)
+            # Set standard tip loss function with given tipLossDecayFactor
+            ϖ = tipLossDecayFactor >= 0 ? ζ -> 1-exp(-tipLossDecayFactor*(1-s(ζ))) : ϖ = ζ -> 1-exp(tipLossDecayFactor*(1-sFlip(ζ)))
+        else
+            if aeroSurface.tipLossFunctionIsAirspeedDependent
+                # Initialize tip loss function with airspeed assumed as zero (updated later on model creation)
+                ϖ = ζ -> tipLossFunction(0)(s(ζ))
+            else
+                # Set given tip loss function
+                ϖ = ζ -> tipLossFunction(s(ζ))
+            end
+        end
     end
-    flapped = normFlapPos < 1 ? true : false
 
-    # Set aerodynamic solvers and number of aerodynamic states
-    solver = aeroSurface.solver
-    flapLoadsSolver = aeroSurface.flapLoadsSolver
-    gustLoadsSolver = aeroSurface.gustLoadsSolver
-
-    # TF for flap states (the element is flapped, solver is thin-airfoil theory, and flap deflection is either an user input or a trim variable)
-    hasFlapStates = flapped && typeof(flapLoadsSolver) == ThinAirfoilTheory && (aeroSurface.δIsInput || aeroSurface.δIsTrimVariable) ? true : false
-
-    # Update Theodorsen's flap constants, if applicable
-    if hasFlapStates
-        flapLoadsSolver.Th = theodorsen_flap_constants(normSparPos,normFlapPos)
-    end
+    # Flag for flap states (solver is thin-airfoil theory, and flap deflection is either an user input or a trim variable)
+    hasFlapStates = typeof(aeroSurface.flapLoadsSolver) == ThinAirfoilTheory && (aeroSurface.δIsInput || aeroSurface.δIsTrimVariable)
 
     # Total number of aerodynamic states (assume no gust states are active, update later upon model creation)
+    solver = aeroSurface.solver
     nPitchPungeStates = solver.nStates
-    nFlapStates = hasFlapStates ? flapLoadsSolver.nStates : 0
+    nFlapStates = hasFlapStates ? aeroSurface.flapLoadsSolver.nStates : 0
     nGustStates = 0
     nTotalAeroStates = nPitchPungeStates + nFlapStates + nGustStates
 
@@ -838,50 +840,49 @@ function AeroProperties(aeroSurface::AeroSurface,rotationParametrization::String
     flapStatesRange = hasFlapStates ? (nPitchPungeStates+1:nPitchPungeStates+nFlapStates) : nothing
     nonlinearGustStatesRange = linearGustStatesRange = gustStatesRange = nothing
 
-    # Set aerodynamic derivatives calculation method
-    derivationMethod = aeroSurface.derivationMethod
+    return AeroProperties(aeroSurface=aeroSurface,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,aₕ=aₕ,Λ=Λ,φ=φ,cosΛ=cosΛ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,isFlapped=isFlapped,Th=Th,ϖ=ϖ,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,linearPitchPlungeStatesRange=linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange=nonlinearPitchPlungeStatesRange,circulatoryPitchPlungeStatesRange=circulatoryPitchPlungeStatesRange,inertialPitchPlungeStatesRange=inertialPitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,linearGustStatesRange=linearGustStatesRange,nonlinearGustStatesRange=nonlinearGustStatesRange)
+end
 
-    # Set flap deflection trim TF, value and rates
-    δIsZero = aeroSurface.δIsZero
-    δIsTrimVariable = aeroSurface.δIsTrimVariable
-    δ = aeroSurface.δ
-    δdot = aeroSurface.δdot
-    δddot = aeroSurface.δddot
-    δNow = δ(0)
-    δdotNow = δdot(0)
-    δddotNow = δddot(0)
 
-    # Initialize flap deflection multiplier for slave surfaces (updated later on model assembly)
-    δMultiplier = 1.0
+# Computes Theodorsen's flap constants
+function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
 
-    # Set TF to update airfoil parameters according to flow parameters
-    updateAirfoilParameters = aeroSurface.updateAirfoilParameters
+    # Semichord-normalized spar position after midchord
+    a = 2*normSparPos-1
 
-    # Set tip loss correction variables
-    hasTipCorrection = aeroSurface.hasTipCorrection
-    tipLossFunction = aeroSurface.tipLossFunction
-    tipLossDecayFactor = aeroSurface.tipLossDecayFactor
-    if !hasTipCorrection
-        ϖ = ζ -> 1
-    else
-        s = ζ -> x1_n1_norm + ζ * (x1_n2_norm-x1_n1_norm)
-        sFlip = ζ -> (1-x1_n1_norm) + ζ * ((1-x1_n2_norm)-(1-x1_n1_norm))
-        if isnothing(tipLossFunction)
-            ϖ = tipLossDecayFactor >= 0 ? ζ -> 1-exp(-tipLossDecayFactor*(1-s(ζ))) : ϖ = ζ -> 1-exp(tipLossDecayFactor*(1-sFlip(ζ)))
-        else
-            ϖ = ζ -> tipLossFunction(s(ζ))
-        end
-    end
+    # Semichord-normalized flap hinge position after midchord
+    d = 2*normFlapPos-1
 
-    # TF for small angle of attack approximations
-    smallAngles = aeroSurface.smallAngles
+    # Theodorsen's constants
+    Th = zeros(18)
+    Th[1] = -1/3*sqrt(1-d^2)*(2+d^2)+d*acos(d)
+    Th[2] = d*(1-d^2)-sqrt(1-d^2)*(1+d^2)*acos(d)+d*acos(d)^2;
+    Th[3] = -(1/8+d^2)*acos(d)^2+1/4*d*sqrt(1-d^2)*acos(d)*(7+2*d^2)-1/8*(1-d^2)*(5*d^2+4)
+    Th[4] = -acos(d)+d*sqrt(1-d^2)
+    Th[5] = -(1-d^2)-acos(d)^2+2*d*sqrt(1-d^2)*acos(d)
+    Th[6] = Th[2]
+    Th[7] = -(1/8+d^2)*acos(d)+1/8*d*sqrt(1-d^2)*(7+2*d^2)
+    Th[8] = -1/3*sqrt(1-d^2)*(2*d^2+1)+d*acos(d)
+    Th[9] = 1/2*(1/3*sqrt(1-d^2)^3+a*Th[4])
+    Th[10] = sqrt(1-d^2)+acos(d)
+    Th[11] = acos(d)*(1-2*d)+sqrt(1-d^2)*(2-d)
+    Th[12] = sqrt(1-d^2)*(2+d)-acos(d)*(2*d+1)
+    Th[13] = 1/2*(-Th[7]-(d-a)*Th[1])
 
-    return AeroProperties(solver=solver,flapLoadsSolver=flapLoadsSolver,gustLoadsSolver=gustLoadsSolver,nTotalAeroStates=nTotalAeroStates,nFlapStates=nFlapStates,nGustStates=nGustStates,pitchPlungeStatesRange=pitchPlungeStatesRange,linearPitchPlungeStatesRange=linearPitchPlungeStatesRange,nonlinearPitchPlungeStatesRange=nonlinearPitchPlungeStatesRange,circulatoryPitchPlungeStatesRange=circulatoryPitchPlungeStatesRange,inertialPitchPlungeStatesRange=inertialPitchPlungeStatesRange,flapStatesRange=flapStatesRange,gustStatesRange=gustStatesRange,linearGustStatesRange=linearGustStatesRange,nonlinearGustStatesRange=nonlinearGustStatesRange,derivationMethod=derivationMethod,airfoil=airfoil,b=b,c=c,normSparPos=normSparPos,aₕ=aₕ,Λ=Λ,φ=φ,cosΛ=cosΛ,Rw=Rw,RwT=RwT,RwR0=RwR0,RwR0T=RwR0T,flapSiteID=flapSiteID,normFlapPos=normFlapPos,flapped=flapped,δIsZero=δIsZero,δIsTrimVariable=δIsTrimVariable,δ=δ,δdot=δdot,δddot=δddot,δNow=δNow,δdotNow=δdotNow,δddotNow=δddotNow,δMultiplier=δMultiplier,updateAirfoilParameters=updateAirfoilParameters,ϖ=ϖ,hasTipCorrection=hasTipCorrection,smallAngles=smallAngles)
+    # Useful functions of the above
+    Th[14] = Th[4]+Th[10]
+    Th[15] = Th[1]-Th[8]-Th[4]*(d-a)+Th[11]/2
+    Th[16] = Th[7]+Th[1]*(d-a)
+    Th[17] = Th[10]/π
+    Th[18] = Th[11]/(2π)
+
+    return Th
+
 end
 
 
 # Computes the initial value of F_χ_χ (for zero relative airspeed) - theoretically, the ϵ value in the function should go to zero as the airspeed goes to zero, but numerical problems are found for the inflow solver
-function initial_F_χ_χ(solver::AeroSolver,nStates::Int64)
+function initial_F_χ_χ(solver::AeroSolver,nStates::Int)
 
     # Calculate according to solver
     if typeof(solver) == QuasiSteady
@@ -897,7 +898,7 @@ end
 
 
 # Computes the initial value of F_χ_Vdot (for zero relative airspeed)
-function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int64,circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},cnα::Real)
+function initial_F_χ_Vdot(solver::AeroSolver,nStates::Int,circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int}},cnα::Real)
 
     F_χ_Vdot = zeros(nStates,3)
 
@@ -913,7 +914,7 @@ end
 
 
 # Computes the initial value of F_χ_Ωdot (for zero relative airspeed)
-function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int64,circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int64}},c::Real,normSparPos::Float64,cnα::Real)
+function initial_F_χ_Ωdot(solver::AeroSolver,nStates::Int,circulatoryPitchPlungeStatesRange::Union{Nothing,UnitRange{Int}},c::Real,normSparPos::Float64,cnα::Real)
 
     F_χ_Ωdot = zeros(nStates,3)
 

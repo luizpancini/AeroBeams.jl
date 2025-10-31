@@ -1,8 +1,5 @@
 using AeroBeams
 
-# Mode tracking option
-modeTracking = true
-
 # Aerodynamic solver
 aeroSolver = Indicial()
 
@@ -12,9 +9,9 @@ includeVS = true
 wingCd0 = stabsCd0 = 1e-2
 
 # Discretization
-nElemWing = 20
-nElemTailBoom = 10
-nElemHorzStabilizer = 10
+nElemWing = 40
+nElemTailBoom = 1
+nElemHorzStabilizer = 2
 
 # Set number of vibration modes
 nModes = 15
@@ -22,7 +19,8 @@ nModes = 15
 # System solver for trim problem
 relaxFactor = 0.5
 maxIter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=false)
+pseudoInverseMethod = :dampedLeastSquares
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,pseudoInverseMethod=pseudoInverseMethod,displayStatus=false)
 
 # Set stiffness and airspeed ranges, and initialize outputs
 λRange = [1,5,50]
@@ -53,7 +51,6 @@ for (i,λ) in enumerate(λRange)
         # Add springs
         add_springs_to_beam!(beam=tailBoom,springs=[spring1,spring2])
         # Update model
-        conventionalHALEtrim.skipValidationMotionBasisA = true
         update_model!(conventionalHALEtrim)
         # Set initial guess solution as previous known solution
         x0Trim = j == 1 ? zeros(0) : trimProblem.x
@@ -70,22 +67,17 @@ for (i,λ) in enumerate(λRange)
         # Add springs
         add_springs_to_beam!(beam=tailBoom,springs=[spring1,spring2])
         # Update model
-        conventionalHALEeigen.skipValidationMotionBasisA = true
         update_model!(conventionalHALEeigen)
         # Create and solve eigen problem
         eigenProblem[i,j] = create_EigenProblem(model=conventionalHALEeigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],refTrimProblem=trimProblem)
         solve_eigen!(eigenProblem[i,j])
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(eigenProblem[i,j].dampingsOscillatory,1e-8)
+        untrackedDamps[i,j] = eigenProblem[i,j].dampingsOscillatory
         untrackedEigenvectors[i,j] = eigenProblem[i,j].eigenvectorsOscillatoryCplx
     end
     # Frequencies and dampings after mode tracking
-    if modeTracking
-        freqs[i,:],damps[i,:],_ = mode_tracking(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
-    else
-        freqs[i,:],damps[i,:] = untrackedFreqs[i,:],untrackedDamps[i,:]
-    end
+    freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
     # Separate frequencies and dampings by mode
     for mode in 1:nModes
         modeDampings[i,mode] = [damps[i,j][mode] for j in eachindex(URange)]

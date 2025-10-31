@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=50,plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/PazyWingTipImpulse_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,refBasis="A",plotFrequency=50,plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/PazyWingTipImpulse_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2
@@ -46,7 +47,7 @@ display(plt5)
 savefig(string(absPath,"/PazyWingTipImpulse_ct.pdf"))
 
 # Aero states at 3/4-span
-nAeroStates = problem.model.elements[1].aero.solver.nStates
+nAeroStates = problem.model.elements[1].aero.nTotalAeroStates
 colors = get(colorschemes[:rainbow], LinRange(0, 1, 8))
 tqsχ_ = Array{Vector{Float64}}(undef,nAeroStates)
 for i in 1:nAeroStates

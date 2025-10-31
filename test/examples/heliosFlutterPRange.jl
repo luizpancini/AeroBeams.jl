@@ -2,13 +2,12 @@ using AeroBeams
 
 # Wing airfoil
 wingAirfoil = NACA23012A
-# wingAirfoil = HeliosWingAirfoil
 
 # Option for reduced chord
 reducedChord = false
 
 # Option to include beam pods
-beamPods = false
+beamPods = true
 
 # Option to set payload on wing
 payloadOnWing = false
@@ -22,15 +21,12 @@ aeroSolver = BLi()
 # Airspeed
 U = 40*0.3048
 
-# Option for mode tracking
-modeTracking = true
-
 # Number of modes
 nModes = 10
 
 # System solver for trim problem
 relaxFactor = 0.5
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=100,displayStatus=false)
+NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=100,pseudoInverseMethod=:MoorePenrose,displayStatus=false)
 
 # Set payload range, and initialize outputs
 PRange = collect(0:20:500)
@@ -55,7 +51,6 @@ for (i,P) in enumerate(PRange)
     # Add springs at wing root
     add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
     # Update model
-    heliosTrim.skipValidationMotionBasisA = true
     update_model!(heliosTrim)
     # Set initial guess solution as previous known solution
     x0Trim = (i==1) ? zeros(0) : trimProblem.x
@@ -72,23 +67,18 @@ for (i,P) in enumerate(PRange)
     # Add springs at wing root
     add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
     # Update model
-    heliosEigen.skipValidationMotionBasisA = true
     update_model!(heliosEigen)
     # Create and solve eigen problem
     global eigenProblem = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[1e-2,Inf64],refTrimProblem=trimProblem)
     solve_eigen!(eigenProblem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
+    untrackedDamps[i] = eigenProblem.dampingsOscillatory
     untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
 end
 
-# Apply mode tracking, if applicable
-if modeTracking
-    freqs,damps,_,matchedModes = mode_tracking(PRange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
-else
-    freqs,damps = untrackedFreqs,untrackedDamps
-end
+# Apply mode tracking
+freqs,damps,_,matchedModes = mode_tracking_hungarian(PRange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 modeFrequencies = Array{Vector{Float64}}(undef,nModes)

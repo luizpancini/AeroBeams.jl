@@ -6,26 +6,26 @@
 @with_kw mutable struct SpecialNode
 
     # Fields
-    localID::Int64
-    globalID::Int64 
-    connectedElementsGlobalIDs::Vector{Int64} 
+    localID::Int
+    globalID::Int 
+    connectedElementsGlobalIDs::Vector{Int} 
     connectedElements::Vector{Element} 
-    ζonElements::Vector{Int64} 
+    ζonElements::Vector{Int} 
     BCs::Vector{BC}
     uIsPrescribed::BitVector
     pIsPrescribed::BitVector
     trimIsPrescribed::BitVector
     springs::Vector{Spring}
     hasSprings::Bool
-    eqs_Fu::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
-    eqs_Fp::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
-    eqs_FF::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
-    eqs_FM::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
-    eqs_FF_sep::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
-    eqs_FM_sep::Vector{Vector{Int64}} = [Vector{Int64}() for _ in 1:length(connectedElements)]
-    DOF_uF::Vector{Int64} = Vector{Int64}()
-    DOF_pM::Vector{Int64} = Vector{Int64}()
-    DOF_trimLoads::Vector{Int64} = Vector{Int64}()
+    eqs_Fu::Vector{Vector{Int}} = [Vector{Int}() for _ in 1:length(connectedElements)]
+    eqs_Fp::Vector{Vector{Int}} = [Vector{Int}() for _ in 1:length(connectedElements)]
+    eqs_FF::Vector{Vector{Int}} = [Vector{Int}() for _ in 1:length(connectedElements)]
+    eqs_FM::Vector{Vector{Int}} = [Vector{Int}() for _ in 1:length(connectedElements)]
+    eqs_FF_sep::Vector{Vector{Int}} = [Vector{Int}() for _ in 1:length(connectedElements)]
+    eqs_FM_sep::Vector{Vector{Int}} = [Vector{Int}() for _ in 1:length(connectedElements)]
+    DOF_uF::Vector{Int} = Vector{Int}()
+    DOF_pM::Vector{Int} = Vector{Int}()
+    DOF_trimLoads::Vector{Int} = Vector{Int}()
     u::Vector{Float64} = Vector{Float64}()
     p::Vector{Float64} = Vector{Float64}()
     F::Vector{Float64} = Vector{Float64}()
@@ -37,7 +37,7 @@ end
 
 
 # SpecialNode constructor
-function SpecialNode(localID::Int64,globalID::Int64,connectedElementsGlobalIDs::Vector{Int64},connectedElements::Vector{Element},ζonElements::Vector{Int64},springs::Vector{Spring}=Vector{Spring}(),BCs::Vector{BC}=Vector{BC}())
+function SpecialNode(localID::Int,globalID::Int,connectedElementsGlobalIDs::Vector{Int},connectedElements::Vector{Element},ζonElements::Vector{Int},springs::Vector{Spring}=Vector{Spring}(),BCs::Vector{BC}=Vector{BC}())
 
     # Set TFs for generalized displacements and trim loads being prescribed 
     isLoad = trues(6)

@@ -31,7 +31,7 @@ export AD
     end
 
     # Constructor with method and options
-    function FD(FDFun::Function; nPoints::Int64,adapt::Int64=1)
+    function FD(FDFun::Function; nPoints::Int,adapt::Int=1)
 
         @assert typeof(FDFun) in [typeof(central_fdm),typeof(forward_fdm),typeof(backward_fdm)]
         @assert nPoints > 1
@@ -52,14 +52,18 @@ export FD
 """
 struct QuasiSteady <: AeroSolver
 
-    nStates::Int64
+    name::String
+    nStates::Int
 
     function QuasiSteady()
+
+        # Name
+        name = "QS"
 
         # Number of states per element
         nStates = 0
 
-        return new(nStates)
+        return new(name,nStates)
     end
 
 end
@@ -73,11 +77,12 @@ export QuasiSteady
 """
 struct Indicial <: AeroSolver
 
+    name::String
     circulatoryIndicialFunction::String
     incompressibleInertialLoads::Bool
-    nCirculatoryStates::Int64
-    nInertialStates::Int64
-    nStates::Int64
+    nCirculatoryStates::Int
+    nInertialStates::Int
+    nStates::Int
     AC::Vector{Float64}
     bC::Vector{Float64}
     AI::Vector{Float64}
@@ -88,6 +93,9 @@ struct Indicial <: AeroSolver
 
         # Validate
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
+
+        # Name
+        name = "Indicial"
 
         # Circulatory indicial parameters
         AC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
@@ -102,7 +110,7 @@ struct Indicial <: AeroSolver
         AI = [1.5; -0.5; 1.0]
         bI = [0.25; 0.1; 5.0]
 
-        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nCirculatoryStates,nInertialStates,nStates,AC,bC,AI,bI,bCMat)
+        return new(name,circulatoryIndicialFunction,incompressibleInertialLoads,nCirculatoryStates,nInertialStates,nStates,AC,bC,AI,bI,bCMat)
     end
 
 end
@@ -116,12 +124,13 @@ export Indicial
 """
 struct BLi <: AeroSolver
 
+    name::String
     circulatoryIndicialFunction::String
     incompressibleInertialLoads::Bool
-    nLinearCirculatoryStates::Int64
-    nInertialStates::Int64
-    nNonlinearCirculatoryStates::Int64
-    nStates::Int64
+    nLinearCirculatoryStates::Int
+    nInertialStates::Int
+    nNonlinearCirculatoryStates::Int
+    nStates::Int
     AC::Vector{Float64}
     bC::Vector{Float64}
     AI::Vector{Float64}
@@ -132,6 +141,9 @@ struct BLi <: AeroSolver
 
         # Validate
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
+
+        # Name
+        name = "BLi"
 
         # Circulatory indicial parameters
         AC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
@@ -147,7 +159,7 @@ struct BLi <: AeroSolver
         AI = [1.5; -0.5; 1.0]
         bI = [0.25; 0.1; 5.0]
 
-        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nLinearCirculatoryStates,nInertialStates,nNonlinearCirculatoryStates,nStates,AC,bC,AI,bI,bCMat)
+        return new(name,circulatoryIndicialFunction,incompressibleInertialLoads,nLinearCirculatoryStates,nInertialStates,nNonlinearCirculatoryStates,nStates,AC,bC,AI,bI,bCMat)
     end
 
 end
@@ -161,12 +173,13 @@ export BLi
 """
 struct BLo <: AeroSolver
 
+    name::String
     circulatoryIndicialFunction::String
     incompressibleInertialLoads::Bool
-    nLinearCirculatoryStates::Int64
-    nInertialStates::Int64
-    nNonlinearCirculatoryStates::Int64
-    nStates::Int64
+    nLinearCirculatoryStates::Int
+    nInertialStates::Int
+    nNonlinearCirculatoryStates::Int
+    nStates::Int
     AC::Vector{Float64}
     bC::Vector{Float64}
     AI::Vector{Float64}
@@ -177,6 +190,9 @@ struct BLo <: AeroSolver
 
         # Validate
         @assert circulatoryIndicialFunction in ["Beddoes","Wagner","Jose"]
+
+        # Name
+        name = "BLo"
 
         # Circulatory indicial parameters
         AC,bC = circulatory_indicial_parameters(circulatoryIndicialFunction)
@@ -192,7 +208,7 @@ struct BLo <: AeroSolver
         AI = [1.5; -0.5; 1.0]
         bI = [0.25; 0.1; 5.0]
 
-        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nLinearCirculatoryStates,nInertialStates,nNonlinearCirculatoryStates,nStates,AC,bC,AI,bI,bCMat)
+        return new(name,circulatoryIndicialFunction,incompressibleInertialLoads,nLinearCirculatoryStates,nInertialStates,nNonlinearCirculatoryStates,nStates,AC,bC,AI,bI,bCMat)
     end
 
 end
@@ -206,11 +222,12 @@ export BLo
 """
 struct Inflow <: AeroSolver
 
+    name::String
     circulatoryIndicialFunction::String
     incompressibleInertialLoads::Bool
-    nInflowStates::Int64
-    nInertialStates::Int64
-    nStates::Int64
+    nInflowStates::Int
+    nInertialStates::Int
+    nStates::Int
     AₚInv::Matrix{Float64}
     AₚInvcₚ::Vector{Float64}
     bₚ::Vector{Float64}
@@ -219,10 +236,13 @@ struct Inflow <: AeroSolver
     AI::Vector{Float64}
     bI::Vector{Float64}
 
-    function Inflow(; circulatoryIndicialFunction::String="Jose", incompressibleInertialLoads::Bool=true, nInflowStates::Int64=6)
+    function Inflow(; circulatoryIndicialFunction::String="Jose", incompressibleInertialLoads::Bool=true, nInflowStates::Int=6)
 
         # Validate number of states per element
         @assert nInflowStates in [4,6,8] "select nInflowStates as 4, 6 or 8"
+
+        # Name
+        name = "Inflow"
 
         # Inflow arrays
         AₚInv,bₚ,cₚ = inflow_arrays(nInflowStates)
@@ -239,7 +259,7 @@ struct Inflow <: AeroSolver
         AI = [1.5; -0.5; 1.0]
         bI = [0.25; 0.1; 5.0]
 
-        return new(circulatoryIndicialFunction,incompressibleInertialLoads,nInflowStates,nInertialStates,nStates,AₚInv,AₚInvcₚ,bₚ,AC,bC,AI,bI)
+        return new(name,circulatoryIndicialFunction,incompressibleInertialLoads,nInflowStates,nInertialStates,nStates,AₚInv,AₚInvcₚ,bₚ,AC,bC,AI,bI)
     end
 
 end
@@ -258,7 +278,7 @@ end
 
 
 # Computes the fixed state arrays from Peters' inflow theory
-function inflow_arrays(N::Int64)
+function inflow_arrays(N::Int)
 
     # D matrix
     D = zeros(N,N)
@@ -302,14 +322,18 @@ end
 """
 struct TableLookup <: FlapAeroSolver
 
-    nStates::Int64
+    name::String
+    nStates::Int
 
     function TableLookup()
+
+        # Name
+        name = "TableLookup"
 
         # Number of states per element
         nStates = 0
 
-        return new(nStates)
+        return new(name,nStates)
     end
 
 end
@@ -323,66 +347,30 @@ export TableLookup
 """
 mutable struct ThinAirfoilTheory <: FlapAeroSolver
 
-    nStates::Int64
+    circulatoryIndicialFunction::String
+    name::String
+    nStates::Int
     ACf::Vector{Float64}
     bCf::Vector{Float64}
     bCfMat::Matrix{Float64}
-    Th::Vector{Float64} 
 
-    function ThinAirfoilTheory()
+    function ThinAirfoilTheory(circulatoryIndicialFunction::String="Wagner")
 
-        # Number of states per element
-        nStates = 2
+        # Name
+        name = "ThinAirfoilTheory"
 
-        # Circulatory indicial parameters (Wagner)
-        ACf,bCf = circulatory_indicial_parameters("Wagner")
+        # Circulatory indicial parameters
+        ACf,bCf = circulatory_indicial_parameters(circulatoryIndicialFunction)
         bCfMat = diagm(bCf)
 
-        # Initialize Theodorsen's flap constants assuming a pitch axis at 1/4-chord and a flap axis at 3/4-chord (updated later on model creation)
-        Th = theodorsen_flap_constants(1/4,3/4)
+        # Number of states per element
+        nStates = length(bCf)
 
-        return new(nStates,ACf,bCf,bCfMat,Th)
+        return new(circulatoryIndicialFunction,name,nStates,ACf,bCf,bCfMat)
     end
 
 end
 export ThinAirfoilTheory
-
-
-# Computes Theodorsen's flap constants
-function theodorsen_flap_constants(normSparPos::Float64,normFlapPos::Float64)
-
-    # Semichord-normalized spar position after midchord
-    a = 2*normSparPos-1
-
-    # Semichord-normalized flap hinge position after midchord
-    d = 2*normFlapPos-1
-
-    # Theodorsen's constants
-    Th = zeros(18)
-    Th[1] = -1/3*sqrt(1-d^2)*(2+d^2)+d*acos(d)
-    Th[2] = d*(1-d^2)-sqrt(1-d^2)*(1+d^2)*acos(d)+d*acos(d)^2;
-    Th[3] = -(1/8+d^2)*acos(d)^2+1/4*d*sqrt(1-d^2)*acos(d)*(7+2*d^2)-1/8*(1-d^2)*(5*d^2+4)
-    Th[4] = -acos(d)+d*sqrt(1-d^2)
-    Th[5] = -(1-d^2)-acos(d)^2+2*d*sqrt(1-d^2)*acos(d)
-    Th[6] = Th[2]
-    Th[7] = -(1/8+d^2)*acos(d)+1/8*d*sqrt(1-d^2)*(7+2*d^2)
-    Th[8] = -1/3*sqrt(1-d^2)*(2*d^2+1)+d*acos(d)
-    Th[9] = 1/2*(1/3*sqrt(1-d^2)^3+a*Th[4])
-    Th[10] = sqrt(1-d^2)+acos(d)
-    Th[11] = acos(d)*(1-2*d)+sqrt(1-d^2)*(2-d)
-    Th[12] = sqrt(1-d^2)*(2+d)-acos(d)*(2*d+1)
-    Th[13] = 1/2*(-Th[7]-(d-a)*Th[1])
-
-    # Useful functions of the above
-    Th[14] = Th[4]+Th[10]
-    Th[15] = Th[1]-Th[8]-Th[4]*(d-a)+Th[11]/2
-    Th[16] = Th[7]+Th[1]*(d-a)
-    Th[17] = Th[10]/π
-    Th[18] = Th[11]/(2π)
-
-    return Th
-
-end
 
 
 """
@@ -392,8 +380,9 @@ end
 """
 struct IndicialGust <: GustAeroSolver
 
+    name::String
     indicialFunctionName::String
-    nStates::Int64
+    nStates::Int
     AG::Vector{Float64}
     bG::Vector{Float64}
     AGbG::Vector{Float64}
@@ -401,24 +390,31 @@ struct IndicialGust <: GustAeroSolver
 
     function IndicialGust(indicialFunctionName::String)
 
+        # Gust solver name
+        name = string("IndicialGust-",indicialFunctionName)
+
         # Set number of states and indicial parameters arrays according to indicial function
-        if indicialFunctionName == "Kussner"
-            nStates = 2
+        if indicialFunctionName == "QuasiSteady"
+            AG = [1.0]
+            bG = [1e3]
+        elseif indicialFunctionName == "Kussner"
             AG = [0.5; 0.5]
             bG = [0.13; 1.0]
         elseif indicialFunctionName == "Berci&Righi"
-            nStates = 6
             AG = [0.3694; 0.0550; 0.2654; 0.1829; 0.0861; 0.0412]
             bG = [0.3733; 0.0179; 0.1096; 1.6003; 10.428; 170.93]
         else
             error("Indicial function unavailable")
         end
 
+        # Number of gust states
+        nStates = length(bG)
+
         # Useful functions of the indicial parameters arrays
         AGbG = AG .* bG
         bGMat = diagm(bG)
 
-        return new(indicialFunctionName,nStates,AG,bG,AGbG,bGMat)
+        return new(name,indicialFunctionName,nStates,AG,bG,AGbG,bGMat)
     end
 
 end

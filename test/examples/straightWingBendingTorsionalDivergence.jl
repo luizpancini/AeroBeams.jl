@@ -12,6 +12,9 @@ URange = collect(0:0.2:30)
 # Discretization
 nElem = 20
 
+# Number of non-oscillatory modes of interest
+nNOModes = 3
+
 # Atmosphere 
 altitude = 0
 atmosphere = standard_atmosphere(altitude)
@@ -57,34 +60,13 @@ for (i,U) in enumerate(URange)
     problem[i] = create_EigenProblem(model=straightWingBendingTorsionalDivergence,nModes=1)
     solve!(problem[i])
     # Damping of non-oscillatory modes
-    dampingsNonOscillatory[i] = problem[i].dampingsNonOscillatory
+    dampingsNonOscillatory[i] = problem[i].dampingsNonOscillatory[1:nNOModes]
 end
 
-# Number of non-oscillatory modes of interest
-nNOModes = 3
-
-# Initialize divergence speed, its index, and flag for divergence being found
-global UD = nothing
-global iD = nothing
-global divergenceFound = false
-
-# Separate dampings by mode
-modeDampings = Array{Vector{Float64}}(undef,nNOModes)
-modeDampingsEst = Array{Vector{Float64}}(undef,nNOModes)
-for mode in 1:nNOModes
-    # Mode dampings
-    modeDampings[mode] = [dampingsNonOscillatory[i][mode] for i in eachindex(URange)]
-    # Estimated mode dampings from backward finite difference extrapolation
-    modeDampingsEst[mode] = backward_extrapolation(modeDampings[mode])
-    # Divergence is found when the sign of the estimated value is different from the actual
-    if !divergenceFound
-        global iD = findfirst(i -> modeDampings[mode][i]*modeDampingsEst[mode][i] < 0, 1:length(URange))
-        if !isnothing(iD)
-            global UD = LinearInterpolations.interpolate(modeDampingsEst[mode][iD-1:iD],URange[iD-1:iD],0)
-            global divergenceFound = true
-        end
-    end
-end
+# Get divergence speed
+UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory)
+UD = minimum(UDvec)
+iD = findlast(x -> x<UD, URange)
 
 # Analytical divergence speed - Eq. 4.55 of Hodges and Pierce
 qDRef = GJ/(e*c*2π)*(π/(2L))^2

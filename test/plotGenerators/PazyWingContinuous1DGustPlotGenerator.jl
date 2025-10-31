@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="A",plotFrequency=5,plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/PazyWingContinuous1DGust_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,refBasis="A",plotFrequency=5,plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/PazyWingContinuous1DGust_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2
@@ -60,9 +61,9 @@ display(plt6)
 savefig(string(absPath,"/PazyWingContinuous1DGust_states.pdf"))
 
 # Gust velocity
-V = t -> ifelse(t0<t<t0+τ,gust.V.(t),0)
+W = t -> ifelse(t0<t<t0+τ,gust.W.(t),0)
 plt7 = plot(xlabel="Time [s]", ylabel="Gust velocity [m/s]")
-plot!(t, V.(t), color=:black, lw=lw, label=false)
+plot!(t, W.(t), color=:black, lw=lw, label=false)
 display(plt7)
 savefig(string(absPath,"/PazyWingContinuous1DGust_gust.pdf"))
 

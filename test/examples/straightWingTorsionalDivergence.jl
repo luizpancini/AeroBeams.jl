@@ -12,6 +12,9 @@ URange = collect(0:0.25:30)
 # Discretization
 nElem = 20
 
+# Number of non-oscillatory modes of interest
+nNOModes = 3
+
 # Atmosphere 
 altitude = 0
 atmosphere = standard_atmosphere(altitude)
@@ -51,9 +54,6 @@ dampingsNonOscillatory = Array{Vector{Float64}}(undef,length(URange))
 AoA = Array{Vector{Float64}}(undef,length(URange))
 tipAoA = Array{Float64}(undef,length(URange))
 
-# Number of non-oscillatory modes of interest
-nNOModes = 3
-
 # Sweep airspeed
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s")
@@ -69,36 +69,23 @@ for (i,U) in enumerate(URange)
     tipAoA[i] = AoA[i][end]
 end
 
-# Initialize divergence speed, its index, and flag for divergence being found
-global UD = nothing
-global iD = nothing
-global divergenceFound = false
-
-# Separate dampings by mode
-modeDampings = Array{Vector{Float64}}(undef,nNOModes)
-modeDampingsEst = Array{Vector{Float64}}(undef,nNOModes)
-for mode in 1:nNOModes
-    # Mode dampings
-    modeDampings[mode] = [dampingsNonOscillatory[i][mode] for i in eachindex(URange)]
-    # Estimated mode dampings from backward finite difference extrapolation
-    modeDampingsEst[mode] = backward_extrapolation(modeDampings[mode])
-    # Divergence is found when the sign of the estimated value is different from the actual
-    if !divergenceFound
-        global iD = findfirst(i -> modeDampings[mode][i]*modeDampingsEst[mode][i] < 0, 1:length(URange))
-        if !isnothing(iD)
-            global UD = LinearInterpolations.interpolate(modeDampingsEst[mode][iD-1:iD],URange[iD-1:iD],0)
-            global divergenceFound = true
-        end
-    end
-end
+# Get divergence speed, dynamic pressure and λ
+UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory)
+UD = minimum(UDvec)
+qD = 1/2*ρ*UD^2
+λD = sqrt(qD*c*2π*e/GJ)
+iD = findlast(x -> x<UD, URange)
 
 # Analytical angle of attack and twist - Eq. 4.52 of Hodges and Pierce
 x = 0:0.1:L
 q = 1/2*ρ*URange.^2
 λ = sqrt.(q*c*2π*e/GJ)
-qD = q[iD-1]
-λD = λ[iD-1]
-αRef = @. 180/π*θ*(tan(λD*L)*sin(λD*x)+cos(λD*x)-1) + 180/π*θ
+αRef = @. tan(λD*L)*sin(λD*x)+cos(λD*x) - 1
+if αRef[end] < 0
+    αRef ./= minimum(αRef)
+else
+    αRef ./= maximum(αRef)
+end
 αTipRef = @. 180/π*θ*(sec(λ*L)-1) + 180/π*θ
 θTipRef = @. 180/π*θ*(sec(λ*L)-1)
 

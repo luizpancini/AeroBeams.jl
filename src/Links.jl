@@ -11,11 +11,11 @@
     slaveBCs::Vector{BC}
     # Secondary fields (outputs)
     masterBeam::Beam
-    masterNodeLocalID::Int64
+    masterNodeLocalID::Int
     slaveBeams::Vector{Beam}
-    slaveNodesLocalIDs::Vector{Int64}
-    masterNodeGlobalID::Int64
-    slaveNodesGlobalIDs::Vector{Int64}
+    slaveNodesLocalIDs::Vector{Int}
+    masterNodeGlobalID::Int
+    slaveNodesGlobalIDs::Vector{Int}
 
 end
 
@@ -55,7 +55,7 @@ function create_TrimLoadsLink(; masterBC::BC,slaveBCs::Vector{BC})
 
     # Global IDs are updated upon assembly of the model
 
-    return TrimLoadsLink(masterBC,slaveBCs,masterBeam,masterNodeLocalID,slaveBeams,slaveNodesLocalIDs,0,Vector{Int64}())
+    return TrimLoadsLink(masterBC,slaveBCs,masterBeam,masterNodeLocalID,slaveBeams,slaveNodesLocalIDs,0,Vector{Int}())
 
 end
 export create_TrimLoadsLink

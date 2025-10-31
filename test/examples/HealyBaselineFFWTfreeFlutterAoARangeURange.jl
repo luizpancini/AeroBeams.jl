@@ -24,14 +24,9 @@ hingeConfiguration = "free"
 ## Airspeed range [m/s]
 URange = collect(1:1:40)
 
-## Flare angle
-Λ = 15*π/180
-
-## Gravity
-g = 9.80665
-
-## Stiffness of the spring around the hinge for in-plane bending
-kIPBendingHinge = 1e1
+## Stiffness of the spring around the hinge
+kSpring = 1e-4
+kIPBendingHinge = 1e-1
 
 ## Discretization
 nElementsInner = 16
@@ -42,6 +37,7 @@ hasTipCorrection = true
 
 ## Solution method for constraint
 solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 ## System solver
 σ0 = 1
@@ -53,15 +49,15 @@ NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumItera
 nModes = 2
 
 ## Initialize outputs
-untrackedFreqs = [fill(NaN64, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-untrackedDamps = [fill(NaN64, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-untrackedEigenvectors = [fill(NaN64+im*NaN64, nModes, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-freqs = [fill(NaN64, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-damps = [fill(NaN64, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-modeFrequencies = [fill(NaN64, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-modeDampings = [fill(NaN64, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-modeDampingRatios = [fill(NaN64, nModes) for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
-ϕHinge = [NaN64 for τ in 1:length(τRange), Λ in 1:length(θRange), U in 1:length(URange)]
+untrackedFreqs = [fill(NaN64, nModes) for _ in τRange, _ in θRange, _ in URange]
+untrackedDamps = [fill(NaN64, nModes) for _ in τRange, _ in θRange, _ in URange]
+untrackedEigenvectors = [fill(NaN64 + im*NaN64, nModes, nModes) for _ in τRange, _ in θRange, _ in URange]
+freqs = [fill(NaN64, nModes) for _ in τRange, _ in θRange, _ in URange]
+damps = [fill(NaN64, nModes) for _ in τRange, _ in θRange, _ in URange]
+modeFrequencies = [fill(NaN64, nModes) for _ in τRange, _ in θRange, _ in URange]
+modeDampings = [fill(NaN64, nModes) for _ in τRange, _ in θRange, _ in URange]
+modeDampingRatios = [fill(NaN64, nModes) for _ in τRange, _ in θRange, _ in URange]
+ϕHinge = fill(NaN64, length(τRange), length(θRange), length(URange))
 problem = Array{EigenProblem}(undef,length(τRange),length(θRange),length(URange))
 #md nothing #hide
 
@@ -77,24 +73,26 @@ for (i,τ) in enumerate(τRange)
             ## Display progress #src
             println("Solving for τ=$τ, θ=$(round(Int,θ*180/π)) deg, U=$U m/s") #src
             ## Update model
-            model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,hingeConfiguration=hingeConfiguration,flareAngle=Λ,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=τ,g=g,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+            model = create_HealyBaselineFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeConfiguration=hingeConfiguration,airspeed=U,pitchAngle=θ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=τ,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT)
+            ## Set initial guess solution as the one from previous airspeed
+            x0 = (k==1 || !problem[i,j,k-1].systemSolver.convergedFinalSolution) ? zeros(0) : problem[i,j,k-1].x
             ## Create and solve problem
-            problem[i,j,k] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-2*U,Inf])
+            problem[i,j,k] = create_EigenProblem(model=model,nModes=nModes,systemSolver=NR,frequencyFilterLimits=[1e-1,Inf],x0=x0)
 #md         @suppress begin #hide
-                solve!(problem[i,j,k])
+            solve!(problem[i,j,k])
 #md         end #hide
             ## Get outputs, if converged
             if problem[i,j,k].systemSolver.convergedFinalSolution
                 ## Frequencies and dampings
                 untrackedFreqs[i,j,k] = problem[i,j,k].frequenciesOscillatory
-                untrackedDamps[i,j,k] = round_off!(problem[i,j,k].dampingsOscillatory,1e-8)
+                untrackedDamps[i,j,k] = problem[i,j,k].dampingsOscillatory
                 untrackedEigenvectors[i,j,k] = problem[i,j,k].eigenvectorsOscillatoryCplx
                 ## Hinge fold angle
                 ϕHinge[i,j,k] = -problem[i,j,k].model.hingeAxisConstraints[1].ϕ*180/π
             end
         end
         ## Apply mode tracking
-        freqs[i,j,:],damps[i,j,:],_ = mode_tracking(URange,untrackedFreqs[i,j,:],untrackedDamps[i,j,:],untrackedEigenvectors[i,j,:])
+        freqs[i,j,:],damps[i,j,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[i,j,:],untrackedDamps[i,j,:],untrackedEigenvectors[i,j,:])
         ## Separate frequencies and damping ratios by mode
         for mode in 1:nModes
             modeFrequencies[i,j,mode] = [freqs[i,j,k][mode] for k in eachindex(URange)]
@@ -176,15 +174,14 @@ damp2_VLM = matrices[:damp2_VLM]
 #md savefig("HealyBaselineFFWTfreeFlutterAoARangeURange_fold_tipLoss1.svg")
 
 ## V-g-f - without tip loss
-#md range2plot = 1:findfirst(x -> x >= 22, URange)
 #md plt31 = plot(ylabel="Frequency [Hz]", xlims=[0,30], ylims=[0,5], title="Without tip loss", legend=:bottomright)
 #md plt32 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,30], ylims=[-0.5,0.25], legend=:bottomleft)
 #md plot!(plt31, [NaN],[NaN], lc=:black, ls=:dash, lw=lw, label="Healy (2023) - ST")
 #md plot!(plt31, [NaN],[NaN], lc=:black, ls=:solid, lw=lw, label="AeroBeams")
 #md for (j,θ) in enumerate(θRange)
 #md     for mode in 1:nModes
-#md         plot!(plt31, URange[range2plot], modeFrequencies[2,j,mode][range2plot]/(2*π), c=colors[j], lw=lw, label=false)
-#md         plot!(plt32, URange[range2plot], modeDampingRatios[2,j,mode][range2plot], c=colors[j], lw=lw, label=false)
+#md         plot!(plt31, URange, modeFrequencies[2,j,mode]/(2*π), c=colors[j], lw=lw, label=false)
+#md         plot!(plt32, URange, modeDampingRatios[2,j,mode], c=colors[j], lw=lw, label=false)
 #md     end
 #md     plot!(plt31, freq1_ST[2*j-1,:], freq1_ST[2*j,:], c=colors[j], ls=:dash, lw=lw, label=false)
 #md     plot!(plt31, freq2_ST[2*j-1,:], freq2_ST[2*j,:], c=colors[j], ls=:dash, lw=lw, label=false)

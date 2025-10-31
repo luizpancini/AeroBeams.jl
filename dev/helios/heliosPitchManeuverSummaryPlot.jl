@@ -1,3 +1,4 @@
+using Plots, Measures
 
 # Payload range
 PRange = vcat(0:25:225)
@@ -27,7 +28,7 @@ ms = 5
 msw = 0
 colors = cgrad(:rainbow, 2, categorical=true)
 
-plt_Hinst = plot(xlabel="Payload [lb]", ylabel="\$\\delta_f\$ for instability [deg]", xlims=[0,226], ylims=[-30,30], xticks=vcat(0:25:225), yticks=vcat(-30:5:30), tickfont=font(ts), guidefont=font(fs), legend=(0.1,0.12), legendfontsize=lfs)
+plt_Hinst = plot(xlabel="Payload [lb]", ylabel="\$\\Delta\\delta_f\$ for instability [deg]", xlims=[0,225], ylims=[-30,30], xticks=vcat(0:25:225), yticks=vcat(-30:5:30), tickfont=font(ts), guidefont=font(fs), legend=(0.1,0.12), legendfontsize=lfs, left_margin=2mm, right_margin=2mm)
 plot!(PRange, δi_AF_p, marker=:circle, c=colors[1], lw=lw, ms=ms, msw=msw, label="Attached flow")
 plot!(PRange, δi_DS_p, marker=:circle, c=colors[2], lw=lw, ms=ms, msw=msw, label="Dynamic stall")
 plot!(PRange, δi_AF_n, marker=:circle, c=colors[1], lw=lw, ms=ms, msw=msw, label=false)

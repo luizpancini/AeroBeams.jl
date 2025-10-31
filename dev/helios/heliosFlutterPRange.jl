@@ -27,6 +27,10 @@ PRange = collect(0:25:500)
 # Airspeed [m/s]
 U = 40*0.3048
 
+# Discretization
+nElemStraightSemispan = 10
+nElemDihedralSemispan = 5
+
 # Number of modes
 nModes = 10
 
@@ -65,11 +69,10 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
         # Display progress
         println("Solving for aeroSolver $i, payload = $P lb")
         # Model for trim problem
-        heliosFlutterPRange,midSpanElem,_,_,rightWingStraight,_ = create_Helios(reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,aeroSolver=aeroSolver,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
+        heliosFlutterPRange,midSpanElem,_,_,rightWingStraight,_ = create_Helios(reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,aeroSolver=aeroSolver,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true,nElemStraightSemispan=nElemStraightSemispan,nElemDihedralSemispan=nElemDihedralSemispan)
         # Add springs at wing root
         add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
         # Update model
-        heliosFlutterPRange.skipValidationMotionBasisA = true
         update_model!(heliosFlutterPRange)
         # Set initial guess solution as previous known solution
         x0Trim = (j==1) ? zeros(0) : trimProblem[i,j-1].x
@@ -82,22 +85,21 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
         trimδ[i,j] = trimProblem[i,j].x[end]
         println("Trim summary: AoA = $(trimAoA[i,j]), T = $(trimThrust[i,j]), δ = $(trimδ[i,j]*180/π)")
         # Model for eigen problem
-        heliosEigen,_,_,_,rightWingStraight,_ = create_Helios(reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,aeroSolver=aeroSolver,payloadPounds=P,airspeed=U,δ=trimδ[i,j],thrust=trimThrust[i,j])
+        heliosEigen,_,_,_,rightWingStraight,_ = create_Helios(reducedChord=reducedChord,payloadOnWing=payloadOnWing,beamPods=beamPods,wingAirfoil=wingAirfoil,aeroSolver=aeroSolver,payloadPounds=P,airspeed=U,δ=trimδ[i,j],thrust=trimThrust[i,j],nElemStraightSemispan=nElemStraightSemispan,nElemDihedralSemispan=nElemDihedralSemispan)
         # Add springs at wing root
         add_springs_to_beam!(beam=rightWingStraight,springs=[spring])
         # Update model
-        heliosEigen.skipValidationMotionBasisA = true
         update_model!(heliosEigen)
         # Create and solve eigen problem
-        eigenProblem[i,j] = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[5e-3,Inf64],jacobian=trimProblem[i,j].jacobian[1:end,1:end-2],inertia=trimProblem[i,j].inertia,refTrimProblem=trimProblem[i,j])
+        eigenProblem[i,j] = create_EigenProblem(model=heliosEigen,nModes=nModes,frequencyFilterLimits=[5e-3,Inf],refTrimProblem=trimProblem[i,j])
         solve_eigen!(eigenProblem[i,j])
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = eigenProblem[i,j].frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(eigenProblem[i,j].dampingsOscillatory,1e-8)
+        untrackedDamps[i,j] = eigenProblem[i,j].dampingsOscillatory
         untrackedEigenvectors[i,j] = eigenProblem[i,j].eigenvectorsOscillatoryCplx
     end
     # Apply mode tracking, if applicable
-    freqs[i,:],damps[i,:],_ = mode_tracking(PRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
+    freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(PRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
     # Separate frequencies and damping ratios by mode
     for mode in 1:nModes
         modeFrequencies[i,mode] = [freqs[i,k][mode] for k in eachindex(PRange)]
@@ -126,7 +128,7 @@ solversLS = [:dash, :solid]
 modeColors = cgrad(:rainbow, nModes, categorical=true)
 
 # Trim root angle of attack
-plt_trimAoA = plot(xlabel="Payload [lb]", ylabel="Trim root AoA [deg]", xlims=[0,500], ylims=[0,6], tickfont=font(ts), guidefont=font(fs), legend=:bottomright, legendfontsize=lfs)
+plt_trimAoA = plot(xlabel="Payload [lb]", ylabel="Trim root AoA [deg]", xlims=[PRange[1],PRange[end]+1], ylims=[0,6], tickfont=font(ts), guidefont=font(fs), legend=:bottomright, legendfontsize=lfs)
 for (i,aeroSolver) in enumerate(aeroSolvers)
     plot!(PRange, trimAoA[i,:], c=:black, lw=lw, ls=solversLS[i], label=solversLabels[i])
 end
@@ -136,7 +138,7 @@ if saveFigures
 end
 
 # Trim elevator deflection
-plt_trimDelta = plot(xlabel="Payload [lb]", ylabel="Trim elevator deflection [deg]", xlims=[0,500], ylims=[0,12], tickfont=font(ts), guidefont=font(fs))
+plt_trimDelta = plot(xlabel="Payload [lb]", ylabel="Trim elevator deflection [deg]", xlims=[PRange[1],PRange[end]+1], ylims=[0,12], tickfont=font(ts), guidefont=font(fs))
 for (i,aeroSolver) in enumerate(aeroSolvers)
     plot!(PRange, trimδ[i,:]*180/π, c=:black, lw=lw, ls=solversLS[i], label=false)
 end
@@ -146,7 +148,7 @@ if saveFigures
 end
 
 # Trim thrust per motor
-plt_trimThrust = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500], ylims=[0,20], tickfont=font(ts), guidefont=font(fs))
+plt_trimThrust = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[PRange[1],PRange[end]+1], ylims=[0,20], tickfont=font(ts), guidefont=font(fs))
 for (i,aeroSolver) in enumerate(aeroSolvers)
     plot!(PRange, trimThrust[i,:], c=:black, lw=lw, ls=solversLS[i], label=false)
 end
@@ -195,5 +197,12 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
         savefig(string(absPath,"/heliosFlutterPRange_Phzoom_",solversNames[i],".pdf"))
     end
 end
+
+# Static mode shapes (for indicial model at highest payload)
+modesPlot = plot_mode_shapes(eigenProblem[1,end],element2centralize=nElemStraightSemispan+nElemDihedralSemispan,scale=10,view=(30,30),legendPos=:outerright,save=saveFigures,savePath=string(relPath,"/heliosFlutterPRange_modeShapes.pdf"))
+display(modesPlot)
+
+# Phugoid mode animation (for indicial model at highest payload)
+phugoidAnim = plot_mode_shapes_animation(eigenProblem[1,end],element2centralize=nElemStraightSemispan+nElemDihedralSemispan,scale=20,nFramesPerCycle=21,view=(30,30),showLegend=false,modes2plot=[3],plotSteady=false,plotBCs=false,plotAxes=false,displayProgress=true,save=saveFigures,savePath=string(relPath,"/heliosFlutterPRange_phugoid.gif"))
 
 println("Finished heliosFlutterPRange.jl")

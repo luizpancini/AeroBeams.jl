@@ -16,18 +16,21 @@ ms = 4
 msw = 0
 gr()
 
-# V-g-f for the case Λ = 15 deg
-plt11 = plot(ylabel="Frequency [Hz]", xlims=[0,40], ylims=[0,25],title="\$\\Lambda = 15\\degree\$")
-for mode in 1:nModes
-    scatter!(URange, modeFrequencies[2,mode]/(2*π), c=modeColors[mode], ms=ms, msw=msw, label=false)
+# V-g-fs
+for (i,Λ) in enumerate(ΛRange)
+    Λdeg = round(Int,Λ*180/π)
+    plt11 = plot(ylabel="Frequency [Hz]", xlims=[0,40], ylims=[0,25],title=string("\$\\Lambda = ",Λdeg,"\\degree\$"))
+    for mode in 1:nModes
+        scatter!(URange, modeFrequencies[i,mode]/(2*π), c=modeColors[mode], ms=ms, msw=msw, label=false)
+    end
+    plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,40], ylims=[-0.5,0.5], legend=:topleft)
+    for mode in 1:nModes
+        scatter!(URange, modeDampingRatios[i,mode], c=modeColors[mode], ms=ms, msw=msw, label=false)
+    end
+    plt1 = plot(plt11,plt12, layout=(2,1))
+    display(plt1)
+    savefig(string(absPath,"/HealyBaselineFFWTfreeFlutterFlareRangeURange_Vgf_Lambda_",Λdeg,".pdf"))
 end
-plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,40], ylims=[-0.5,0.5], legend=:topleft)
-for mode in 1:nModes
-    scatter!(URange, modeDampingRatios[2,mode], c=modeColors[mode], ms=ms, msw=msw, label=false)
-end
-plt1 = plot(plt11,plt12, layout=(2,1))
-display(plt1)
-savefig(string(absPath,"/HealyBaselineFFWTfreeFlutterFlareRangeURange_Vgf.pdf"))
 
 # V-g-f - zoom on first two modes
 plt21 = plot(ylabel="Frequency [Hz]", xlims=[0,40], ylims=[0,5], legend=:bottomright)

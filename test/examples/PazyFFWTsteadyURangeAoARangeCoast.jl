@@ -6,22 +6,24 @@ flareAngle = 20*π/180
 
 # Spring stiffness
 kSpring = 1e-4
-
-# Gravity
-g = 9.80665
+kIPBendingHinge = 1e-1
 
 # Root pitch angle range
 θRange = π/180*[0,3,5,7]
 
 # Airspeed range
-URange = collect(5:1:80)
+URange = collect(10:1:60)
+
+# Solution method for constraint
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Initialize model
-PazyFFWTsteadyURangeAoARangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
+PazyFFWTsteadyURangeAoARangeCoast = create_PazyFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,pitchAngle=θ)
 
 # System solver
-σ0 = 0.5
-maxIter = 100
+σ0 = 1
+maxIter = 1_000
 relTol = 1e-6
 NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
@@ -53,14 +55,12 @@ for (i,θ) in enumerate(θRange)
     for (j,U) in enumerate(URange)
         println("Solving for θ = $(θ*180/π) deg, U = $U m/s")
         # Update model
-        model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
+        model = create_PazyFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ)
         # Set initial guess solution as the one from previous airspeed
         x0 = (j==1) ? zeros(0) : problem[i,j-1].x
         # Create and solve problem
         problem[i,j] = create_SteadyProblem(model=model,systemSolver=NR,x0=x0)
         solve!(problem[i,j])
-        # Get TF for converged solution
-        converged = problem[i,j].systemSolver.convergedFinalSolution
         # Get outputs
         u1[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[1],problem[i,j].nodalStatesOverσ[end][e].u_n2[1]) for e in 1:15]...)
         u2[i,j] = vcat([vcat(problem[i,j].nodalStatesOverσ[end][e].u_n1[2],problem[i,j].nodalStatesOverσ[end][e].u_n2[2]) for e in 1:15]...)

@@ -6,18 +6,20 @@ flareAngle = 10*π/180
 
 # Spring stiffness
 kSpring = 1e-4
+kIPBendingHinge = 1e-1
 
 # Root pitch angle
 θ = 7*pi/180
 
-# Gravity
-g = 9.8
-
 # Airspeed range
-URange = collect(10:1:80)
+URange = collect(5:1:80)
+
+# Solution method for constraint
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Initialize model
-PazyFFWTsteadyURangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,pitchAngle=θ,g=g)
+PazyFFWTsteadyURangeCoast = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,pitchAngle=θ)
 
 # System solver
 σ0 = 1
@@ -51,7 +53,7 @@ problem = Array{SteadyProblem}(undef,length(URange))
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s")
     # Update model
-    model = create_PazyFFWT(hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,airspeed=U,pitchAngle=θ,g=g)
+    model = create_PazyFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,hingeNode=hingeNode,flareAngle=flareAngle,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ)
     # Set initial guess solution as the one from previous airspeed
     x0 = (i==1) ? zeros(0) : problem[i-1].x
     # Create and solve problem

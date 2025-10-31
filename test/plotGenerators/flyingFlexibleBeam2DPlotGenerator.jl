@@ -9,7 +9,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(problem,refBasis="I",plotFrequency=10,plotLimits=[(0,3*L),(-L,0),(-L/2,L/2)],save=true,savePath=string(relPath,"/flyingFlexibleBeam2D_deformation.gif"),displayProgress=true)
+anim = plot_dynamic_deformation(problem,refBasis="I",plotFrequency=10,plotLimits=([0,3*L],[-L,0],[-L/2,L/2]),save=true,savePath=string(relPath,"/flyingFlexibleBeam2D_deformation.gif"),displayProgress=true)
+display(anim)
 
 # Plot configurations
 lw = 2

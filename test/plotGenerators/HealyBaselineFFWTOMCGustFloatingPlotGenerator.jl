@@ -12,11 +12,12 @@ mkpath(absPath)
 colors = cgrad(:rainbow, length(ωRange), categorical=true)
 ts = 10
 fs = 16
+lfs = 12
 lw = 2
 gr()
 
 # Fold angle increment
-plt_ϕ = plot(xlabel="Time [s]", ylabel="Fold angle increment [deg]", ylims=[-20,20], tickfont=font(ts), guidefont=font(fs), legendfontsize=10, legend=:topright)
+plt_ϕ = plot(xlabel="Time [s]", ylabel="Fold angle increment [deg]", ylims=[-20,20], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:topright)
 plot!([NaN],[NaN], c=:black, lw=lw, ls=:solid, label="AeroBeams")
 plot!([NaN],[NaN], c=:black, lw=lw, ls=:dashdot, label="Healy (2023)")
 for (i,ω) in enumerate(ωRange)

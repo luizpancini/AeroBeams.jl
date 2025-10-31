@@ -9,7 +9,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Mode shapes at lowest airspeed
-modesPlot = plot_mode_shapes(problem[1],scale=1,frequencyLabel="frequency",view=(30,30),modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/HealyBaselineFFWTlockedFlutterURange_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(problem[1],scale=1,view=(30,30),modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/HealyBaselineFFWTlockedFlutterURange_modeShapes.pdf"))
 display(modesPlot)
 
 # Plot configurations

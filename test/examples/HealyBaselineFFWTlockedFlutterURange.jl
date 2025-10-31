@@ -18,11 +18,12 @@ hasTipCorrection = true
 tipLossDecayFactor = 12
 
 # Solution method for hinge constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # System solver
 σ0 = 1
-maxIter = 50
+maxIter = 100
 relTol = 1e-8
 NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
 
@@ -54,7 +55,7 @@ for (i,U) in enumerate(URange)
 end
 
 # Apply mode tracking
-freqs,damps,_ = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+freqs,damps,_ = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 for mode in 1:nModes

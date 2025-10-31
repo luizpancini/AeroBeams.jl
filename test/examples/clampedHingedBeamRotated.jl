@@ -23,7 +23,9 @@ hingeNode = div(nElem,2)+1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingeNode],hingedNodesDoF=[[true,true,true]],rotationParametrization="E321",p0=[α;β;0],aeroSurface=surf)
 
 # Hinge axis constraint
-hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,localHingeAxis=[0;1;0],pHValue=4*tan(θ/4))
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
+hingeAxisConstraint = create_HingeAxisConstraint(beam=beam,solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,localHingeAxis=[0;1;0],pHValue=4*tan(θ/4))
 
 # BCs
 Fₕ = -1

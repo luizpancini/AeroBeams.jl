@@ -19,11 +19,11 @@ ms = 3
 gr()
 
 # V-g-f
-plt11 = plot(ylabel="Frequency [Hz]", xlims=[0,URange[end]+1e-3], ylims=[0,50])
+plt11 = plot(ylabel="Frequency [Hz]", xlims=extrema(URange), ylims=[0,30])
 for mode in 1:nModes
     plot!(URange, modeFrequencies[mode]/(2*π), c=modeColors[mode], lw=lw, label=false)
 end
-plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,URange[end]+1e-3], ylims=[-0.1,0.05], legend=:topleft)
+plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=extrema(URange), ylims=[-0.1,0.05], legend=:topleft)
 for mode in 1:nModes
     plot!(URange, modeDampingRatios[mode], c=modeColors[mode], lw=lw, label=false)
 end
@@ -32,7 +32,7 @@ display(plt1)
 savefig(string(absPath,"/PazyFFWTflutterURange_Vgf.pdf"))
 
 # Coast (or fold) angle
-plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Hinge angle [deg]", xlims=[0,URange[end]+1e-3], ylims=[-135,135], yticks=-135:45:135)
+plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Hinge angle [deg]", xlims=extrema(URange), ylims=[-135,135], yticks=-135:45:135)
 plot!(URange, -ϕHinge, c=:black, lw=lw, label=false)
 display(plt2)
 savefig(string(absPath,"/PazyFFWTflutterURange_phi.pdf"))

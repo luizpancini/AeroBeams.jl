@@ -12,11 +12,11 @@ BWB = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVar
 # Set NR system solver 
 relaxFactor = 0.5
 displayStatus = false
-maxiter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxiter,displayStatus=displayStatus)
+maxiter = 100
+NR = create_NewtonRaphson(ρ=relaxFactor,pseudoInverseMethod=:dampedLeastSquares,maximumIterations=maxiter,displayStatus=displayStatus)
 
 # Attachment springs
-μ = 1e-2
+μ = 1e-1
 ku = μ*[1; 1; 1]
 kp = ku
 spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=ku,kp=kp)
@@ -26,6 +26,7 @@ add_springs_to_beam!(beam=BWB.beams[3],springs=[spring2])
 
 # Set airspeed range and initialize outputs
 URange = collect(30:5:160)
+problem = Array{TrimProblem}(undef,length(URange))
 trimAoA = Array{Float64}(undef,length(URange))
 trimThrust = Array{Float64}(undef,length(URange))
 trimδ = Array{Float64}(undef,length(URange))
@@ -37,14 +38,14 @@ for (i,U) in enumerate(URange)
     # Update airspeed on model
     set_motion_basis_A!(model=BWB,v_A=[0;U;0])
     # Set initial guess solution as previous known solution
-    x0 = i == 1 ? zeros(0) : problem.x
+    x0 = i == 1 ? zeros(0) : problem[i-1].x
     # Create and solve trim problem
-    global problem = create_TrimProblem(model=BWB,systemSolver=NR,x0=x0)
-    solve!(problem)
+    problem[i] = create_TrimProblem(model=BWB,systemSolver=NR,x0=x0)
+    solve!(problem[i])
     # Trim results
-    trimAoA[i] = problem.aeroVariablesOverσ[end][BWB.beams[3].elementRange[1]].flowAnglesAndRates.αₑ*180/π
-    trimThrust[i] = problem.x[end-1]*problem.model.forceScaling 
-    trimδ[i] = problem.x[end]*180/π 
+    trimAoA[i] = problem[i].aeroVariablesOverσ[end][BWB.beams[3].elementRange[1]].flowAnglesAndRates.αₑ*180/π
+    trimThrust[i] = problem[i].x[end-1]*problem[i].model.forceScaling 
+    trimδ[i] = problem[i].x[end]*180/π 
     println("AoA = $(trimAoA[i]), T = $(trimThrust[i]), δ = $(trimδ[i])")
 end
 

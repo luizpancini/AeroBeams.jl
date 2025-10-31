@@ -2,7 +2,6 @@ using AeroBeams, LinearInterpolations
 
 # Aerodynamic solver and derivatives method
 aeroSolver = Indicial()
-derivationMethod = AD()
 
 # Altitude
 h = 20e3
@@ -17,13 +16,14 @@ g = 9.80665
 nElem = 16
 
 # Model
-SMWLinearFlutter,L = create_SMW(aeroSolver=aeroSolver,derivationMethod=derivationMethod,θ=θ,nElem=nElem,altitude=h,g=g)
+SMWLinearFlutter,L = create_SMW(aeroSolver=aeroSolver,θ=θ,nElem=nElem,altitude=h,g=g)
 
 # Set airspeed range and initialize outputs
-URange = collect(0:0.1:40)
+URange = collect(0.1:0.1:40)
 untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
 untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
 untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
+dampingsNonOscillatory = Array{Vector{Float64}}(undef,length(URange))
 problem = Array{EigenProblem}(undef,length(URange))
 
 # Set number of vibration modes
@@ -39,12 +39,13 @@ for (i,U) in enumerate(URange)
     solve!(problem[i])
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = problem[i].frequenciesOscillatory
-    untrackedDamps[i] = round_off!(problem[i].dampingsOscillatory,1e-8)
+    untrackedDamps[i] = problem[i].dampingsOscillatory
     untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
+    dampingsNonOscillatory[i] = problem[i].dampingsNonOscillatory[1:10]
 end
 
 # Frequencies and dampings after mode tracking
-freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+freqs,damps,_,matchedModes = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 modeFrequencies = Array{Vector{Float64}}(undef,nModes)
@@ -73,11 +74,8 @@ for mode in 1:nModes
 end
 
 # Find divergence speed
-divergenceSpeed = NaN
-indicesNonOscillatoryInstability = [findfirst(x->x>0,problem[i].dampingsNonOscillatory) for i in eachindex(URange)]
-indexDivergence = findfirst(!isnothing,indicesNonOscillatoryInstability)
-divergenceSpeed = !isnothing(indexDivergence) ? URange[indexDivergence] : NaN
-# Note: the value of the first dampingsNonOscillatory crosses zero at an airspeed between 37.2 and 37.3, but once it becomes positive, it disappears. So the divergence speed does match very closely that of the reference solution below
+UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory)
+divergenceSpeed = minimum(UDvec)
 
 # Reference solution by Patil & Hodges & Cesnik: Nonlinear Aeroelasticity and Flight Dynamics of HALE (2001)
 flutterSpeedRef = 32.21

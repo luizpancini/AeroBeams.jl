@@ -44,6 +44,6 @@ for c in 1:length(tipLossTypeConfig)
     end
 end
 display(plt_defPos)
-# savefig(string(absPath,"/sweptPazySteadySweepRangePitchRange_defPos.pdf"))
+savefig(string(absPath,"/sweptPazySteadySweepRangePitchRange_defPos.pdf"))
 
 println("Finished sweptPazySteadySweepRangePitchRangePlotGenerator.jl")

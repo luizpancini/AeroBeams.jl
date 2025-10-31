@@ -30,10 +30,10 @@ problem = create_DynamicProblem(model=flyingSpaghetti3D,finalTime=tf,Δt=Δt)
 solve!(problem)
 
 # Unpack numerical solution
-t = problem.timeVector
-u1_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
-u2_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[2] for i in 1:length(t)]
-u3_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in 1:length(t)]
-θ_tip = [problem.nodalStatesOverTime[i][nElem].θ_n2 for i in 1:length(t)]
+t = problem.savedTimeVector
+u1_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in eachindex(t)]
+u2_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[2] for i in eachindex(t)]
+u3_tip = [problem.nodalStatesOverTime[i][nElem].u_n2[3] for i in eachindex(t)]
+θ_tip = [problem.nodalStatesOverTime[i][nElem].θ_n2 for i in eachindex(t)]
 
 println("Finished flyingSpaghetti3D.jl")

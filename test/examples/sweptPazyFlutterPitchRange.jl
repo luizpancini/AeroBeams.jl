@@ -4,7 +4,7 @@ using AeroBeams
 Λ = 20*π/180
 
 # Root pitch angle range
-θRange = π/180*[0,1,3,5,7]
+θRange = π/180*[0,1,3,5,7,10]
 
 # Airspeed range
 URange = collect(0.5:0.5:100)
@@ -16,7 +16,7 @@ hasTipCorrection = true
 tipLossType = "VLM-def"
 
 # Flag for ad hoc corrections on sectional stiffness matrix
-sweepStructuralCorrections = false
+sweepStructuralCorrections = true
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -25,22 +25,33 @@ aeroSolver = Indicial()
 airfoil = deepcopy(flatPlate)
 
 # Flag for upright position
-upright = false
+upright = true
 
 # Gravity
-g = 0
+g = 9.80665
 
 # Geometric properties
 nElem,L,chord,normSparPos = geometrical_properties_Pazy()
 
-# Tip mass and its position over the chord
-tipMass = 0.0
-tipMassPos = 0 # EA
-# tipMassPos = chord*normSparPos # LE
-# tipMassPos = -chord*(1-normSparPos) # TE
+# Tip mass configuration (select between 'none', 'TE' or 'LE')
+tipMassConfig = "TE"
+
+# Corresponding tip mass and its position over the chord
+if tipMassConfig == "none"
+    tipMass = 0
+    tipMassPos = 0
+elseif tipMassConfig == "TE"
+    tipMass = 15.5e-3
+    tipMassPos = -chord*(1-normSparPos) - 0.01 # Assume about 1 cm behind TE
+elseif tipMassConfig == "LE"
+    tipMass = 15.5e-3
+    tipMassPos = chord*normSparPos + 0.01 # Assume about 1 cm ahead of TE
+else
+    error("Select tipMassConfig as 'none', 'TE' or 'LE'")
+end
 
 # Number of modes
-nModes = 3
+nModes = 5
 
 # System solver
 σ0 = 0.5
@@ -72,13 +83,13 @@ for (i,θ) in enumerate(θRange)
         solve!(problem)
         # Frequencies, dampings and eigenvectors
         untrackedFreqs[i,j] = problem.frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-8)
+        untrackedDamps[i,j] = problem.dampingsOscillatory
         untrackedEigenvectors[i,j] = problem.eigenvectorsOscillatoryCplx
         # Tip OOP deflection
         tipOOP[i,j] = problem.nodalStatesOverσ[end][nElem].u_n2_b[3]
     end
     # Apply mode tracking
-    freqs[i,:],damps[i,:],_ = mode_tracking(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
+    freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
     # Separate frequencies and damping ratios by mode
     for mode in 1:nModes
         modeFrequencies[i,mode] = [freqs[i,j][mode] for j in eachindex(URange)]
@@ -86,5 +97,13 @@ for (i,θ) in enumerate(θRange)
         modeDampingRatios[i,mode] = modeDampings[i,mode]./modeFrequencies[i,mode]
     end
 end
+
+# Load reference data (experiments from Technion)
+freqs_aoa0_ref = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazyS20/aeroelastic_freqs_aoa0.txt")
+freqs_aoa1_ref = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazyS20/aeroelastic_freqs_aoa1.txt")
+freqs_aoa3_ref = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazyS20/aeroelastic_freqs_aoa3.txt")
+freqs_aoa5_ref = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazyS20/aeroelastic_freqs_aoa5.txt")
+freqs_aoa7_ref = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazyS20/aeroelastic_freqs_aoa7.txt")
+freqs_aoa10_ref = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazyS20/aeroelastic_freqs_aoa10.txt")
 
 println("Finished sweptPazyFlutterPitchRange.jl")

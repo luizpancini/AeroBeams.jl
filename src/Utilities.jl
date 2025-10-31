@@ -85,44 +85,65 @@ export axial
 
 
 """
-    gauss_legendre7(f, a::Real, b::Real)
+    gauss_legendre(f, a::Real, b::Real; n::Int=3)
 
-Computes the Gauss-Legendre quadrature (integral) for the vector-valued function f in the interval from a to b, using 7 points
+Computes the Gauss–Legendre quadrature (integral) for the vector-valued function `f` in the interval `[a, b]`, using `n` Gauss points (`2 ≤ n ≤ 7`)
 
 # Arguments
-- `f`: function
+- `f`: function to integrate
 - `a::Real`: lower limit
 - `b::Real`: upper limit
+- `n::Int`: number of Gauss points (between 2 and 7)
 """
-function gauss_legendre7(f, a::Real, b::Real)
+function gauss_legendre(f, a::Real, b::Real; n::Int=3)
 
-    # Gauss-Legendre nodes and weights for 7 points over [-1, 1]
-    ξs = [-0.9491079123427585,
-          -0.7415311855993945,
-          -0.4058451513773972,
-           0.0,
-           0.4058451513773972,
-           0.7415311855993945,
-           0.9491079123427585]
+    # Validate
+    @assert 2 ≤ n ≤ 7 "Number of Gauss points must be between 2 and 7."
 
-    ws = [0.1294849661688697,
-          0.2797053914892766,
-          0.3818300505051189,
-          0.4179591836734694,
-          0.3818300505051189,
-          0.2797053914892766,
-          0.1294849661688697]
+    # Tabulated Gauss–Legendre nodes (ξ) and weights (w)
+    data = Dict(
+        2 => ([-0.5773502691896257,  0.5773502691896257],
+              [ 1.0,                 1.0]),
+        3 => ([-0.7745966692414834,  0.0,  0.7745966692414834],
+              [ 0.5555555555555556, 0.8888888888888888, 0.5555555555555556]),
+        4 => ([-0.8611363115940526, -0.3399810435848563,
+                0.3399810435848563,  0.8611363115940526],
+              [ 0.3478548451374539,  0.6521451548625461,
+                0.6521451548625461,  0.3478548451374539]),
+        5 => ([-0.9061798459386640, -0.5384693101056831, 0.0,
+                0.5384693101056831,  0.9061798459386640],
+              [ 0.2369268850561891,  0.4786286704993665, 0.5688888888888889,
+                0.4786286704993665,  0.2369268850561891]),
+        6 => ([-0.9324695142031521, -0.6612093864662645, -0.2386191860831969,
+                0.2386191860831969,  0.6612093864662645,  0.9324695142031521],
+              [ 0.1713244923791704,  0.3607615730481386,  0.4679139345726910,
+                0.4679139345726910,  0.3607615730481386,  0.1713244923791704]),
+        7 => ([-0.9491079123427585, -0.7415311855993945, -0.4058451513773972,
+                0.0,
+                0.4058451513773972,  0.7415311855993945,  0.9491079123427585],
+              [ 0.1294849661688697,  0.2797053914892766,  0.3818300505051189,
+                0.4179591836734694,
+                0.3818300505051189,  0.2797053914892766,  0.1294849661688697])
+    )
+    ξs, ws = data[n]
 
-    # Change of interval from [-1,1] to [a,b]
-    mid = (a + b)/2
-    half = (b - a)/2
+    # Change of interval from [-1, 1] to [a, b]
+    mid = (a + b) / 2
+    half = (b - a) / 2
 
     # Weighted sum
-    weightedSum = sum(ws[i] .* f(mid + half * ξs[i]) for i in 1:7)
+    weighted_sum = sum(ws[i] .* f(mid + half * ξs[i]) for i in 1:n)
 
-    return half .* weightedSum
+    return half .* weighted_sum
 end
-export gauss_legendre7
+export gauss_legendre
+
+
+function safe_norm(p)
+    s = sum(abs2, p)
+    δ = eps(Float64) * (1 + abs(ForwardDiff.value(real(s)))) * one(real(s))
+    return sqrt(s + δ)
+end
 
 
 # Divides the input variables in-place
@@ -463,7 +484,7 @@ function rotation_parameter_scaling(p)
     halfRotations = 0
     
     # Norm of the extended parameters vector
-    pNorm = norm(p)
+    pNorm = safe_norm(p)
     
     # Scale according to norm
     if pNorm > 4
@@ -913,7 +934,7 @@ function rotation_parameters_WM(R)
     e = q[2:4]
 
     # Angle of rotation
-    ϕ = 2*asin(norm(e))
+    ϕ = 2*asin(safe_norm(e))
     
     # Bauchau's ν parameter for Wiener-Milenkovic parametrization
     ν = cos(ϕ/4)^2
@@ -943,7 +964,7 @@ function rotation_parameters_Rodrigues(R)
     e = q[2:4]
 
     # Angle of rotation
-    ϕ = 2*asin(norm(e))
+    ϕ = 2*asin(safe_norm(e))
     
     # Bauchau's ν parameter for Rodrigues parametrization
     ν = cos(ϕ/2)
@@ -1092,8 +1113,8 @@ function rotation_between_WM(p1,p2)
     # Check consistency: true rotation parameters might actually be -p12 (since rotations of ϕ about axis n or -ϕ about axis -n are equal)
     R12_check1,_ = rotation_tensor_WM(p12)
     R12_check2,_ = rotation_tensor_WM(-p12)
-    check1 = norm(R12_check1.-R12)
-    check2 = norm(R12_check2.-R12)
+    check1 = safe_norm(R12_check1.-R12)
+    check2 = safe_norm(R12_check2.-R12)
 
     # Select correct rotation parameters vector (the one for which norm(R12.-R12_check) = 0)
     if check2 < check1
@@ -1135,7 +1156,7 @@ function mode_tracking(controlParam::AbstractVector{<:Real},untrackedFreqs::Arra
     freqs = deepcopy(untrackedFreqs)
     damps = deepcopy(untrackedDamps)
     eigenvectors = deepcopy(untrackedEigenvectors)
-    matchedModes = Array{Vector{Int64}}(undef,N)
+    matchedModes = Array{Vector{Int}}(undef,N)
     matchedModes[1] = collect(1:nModes)
 
     # Loop over control parameter
@@ -1239,7 +1260,7 @@ function mode_tracking_hungarian(controlParam::AbstractVector{<:Real},untrackedF
     freqs = deepcopy(untrackedFreqs)
     damps = deepcopy(untrackedDamps)
     eigenvectors = deepcopy(untrackedEigenvectors)
-    matchedModes = Array{Vector{Int64}}(undef,N)
+    matchedModes = Array{Vector{Int}}(undef,N)
     matchedModes[1] = collect(1:nModes)
 
     # Loop over control parameter
@@ -1289,6 +1310,52 @@ function eigenmatch_cost_matrix(Vprev, Vcurr, fprev, fcurr, dprev, dcurr; α=1.0
 
     return C
 end
+
+
+"""
+    find_non_oscillatory_instability(controlParam::AbstractVector{<:Real},dampingsNonOscillatory::Array{Vector{Float64}})
+
+Finds the control parameter values and corresponding modes in dampingsNonOscillatory for which an instability occurs (positive damping)
+
+# Arguments
+- `controlParam::AbstractVector{<:Real}`: vector of control parameter
+- `dampingsNonOscillatory::Array{Vector{Float64}}`: dampings vector
+"""
+function find_non_oscillatory_instability(controlParam::AbstractVector{<:Real},dampingsNonOscillatory::Array{Vector{Float64}})
+
+    # Validate
+    @assert all(length(v) == length(first(dampingsNonOscillatory)) for v in dampingsNonOscillatory) "Not all dampingsNonOscillatory have the same length"
+
+    # Get number of modes
+    nModes = length(first(dampingsNonOscillatory))
+    
+    # Initialize instability values of control parameter and corresponding modes
+    CPi = Float64[]
+    CPiModes = Int[]
+
+    # Initialize arrays of dampings separated by modes (actual and estimated)
+    modeDampings = Array{Vector{Float64}}(undef,nModes)
+    modeDampingsEst = Array{Vector{Float64}}(undef,nModes)
+
+    # Loop over modes
+    for mode in 1:nModes
+        # Mode dampings
+        modeDampings[mode] = [dampingsNonOscillatory[i][mode] for i in eachindex(controlParam)]
+        # Estimated mode dampings from backward finite difference extrapolation
+        modeDampingsEst[mode] = backward_extrapolation(modeDampings[mode])
+        # Instability is found when the sign of the estimated value is different from the actual
+        iInst = findfirst(i -> modeDampings[mode][i]*modeDampingsEst[mode][i] < 0, eachindex(controlParam))
+        if !isnothing(iInst)
+            val = LinearInterpolations.interpolate(modeDampingsEst[mode][iInst-1:iInst],controlParam[iInst-1:iInst],0)
+            push!(CPi,val)
+            push!(CPiModes,mode)
+        end
+    end
+
+    return CPi,CPiModes
+
+end
+export find_non_oscillatory_instability
 
 
 """
@@ -1358,7 +1425,7 @@ function moving_average(v::AbstractVector{<:Real}, n::Int)
     end
 
     @assert iseven(n) "n must be even"
-    @assert 2 ≤ n ≤ 10 "n must be between 2 and 10"
+    @assert 2 ≤ n ≤ length(v) "n must be between 2 and length(v)"
 
     k = div(n, 2)
     result = similar(v, length(v))
@@ -1372,6 +1439,36 @@ function moving_average(v::AbstractVector{<:Real}, n::Int)
     return result
 end
 export moving_average
+
+
+"""
+    local_extrema(x::AbstractVector{<:Real})
+
+Computes the local extrema of a series, and corresponding indices
+
+# Arguments
+- `x::AbstractVector{<:Real}`: series
+"""
+function local_extrema(x::AbstractVector{<:Real})
+    n = length(x)
+    maximaIdx = Int[]
+    minimaIdx = Int[]
+    
+    for i in 2:(n-1)
+        if x[i] > x[i-1] && x[i] > x[i+1]
+            push!(maximaIdx, i)
+        elseif x[i] < x[i-1] && x[i] < x[i+1]
+            push!(minimaIdx, i)
+        end
+    end
+    
+    return (maxIdx = maximaIdx, 
+            minIdx = minimaIdx, 
+            maxVal = x[maximaIdx], 
+            minVal = x[minimaIdx])
+end
+export local_extrema
+
 
 """
     Newton_solver(f::Function, x0::AbstractArray; absTol::Real=1e-9, relTol::Real=1e-9, maxIter::Int=50)
@@ -1549,6 +1646,96 @@ function frequency_of_exceedance(; count::Vector{<:Real}, timeLength::Real)
     return count / timeLength
 end
 export frequency_of_exceedance
+
+
+"""
+    gcd_floats_approx(v::Vector{Float64}; tol::Real=1e-8)
+
+Computes the approximate greatest common divisor of a vector of floats
+
+# Arguments
+- `v::Vector{Float64}`: vector
+
+# Keyword arguments
+- `tol::Real`: tolerance
+"""
+function gcd_floats_approx(v::Vector{Float64}; tol::Real=1e-8)
+    scale = 10.0 ^ ceil(Int, -log10(tol))
+    ints = round.(Int, v .* scale)
+    g = reduce(gcd, ints)
+    return g / scale
+end
+export gcd_floats_approx
+
+
+"""
+    spectrogram(t::AbstractVector{<:Real}, x::AbstractVector{<:Real}; window::Int=256, overlap::Real=0.5, db::Bool=true)
+
+Compute the spectrogram (Short-Time Fourier Transform) of signal `x` sampled at times `t`
+
+# Arguments
+- `t::AbstractVector{<:Real}`: time vector (must be equally spaced)
+- `x::AbstractVector{<:Real}`: signal values
+
+# Keyword arguments
+- `window::Int`: window length in samples (default: 256)
+- `overlap::Real`: fraction of window overlap (0–1, default: 0.5)
+- `db::Bool`: if true, return power in decibels (default: true)
+
+# Outputs
+- `f::Vector`: frequency vector
+- `tt::Vector`: time vector (centers of analysis windows)
+- `S::Matrix`: spectrogram matrix (|STFT|²), size (length(f), length(tt))
+"""
+function spectrogram(t::AbstractVector{<:Real}, x::AbstractVector{<:Real}; window::Int=256, overlap::Real=0.5, db::Bool=true)
+
+    # Validate
+    @assert length(t) == length(x) "time vector and signal must have the same length"
+    dt = diff(t)
+    @assert maximum(abs.(dt .- dt[1])) < 1e-8*dt[1] "time vector must be equally spaced"
+    @assert 0 < overlap < 1 "overlap must be between 0 and 1"
+
+    # Sampling frequency
+    fs = 1/(t[2]-t[1])
+
+    # Length of overlap (hop size)
+    hop = round(Int, window*(1-overlap))
+
+    # Compute STFT
+    X = stft(x, window, hop; fs=fs, window=hanning, onesided=true)
+
+    # Frequency and time vectors
+    nfft = window
+    f = collect(0:fs/nfft:fs/2)                     # frequency bins
+    tt = collect(0:hop:(size(X,2)-1)*hop) ./ fs     # time bins
+
+    # Power spectrogram
+    S = abs.(X).^2
+    if db
+        S = 10 .* log10.(S .+ eps())  # dB scale
+    end
+
+    return f, tt, S
+end
+export spectrogram
+
+"""
+    fix_nans(x::Vector{<:Real})
+
+Performs linear interpolation between endpoints separated by NaNs in a vector `x`
+
+"""
+function fix_nans(x::Vector{<:Real})
+    idx = .!isnan.(x)
+    interp = Interpolations.LinearInterpolation(findall(idx), x[idx], extrapolation_bc=Line())
+    for i in eachindex(x)
+        if isnan(x[i])
+            x[i] = interp(i)
+        end
+    end
+    return x
+end
+export fix_nans
 
 
 """

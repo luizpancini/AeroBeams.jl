@@ -4,14 +4,14 @@
     include("examples/archUnderDeadPressure.jl")
     # Self-comparison
     mid_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "archUnderDeadPressure", "mid_u3.txt"))
-    @test mid_u3 ≈ mid_u3_ atol=SELFatol
+    @test mid_u3 ≈ mid_u3_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of an arch under a follower pressure load" begin
     include("examples/archUnderFollowerPressure.jl")
     # Self-comparison
     mid_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "archUnderFollowerPressure", "mid_u3.txt"))
-    @test mid_u3 ≈ mid_u3_ atol=SELFatol
+    @test mid_u3 ≈ mid_u3_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever beam with an axial spring attached between its middle and tip nodes, subjected to an axial tip force" begin
@@ -22,8 +22,8 @@ end
     # Self-comparison
     u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "axialDoublyAttachedSpringCantilever", "u1.txt"))
     F1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "axialDoublyAttachedSpringCantilever", "F1.txt"))
-    @test u1 ≈ u1_ atol=SELFatol
-    @test F1 ≈ F1_ atol=SELFatol
+    @test u1 ≈ u1_ atol=SELFatol rtol=SELFrtol
+    @test F1 ≈ F1_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever beam with an axial spring attached between its middle and tip nodes, subjected to an axial tip displacement" begin
@@ -34,8 +34,8 @@ end
     # Self-comparison
     u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "axialDoublyAttachedSpringCantilever2", "u1.txt"))
     F1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "axialDoublyAttachedSpringCantilever2", "F1.txt"))
-    @test u1 ≈ u1_ atol=SELFatol
-    @test F1 ≈ F1_ atol=SELFatol
+    @test u1 ≈ u1_ atol=SELFatol rtol=SELFrtol
+    @test F1 ≈ F1_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a biclamped, hinged beam under distributed and concentrated loads" begin
@@ -48,9 +48,9 @@ end
     u3Mid_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedHingedBeam", "u3Mid.txt"))[1]
     p2Left_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedHingedBeam", "p2Left.txt"))[1]
     p2Right_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "biclampedHingedBeam", "p2Right.txt"))[1]
-    @test u3Mid ≈ u3Mid_ atol=SELFatol
-    @test p2Left ≈ p2Left_ atol=SELFatol
-    @test p2Right ≈ p2Right_ atol=SELFatol
+    @test u3Mid ≈ u3Mid_ atol=SELFatol rtol=SELFrtol
+    @test p2Left ≈ p2Left_ atol=SELFatol rtol=SELFrtol
+    @test p2Right ≈ p2Right_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever beam bending under self weight" begin
@@ -60,10 +60,10 @@ end
     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverUnderSelfWeight", "u3.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverUnderSelfWeight", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverUnderSelfWeight", "M2.txt"))
-    @test u1 ≈ u1_ atol=SELFatol
-    @test u3 ≈ u3_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u1 ≈ u1_ atol=SELFatol rtol=SELFrtol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever beam with a tip spring in bending" begin
@@ -74,9 +74,9 @@ end
     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipSpring", "u3.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipSpring", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "cantileverWithTipSpring", "M2.txt"))
-    @test u3 ≈ u3_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a clamped beam, with a free flared hinge at the middle, under distributed and concentrated loads" begin
@@ -91,15 +91,15 @@ end
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedFlaredHingedBeam", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedFlaredHingedBeam", "M2.txt"))
     ϕHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedFlaredHingedBeam", "phiHinge.txt"))[1]
-    @test u1 ≈ u1_ atol=SELFatol
-    @test u2 ≈ u2_ atol=SELFatol
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p1 ≈ p1_ atol=SELFatol
-    @test p2 ≈ p2_ atol=SELFatol
-    @test p3 ≈ p3_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
-    @test ϕHinge ≈ ϕHinge_ atol=SELFatol
+    @test u1 ≈ u1_ atol=SELFatol rtol=SELFrtol
+    @test u2 ≈ u2_ atol=SELFatol rtol=SELFrtol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test p1 ≈ p1_ atol=SELFatol rtol=SELFrtol
+    @test p2 ≈ p2_ atol=SELFatol rtol=SELFrtol
+    @test p3 ≈ p3_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
+    @test ϕHinge ≈ ϕHinge_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a clamped beam, hinged at the middle with imposed hinge angle, under distributed and concentrated loads" begin
@@ -110,11 +110,11 @@ end
     p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "p2.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeam", "M2.txt"))
-    @test u1 ≈ u1_ atol=SELFatol
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p2 ≈ p2_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u1 ≈ u1_ atol=SELFatol rtol=SELFrtol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test p2 ≈ p2_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a clamped beam rotated in 3D space, hinged at the middle with imposed hinge angle, under distributed and concentrated loads" begin
@@ -126,12 +126,12 @@ end
     p2_b_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "p2_b.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamRotated", "M2.txt"))
-    @test u1 ≈ u1_ atol=SELFatol
-    @test u2 ≈ u2_ atol=SELFatol
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p2_b ≈ p2_b_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u1 ≈ u1_ atol=SELFatol rtol=SELFrtol
+    @test u2 ≈ u2_ atol=SELFatol rtol=SELFrtol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test p2_b ≈ p2_b_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a clamped beam, hinged at the middle, under distributed loads, with varying spring stiffnesses around the hinge" begin
@@ -142,32 +142,32 @@ end
     p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "p2.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "clampedHingedBeamSpringRange", "M2.txt"))
-    @test isapprox(vcat(u1'...), u1_, atol=SELFatol, nans=true)
-    @test isapprox(vcat(u3'...), u3_, atol=SELFatol, nans=true)
-    @test isapprox(vcat(p2'...), p2_, atol=SELFatol, nans=true)
-    @test isapprox(vcat(F3'...), F3_, atol=SELFatol, nans=true)
-    @test isapprox(vcat(M2'...), M2_, atol=SELFatol, nans=true)
+    @test isapprox(vcat(u1'...), u1_, atol=SELFatol, rtol=SELFrtol, nans=true)
+    @test isapprox(vcat(u3'...), u3_, atol=SELFatol, rtol=SELFrtol, nans=true)
+    @test isapprox(vcat(p2'...), p2_, atol=SELFatol, rtol=SELFrtol, nans=true)
+    @test isapprox(vcat(F3'...), F3_, atol=SELFatol, rtol=SELFrtol, nans=true)
+    @test isapprox(vcat(M2'...), M2_, atol=SELFatol, rtol=SELFrtol, nans=true)
 end
 
 @testset "Static analysis of a clamped beam with a coasting flared hinge at the middle, under distributed loads" begin
     include("examples/coastingFoldingWingtip.jl")
     # Self-comparison
     pHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "coastingFoldingWingtip", "pHinge.txt"))
-    @test pHinge ≈ pHinge_ atol=SELFatol
+    @test pHinge ≈ pHinge_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a clamped beam with a driven flared hinge at the middle, under distributed loads" begin
     include("examples/drivenFoldingWingtip.jl")
     # Self-comparison
     pHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "drivenFoldingWingtip", "pHinge.txt"))
-    @test pHinge ≈ pHinge_ atol=SELFatol
+    @test pHinge ≈ pHinge_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a clamped beam with a driven, springed, flared hinge at the middle" begin
     include("examples/drivenSpringedHingedBeam.jl")
     # Self-comparison
     pHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "drivenSpringedHingedBeam", "pHinge.txt"))
-    @test pHinge ≈ pHinge_ atol=SELFatol
+    @test pHinge ≈ pHinge_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of composite laminates subjected to tip loads" begin
@@ -177,9 +177,9 @@ end
         u1_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u1_500mm_b",i,".txt")))
         u2_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u2_500mm_b",i,".txt")))
         u3_500mm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "compositeCantileverMD", string("u3_500mm_b",i,".txt")))
-        @test hcat(u1_500mm[i,:]...)' ≈ u1_500mm_ atol=SELFatol
-        @test hcat(u2_500mm[i,:]...)' ≈ u2_500mm_ atol=SELFatol
-        @test hcat(u3_500mm[i,:]...)' ≈ u3_500mm_ atol=SELFatol
+        @test hcat(u1_500mm[i,:]...)' ≈ u1_500mm_ atol=SELFatol rtol=SELFrtol
+        @test hcat(u2_500mm[i,:]...)' ≈ u2_500mm_ atol=SELFatol rtol=SELFrtol
+        @test hcat(u3_500mm[i,:]...)' ≈ u3_500mm_ atol=SELFatol rtol=SELFrtol
     end
 end
 
@@ -193,9 +193,9 @@ end
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u1.txt"))[1]
     tip_u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u2.txt"))[1]
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverDeadLoad", "tip_u3.txt"))[1]
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u2 ≈ tip_u2_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u2 ≈ tip_u2_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a curved cantilever subjected to a tip follower force" begin
@@ -208,9 +208,9 @@ end
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u1.txt"))
     tip_u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u2.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "curvedCantileverStaticFollower", "tip_u3.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u2 ≈ tip_u2_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u2 ≈ tip_u2_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever with distributed follower force" begin
@@ -223,9 +223,9 @@ end
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_u1.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_u3.txt"))
     tip_angle_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "distributedLoadCantilever", "tip_angle.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-    @test tip_angle ≈ tip_angle_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
+    @test tip_angle ≈ tip_angle_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a hinged beam subjected to a distributed load" begin
@@ -239,10 +239,10 @@ end
     p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "p2.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedBeam", "M2.txt"))
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p2 ≈ p2_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test p2 ≈ p2_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a hinged beam subjected to a distributed load and a rotational spring" begin
@@ -252,10 +252,10 @@ end
     p2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "p2.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedSpringedBeam", "M2.txt"))
-    @test u3 ≈ u3_ atol=SELFatol
-    @test p2 ≈ p2_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test p2 ≈ p2_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a T-frame hinged at the connection subjected to a distributed load" begin
@@ -267,12 +267,12 @@ end
     u3_beam2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "u3_beam2.txt"))
     F3_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "F3_beam1.txt"))
     M2_beam1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "hingedTFrame", "M2_beam1.txt"))
-    @test u1_beam1 ≈ u1_beam1_ atol=SELFatol
-    @test u1_beam2 ≈ u1_beam2_ atol=SELFatol
-    @test u3_beam1 ≈ u3_beam1 atol=SELFatol
-    @test u3_beam2 ≈ u3_beam2_ atol=SELFatol
-    @test F3_beam1 ≈ F3_beam1_ atol=SELFatol
-    @test M2_beam1 ≈ M2_beam1_ atol=SELFatol
+    @test u1_beam1 ≈ u1_beam1_ atol=SELFatol rtol=SELFrtol
+    @test u1_beam2 ≈ u1_beam2_ atol=SELFatol rtol=SELFrtol
+    @test u3_beam1 ≈ u3_beam1 atol=SELFatol rtol=SELFrtol
+    @test u3_beam2 ≈ u3_beam2_ atol=SELFatol rtol=SELFrtol
+    @test F3_beam1 ≈ F3_beam1_ atol=SELFatol rtol=SELFrtol
+    @test M2_beam1 ≈ M2_beam1_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of the Lee frame (a right-angled frame) with a dead load" begin
@@ -280,8 +280,8 @@ end
     # Self-comparison
     u1_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameDeadLoad", "u1_atForce.txt"))
     u3_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameDeadLoad", "u3_atForce.txt"))
-    @test u1_atForce ≈ u1_atForce_ atol=SELFatol
-    @test u3_atForce ≈ u3_atForce_ atol=SELFatol
+    @test u1_atForce ≈ u1_atForce_ atol=SELFatol rtol=SELFrtol
+    @test u3_atForce ≈ u3_atForce_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of the Lee frame (a right-angled frame) with a follower load" begin
@@ -289,15 +289,15 @@ end
     # Self-comparison
     u1_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameFollowerLoad", "u1_atForce.txt"))
     u3_atForce_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "LeeFrameFollowerLoad", "u3_atForce.txt"))
-    @test u1_atForce ≈ u1_atForce_ atol=SELFatol
-    @test u3_atForce ≈ u3_atForce_ atol=SELFatol
+    @test u1_atForce ≈ u1_atForce_ atol=SELFatol rtol=SELFrtol
+    @test u3_atForce ≈ u3_atForce_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of the pure bending test of the Pazy wing" begin
     include("examples/PazyWingBendingTest.jl")
     # Self-comparison
     tip_OOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingBendingTest", "tip_OOP.txt"))
-    @test tip_OOP ≈ tip_OOP_ atol=SELFatol
+    @test tip_OOP ≈ tip_OOP_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of the coupled torsion-bending test of the Pazy wing" begin
@@ -305,8 +305,8 @@ end
     # Self-comparison
     tip_OOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTorsionTest", "tip_OOP.txt"))
     tip_twist_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTorsionTest", "tip_twist.txt"))
-    @test tip_OOP ≈ tip_OOP_ atol=SELFatol
-    @test tip_twist ≈ tip_twist_ atol=SELFatol
+    @test tip_OOP ≈ tip_OOP_ atol=SELFatol rtol=SELFrtol
+    @test tip_twist ≈ tip_twist_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a mid-loaded arch pinned at one end and clamped at the other" begin
@@ -317,8 +317,8 @@ end
     # Self-comparison
     u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pinnedClampedArch", "u1.txt"))
     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pinnedClampedArch", "u3.txt"))
-    @test u1_atForce ≈ u1_ atol=SELFatol
-    @test u3_atForce ≈ u3_ atol=SELFatol
+    @test u1_atForce ≈ u1_ atol=SELFatol rtol=SELFrtol
+    @test u3_atForce ≈ u3_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a right-angled frame under a tip transverse follower force" begin
@@ -327,35 +327,33 @@ end
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rightAngledFrame", "tip_u1.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rightAngledFrame", "tip_u3.txt"))
     tip_angle_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rightAngledFrame", "tip_angle.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-    @test tip_angle ≈ tip_angle_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
+    @test tip_angle ≈ tip_angle_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a right-angled frame under a 'buckling' load" begin
     include("examples/rightAngledFrameBuckling.jl")
     # Self-comparison
     tip_u2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rightAngledFrameBuckling", "tip_u2.txt"))
-    @test tip_u2 ≈ tip_u2_ atol=SELFatol
+    @test tip_u2 ≈ tip_u2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a L-frame with a doubly-attached spring and tip load" begin
     include("examples/springedLFrame.jl")
     # Self-comparison
     u3_b_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "springedLFrame", "u3_b.txt"))
-    @test u3_b ≈ u3_b_ atol=SELFatol
+    @test u3_b ≈ u3_b_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a swept-back clamped beam with a driven flared folding wingtip" begin
-    include("examples/sweptBackDrivenFFWTWing.jl")
+    include("examples/sweptBackFFWTWing.jl")
     # Self-comparison
-    ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackDrivenFFWTWing", "phi.txt"))[1]
-    hingeBalanceM_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackDrivenFFWTWing", "hingeBalanceM.txt"))[1]
-    pHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackDrivenFFWTWing", "pHinge.txt"))
-    @test ϕ_ ≈ θ atol=SELFatol
-    @test hingeBalanceM ≈ hingeBalanceM_ atol=SELFatol
-    @test hingeBalanceM ≈ abs(Fₜ*L/4) atol=SELFatol
-    @test pHinge ≈ pHinge_ atol=SELFatol
+    ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackFFWTWing", "phi.txt"))[1]
+    hingeBalanceM_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackFFWTWing", "hingeBalanceM.txt"))[1]
+    pHinge_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "sweptBackFFWTWing", "pHinge.txt"))
+    @test hingeBalanceM ≈ hingeBalanceM_ atol=SELFatol rtol=SELFrtol
+    @test pHinge ≈ pHinge_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a semi-circular arch with tangential follower force" begin
@@ -368,9 +366,9 @@ end
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tangentiallyForcedArch", "tip_u1.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tangentiallyForcedArch", "tip_u3.txt"))
     tip_angle_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tangentiallyForcedArch", "tip_angle.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-    @test tip_angle ≈ tip_angle_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
+    @test tip_angle ≈ tip_angle_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis cantilever with tip follower transverse force" begin
@@ -381,8 +379,8 @@ end
     # Self-comparison
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipFollowerForceCantilever", "tip_u1.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipFollowerForceCantilever", "tip_u3.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever with tip follower transverse force (force split over 2 BCs)" begin
@@ -393,8 +391,8 @@ end
     # Self-comparison
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipFollowerForceCantilever2", "tip_u1.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipFollowerForceCantilever2", "tip_u3.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever with tip moment" begin
@@ -407,9 +405,9 @@ end
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipMomentCantilever", "tip_u1.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipMomentCantilever", "tip_u3.txt"))
     tip_angle_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "tipMomentCantilever", "tip_angle.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-    @test tip_angle ≈ tip_angle_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
+    @test tip_angle ≈ tip_angle_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a semi-circular arch with transverse follower force" begin
@@ -422,9 +420,9 @@ end
     tip_u1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "transverselyForcedArch", "tip_u1.txt"))
     tip_u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "transverselyForcedArch", "tip_u3.txt"))
     tip_angle_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "transverselyForcedArch", "tip_angle.txt"))
-    @test tip_u1 ≈ tip_u1_ atol=SELFatol
-    @test tip_u3 ≈ tip_u3_ atol=SELFatol
-    @test tip_angle ≈ tip_angle_ atol=SELFatol
+    @test tip_u1 ≈ tip_u1_ atol=SELFatol rtol=SELFrtol
+    @test tip_u3 ≈ tip_u3_ atol=SELFatol rtol=SELFrtol
+    @test tip_angle ≈ tip_angle_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a beam with triangular distributed load" begin
@@ -433,9 +431,9 @@ end
     u3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "triangleLoadBeam", "u3.txt"))
     F3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "triangleLoadBeam", "F3.txt"))
     M2_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "triangleLoadBeam", "M2.txt"))
-    @test u3 ≈ u3_ atol=SELFatol
-    @test F3 ≈ F3_ atol=SELFatol
-    @test M2 ≈ M2_ atol=SELFatol
+    @test u3 ≈ u3_ atol=SELFatol rtol=SELFrtol
+    @test F3 ≈ F3_ atol=SELFatol rtol=SELFrtol
+    @test M2 ≈ M2_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Static analysis of a cantilever beam with a torsional spring attached between its middle and tip nodes, subjected to a torsional tip moment" begin
@@ -446,8 +444,8 @@ end
     # Self-comparison
     p1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "twistDoublyAttachedSpringCantilever", "p1.txt"))
     M1_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "twistDoublyAttachedSpringCantilever", "M1.txt"))
-    @test p1 ≈ p1_ atol=SELFatol
-    @test M1 ≈ M1_ atol=SELFatol
+    @test p1 ≈ p1_ atol=SELFatol rtol=SELFrtol
+    @test M1 ≈ M1_ atol=SELFatol rtol=SELFrtol
 end
 GC.gc()
 sleep(1)

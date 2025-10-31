@@ -198,7 +198,7 @@ flutterOnsetTipOOPWingg0 = flutterOnsetTipOOP
 @save absPathData*string("wing_g0_lambda",λ,"_flutterOOP.jld2") flutterOnsetTipOOPWingg0
 
 # Plot configurations
-colors = get(colorschemes[:rainbow], range(0, 1, length(k2Range)))
+colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
 ts = 10
 fs = 16
 lfs = 10
@@ -206,13 +206,15 @@ lw = 2
 ms = 3
 msw = 0
 tsz = 9
+DPI = 300
+fps = 10
 mshape = [:circle, :star, :utriangle, :pentagon, :diamond]
 labels = ["\$k_2 = $(k2) \$" for k2 in k2Range]
 L = 16
 gr()
 
 # Undeformed jig-shapes
-plt_shapes = plot(xlabel="Normalized spanwise direction", ylabel="Normalized vertical direction", xlims=[0,1], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:bottomleft)
+plt_shapes = plot(xlabel="Normalized spanwise direction", ylabel="Normalized vertical direction", xlims=[0,1], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:bottomleft, dpi=DPI)
 for (i,k2) in enumerate(k2Range)
     plot!(x1_0[i]/L, x3_0[i]/L, c=colors[i], lw=lw, label=labels[i])
 end
@@ -220,15 +222,9 @@ display(plt_shapes)
 savefig(string(absPath,"/cHALEwing_undef_k2range.pdf"))
 
 # Root locus
-plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-10,2], ylims=[0,50], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
-scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label=string("\$U_{\\infty} = ",URange[1],"\$ m/s"))
-for (i,k2) in enumerate(k2Range)
-    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
-    for mode in 1:nModes
-        plot!(modeDampings[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
-        plot!([modeDampings[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-    end
-end
+freqLim = [0,50]
+plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-10,2], ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
+plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
 if λ == 1
     OOPtext = "OOP"
     TIP1text = "1st T-IP"
@@ -247,8 +243,34 @@ if λ == 1
     annotate!(IPtextPos[1], IPtextPos[2], text(IPtext, tsz))
     quiver!([OOPtextPos[1],OOPtextPos[1]+0.5,OOPtextPos[1]+0.5], [OOPtextPos[2]-2,OOPtextPos[2]-0.5,OOPtextPos[2]+1], quiver=([0,1.75,3.75], [-10,-3.5,17]), arrow=:closed, linecolor=:black)
 end
+plt_RL_base = deepcopy(plt_RL)
+scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label="\$U_{\\infty} = $(URange[1])\\;\\mathrm{m/s}\$")
+for (i,k2) in enumerate(k2Range)
+    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
+    for mode in 1:nModes
+        plot!(modeDampings[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        plot!([modeDampings[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+end
 display(plt_RL)
 savefig(string(absPath,string("/cHALEwing_g0_flutter_fixedPitch_k2_range_rootlocus_lambda",λ,".pdf")))
+
+# Animated root locus plot
+plt_RL_anim = plot(plt_RL_base)
+plot!(dpi=DPI)
+for (i,k2) in enumerate(k2Range)
+    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
+end
+anim = @animate for (j,U) in enumerate(URange)
+    title!("\$U_{\\infty} = $U\$ m/s")
+    for (i,k2) in enumerate(k2Range)
+        for mode in 1:nModes
+            plot!([modeDampings[i,mode][j]], [modeFrequencies[i,mode][j]], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        end
+    end
+end
+gif_handle = gif(anim, string(absPath,"/cHALEwing_g0_flutter_fixedPitch_k2_range_RL.gif"), fps=fps)
+display(gif_handle)
 
 # V-g-f
 Vgf_k2_ind = [2,5]
@@ -268,7 +290,8 @@ for (i,k2) in enumerate(k2Range)
         continue
     end
     for mode in 1:nModes
-        plot!(URange, modeDampings[i,mode]./modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=0, label=false)
+        labelNow = mode == 1 ? labels[i] : false
+        plot!(URange, modeDampings[i,mode]./modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=0, label=labelNow)
     end
 end
 plt_Vgf = plot(plt_Vf,plt_Vg, layout=(2,1))
@@ -325,19 +348,27 @@ display(plt_Uf)
 savefig(string(absPath,string("/cHALEwing_g0_flutter_fixedPitch_k2_range_speedOn_OOP_lambda",λ,".pdf")))
 
 # # Mode shapes of straight wing at lowest airspeed
-# modesPlot = plot_mode_shapes(eigenProblem[2,1],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=:rainbow,modeLabels=["1st OOP","2nd OOP","T","IP","3rd OOP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0U1_lambda",λ,".pdf"))
+# modesPlot = plot_mode_shapes(eigenProblem[2,1],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=colors,modeLabels=["1st OOP","2nd OOP","T","IP","3rd OOP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0U1_lambda",λ,".pdf"))
 # display(modesPlot)
 
 # # Mode shapes of straight wing at highest airspeed
-# modesPlot = plot_mode_shapes(eigenProblem[2,end],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=:rainbow,modeLabels=["1st OOP","2nd OOP","T","IP","3rd OOP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0U35_lambda",λ,".pdf"))
+# modesPlot = plot_mode_shapes(eigenProblem[2,end],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=colors,modeLabels=["1st OOP","2nd OOP","T","IP","3rd OOP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0U35_lambda",λ,".pdf"))
 # display(modesPlot)
 
 # # Mode shapes of wing with k_2=0.045 at lowest airspeed
-# modesPlot = plot_mode_shapes(eigenProblem[5,1],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=:rainbow,modeLabels=["1st OOP","1st T-IP","2nd OOP","3rd OOP","2nd T-IP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0045U1_lambda",λ,".pdf"))
+# modesPlot = plot_mode_shapes(eigenProblem[5,1],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=colors,modeLabels=["1st OOP","1st T-IP","2nd OOP","3rd OOP","2nd T-IP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0045U1_lambda",λ,".pdf"))
 # display(modesPlot)
 
 # # Mode shapes of wing with k_2=0.045 at highest airspeed
-# modesPlot = plot_mode_shapes(eigenProblem[5,end],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=:rainbow,modeLabels=["1st OOP","1st T-IP","2nd OOP","2nd T-IP","3rd OOP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0045U35_lambda",λ,".pdf"))
+# modesPlot = plot_mode_shapes(eigenProblem[5,end],scale=5,view=(60,15),legendPos=(0.25,0.5),modalColorScheme=colors,modeLabels=["1st OOP","1st T-IP","2nd OOP","2nd T-IP","3rd OOP"],save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0045U35_lambda",λ,".pdf"))
 # display(modesPlot)
+
+# # Mode shapes animation of wing with k_2=0.045 at lowest airspeed
+# modesAnim = plot_mode_shapes_animation(eigenProblem[end,1],scale=10,view=(60,15),legendPos=(0.2,0.6),modeLabels=["OOP-1","T-IP-1","OOP-2","OOP-3","T-IP-2"],nFramesPerCycle=101,plotSteady=false,plotBCs=true,plotAxes=false,modalColorScheme=colors,legendFontSize=10,save=true,savePath=string(relPath,"/cHALEwing_modeShapes_k0045U1_lambda",λ,".gif"),displayProgress=true)
+# display(modesAnim)
+
+# # Steady plot of unloaded straight wing
+# plt_steady = plot_steady_deformation(eigenProblem[2,1],backendStr="gr",plotUndeformed=false,plotBCs=true,plotDistLoads=false,plotLegend=false,plotAxes=false,plotGrid=false,view=(30,30),plotLimits=([-L*1/4,L*3/4],[-L*1/2,L*1/2],[-L*1/2,L*1/2]),save=true,savePath=string(relPath,"/cHALEwing_steady_k0U0_lambda",λ,".pdf"))
+# display(plt_steady)
 
 println("Finished cHALEwing_g0_flutter_fixedPitch_k2_range.jl")

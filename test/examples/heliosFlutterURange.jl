@@ -12,9 +12,6 @@ aeroSolver = Indicial()
 # Payload [lb]
 P = 400
 
-# Option for mode tracking
-modeTracking = true
-
 # Number of modes
 nModes = 10
 
@@ -66,16 +63,12 @@ for (i,U) in enumerate(URange)
     solve_eigen!(eigenProblem)
     # Frequencies, dampings and eigenvectors
     untrackedFreqs[i] = eigenProblem.frequenciesOscillatory
-    untrackedDamps[i] = round_off!(eigenProblem.dampingsOscillatory,1e-8)
+    untrackedDamps[i] = eigenProblem.dampingsOscillatory
     untrackedEigenvectors[i] = eigenProblem.eigenvectorsOscillatoryCplx
 end
 
-# Apply mode tracking, if applicable
-if modeTracking
-    freqs,damps,_,matchedModes = mode_tracking(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
-else
-    freqs,damps = untrackedFreqs,untrackedDamps
-end
+# Apply mode tracking
+freqs,damps,_,matchedModes = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
 
 # Separate frequencies and damping ratios by mode
 modeFrequencies = Array{Vector{Float64}}(undef,nModes)

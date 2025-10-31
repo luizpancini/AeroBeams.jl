@@ -1,16 +1,13 @@
 using AeroBeams, LinearAlgebra
 
 # Aerodynamic solver
-aeroSolver = Inflow()
-
-# Derivation method
-derivationMethod = AD()
+aeroSolver = Indicial()
 
 # Root pitch angle [rad]
-θ = 5*π/180
+θ = 1*π/180
 
 # Airspeed
-U = 60
+U = 70
 
 # Flag for upright position
 upright = true
@@ -22,34 +19,35 @@ nElem,L,chord,normSparPos = geometrical_properties_Pazy()
 dummyBeam = create_Beam(length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=1)])
 
 # Set tip impulse (on dummy beam, updated later on model creation)
-F₀ = 10
+F₀ = 1
 ω = 4*2π
 τ = 2π/ω
-t₀ = 0.25
+t₀ = 0.1
 F = t -> ifelse.(t.<=t₀,0.0,ifelse.(t.<=t₀+τ/2,F₀*sin.(ω*(t.-(t₀+τ))),0.0))
 impulse = create_BC(name="impulse",beam=dummyBeam,node=nElem+1,types=["F1A"],values=[t->F(t)])
 
 # Model
-PazyWingTipImpulse,_ = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,upright=upright,θ=θ,airspeed=U,additionalBCs=[impulse])
+PazyWingTipImpulse,_ = create_Pazy(aeroSolver=aeroSolver,upright=upright,θ=θ,airspeed=U,additionalBCs=[impulse])
 
 # Set system solver options
-σ0 = 1.0
 maxIter = 100
-NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumIterations=maxIter,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
+relTol = 1e-8
+NR = create_NewtonRaphson(maximumIterations=maxIter,relativeTolerance=relTol,displayStatus=false,alwaysUpdateJacobian=false,minConvRateAeroJacUpdate=1.2,minConvRateJacUpdate=1.2)
 
 # Time variables
-Δt = τ/500
-tf = t₀+5τ
+Δt = 5e-4
+tf = 5
 
-# Initial velocities update options
-initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,tol=1e-8, displayProgress=false, relaxFactor=0.5, Δt=Δt/10)
+# Create and solve steady problem for initial solution
+steadyProblem = create_SteadyProblem(model=PazyWingTipImpulse)
+solve!(steadyProblem)
 
 # Create and solve dynamic problem
-problem = create_DynamicProblem(model=PazyWingTipImpulse,finalTime=tf,Δt=Δt,systemSolver=NR,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions,skipInitialStatesUpdate=false)
+problem = create_DynamicProblem(model=PazyWingTipImpulse,finalTime=tf,Δt=Δt,systemSolver=NR,x0=steadyProblem.x)
 solve!(problem)
 
 # Unpack numerical solution
-t = problem.timeVector
+t = problem.savedTimeVector
 tipAoA = [problem.aeroVariablesOverTime[i][nElem].flowAnglesAndRates.αₑ for i in 1:length(t)]
 tipOOP = -[problem.nodalStatesOverTime[i][nElem].u_n2[1] for i in 1:length(t)]
 tqSpan_cn = [problem.aeroVariablesOverTime[i][12].aeroCoefficients.cn for i in 1:length(t)]

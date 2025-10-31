@@ -26,7 +26,7 @@ conventionalHALE,leftWing,rightWing,tailboom,_ = create_conventional_HALE(aeroSo
 relaxFactor = 0.5
 displayStatus = true
 maxIter = 50
-NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,displayStatus=displayStatus)
+NR = create_NewtonRaphson(ρ=relaxFactor,pseudoInverseMethod=:dampedLeastSquares,maximumIterations=maxIter,displayStatus=displayStatus)
 
 # Set airspeed range and initialize outputs
 URange = collect(20:1:35)

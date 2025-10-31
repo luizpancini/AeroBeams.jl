@@ -114,8 +114,10 @@ create_TDWing
 create_Helios
 create_conventional_HALE
 create_BWB
-create_HealyFFWT
 create_HealyBaselineFFWT
+create_HealySideslipFFWT
+create_HealyLCOFFWT
+tip_loss_function_HealyLCOFFWT
 ```
 
 ### Creating a spring
@@ -139,7 +141,7 @@ round_off!
 rms
 tilde
 axial
-gauss_legendre7
+gauss_legendre
 isotropic_stiffness_matrix
 inertia_matrix
 rotation_tensor_E321
@@ -159,12 +161,17 @@ yrp_to_WM
 rotation_between_WM
 mode_tracking
 mode_tracking_hungarian
+find_non_oscillatory_instability
 moving_average
 get_FFT_and_PSD
+local_extrema
 Newton_solver
 backward_extrapolation
 count_of_exceedance
 frequency_of_exceedance
+gcd_floats_approx
+spectrogram
+fix_nans
 NASA_frames_loader
 GU_frames_loader
 ```
@@ -173,9 +180,12 @@ GU_frames_loader
 ```@docs
 plot_undeformed_assembly
 plot_steady_deformation
+plot_steady_deformations
 plot_steady_outputs
 plot_mode_shapes
+plot_mode_shapes_animation
 plot_dynamic_deformation
+plot_dynamic_deformations
 plot_time_outputs
 plot_snapshots
 ```

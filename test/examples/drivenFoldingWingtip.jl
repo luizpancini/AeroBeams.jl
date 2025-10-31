@@ -15,21 +15,22 @@ hingedNode = midElem+1
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EIy=EIy)],hingedNodes=[hingedNode],hingedNodesDoF=[[true,true,true]],aeroSurface=surf)
 
 # Hinge fold angle
-foldAngle = 90*π/180
+foldAngle = 135*π/180
 
 # Hinge flare angle and local axis
-flareAngle = 30*π/180
+flareAngle = 20*π/180
 localHingeAxis = rotation_tensor_E321([-flareAngle; 0; 0]) * AeroBeams.a2
 
 # Solution method for hinge constraint
-solutionMethod = "appliedMoment"
+solutionMethod = "addedResidual"
+updateAllDOFinResidual = false
 
 # Hinge axis
-hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,beam=beam,localHingeAxis=localHingeAxis,pHValue=4*tan(foldAngle/4))
+hingeAxisConstraint = create_HingeAxisConstraint(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,beam=beam,localHingeAxis=localHingeAxis,pHValue=4*tan(foldAngle/4))
 
 # BCs
-qᵢ = -1e0
-q₀ = -1e0
+qᵢ = -1e1
+q₀ = -1e-1
 q = (x1,t) -> ifelse.(x1.<L/2,qᵢ,0) .+ ifelse.(x1.>=L/2,q₀,0)
 add_loads_to_beam!(beam,loadTypes=["f_A_of_x1t"],loadFuns=[(x1,t)->[0; 0; q(x1,t)]])
 clamp = create_BC(name="clamp",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])

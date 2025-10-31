@@ -29,7 +29,7 @@ P = 200
 U = 40*0.3048
 
 # Set NR system solver for trim problem
-NR = create_NewtonRaphson(ρ=0.5,relativeTolerance=1e-12,maximumIterations=100,displayStatus=false)
+NR = create_NewtonRaphson(ρ=0.5,pseudoInverseMethod=:MoorePenrose,relativeTolerance=1e-12,maximumIterations=100,displayStatus=false)
 
 # Model for trim problem
 heliosTrim,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,nElemStraightSemispan=nElemStraightSemispan,nElemPod=nElemPod,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true,reducedChord=reducedChord,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing)

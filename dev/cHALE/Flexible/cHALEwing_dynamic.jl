@@ -7,7 +7,7 @@ aeroSolver = Indicial()
 h = 20e3
 
 # Airspeed [m/s]
-U = 36
+U = 42
 
 # Stiffness factor
 λ = 1
@@ -21,7 +21,7 @@ wingCd0 = stabsCd0 = 1e-2
 hasInducedDrag = true
 
 # Bending pre-curvature
-k2 = 0.045
+k2 = -0.015
 
 # Discretization
 if λ == 1
@@ -38,13 +38,13 @@ nModes = 20
 
 # Flag to solve preliminary trim problem at smaller airspeed
 solvePrelimTrim = true
-UprelimTrim = [20]
+UprelimTrim = [20,30,40]
 
 # System solver for trim and eigen problems
 relaxFactor = 0.5
 maxIter = 100
 σ0t = 1
-σ0e = 1
+σ0e = 0.5 # Adjust depending on airspeed
 relTol = 1e-8
 NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,desiredIterations=div(maxIter,4),initialLoadFactor=σ0t,relativeTolerance=relTol,displayStatus=true)
 NReigen = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,desiredIterations=div(maxIter,4),initialLoadFactor=σ0e,relativeTolerance=relTol,displayStatus=true)
@@ -55,7 +55,6 @@ cHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,
 # Solve trim problem at smaller airspeed for better initial guess, if applicable
 global x0Trim = zeros(0)
 if solvePrelimTrim
-    cHALEtrim.skipValidationMotionBasisA = false
     for Uprelim in UprelimTrim
         println("Solving preliminary trim problem at U=$Uprelim")
         set_motion_basis_A!(model=cHALEtrim,v_A=[0;Uprelim;0])
@@ -100,7 +99,7 @@ solve!(eigenProblem)
 
 # Frequencies and dampings
 freqs = eigenProblem.frequenciesOscillatory
-damps = round_off!(eigenProblem.dampingsOscillatory,1e-8)
+damps = eigenProblem.dampingsOscillatory
 
 # Show whether flutter is expected from eigenanalysis
 if any(x->x>0,damps)
@@ -168,5 +167,11 @@ end
 # plt_AoA2 = plot(xlabel="Time [s]", ylabel="Normalized tip angle of attack", xticks=0:30:tf)
 # plot!(t, tipAoA./tipAoA[1], c=:black, lw=lw, label=false)
 # display(plt_AoA2)
+
+# Animation
+L = 16
+animTimeStep = 0.25
+anim = plot_dynamic_deformation(dynamicProblem,refBasis="I",followAssembly=true,view=(60,15),plotDistLoads=false,plotBCs=true,plotFrequency=ceil(Int,animTimeStep/Δt),plotLimits=([0,L],[-L/2,L/2],[0,L]),fps=30,save=true,savePath=string(relPathFig,"/cHALEwing_dynamic_lambda",λ,"_U",U,"_k2",k2,".gif"),displayProgress=true)
+display(anim)
 
 println("Finished cHALEwing_dynamic.jl")

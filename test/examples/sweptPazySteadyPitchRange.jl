@@ -10,7 +10,7 @@ using AeroBeams, DelimitedFiles
 URange = collect(1:1:100)
 
 # Flag for ad hoc corrections on sectional stiffness matrix
-sweepStructuralCorrections = false
+sweepStructuralCorrections = true
 
 # Flag for tip correction
 hasTipCorrection = true
@@ -80,25 +80,14 @@ end
 x1_0 = vcat([vcat(problem[1].model.elements[e].r_n1[1],problem[1].model.elements[e].r_n2[1]) for e in 1:nElem]...)
 x2_0 = vcat([vcat(problem[1].model.elements[e].r_n1[2],problem[1].model.elements[e].r_n2[2]) for e in 1:nElem]...)
 x3_0 = vcat([vcat(problem[1].model.elements[e].r_n1[3],problem[1].model.elements[e].r_n2[3]) for e in 1:nElem]...)
-x1_e = [problem[1].model.elements[e].x1[1] for e in 1:nElem]
+x1_e = getindex.(getfield.(problem[1].model.elements, :x1), 1)
 
 # Deformed nodal positions
-x1_def = Array{Vector{Float64}}(undef,length(θRange),length(URange))
-x2_def = Array{Vector{Float64}}(undef,length(θRange),length(URange))
-x3_def = Array{Vector{Float64}}(undef,length(θRange),length(URange))
-for i in eachindex(θRange)
-    for j in eachindex(URange)
-        x1_def[i,j] = x1_0 .+ u1_of_x1[i,j]
-        x2_def[i,j] = x2_0 .+ u2_of_x1[i,j]
-        x3_def[i,j] = x3_0 .+ u3_of_x1[i,j]
-    end
-end
+x1_def = [x1_0 .+ u1_of_x1[i,j] for i in eachindex(θRange), j in eachindex(URange)]
+x2_def = [x2_0 .+ u2_of_x1[i,j] for i in eachindex(θRange), j in eachindex(URange)]
+x3_def = [x3_0 .+ u3_of_x1[i,j] for i in eachindex(θRange), j in eachindex(URange)]
 
 # Load reference data (from AePW4 meetings)
 dispΛ30θ5U60_Nastran = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/dispLambda30AoA5U60_Nastran.txt")
-dispΛ0θ7U70_Sharpy = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/dispLambda0AoA7U70_Sharpy.txt")
-dispΛ10θ7U70_Sharpy = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/dispLambda0AoA7U70_Sharpy.txt")
-dispΛ20θ7U70_Sharpy = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/dispLambda0AoA7U70_Sharpy.txt")
-dispΛ30θ7U70_Sharpy = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/dispLambda0AoA7U70_Sharpy.txt")
 
 println("Finished sweptPazySteadyPitchRange.jl")
