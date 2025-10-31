@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT) · AeroBeams.jl</title><meta name="title" content="Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT) · AeroBeams.jl"/><meta property="og:title" content="Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT) · AeroBeams.jl"/><meta property="twitter:title" content="Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT) · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../conventionalHALEmodel/">Creating a HALE aircraft model</a></li><li><a class="tocitem" href="../OMCgustTests/">Gust response of an airfoil section</a></li><li><a class="tocitem" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section</a></li><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../HealyBaselineFFWTfreeFlutterAoARangeURange/">Flutter analysis of a wing with flared folding wingtip (FFWT)</a></li><li class="is-active"><a class="tocitem" href>Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li><a class="tocitem" href="../sweptTipRotor/">Modal analysis of a rotating beam</a></li><li><a class="tocitem" href="../twoStoryFrame/">Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li><a class="tocitem" href="../heliosTrim/">Trimming a flying-wing HALE</a></li><li><a class="tocitem" href="../BWBflutter/">Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../conventionalHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Steady-aeroelastic-analysis-of-a-wing-with-flared-folding-wingtip-(FFWT)"><a class="docs-heading-anchor" href="#Steady-aeroelastic-analysis-of-a-wing-with-flared-folding-wingtip-(FFWT)">Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a><a id="Steady-aeroelastic-analysis-of-a-wing-with-flared-folding-wingtip-(FFWT)-1"></a><a class="docs-heading-anchor-permalink" href="#Steady-aeroelastic-analysis-of-a-wing-with-flared-folding-wingtip-(FFWT)" title="Permalink"></a></h1><p>This example illustrates how to set up a steady aeroelastic analysis for a wing featuring a flared folding wingtip (FFWT). The influence of the sideslip angle on the behavior of this wing model was studied numerically and experimentally by <a href="https://doi.org/10.2514/6.2023-0376">Healy et al.</a>, and more details can be found in <a href="https://research-information.bris.ac.uk/ws/portalfiles/portal/388426634/Final_Copy_2024_01_23_Healy_F_PhD_Redacted.pdf">Healy&#39;s PhD Thesis</a>.</p><p><img src="../../assets/HealyWing.png" alt/></p><p><em>Top view of aircraft model featuring a FFWT</em> by <a href="https://doi.org/10.2514/6.2023-0376">Healy et al.</a></p><p><img src="../../assets/HealyWingFolded.png" alt/></p><p><em>Front view of aircraft model featuring a FFWT</em> by <a href="https://doi.org/10.2514/6.2023-0376">Healy et al.</a></p><div class="admonition is-success" id="Tip-75c0918e4ee55db8"><header class="admonition-header">Tip<a class="admonition-anchor" href="#Tip-75c0918e4ee55db8" title="Permalink"></a></header><div class="admonition-body"><p>The code for this example is available <a href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl">here</a>.</p></div></div><h3 id="Problem-setup"><a class="docs-heading-anchor" href="#Problem-setup">Problem setup</a><a id="Problem-setup-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-setup" title="Permalink"></a></h3><p>Let&#39;s begin by setting the variables of our problem. In this example we will analyze the coasting angle of the FFWT under several combinations of wingtip twist, root pitch angle and sideslip angle, which are defined by the arrays <code>φRange</code>, <code>θRange</code> and <code>βRange</code>, respectively. The flare angle of the wingtip is of 20 degrees, and the airspeed is 22 m/s. A very soft rotational spring is introduced here to avoid the singularity associated with the hinge, through the variable <code>kSpring</code>. We also assume a fixed spanwise lift distribution through the parameter <code>tipLossDecayFactor</code>, in order to model three-dimensional aerodynamic effects.</p><pre><code class="language-julia hljs">using AeroBeams, DelimitedFiles
+
+# Wingtip twist angle range
+φRange = π/180*[-6,0,9]
+
+# Root pitch angle range
+θRange = π/180*vcat(-3:3:12)
+
+# Sideslip angle range
+βRange = π/180*vcat(-10:1:30)
+
+# Flare angle [rad]
+Λ = 20*π/180
+
+# Airspeed
+U = 22
+
+# Spring stiffness
+kSpring = 1e-4
+kIPBendingHinge = 1e-1
+
+# Discretization
+nElementsInner = 15
+nElementsFFWT = 5
+
+# Tip loss options (the value of tipLossDecayFactor is assumed to match the experimental results, since it strongly influences the solution, especially at lower airspeeds)
+hasTipCorrection = true
+tipLossDecayFactor = 10
+
+# Solution method for constraint
+solutionMethod = &quot;addedResidual&quot;
+updateAllDOFinResidual = false
+
+# System solver
+σ0 = 1
+maxIter = 100
+relTol = 1e-8
+NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
+
+# Initialize outputs
+ϕHinge = Array{Float64}(undef,length(φRange),length(θRange),length(βRange))
+problem = Array{SteadyProblem}(undef,length(φRange),length(θRange),length(βRange))</code></pre><h3 id="Solving-the-problem"><a class="docs-heading-anchor" href="#Solving-the-problem">Solving the problem</a><a id="Solving-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-the-problem" title="Permalink"></a></h3><p>In the following loops, we create new model instances for each combination of wingtip twist, pitch angle and sideslip angle, create and solve the steady problem, and then extract the coasting angle of the FFWT (<code>ϕHinge</code>). The model creation process is streamlined with the function <a href="../../publicAPI/#AeroBeams.create_HealySideslipFFWT"><code>create_HealySideslipFFWT</code></a>, taking the appropriate inputs. We run the simulations up to the maximum sideslip angle for which convergence is achieved.</p><pre><code class="language-julia hljs"># Loop wingtip twist angle
+for (i,φ) in enumerate(φRange)
+    # Loop root pitch angle
+    for (j,θ) in enumerate(θRange)
+        # Loop sideslip angle
+        for (k,β) in enumerate(βRange)
+            # Update model
+            model = create_HealySideslipFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,flareAngle=Λ,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,wingtipTwist=φ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β);cos(β);0])
+            # Set initial guess solution as the one from previous sideslip angle
+            x0 = (k&gt;1 &amp;&amp; problem[i,j,k-1].systemSolver.convergedFinalSolution) ? problem[i,j,k-1].x : zeros(0)
+            # Create and solve problem
+            problem[i,j,k] = create_SteadyProblem(model=model,systemSolver=NR,x0=x0)
+                solve!(problem[i,j,k])
+            converged = problem[i,j,k].systemSolver.convergedFinalSolution
+            # Get outputs, if converged
+            ϕHinge[i,j,k] = problem[i,j,k].model.hingeAxisConstraints[1].ϕ*180/π
+            # Skip remaining sideslip angles, if unconverged or if solution for hinge angle has jumped
+            if !converged || (k &gt; 1 &amp;&amp; ϕHinge[i,j,k]*ϕHinge[i,j,k-1] &lt; 0)
+                ϕHinge[i,j,k:end] .= NaN
+                break
+            end
+        end
+    end
+end</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>The post-processing begins by loading the reference data.</p><pre><code class="language-julia hljs"># Load reference data
+phim6_aoam3_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoam3_exp.txt&quot;)
+phim6_aoam3_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoam3_num.txt&quot;)
+phim6_aoa0_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa0_exp.txt&quot;)
+phim6_aoa0_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa0_num.txt&quot;)
+phim6_aoa3_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa3_exp.txt&quot;)
+phim6_aoa3_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa3_num.txt&quot;)
+phim6_aoa6_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa6_exp.txt&quot;)
+phim6_aoa6_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa6_num.txt&quot;)
+phim6_aoa9_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa9_exp.txt&quot;)
+phim6_aoa9_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa9_num.txt&quot;)
+phim6_aoa12_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa12_exp.txt&quot;)
+phim6_aoa12_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phim6_aoa12_num.txt&quot;)
+
+phi0_aoam3_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoam3_exp.txt&quot;)
+phi0_aoam3_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoam3_num.txt&quot;)
+phi0_aoa0_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa0_exp.txt&quot;)
+phi0_aoa0_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa0_num.txt&quot;)
+phi0_aoa3_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa3_exp.txt&quot;)
+phi0_aoa3_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa3_num.txt&quot;)
+phi0_aoa6_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa6_exp.txt&quot;)
+phi0_aoa6_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa6_num.txt&quot;)
+phi0_aoa9_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa9_exp.txt&quot;)
+phi0_aoa9_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa9_num.txt&quot;)
+phi0_aoa12_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa12_exp.txt&quot;)
+phi0_aoa12_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi0_aoa12_num.txt&quot;)
+
+phi9_aoam3_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoam3_exp.txt&quot;)
+phi9_aoam3_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoam3_num.txt&quot;)
+phi9_aoa0_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa0_exp.txt&quot;)
+phi9_aoa0_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa0_num.txt&quot;)
+phi9_aoa3_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa3_exp.txt&quot;)
+phi9_aoa3_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa3_num.txt&quot;)
+phi9_aoa6_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa6_exp.txt&quot;)
+phi9_aoa6_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa6_num.txt&quot;)
+phi9_aoa9_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa9_exp.txt&quot;)
+phi9_aoa9_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa9_num.txt&quot;)
+phi9_aoa12_exp = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa12_exp.txt&quot;)
+phi9_aoa12_num = readdlm(pkgdir(AeroBeams)*&quot;/test/referenceData/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phi9_aoa12_num.txt&quot;)</code></pre><p>We can now plot the coasting angle of the FFWT as a function of sideslip angle for each of the root pitch and wingtip twist angles. The following reference results (both numerical and experimental) were taken from Fig. 7.34 of <a href="https://research-information.bris.ac.uk/ws/portalfiles/portal/388426634/Final_Copy_2024_01_23_Healy_F_PhD_Redacted.pdf">Healy&#39;s PhD Thesis</a>. Healy&#39;s numerical method is composed of a Rayleigh-Ritz structural model coupled to a VLM for aerodynamics, with the flared folding wingtip being modeled as a point inertia connected to the inner wing via a hinge. For the most part, the correlation of AeroBeams&#39; results with the reference data is good, especially for the case of zero wingtip twist. This twist profile is very agressively introduced at the very tip of the wing, and similar convergence problems for these cases were also reported by <a href="https://www.researchgate.net/profile/Romain-Jan/publication/377725388_Experimental_validation_of_an_aeroelasticity_framework_ASWING_Part_IV_Aeroelasticity/links/6692718a3e0edb1e0fe110c7/Experimental-validation-of-an-aeroelasticity-framework-ASWING-Part-IV-Aeroelasticity.pdf">Jan et al.</a> with <a href="https://web.mit.edu/drela/Public/web/aswing/">ASWING</a>. Also note that the wingtip is limited to a fold angle of <span>$\pm125^\degree$</span>, a detail that is not implemented yet in AeroBeams.</p><pre><code class="language-julia hljs">using Plots, ColorSchemes
+gr()
+colors = cgrad(:rainbow, length(θRange), categorical=true)
+lw = 2
+ms = 6
+msw = 0
+figureNames = [&quot;HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phim6.svg&quot; &quot;HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phi0.svg&quot; &quot;HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phi9.svg&quot;]
+
+# Coast angle vs sideslip angle for each AoA, for several wingtip twist angles
+for (i,φ) in enumerate(φRange)
+    if i==1
+        aoam3_exp = phim6_aoam3_exp
+        aoam3_num = phim6_aoam3_num
+        aoa0_exp = phim6_aoa0_exp
+        aoa0_num = phim6_aoa0_num
+        aoa3_exp = phim6_aoa3_exp
+        aoa3_num = phim6_aoa3_num
+        aoa6_exp = phim6_aoa6_exp
+        aoa6_num = phim6_aoa6_num
+        aoa9_exp = phim6_aoa9_exp
+        aoa9_num = phim6_aoa9_num
+        aoa12_exp = phim6_aoa12_exp
+        aoa12_num = phim6_aoa12_num
+    elseif i==2
+        aoam3_exp = phi0_aoam3_exp
+        aoam3_num = phi0_aoam3_num
+        aoa0_exp = phi0_aoa0_exp
+        aoa0_num = phi0_aoa0_num
+        aoa3_exp = phi0_aoa3_exp
+        aoa3_num = phi0_aoa3_num
+        aoa6_exp = phi0_aoa6_exp
+        aoa6_num = phi0_aoa6_num
+        aoa9_exp = phi0_aoa9_exp
+        aoa9_num = phi0_aoa9_num
+        aoa12_exp = phi0_aoa12_exp
+        aoa12_num = phi0_aoa12_num
+    else
+        aoam3_exp = phi9_aoam3_exp
+        aoam3_num = phi9_aoam3_num
+        aoa0_exp = phi9_aoa0_exp
+        aoa0_num = phi9_aoa0_num
+        aoa3_exp = phi9_aoa3_exp
+        aoa3_num = phi9_aoa3_num
+        aoa6_exp = phi9_aoa6_exp
+        aoa6_num = phi9_aoa6_num
+        aoa9_exp = phi9_aoa9_exp
+        aoa9_num = phi9_aoa9_num
+        aoa12_exp = phi9_aoa12_exp
+        aoa12_num = phi9_aoa12_num
+    end
+    plt = plot(xlabel=&quot;Sideslip angle [deg]&quot;, ylabel=&quot;Coast angle [deg]&quot;, title=&quot;Wingtip twist = \$ $(round(Int,φ*180/π)) \\degree\$&quot;, xlims=[-10,30], ylims=[-150,150], yticks=-150:30:150)
+    if i==1
+        plot!(legendfontsize=7, legend=:topleft)
+    else
+        plot!(legend=false)
+    end
+    scatter!([NaN],[NaN], mc=:black, ms=ms, msw=msw, label=&quot;Healy (2023) - Exp.&quot;)
+    plot!([NaN],[NaN], lc=:black, ls=:dash, lw=lw, label=&quot;Healy (2023) - Num.&quot;)
+    plot!([NaN],[NaN], lc=:black, ls=:solid, lw=lw, label=&quot;AeroBeams&quot;)
+    for (j,θ) in enumerate(θRange)
+        plot!(βRange*180/π, -ϕHinge[i,j,:], lw=lw, ls=:solid, c=colors[j], label=&quot;\$\\theta = $(round(Int,θ*180/π)) \\degree\$&quot;)
+        if j==1
+            plot!(aoam3_num[1,:], aoam3_num[2,:], lw=lw, ls=:dash, c=colors[j], label=false)
+            scatter!(aoam3_exp[1,:], aoam3_exp[2,:], ms=ms, msw=msw, c=colors[j], label=false)
+        elseif j==2
+            plot!(aoa0_num[1,:], aoa0_num[2,:], lw=lw, ls=:dash, c=colors[j], label=false)
+            scatter!(aoa0_exp[1,:], aoa0_exp[2,:], ms=ms, msw=msw, c=colors[j], label=false)
+        elseif j==3
+            plot!(aoa3_num[1,:], aoa3_num[2,:], lw=lw, ls=:dash, c=colors[j], label=false)
+            scatter!(aoa3_exp[1,:], aoa3_exp[2,:], ms=ms, msw=msw, c=colors[j], label=false)
+        elseif j==4
+            plot!(aoa6_num[1,:], aoa6_num[2,:], lw=lw, ls=:dash, c=colors[j], label=false)
+            scatter!(aoa6_exp[1,:], aoa6_exp[2,:], ms=ms, msw=msw, c=colors[j], label=false)
+        elseif j==5
+            plot!(aoa9_num[1,:], aoa9_num[2,:], lw=lw, ls=:dash, c=colors[j], label=false)
+            scatter!(aoa9_exp[1,:], aoa9_exp[2,:], ms=ms, msw=msw, c=colors[j], label=false)
+        else
+            plot!(aoa12_num[1,:], aoa12_num[2,:], lw=lw, ls=:dash, c=colors[j], label=false)
+            scatter!(aoa12_exp[1,:], aoa12_exp[2,:], ms=ms, msw=msw, c=colors[j], label=false)
+        end
+    end
+end</code></pre><p><img src="../HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phim6.svg" alt/> <img src="../HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phi0.svg" alt/> <img src="../HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phi9.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../HealyBaselineFFWTfreeFlutterAoARangeURange/">« Flutter analysis of a wing with flared folding wingtip (FFWT)</a><a class="docs-footer-nextpage" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.15.0 on <span class="colophon-date" title="Friday 31 October 2025 00:59">Friday 31 October 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
