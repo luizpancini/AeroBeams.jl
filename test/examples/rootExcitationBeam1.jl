@@ -3,13 +3,13 @@ using AeroBeams, LinearAlgebra
 # Beam
 L,b,H = 479e-3,50.8e-3,0.45e-3
 A,Iy,Iz = b*H,b*H^3/12,H*b^3/12
-J = Is = Iy+Iz
+J = Iy+Iz
 Ksy = Ksz = 5/6
 E,ν,ρ = 127e9,0.36,4.43e3
 G = E/(2*(1+ν))
 nElem = 60
 stiffnessMatrix = diagm([E*A,G*A*Ksy,G*A*Ksz,G*J,E*Iy,E*Iz])
-inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
+inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*(Iy+Iz),ρ*Iy,ρ*Iz])
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,-π/2,0])
 
 # BCs

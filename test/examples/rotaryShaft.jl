@@ -14,13 +14,13 @@ pddot = t -> ForwardDiff.derivative(pdot,t)
 # Beam
 L,r = 1.0,0.05
 A,J = π*r^2,π/2*r^4
-Iy,Iz,Is = J/2,J/2,J
+Iy,Iz = J/2,J/2
 E = 200e9
 G = E/(2*(1+0.3))
 ρ = 7.9e3
 nElem = 10
 stiffnessMatrix = diagm([E*A,G*A,G*A,G*J,E*Iy,E*Iz])
-inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
+inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*(Iy+Iz),ρ*Iy,ρ*Iz])
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],pdot0_of_x1=x1->[pdot(0); 0.0; 0.0])
 
 # BCs

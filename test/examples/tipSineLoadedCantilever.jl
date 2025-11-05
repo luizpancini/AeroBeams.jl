@@ -4,11 +4,10 @@ using AeroBeams, LinearAlgebra
 L,b,H = 1.0,0.1,0.1
 E,ρ = 200e9,7.8e3
 A,Iy,Iz, = b*H,b*H^3/12,H*b^3/12
-Is = Iy+Iz
 ∞ = 1e12
 nElements = 20
 stiffnessMatrix = diagm([E*A,∞,∞,∞,E*Iy,∞])
-inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
+inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*(Iy+Iz),ρ*Iy,ρ*Iz])
 beam = create_Beam(name="beam",length=L,nElements=nElements,S=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs

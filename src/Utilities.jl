@@ -232,18 +232,17 @@ Creates a 6x6 sectional inertia matrix
 - `ρA`: mass per unit length
 - `ρIy`: mass moment of inertia per unit length about the x2-axis
 - `ρIz`: mass moment of inertia per unit length about the x3-axis
-- `ρIs`: mass moment of inertia per unit length about the x1-axis
 - `ρIyz`: mass product of inertia per unit length
 - `e2`: offset from reference line to center of gravity in the x2 direction
 - `e3`: offset from reference line to center of gravity in the x3 direction
 """
-function inertia_matrix(; ρA=0,ρIy=0,ρIz=0,ρIs=ρIy+ρIz,ρIyz=0,e2=0,e3=0)
+function inertia_matrix(; ρA=0,ρIy=0,ρIz=0,ρIyz=0,e2=0,e3=0)
 
     # Validate
-    @assert all(x->x>=0,[ρA,ρIy,ρIz,ρIs])
+    @assert all(x->x>=0,[ρA,ρIy,ρIz])
 
-    ηtilde = tilde([0;ρA*e2;ρA*e3])
-    I = diagm([ρA, ρA, ρA, ρIs, ρIy, ρIz] .|> Float64)
+    ηtilde = tilde([0; ρA*e2; ρA*e3])
+    I = diagm([ρA, ρA, ρA, ρIy+ρIz, ρIy, ρIz] .|> Float64)
     I[5,6] = I[6,5] = ρIyz
     I[1:3,4:6] = -ηtilde
     I[4:6,1:3] = ηtilde

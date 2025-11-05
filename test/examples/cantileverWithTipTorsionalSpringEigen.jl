@@ -3,9 +3,9 @@ using AeroBeams
 # Beam
 L = 1
 GJ = 1
-ρIs = 1
+ρIy,ρIz = 1/2,1/2
 nElem = 50
-beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(GJ=GJ)],I=[inertia_matrix(ρIs=ρIs)])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(GJ=GJ)],I=[inertia_matrix(ρIy=ρIy,ρIz=ρIz)])
 
 # Spring
 μ = 1
@@ -27,7 +27,7 @@ solve!(problem)
 # Get frequencies and mode shapes
 freqs = problem.frequenciesOscillatory
 modeShapesAbs = problem.modeShapesAbs
-freqsNorm = freqs*L*sqrt(ρIs/GJ)
+freqsNorm = freqs*L*sqrt((ρIy+ρIz)/GJ)
 
 # Get nodal arclength positions
 x1 = vcat([vcat(problem.model.beams[1].elements[e].x1_n1,problem.model.beams[1].elements[e].x1_n2) for e in 1:nElem]...)
