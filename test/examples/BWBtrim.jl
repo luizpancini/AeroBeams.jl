@@ -7,7 +7,7 @@ aeroSolver = Indicial()
 h = 0e3*0.3048
 
 # Model 
-BWB = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h)
+BWB = first(create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h))
 
 # Set NR system solver 
 relaxFactor = 0.5

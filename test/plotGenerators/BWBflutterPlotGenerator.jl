@@ -12,7 +12,7 @@ mkpath(absPath)
 modesPlot = plot_mode_shapes(eigenProblem[end],scale=2,view=(45,30),element2centralize=11,legendPos=:outertop,modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/BWBflutter_modeShapes.pdf"))
 display(modesPlot)
 
-# Flutter mode shape animation at flutter speed
+# Flutter mode shape animation at flutter speed (it's mode 4 at U = URange[flutterSpeedInd])
 flutterModeAnim = plot_mode_shapes_animation(eigenProblem[flutterSpeedInd],modes2plot=[4],nFramesPerCycle=21,fps=20,scale=2,view=(45,30),element2centralize=11,legendPos=:top,plotBCs=false,plotAxes=false,displayProgress=true,save=true,savePath=string(relPath,"/BWBflutter_flutterMode.gif"))
 display(flutterModeAnim)
 

@@ -138,7 +138,7 @@
             ηRng =         [ 1.0;   1.0]
             cd₀Rng =  1e-2*[ 1.0;   1.0]
             cm₀Rng =  1e-1*[ 1.0;   1.0]
-            cnαRng =    2π*[ 1.0;   1.0]
+            cnαRng =  2π/β*[ 1.0;   1.0]
             x_acRng =      [ 0.25; 0.25]
         elseif name in ["cHALEairfoil"]
             # Bound Mach and corresponding compressibility factor
