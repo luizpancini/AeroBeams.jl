@@ -15,6 +15,7 @@ pddot = t -> ForwardDiff.derivative(pdot,t)
 L,r = 1.0,0.05
 A,J = π*r^2,π/2*r^4
 Iy,Iz = J/2,J/2
+Ix = Iy+Iz
 E = 200e9
 G = E/(2*(1+0.3))
 ρ = 7.9e3

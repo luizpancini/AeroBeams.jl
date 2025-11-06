@@ -297,7 +297,7 @@ end
     @test pdotNum ≈ pdot.(t) rtol = 1e-2
     @test ΩNum ≈ θdot.(t) rtol = 1e-2
     @test ΩdotNum ≈ θddot.(t) rtol = 1e-2
-    @test MNum ≈ -θddot.(t)*ρ*Is rtol = 0.1
+    @test MNum ≈ -θddot.(t)*ρ*Ix rtol = 0.1
     # Self-comparison
     pNum_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rotaryShaft", "pNum.txt"))
     pdotNum_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "rotaryShaft", "pdotNum.txt"))
