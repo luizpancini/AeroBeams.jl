@@ -13,20 +13,20 @@ writedlm("test/newTestDataGenerators/HealyBaselineFFWTsteadyAoARangeURangeCoast/
 writedlm("test/newTestDataGenerators/HealyBaselineFFWTsteadyAoARangeURangeCoast/u3Hinge.txt", u3Hinge)
 writedlm("test/newTestDataGenerators/HealyBaselineFFWTsteadyAoARangeURangeCoast/M2root.txt", M2root)
 
-# Steady analysis of the Healy FFWT wing with varying flare angle and root pitch angle
-include("../examples/HealyFFWTsteadyFlareRangeAoARangeCoast.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/HealyFFWTsteadyFlareRangeAoARangeCoast"))
-writedlm("test/newTestDataGenerators/HealyFFWTsteadyFlareRangeAoARangeCoast/phiHinge.txt", ϕHinge)
+# Steady analysis of the Healy sideslip FFWT wing with varying flare angle and root pitch angle
+include("../examples/HealySideslipFFWTsteadyFlareRangeAoARangeCoast.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealySideslipFFWTsteadyFlareRangeAoARangeCoast"))
+writedlm("test/newTestDataGenerators/HealySideslipFFWTsteadyFlareRangeAoARangeCoast/phiHinge.txt", ϕHinge)
 
-# Steady analysis of the Healy FFWT wing with varying flare angle, root pitch angle and airspeed
-include("../examples/HealyFFWTsteadyFlareRangeURangeAoARangeCoast.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/HealyFFWTsteadyFlareRangeURangeAoARangeCoast"))
-writedlm("test/newTestDataGenerators/HealyFFWTsteadyFlareRangeURangeAoARangeCoast/phiHinge.txt", ϕHinge)
+# Steady analysis of the Healy sideslip FFWT wing with varying flare angle, root pitch angle and airspeed
+include("../examples/HealySideslipFFWTsteadyFlareRangeURangeAoARangeCoast.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealySideslipFFWTsteadyFlareRangeURangeAoARangeCoast"))
+writedlm("test/newTestDataGenerators/HealySideslipFFWTsteadyFlareRangeURangeAoARangeCoast/phiHinge.txt", ϕHinge)
 
-# Steady analysis of the Healy FFWT wing with varying wingtip twist, root pitch angle and sideslip angle
-include("../examples/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast"))
-writedlm("test/newTestDataGenerators/HealyFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phiHinge.txt", ϕHinge)
+# Steady analysis of the Healy sideslip FFWT wing with varying wingtip twist, root pitch angle and sideslip angle
+include("../examples/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast"))
+writedlm("test/newTestDataGenerators/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phiHinge.txt", ϕHinge)
 
 # Steady analysis of the Pazy wing with a coasting FFWT
 include("../examples/PazyFFWTsteadyCoast.jl")
