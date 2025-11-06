@@ -78,10 +78,13 @@ At this point we can sweep the airspeed vector to find the solution at each valu
 # Sweep airspeed range
 for (i,U) in enumerate(URange)
     # The first step of the solution is to trim the aircraft at that flight condition (combination of altitude and airspeed). We leverage the built-in function in AeroBeams to create our model for the trim problem.
-    BWBtrim = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
+    BWBtrim = first(create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true))
+
+    # Let's set an initial guess for the trim problem as the previously converged solution, if available
+    x0Trim = i == 1 ? zeros(0) : trimProblem[i-1].x
 
     # Now we create and solve the trim problem.
-    trimProblem[i] = create_TrimProblem(model=BWBtrim,systemSolver=NR)
+    trimProblem[i] = create_TrimProblem(model=BWBtrim,systemSolver=NR,x0=x0Trim)
     solve!(trimProblem[i])
 
     # We extract the trim variables at the current airspeed and set them into our pre-allocated arrays. The trimmed angle of attack at the root, `trimAoA[i]`, is not necessary for the flutter analyses, it is merely an output of interest.
@@ -90,13 +93,16 @@ for (i,U) in enumerate(URange)
     trimδ[i] = trimProblem[i].x[end]
 
     # Now let's create a new model, add springs to it, and update
-    BWBtrimSpringed = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true)
+    BWBtrimSpringed = first(create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true))
     add_springs_to_beam!(beam=BWBtrimSpringed.beams[2],springs=[spring1])
     add_springs_to_beam!(beam=BWBtrimSpringed.beams[3],springs=[spring2])
     update_model!(BWBtrimSpringed)
 
+    # Let's set an initial guess for the springed trim problem as the previously converged solution, if available
+    x0TrimSpringed = i == 1 ? zeros(0) : trimProblemSpringed[i-1].x
+
     # Now we create and solve the trim problem for the springed model.
-    trimProblemSpringed[i] = create_TrimProblem(model=BWBtrimSpringed,systemSolver=NR)
+    trimProblemSpringed[i] = create_TrimProblem(model=BWBtrimSpringed,systemSolver=NR,x0=x0TrimSpringed)
     solve!(trimProblemSpringed[i])
 
     # Let's make sure that the trim outputs of the springed model are very close to the one without springs, that is, the springs did not affect the trim solution. Notice that all ratios are very close to 1.
@@ -106,7 +112,7 @@ for (i,U) in enumerate(URange)
     println("Trim outputs' ratios springed/nominal: AoA = $(round(trimAoASpringed/trimAoA[i],sigdigits=4)), thrust = $(round(trimThrustSpringed/trimThrust[i],sigdigits=4)), δ = $(round(trimδSpringed/trimδ[i],sigdigits=4))")
 
     # All the variables needed for the stability analysis are now in place. We create the model for the eigenproblem, using the trim variables found previously with the springed model in order to solve for the stability around that exact state.
-    BWBeigen = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδSpringed,thrust=trimThrustSpringed)
+    BWBeigen = first(create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=trimδSpringed,thrust=trimThrustSpringed))
 
     # Now we create and solve the eigenproblem. Notice that by using `solve_eigen!()`, we skip the step of finding the steady state of the problem, making use of the known trim solution (with the keyword argument `refTrimProblem`). We apply a filter to find only modes whose frequencies are greater than 1 rad/s through the keyword argument `frequencyFilterLimits`
     eigenProblem[i] = create_EigenProblem(model=BWBeigen,nModes=nModes,frequencyFilterLimits=[1,Inf],refTrimProblem=trimProblemSpringed[i])

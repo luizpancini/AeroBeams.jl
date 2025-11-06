@@ -128,7 +128,7 @@ wGJ,wEIy,wEIz = AeroBeams.multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
 wρA,wρIs = 0.75,0.1
 wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
 Cwing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
-Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz,ρIs=wρIs)
+Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 nothing #hide
 ````
 

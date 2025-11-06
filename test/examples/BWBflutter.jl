@@ -66,7 +66,7 @@ for (i,U) in enumerate(URange)
     ## The first step of the solution is to trim the aircraft at that flight condition (combination of altitude and airspeed). We leverage the built-in function in AeroBeams to create our model for the trim problem.
     BWBtrim = first(create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElevIsTrimVariable=true,thrustIsTrimVariable=true))
 
-    # Let's set an initial guess for the trim problem as the previously converged solution, if available
+    ## Let's set an initial guess for the trim problem as the previously converged solution, if available
     x0Trim = i == 1 ? zeros(0) : trimProblem[i-1].x
 
     ## Now we create and solve the trim problem.
@@ -85,7 +85,7 @@ for (i,U) in enumerate(URange)
     add_springs_to_beam!(beam=BWBtrimSpringed.beams[3],springs=[spring2])
     update_model!(BWBtrimSpringed)
 
-    # Let's set an initial guess for the springed trim problem as the previously converged solution, if available
+    ## Let's set an initial guess for the springed trim problem as the previously converged solution, if available
     x0TrimSpringed = i == 1 ? zeros(0) : trimProblemSpringed[i-1].x
 
     ## Now we create and solve the trim problem for the springed model.

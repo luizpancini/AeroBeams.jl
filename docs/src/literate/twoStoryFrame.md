@@ -23,8 +23,8 @@ L = 1
 b1,b2,h = 5e-2,15e-2,5e-2
 A1,Iy1,Iz1 = b1*h,b1*h^3/12,h*b1^3/12
 A2,Iy2,Iz2 = b2*h,b2*h^3/12,h*b2^3/12
-J1 = Is1 = A1^4/(Iy1+Iz1)/40
-J2 = Is2 = A2^4/(Iy2+Iz2)/40
+J1 = A1^4/(Iy1+Iz1)/40
+J2 = A2^4/(Iy2+Iz2)/40
 Kt1,Kt2 = 10/9,3.0864
 α = [0; 0; π/2; 0; 0; π/2; 0; 0; 0; 0; 0; 0; π/2; 0; 0; π/2]
 β = -[π/2; π/2; 0; -π/2; -π/2; 0; 0; 0; 0; 0; -π/2; π/2; 0; -π/2; -π/2; 0]
@@ -38,7 +38,7 @@ G = E/(2*(1+ν))
 
 # Stiffness and inertia matrices
 stiffnessMatrices = [diagm([E*A1,∞,∞,G*J1*Kt1,E*Iy1,E*Iz1]),diagm([E*A2,∞,∞,G*J2*Kt2,E*Iy2,E*Iz2])]
-inertiaMatrices = [diagm([ρ*A1,ρ*A1,ρ*A1,ρ*Is1,ρ*Iy1,ρ*Iz1]),diagm([ρ*A2,ρ*A2,ρ*A2,ρ*Is2,ρ*Iy2,ρ*Iz2])]
+inertiaMatrices = [diagm([ρ*A1,ρ*A1,ρ*A1,ρ*(Iy1+Iz1),ρ*Iy1,ρ*Iz1]),diagm([ρ*A2,ρ*A2,ρ*A2,ρ*(Iy2+Iz2),ρ*Iy2,ρ*Iz2])]
 
 # Number of elements for each beam
 nElem = 10
