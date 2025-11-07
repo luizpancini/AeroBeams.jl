@@ -667,7 +667,7 @@ function create_TDWing(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::Gust
     L = 0.4508
     GJ,EIy,EIz = 0.9539,0.4186,18.44
     ρA,ρIx,ρIy = 0.2351,0.2056e-4,1e-6
-    ρIz = ρIy*EIz/EIy
+    ρIz = ρIx - ρIy
     e3 = 1e-2*chord
     S = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
     I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,e3=e3)

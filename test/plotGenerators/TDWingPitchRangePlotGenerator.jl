@@ -13,6 +13,7 @@ colors = get(colorschemes[:darkrainbow], LinRange(0, 1, 3))
 lw = 2
 ms = 5
 msw = 0
+gr()
 
 # Tip flapwise displacement
 plt1 = plot(xlabel="Root angle [deg]", ylabel="Tip flapwise displacement [m]", xticks=collect(0:15:90))
