@@ -316,116 +316,116 @@ labels = ["\$k_2 = $(k2) \$" for k2 in k2Range]
 L = 16
 gr()
 
-# # Mode shapes at lowest airspeed
-# for (n,k2) in enumerate(k2Range)
-#     plt = plot_mode_shapes(eigenProblem[n,1],nModes=6,scale=5,view=(30,30),modalColorScheme=colors,legendPos=:outertop,save=true,savePath=string(relPathFig,string("/cHALE_flutter_k2_range_modeShapes_k2",k2,"_lambda",λ,".pdf")))
-#     display(plt)
-# end
+# Mode shapes at lowest airspeed
+for (n,k2) in enumerate(k2Range)
+    plt = plot_mode_shapes(eigenProblem[n,1],nModes=6,scale=5,view=(30,30),modalColorScheme=colors,legendPos=:outertop,save=true,savePath=string(relPathFig,string("/cHALE_flutter_k2_range_modeShapes_k2",k2,"_lambda",λ,".pdf")))
+    display(plt)
+end
 
-# # Root locus
-# plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-10,2], ylims=[0,250], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
-# plot!([0; 0], [0,250], c=:black, ls=:dash, lw=2, label=false)
-# scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label="\$U_{\\infty} = $(URange[1])\\;\\mathrm{m/s}\$")
-# for (i,k2) in enumerate(k2Range)
-#     scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
-#     for mode in 1:nModes
-#         scatter!(modeDampingsAdj[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
-#         scatter!([modeDampingsAdj[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-#     end
-# end
-# display(plt_RL)
-# savefig(string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_lambda",λ,".pdf"))
+# Root locus
+plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=[-10,2], ylims=[0,250], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
+plot!([0; 0], [0,250], c=:black, ls=:dash, lw=2, label=false)
+scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label="\$U_{\\infty} = $(URange[1])\\;\\mathrm{m/s}\$")
+for (i,k2) in enumerate(k2Range)
+    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
+    for mode in 1:nModes
+        scatter!(modeDampingsAdj[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        scatter!([modeDampingsAdj[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+end
+display(plt_RL)
+savefig(string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_lambda",λ,".pdf"))
 
-# # Root locus (zoom on low frequency modes)
-# if λ == 1
-#     dampLim = [-10,2]
-#     freqLim = [0,50]
-# elseif λ == 2
-#     dampLim = [-10,2]
-#     freqLim = [0,80]
-# end
-# plt_RLlow = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=(0.12,0.8))
-# plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
-# if λ == 1
-#     phugoidTextPos = [1.25, 1.5]
-#     DRTextPos = [0.8, 5]
-#     TIP1textPos = [0.75, 8]
-#     TIP2textPos = [0.75, 32]
-#     annotate!(phugoidTextPos[1], phugoidTextPos[2], text("phugoid", tsz))
-#     annotate!(DRTextPos[1], DRTextPos[2], text("D-R", tsz))
-#     annotate!(TIP1textPos[1], TIP1textPos[2], text("1st T-IP", tsz))
-#     annotate!(TIP2textPos[1], TIP2textPos[2], text("2nd T-IP", tsz))
-#     quiver!([phugoidTextPos[1]-0.7,DRTextPos[1]-0.35,TIP1textPos[1]-0.25,TIP2textPos[1]-0.25], [phugoidTextPos[2]-0.75,DRTextPos[2]-0.7,TIP1textPos[2]+1.5,TIP2textPos[2]-1.5], quiver=([-0.35,-0.35,-0.25,-0.35], [-0.3,-1.8,3,-2.2]), arrow=:closed, linecolor=:black)
-# end
-# plt_RLlow_base = deepcopy(plt_RLlow)
-# scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label="\$U_{\\infty} = $(URange[1])\\;\\mathrm{m/s}\$")
-# for (i,k2) in enumerate(k2Range)
-#     scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
-#     for mode in 1:nModes
-#         scatter!(modeDampingsAdj[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
-#         scatter!([modeDampingsAdj[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-#     end
-# end
-# display(plt_RLlow)
-# savefig(string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_low_lambda",λ,".pdf"))
+# Root locus (zoom on low frequency modes)
+if λ == 1
+    dampLim = [-10,2]
+    freqLim = [0,50]
+elseif λ == 2
+    dampLim = [-10,2]
+    freqLim = [0,80]
+end
+plt_RLlow = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=(0.12,0.8))
+plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
+if λ == 1
+    phugoidTextPos = [1.25, 1.5]
+    DRTextPos = [0.8, 5]
+    TIP1textPos = [0.75, 8]
+    TIP2textPos = [0.75, 32]
+    annotate!(phugoidTextPos[1], phugoidTextPos[2], text("phugoid", tsz))
+    annotate!(DRTextPos[1], DRTextPos[2], text("D-R", tsz))
+    annotate!(TIP1textPos[1], TIP1textPos[2], text("1st T-IP", tsz))
+    annotate!(TIP2textPos[1], TIP2textPos[2], text("2nd T-IP", tsz))
+    quiver!([phugoidTextPos[1]-0.7,DRTextPos[1]-0.35,TIP1textPos[1]-0.25,TIP2textPos[1]-0.25], [phugoidTextPos[2]-0.75,DRTextPos[2]-0.7,TIP1textPos[2]+1.5,TIP2textPos[2]-1.5], quiver=([-0.35,-0.35,-0.25,-0.35], [-0.3,-1.8,3,-2.2]), arrow=:closed, linecolor=:black)
+end
+plt_RLlow_base = deepcopy(plt_RLlow)
+scatter!([NaN], [NaN], c=:white, shape=:star8, ms=ms, msw=1, msα=1, msc=:black, markerstrokestyle=:solid, label="\$U_{\\infty} = $(URange[1])\\;\\mathrm{m/s}\$")
+for (i,k2) in enumerate(k2Range)
+    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
+    for mode in 1:nModes
+        scatter!(modeDampingsAdj[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        scatter!([modeDampingsAdj[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+end
+display(plt_RLlow)
+savefig(string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_low_lambda",λ,".pdf"))
 
-# # Animated root locus plot (zoom on low frequency modes)
-# plt_RLlow_anim = plot(plt_RLlow_base)
-# plot!(dpi=DPI)
-# for (i,k2) in enumerate(k2Range)
-#     scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
-# end
-# anim = @animate for (j,U) in enumerate(URange)
-#     title!("\$U_{\\infty} = $U\$ m/s")
-#     for (i,k2) in enumerate(k2Range)
-#         for mode in 1:nModes
-#             plot!([modeDampingsAdj[i,mode][j]], [modeFrequencies[i,mode][j]], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
-#         end
-#     end
-# end
-# gif_handle = gif(anim, string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_low_lambda",λ,".gif"), fps=fps)
-# display(gif_handle)
+# Animated root locus plot (zoom on low frequency modes)
+plt_RLlow_anim = plot(plt_RLlow_base)
+plot!(dpi=DPI)
+for (i,k2) in enumerate(k2Range)
+    scatter!([NaN], [NaN], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=labels[i])
+end
+anim = @animate for (j,U) in enumerate(URange)
+    title!("\$U_{\\infty} = $U\$ m/s")
+    for (i,k2) in enumerate(k2Range)
+        for mode in 1:nModes
+            plot!([modeDampingsAdj[i,mode][j]], [modeFrequencies[i,mode][j]], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        end
+    end
+end
+gif_handle = gif(anim, string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_low_lambda",λ,".gif"), fps=fps)
+display(gif_handle)
 
-# # Root locus (zoom on T-IP modes)
-# if λ == 1
-#     dampLim = [-2.5,2]
-#     freqLim = [2,45]
-# elseif λ == 2
-#     dampLim = [-4,4]
-#     freqLim = [5,80]
-# end
-# plt_RLTIP = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs))
-# plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
-# if λ == 1
-#     TIP1textPos = [0.5, 5]
-#     TIP2textPos = [0.5, 35]
-#     annotate!(TIP1textPos[1], TIP1textPos[2], text("1st T-IP", 12))
-#     annotate!(TIP2textPos[1], TIP2textPos[2], text("2nd T-IP", 12))
-#     quiver!([TIP1textPos[1]-0.35,TIP2textPos[1]-0.35], [TIP1textPos[2],TIP2textPos[2]], quiver=([-0.65,-0.55], [3,-2]), arrow=:closed, linecolor=:black)
-# end
-# plt_RLTIP_base = deepcopy(plt_RLTIP)
-# for (i,k2) in enumerate(k2Range)
-#     for mode in TIP_modes[i]
-#         scatter!(modeDampingsAdj[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
-#         scatter!([modeDampingsAdj[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-#     end
-# end
-# display(plt_RLTIP)
-# savefig(string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_TIP_lambda",λ,".pdf"))
+# Root locus (zoom on T-IP modes)
+if λ == 1
+    dampLim = [-2.5,2]
+    freqLim = [2,45]
+elseif λ == 2
+    dampLim = [-4,4]
+    freqLim = [5,80]
+end
+plt_RLTIP = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs))
+plot!([0; 0], freqLim, c=:black, ls=:dash, lw=2, label=false)
+if λ == 1
+    TIP1textPos = [0.5, 5]
+    TIP2textPos = [0.5, 35]
+    annotate!(TIP1textPos[1], TIP1textPos[2], text("1st T-IP", 12))
+    annotate!(TIP2textPos[1], TIP2textPos[2], text("2nd T-IP", 12))
+    quiver!([TIP1textPos[1]-0.35,TIP2textPos[1]-0.35], [TIP1textPos[2],TIP2textPos[2]], quiver=([-0.65,-0.55], [3,-2]), arrow=:closed, linecolor=:black)
+end
+plt_RLTIP_base = deepcopy(plt_RLTIP)
+for (i,k2) in enumerate(k2Range)
+    for mode in TIP_modes[i]
+        scatter!(modeDampingsAdj[i,mode], modeFrequencies[i,mode], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        scatter!([modeDampingsAdj[i,mode][1]], [modeFrequencies[i,mode][1]], c=colors[i], shape=mshape[i], ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+end
+display(plt_RLTIP)
+savefig(string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_TIP_lambda",λ,".pdf"))
 
-# # Animated root locus plot (zoom on T-IP modes)
-# plt_RLTIP_anim = plot(plt_RLTIP_base)
-# plot!(dpi=DPI)
-# anim = @animate for (j,U) in enumerate(URange)
-#     title!("\$U_{\\infty} = $U\$ m/s")
-#     for (i,k2) in enumerate(k2Range)
-#         for mode in TIP_modes[i]
-#             plot!([modeDampingsAdj[i,mode][j]], [modeFrequencies[i,mode][j]], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
-#         end
-#     end
-# end
-# gif_handle = gif(anim, string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_TIP_lambda",λ,".gif"), fps=fps)
-# display(gif_handle)
+# Animated root locus plot (zoom on T-IP modes)
+plt_RLTIP_anim = plot(plt_RLTIP_base)
+plot!(dpi=DPI)
+anim = @animate for (j,U) in enumerate(URange)
+    title!("\$U_{\\infty} = $U\$ m/s")
+    for (i,k2) in enumerate(k2Range)
+        for mode in TIP_modes[i]
+            plot!([modeDampingsAdj[i,mode][j]], [modeFrequencies[i,mode][j]], c=colors[i], shape=mshape[i], ms=ms, msw=msw, label=false)
+        end
+    end
+end
+gif_handle = gif(anim, string(absPathFig,"/cHALE_flutter_k2_range_rootlocus_TIP_lambda",λ,".gif"), fps=fps)
+display(gif_handle)
 
 # Root locus (zoom on phugoid mode)
 if λ == 1

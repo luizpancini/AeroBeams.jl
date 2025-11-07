@@ -2,12 +2,10 @@ using AeroBeams
 
 # Beam
 L = 1
-G = 1
-ρ = 1
-J,Is = 1,1
-A,Iy,Iz = 1e6,1e6,1e6
+GJ = 1
+ρA,ρIy,ρIz = 1e6,1/2,1/2
 nElem = 100
-beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=1e12,GJ=G*J)],I=[inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz,ρIs=ρ*Is)])
+beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=1e12,GJ=GJ)],I=[inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz)])
 
 # BCs: free - free
 BCs = Vector{BC}()
@@ -34,7 +32,7 @@ for m in 1:nModes
 end
 
 # Analytical solution
-c = sqrt(G*J/(ρ*Is))
+c = sqrt(GJ/(ρIy+ρIz))
 freqsAnalytical = [π*c/L*m for m in 1:nModes]
 
 # Show frequency comparison

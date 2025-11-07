@@ -203,11 +203,11 @@ mkpath(string(pwd(),"/test/newTestDataGenerators/springedLFrame"))
 writedlm("test/newTestDataGenerators/springedLFrame/u3_b.txt", u3_b)
 
 # Static analysis of a swept-back clamped beam with a driven flared folding wingtip
-include("../examples/sweptBackDrivenFFWTWing.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/sweptBackDrivenFFWTWing"))
-writedlm("test/newTestDataGenerators/sweptBackDrivenFFWTWing/phi.txt", ϕ)
-writedlm("test/newTestDataGenerators/sweptBackDrivenFFWTWing/hingeBalanceM.txt", hingeBalanceM)
-writedlm("test/newTestDataGenerators/sweptBackDrivenFFWTWing/pHinge.txt", pHinge)
+include("../examples/sweptBackFFWTWing.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/sweptBackFFWTWing"))
+writedlm("test/newTestDataGenerators/sweptBackFFWTWing/phi.txt", ϕ)
+writedlm("test/newTestDataGenerators/sweptBackFFWTWing/hingeBalanceM.txt", hingeBalanceM)
+writedlm("test/newTestDataGenerators/sweptBackFFWTWing/pHinge.txt", pHinge)
 
 # Static analysis of a semi-circular arch with tangential follower force
 include("../examples/tangentiallyForcedArch.jl")

@@ -4,7 +4,7 @@ using AeroBeams, LinearAlgebra, Plots, ColorSchemes
 L = 37.5
 b,H = 1,0.117
 A,Iy,Iz = b*H,b*H^3/12,H*b^3/12
-J = Is = Iy + Iz
+J = Iy + Iz
 Ksy,Ksz,Kt = 5/6,1/14.625,1/65.852
 r0 = [2.5; 0.0; 0.0]
 
@@ -31,7 +31,7 @@ complianceMatrix[1:3,1:3] .= [1/(E11*A) 0 0;
                               0 0 1/(G13*A*Ksz)]
 complianceMatrix[4:6,4:6] .= diagm([1/(G23*J*Kt); 1/(E11*Iy); 1/(E11*Iz)])
 stiffnessMatrix = inv(complianceMatrix)
-inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*Iy,ρ*Iz])
+inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*(Iy+Iz),ρ*Iy,ρ*Iz])
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix])
 
 # BCs

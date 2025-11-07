@@ -108,7 +108,7 @@ wGJ,wEIy,wEIz = AeroBeams.multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
 wρA,wρIs = 0.75,0.1
 wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
 Cwing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
-Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz,ρIs=wρIs)
+Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 #md nothing #hide
 
 # In order to position the center of the wing at the origin of the frame A, we need the position of the first node of the assembly, at the left wingtip. That `initialPosition` vector will be a function of the undeformed wing curvature `k2` (which is zero in the original model). Similarly, the initial angle of twist of the wing, `ψ`, is a function of the undeformed wing twist curvature, `k1` (also zero in the original model).

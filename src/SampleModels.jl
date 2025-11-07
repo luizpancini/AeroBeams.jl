@@ -591,11 +591,11 @@ function create_SMW(; aeroSolver::AeroSolver=Indicial(),flapLoadsSolver::FlapAer
     GJ,EIy,EIz = 1e4,2e4,4e6
     GJ *= torsionStiffnessFactor
     GJ,EIy,EIz = multiply_inplace!(stiffnessFactor, GJ,EIy,EIz)
-    ρA,ρIs = 0.75,0.1
-    ρIy,ρIz = (EIy/EIz)*ρIs,(1-EIy/EIz)*ρIs
+    ρA,ρIx = 0.75,0.1
+    ρIy,ρIz = (EIy/EIz)*ρIx,(1-EIy/EIz)*ρIx
     S = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
     S[4,6] = S[6,4] = -Ψ*sqrt(GJ*EIz)
-    I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs)
+    I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz)
 
     # Wing beam
     k = k2 isa Real ? [k1;k2;0] : x1->[k1;k2(x1);0]
@@ -666,11 +666,11 @@ function create_TDWing(; aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::Gust
     # Wing properties
     L = 0.4508
     GJ,EIy,EIz = 0.9539,0.4186,18.44
-    ρA,ρIs,ρIy = 0.2351,0.2056e-4,1e-6
-    ρIz = ρIy*EIz/EIy
+    ρA,ρIx,ρIy = 0.2351,0.2056e-4,1e-6
+    ρIz = ρIx - ρIy
     e3 = 1e-2*chord
     S = isotropic_stiffness_matrix(∞=∞,GJ=GJ,EIy=EIy,EIz=EIz)
-    I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,ρIs=ρIs,e3=e3)
+    I = inertia_matrix(ρA=ρA,ρIy=ρIy,ρIz=ρIz,e3=e3)
 
     # Wing beam
     beam = create_Beam(name="wingBeam",length=L,nElements=nElem,S=[S],I=[I],aeroSurface=wingSurf,rotationParametrization="E321",p0=[0;0;θ])
@@ -986,10 +986,10 @@ function create_conventional_HALE(; altitude::Real=20e3,aeroSolver::AeroSolver=I
     wGJ,wEIy,wEIz = 1e4,2e4,4e6
     wGJ *= torsionStiffnessFactor
     wGJ,wEIy,wEIz = multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
-    wρA,wρIs = 0.75,0.1
-    wρIy,wρIz = (wEIy/wEIz)*wρIs,(1-wEIy/wEIz)*wρIs
+    wρA,wρIx = 0.75,0.1
+    wρIy,wρIz = (wEIy/wEIz)*wρIx,(1-wEIy/wEIz)*wρIx
     Swing = isotropic_stiffness_matrix(∞=∞,GJ=wGJ,EIy=wEIy,EIz=wEIz)
-    Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz,ρIs=wρIs)
+    Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 
     # Initial position for first node of left wing
     if k2 isa Real
@@ -1112,7 +1112,7 @@ export create_conventional_HALE
 """
     create_BWB(; kwargs...)
 
-Creates a model based on the blended-wing-body described by Weihua Su's PhD thesis
+Creates a model based on the blended-wing-body described by Weihua Su's PhD thesis and in https://arc.aiaa.org/doi/10.2514/1.47317
 
 # Keyword arguments
 - `altitude::Real`: altitude
@@ -1130,8 +1130,9 @@ Creates a model based on the blended-wing-body described by Weihua Su's PhD thes
 - `updateAirfoilParameters::Bool`: flag to update airfoil parameters with airspeed
 - `hasTipCorrection::Bool`: flag to employ aerodynamic tip correction
 - `tipLossDecayFactor::Real`: tip loss decay factor
+- `wingRootAoA::Real`: wing root pitch angle for wing model [rad]
 """
-function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),∞::Real=1e12,stiffnessFactor::Real=1,airspeed::Real=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,g::Real=-9.80665,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Real=40)
+function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoadsSolver::GustAeroSolver=IndicialGust("Kussner"),derivationMethod::DerivationMethod=AD(),∞::Real=1e12,stiffnessFactor::Real=1,airspeed::Real=0,δElevIsTrimVariable::Bool=false,thrustIsTrimVariable::Bool=false,δElev::Union{Nothing,Real,<:Function}=nothing,thrust::Union{Real,<:Function}=0,g::Real=standard_atmosphere(altitude).g,updateAirfoilParameters::Bool=false,hasTipCorrection::Bool=false,tipLossDecayFactor::Real=40,wingRootAoA::Real=0)
 
     # Validate
     @assert ∞ > 1e8
@@ -1186,16 +1187,18 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     wChord = tipChord
     wNormSparPos = tipSparPos
     wNormFlapPos = 0.75
+    normFlapSpanL = [1/4; 1]
+    normFlapSpanR = [0; 3/4]
 
-    leftWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[1/4; 1],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor)
+    leftWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=normFlapSpanL,δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=-wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=normFlapSpanL,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=-tipLossDecayFactor)
 
-    rightWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=[0; 3/4],δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor)
+    rightWingSurf = δElevIsInput ? create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=normFlapSpanR,δ=δElev,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor) : create_AeroSurface(solver=aeroSolver,gustLoadsSolver=gustLoadsSolver,derivationMethod=derivationMethod,flapLoadsSolver=TableLookup(),airfoil=airfoil,Λ=wΛ,c=wChord,normSparPos=wNormSparPos,normFlapPos=wNormFlapPos,normFlapSpan=normFlapSpanR,δIsTrimVariable=δElevIsTrimVariable,updateAirfoilParameters=updateAirfoilParameters,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor)
 
     # Wing properties
     nElemWing = 8
     wEA,wGJ,wEIy,wEIz = 155_000_000,11_000,11_700,130_000
     wGJ,wEIy,wEIz = multiply_inplace!(stiffnessFactor, wGJ,wEIy,wEIz)
-    wρA,wρIy,wρIz = 6.2,0.0005,0.00462
+    wρA,wρIy,wρIz = 6.2,5e-4,4.62e-3
     Swing = isotropic_stiffness_matrix(∞=∞,EA=wEA,GJ=wGJ,EIy=wEIy,EIz=wEIz)
     Iwing = inertia_matrix(ρA=wρA,ρIy=wρIy,ρIz=wρIz)
 
@@ -1259,10 +1262,28 @@ function create_BWB(; altitude::Real=0,aeroSolver::AeroSolver=Indicial(),gustLoa
     # Initial position for left wingtip
     initialPosition = [-kp3[1]; kp3[2]; kp3[3]]
 
-    # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
-    BWB = create_Model(name="BWB",beams=[leftWing,leftFus,rightFus,rightWing],BCs=[thrustLeft,thrustRight],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;g],flapLinks=[elevonLink],trimLoadsLinks=thrustsLink)
+    # Generate beam copies for wing model (has to be done before aircraft model creation)
+    fus = deepcopy(rightFus)
+    wing = deepcopy(rightWing)
 
-    return BWB
+    # Set root angle of attack for beams of wing model
+    for beam in [fus,wing]
+        beam.rotationParametrization = "E321"
+        beam.p0 .+= [0; 0; wingRootAoA]
+        update_beam!(beam)
+    end
+
+    # BCs for wing model (clamp + thrust)
+    clamp = create_BC(name="clamp",beam=fus,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+    wingThrust = create_BC(name="thrust",beam=fus,node=nElemFus+1,types=["Ff2A"],values=[t->thrustValue(t)])
+
+    # Aircraft model (with initial position such that aircraft center is coincident with the origin of frame A)
+    BWB = create_Model(name="BWB",beams=[leftWing,leftFus,rightFus,rightWing],BCs=[thrustLeft,thrustRight],initialPosition=initialPosition,v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;-g],flapLinks=[elevonLink],trimLoadsLinks=thrustsLink)
+
+    # Right fuselage + wing model
+    rightWingModel = create_Model(name="rightWingModel",beams=[fus,wing],BCs=[clamp,wingThrust],v_A=[0;airspeed;0],altitude=altitude,gravityVector=[0;0;-g])
+
+    return BWB,rightWingModel
 end
 export create_BWB
 

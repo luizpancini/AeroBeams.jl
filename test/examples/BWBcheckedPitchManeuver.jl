@@ -13,7 +13,7 @@ U = 80
 NRtrim = create_NewtonRaphson(ρ=0.5,relativeTolerance=1e-12,maximumIterations=100,displayStatus=false)
 
 # Model for trim problem
-BWBtrim = create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h,airspeed=U)
+BWBtrim = first(create_BWB(aeroSolver=aeroSolver,δElevIsTrimVariable=true,thrustIsTrimVariable=true,altitude=h,airspeed=U))
 
 # Create and solve trim problem
 trimProblem = create_TrimProblem(model=BWBtrim,systemSolver=NRtrim)
@@ -45,7 +45,7 @@ tδfinal = tδpeak+tδramp
 )
 
 # Model for dynamic problem
-BWBdynamic = create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=δ,thrust=trimThrust)
+BWBdynamic = first(create_BWB(aeroSolver=aeroSolver,altitude=h,airspeed=U,δElev=δ,thrust=trimThrust))
 
 # Time variables
 Δt = 5e-3

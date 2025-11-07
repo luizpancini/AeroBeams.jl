@@ -9,11 +9,11 @@ g = 9.80665
 # Beam
 L,r = 1.0,0.01
 A,J = π*r^2,π/2*r^4
-I,Is = J/2,J
+I = J/2
 E,G,ρ = 200e9,80e9,7.9e3
 nElem = 5
 stiffnessMatrix = diagm([E*A,G*A,G*A,G*J,E*I,E*I])
-inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,ρ*Is,ρ*I,ρ*I])
+inertiaMatrix = diagm([ρ*A,ρ*A,ρ*A,2ρ*I,ρ*I,ρ*I])
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[stiffnessMatrix],I=[inertiaMatrix],rotationParametrization="E321",p0=[0,(π/2-θ₀),0])
 
 # BCs

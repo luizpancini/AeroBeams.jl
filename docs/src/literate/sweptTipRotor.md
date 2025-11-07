@@ -22,7 +22,7 @@ using AeroBeams
 L1,L2 = 31.5,6.0
 b,H = 1,0.063
 A,Iy,Iz = b*H,b*H^3/12,H*b^3/12
-J = Is = Iy + Iz
+J = Iy + Iz
 Ksy,Ksz,Kt = 5/6,1/14.625,1/65.852
 r0 = [2.5; 0.0; 0.0]
 
@@ -33,7 +33,7 @@ G = E/(2*(1+0.325))
 
 # Seciontal stiffness and inertia matrices
 S = isotropic_stiffness_matrix(EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)
-I = inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz,ρIs=ρ*Is)
+I = inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz)
 
 # Discretization variables
 nElemBeam1 = 20
