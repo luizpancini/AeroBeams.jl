@@ -5,7 +5,7 @@
 L1,L2 = 31.5,6.0
 b,H = 1,0.063
 A,Iy,Iz = b*H,b*H^3/12,H*b^3/12
-J = Is = Iy + Iz
+J = Iy + Iz
 Ksy,Ksz,Kt = 5/6,1/14.625,1/65.852
 r0 = [2.5; 0.0; 0.0]
 
@@ -16,7 +16,7 @@ G = E/(2*(1+0.325))
 
 # Seciontal stiffness and inertia matrices
 S = isotropic_stiffness_matrix(EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)
-I = inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz,ρIs=ρ*Is)
+I = inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz)
 
 # Discretization variables
 nElemBeam1 = 20
@@ -129,4 +129,4 @@ for (i,ω) in enumerate(ωRange)
     plot!(tipAngleRange*180/π,numFreqsCoupled, c=colors[i], lw=2, label=false)
     scatter!(expTipAngles,expFreqs4[i,:], c=colors[i], ms=4, msw=0, label=false)
     plot!([NaN], [NaN], lc=colors[i], mc=colors[i], lw=2, ms=4, msw=0, label=modeLabels[i])
-end</code></pre><p><img src="../sweptTipRotor_1B.svg" alt/> <img src="../sweptTipRotor_2B.svg" alt/> <img src="../sweptTipRotor_3B.svg" alt/> <img src="../sweptTipRotor_TB.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../PazyWingFlutterPitchRange/">« Flutter analysis of the Pazy wing</a><a class="docs-footer-nextpage" href="../twoStoryFrame/">Modal analysis of a two-story frame »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.15.0 on <span class="colophon-date" title="Friday 31 October 2025 00:59">Friday 31 October 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p><img src="../sweptTipRotor_1B.svg" alt/> <img src="../sweptTipRotor_2B.svg" alt/> <img src="../sweptTipRotor_3B.svg" alt/> <img src="../sweptTipRotor_TB.svg" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../PazyWingFlutterPitchRange/">« Flutter analysis of the Pazy wing</a><a class="docs-footer-nextpage" href="../twoStoryFrame/">Modal analysis of a two-story frame »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.15.0 on <span class="colophon-date" title="Friday 7 November 2025 16:43">Friday 7 November 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
