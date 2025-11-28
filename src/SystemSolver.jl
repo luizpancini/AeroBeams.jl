@@ -297,12 +297,15 @@ function solve_linear_system!(problem::Problem)
     #---------------------------------------------------------------------------
     # Trim problem
     if problem isa TrimProblem
+        A = Matrix(jacobian)
         if pseudoInverseMethod == :MoorePenrose
-            Δx .= -pinv(Matrix(jacobian))*residual
+            try
+                Δx .= -pinv(A) * residual
+            catch
+                Δx .= -((A'A + εTrim*I) \ A') * residual
+            end
         elseif pseudoInverseMethod == :dampedLeastSquares
-            A = Matrix(jacobian)
-            Ainv = (A'A + εTrim*I) \ A'
-            Δx .= -Ainv*residual
+            Δx .= -((A'A + εTrim*I) \ A') * residual
         end
     # Problem with hinge axis constraints    
     elseif hasHingeAxisConstraints
