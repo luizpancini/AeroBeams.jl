@@ -1,6 +1,6 @@
 name = "AeroBeams"
 uuid = "4684ee71-20c3-4c77-8fc5-ebacc9f0342e"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Luiz Pancini <luizpancini@usp.br"]
 
 [deps]

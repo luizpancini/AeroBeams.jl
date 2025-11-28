@@ -126,12 +126,13 @@ end
 display(plt_OOP)
 savefig(string(absPath,"/heliosTrim_OOP.pdf"))
 
-# Plot trimmed shape across of elastic vehicle at payload range extrema
-plt_trimmedShapes = plot_steady_deformations(problem[1,1,[1,length(PRange)]],backendSymbol=:gr,plotBCs=false,plotDistLoads=false,plotAxes=false,plotGrid=false,legendEntries=["\$P = $P \$ lb" for P in extrema(PRange)],legendPos=(0.5,0.7),view=(45,15),plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/heliosTrim_shapes.pdf"))
+# Plot trimmed shape across of elastic vehicle at selected payload values
+ind2plot = [16]
+plt_trimmedShapes = plot_steady_deformations(problem[1,1,ind2plot],backendSymbol=:gr,plotUndeformed=true,plotBCs=false,plotDistLoads=false,plotAxes=false,plotGrid=false,legendEntries=["\$P = $P \$ lb" for P in PRange[ind2plot]],legendPos=(0.5,0.7),view=(45,15),plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/heliosTrim_shapes.pdf"))
 display(plt_trimmedShapes)
 
-# Plot trimmed shape across of elastic vehicle at payload range extrema
-plt_trimmedShapes = plot_steady_deformations(problem[1,1,:],backendSymbol=:gr,plotBCs=false,plotDistLoads=false,plotAxes=false,plotGrid=false,view=(45,15),plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/heliosTrim_shapes_all.pdf"))
-display(plt_trimmedShapes)
+# # Plot trimmed shape across of elastic vehicle across payload range
+# plt_trimmedShapes = plot_steady_deformations(problem[1,1,:],backendSymbol=:gr,plotBCs=false,plotDistLoads=false,plotAxes=false,plotGrid=false,view=(45,15),plotLimits=([-L,L],[-L,L],[-L,L]),save=true,savePath=string(relPath,"/heliosTrim_shapes_all.pdf"))
+# display(plt_trimmedShapes)
 
 println("Finished heliosTrim.jl")

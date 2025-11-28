@@ -108,10 +108,11 @@ Plots the deformed state of the model in the given problem
 - `showScale::Bool`: flag to show scale on plot
 - `scalePos::Vector{<:Real}`: position of scale on plot
 - `DPI::Int`: pixel density
+- `loadsSizeScaler::Real`: scaler for plot size of distributed and concentrated loads
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_steady_deformation(problem::Problem; backendSymbol::Symbol=:gr,plotBCs::Bool=true,plotUndeformed::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotLegend::Bool=true,plotAxes::Bool=true,plotGrid::Bool=true,legendPos=:topright,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,element2centralize::Union{Nothing,Int}=nothing,σ2plot::Vector{<:Real}=[1],partialLoadStepsLineStyle::Symbol=:dot,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_steady_deformation(problem::Problem; backendSymbol::Symbol=:gr,plotBCs::Bool=true,plotUndeformed::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotLegend::Bool=true,plotAxes::Bool=true,plotGrid::Bool=true,legendPos=:topright,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,element2centralize::Union{Nothing,Int}=nothing,σ2plot::Vector{<:Real}=[1],partialLoadStepsLineStyle::Symbol=:dot,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],loadsSizeScaler::Real=1,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert typeof(problem) in [SteadyProblem,TrimProblem,EigenProblem]
@@ -119,6 +120,7 @@ function plot_steady_deformation(problem::Problem; backendSymbol::Symbol=:gr,plo
     @assert scale > 0
     @assert lw > 0
     @assert tolPlane > 0
+    @assert loadsSizeScaler > 0
     @assert 0 < surfα <= 1
     @assert 100 <= DPI <= 600 "set DPI between 100 and 600"
     if !isnothing(element2centralize)
@@ -268,12 +270,12 @@ function plot_steady_deformation(problem::Problem; backendSymbol::Symbol=:gr,plo
 
         # Plot distributed loads (including aerodynamic and gravitational), if applicable
         if plotDistLoads
-            plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,1,σindex=σindex)
+            plt = plot_distributed_loads!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,1,σindex=σindex,λ=loadsSizeScaler)
         end
 
         # Plot generalized displacements and concentrated loads, if applicable
         if plotBCs
-            plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,0,1,σindex=σindex)
+            plt = plot_BCs!(plt,problem,x1Def,x2Def,x3Def,x1Plane,x2Plane,x3Plane,view,0,1,σindex=σindex,λ=loadsSizeScaler)
         end
 
         # Update TF for plane plot
@@ -334,10 +336,12 @@ Plots the deformed state of the models in the array of problems
 
 # Keyword arguments
 - `backendSymbol::Symbol`: backend symbol for plot
+- `plotUndeformed::Bool`: flag to plot undeformed assembly
 - `plotBCs::Bool`: flag to plot BCs
 - `plotDistLoads::Bool`: flag to plot distributed loads (includes gravitational and aerodynamic loads)
 - `view::Union{Nothing,Tuple{Real,Real}}`: view angles
 - `lw::Real`: linewidth
+- `colorUndef`: color for undeformed assembly
 - `colorScheme`: color scheme for deformed assemblies
 - `plotAxes::Bool`: flag to plot axes
 - `plotGrid::Bool`: flag to plot grid
@@ -352,7 +356,7 @@ Plots the deformed state of the models in the array of problems
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_steady_deformations(problems::Array{<:Problem}; backendSymbol::Symbol=:gr,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,lw::Real=2,colorScheme=:rainbow,plotAxes::Bool=true,plotGrid::Bool=true,legendPos=:topright,legendEntries::Union{Nothing,Array{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,elements2centralize::Union{Nothing,AbstractArray{Int}}=nothing,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_steady_deformations(problems::Array{<:Problem}; backendSymbol::Symbol=:gr,plotUndeformed::Bool=true,plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,lw::Real=2,colorUndef=:black,colorScheme=:rainbow,plotAxes::Bool=true,plotGrid::Bool=true,legendPos=:topright,legendEntries::Union{Nothing,Array{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,elements2centralize::Union{Nothing,AbstractArray{Int}}=nothing,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -387,6 +391,10 @@ function plot_steady_deformations(problems::Array{<:Problem}; backendSymbol::Sym
     if !plotAxes
         plot!(framestyle=:none)
     end
+    if plotUndeformed
+        labelUndef = !isnothing(legendEntries) ? "Undeformed" : false
+        plot!([NaN],[NaN], c=colorUndef, lw=lw, label=labelUndef)
+    end
     if !isnothing(legendEntries)
         for (i,legendEntry) in enumerate(legendEntries)
             plot!([NaN],[NaN], c=colors[i], lw=lw, label=legendEntry)
@@ -406,6 +414,9 @@ function plot_steady_deformations(problems::Array{<:Problem}; backendSymbol::Sym
         @unpack elements,nElementsTotal,units = problem.model
 
         # Initialize arrays
+        x1Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+        x2Undef = Array{Vector{Float64}}(undef,nElementsTotal)
+        x3Undef = Array{Vector{Float64}}(undef,nElementsTotal)
         x1Def = Array{Vector{Float64}}(undef,nElementsTotal)
         x2Def = Array{Vector{Float64}}(undef,nElementsTotal)
         x3Def = Array{Vector{Float64}}(undef,nElementsTotal)
@@ -419,13 +430,13 @@ function plot_steady_deformations(problems::Array{<:Problem}; backendSymbol::Sym
             @unpack r_n1,r_n2,aero = element
             @unpack u_n1,u_n2,p_n1,p_n2 = problem.nodalStatesOverσ[end][e]
             # Set undeformed coordinates
-            x1Undef = [r_n1[1]; r_n2[1]]
-            x2Undef = [r_n1[2]; r_n2[2]]
-            x3Undef = [r_n1[3]; r_n2[3]]
+            x1Undef[e] = [r_n1[1]; r_n2[1]]
+            x2Undef[e] = [r_n1[2]; r_n2[2]]
+            x3Undef[e] = [r_n1[3]; r_n2[3]]
             # Set deformed coordinates
-            x1Def[e] = x1Undef .+ [u_n1[1]; u_n2[1]] .+ ΔuDef[1]
-            x2Def[e] = x2Undef .+ [u_n1[2]; u_n2[2]] .+ ΔuDef[2]
-            x3Def[e] = x3Undef .+ [u_n1[3]; u_n2[3]] .+ ΔuDef[3]
+            x1Def[e] = x1Undef[e] .+ [u_n1[1]; u_n2[1]] .+ ΔuDef[1]
+            x2Def[e] = x2Undef[e] .+ [u_n1[2]; u_n2[2]] .+ ΔuDef[2]
+            x3Def[e] = x3Undef[e] .+ [u_n1[3]; u_n2[3]] .+ ΔuDef[3]
             # Skip elements without aero surfaces, or if those are not to be plotted
             if !plotAeroSurf || isnothing(aero)
                 undefAirfoilCoords_n1[e],undefAirfoilCoords_n2[e],defAirfoilCoords_n1[e],defAirfoilCoords_n2[e] = nothing,nothing,nothing,nothing
@@ -452,26 +463,41 @@ function plot_steady_deformations(problems::Array{<:Problem}; backendSymbol::Sym
                 if plotAxes
                     plot!(xlabel=string("\$x_2\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
                 end
+                if plotUndeformed && i==1
+                    plot!(x2Undef, x3Undef, c=colorUndef,lw=lw,label=false)
+                end
                 plot!(x2Def, x3Def, c=colors[i],aspect_ratio=:equal,lw=lw,ls=:solid,label=false)
             elseif x2Plane
                 if plotAxes
                     plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_3\$ [",units.length,"]"))
+                end
+                if plotUndeformed && i==1
+                    plot!(x1Undef, x3Undef, c=colorUndef,lw=lw,label=false)
                 end
                 plot!(x1Def, x3Def, c=colors[i],aspect_ratio=:equal,lw=lw,ls=:solid,label=false)
             elseif x3Plane
                 if plotAxes
                     plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"))
                 end
+                if plotUndeformed && i==1
+                    plot!(x2Undef, x2Undef, c=colorUndef,lw=lw,label=false)
+                end
                 plot!(x1Def, x2Def, c=colors[i],aspect_ratio=:equal,lw=lw,ls=:solid,label=false)
             else
                 if plotAxes
                     plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+                end
+                if plotUndeformed && i==1
+                    plot!(x1Undef, x2Undef, x3Undef, c=colorUndef,lw=lw,label=false)
                 end
                 plot!(x1Def, x2Def, x3Def, camera=(45,45),c=colors[i],lw=lw,ls=:solid,label=false)
             end
         else
             if plotAxes
                 plot!(xlabel=string("\$x_1\$ [",units.length,"]"),ylabel=string("\$x_2\$ [",units.length,"]"),zlabel=string("\$x_3\$ [",units.length,"]"))
+            end
+            if plotUndeformed && i==1
+                plot!(x1Undef, x2Undef, x3Undef, camera=view,c=colorUndef,lw=lw,label=false)
             end
             plot!(x1Def, x2Def, x3Def, camera=view,c=colors[i],lw=lw,ls=:solid,label=false)
         end
@@ -480,6 +506,13 @@ function plot_steady_deformations(problems::Array{<:Problem}; backendSymbol::Sym
         for e in 1:nElementsTotal
             if isnothing(defAirfoilCoords_n1[e])
                 continue
+            end
+            # Plot undeformed aerodynamic surfaces
+            if plotUndeformed && i==1
+                Xu = [undefAirfoilCoords_n1[e][1,:] undefAirfoilCoords_n2[e][1,:]]
+                Yu = [undefAirfoilCoords_n1[e][2,:] undefAirfoilCoords_n2[e][2,:]]
+                Zu = [undefAirfoilCoords_n1[e][3,:] undefAirfoilCoords_n2[e][3,:]]
+                surface!(Xu,Yu,Zu, c=palette([colorUndef,colorUndef],2), colorbar=false, alpha=surfα)
             end
             # Plot deformed aerodynamic surfaces
             Xd = [defAirfoilCoords_n1[e][1,:] defAirfoilCoords_n2[e][1,:]]
@@ -966,7 +999,7 @@ Plots the mode shapes of the model in the given eigenproblem
 - `numberOfColors::Union{Missing,Int}`: number of colors in legend color gradient
 - `plotAxes::Bool`: flag to plot axes
 - `plotGrid::Bool`: flag to plot grid
-- `plotLimits::Union{Nothing,Tuple{Vector{Int},Vector{Int}}}` = plot limits
+- `plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}` = plot limits
 - `legendPos`: legend position
 - `modeLabels::Union{Nothing,Vector{String}}` = labels for each mode
 - `tolPlane::Real`: displacement tolerance to plot as plane
@@ -975,7 +1008,7 @@ Plots the mode shapes of the model in the given eigenproblem
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_mode_shapes(problem::EigenProblem; backendSymbol::Symbol=:pyplot,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,scale::Real=1,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{Int},Vector{Int}}}=nothing,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::EigenProblem; backendSymbol::Symbol=:pyplot,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,scale::Real=1,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -1203,13 +1236,30 @@ function plot_mode_shapes(problem::EigenProblem; backendSymbol::Symbol=:pyplot,p
             surface!(Xd,Yd,Zd, c=palette([modeColors[mode],modeColors[mode]],2), colorbar=false, alpha=surfα)
         end
 
+        # Update TF for plane plot
+        isPlane = isnothing(view) && (x1Plane || x2Plane || x3Plane)
+
+        # Compute plot limits
+        plotMax = 1.2*max(maximum(reduce(vcat, x1Modal[mode,:])),maximum(reduce(vcat, x2Modal[mode,:])),maximum(reduce(vcat, x3Modal[mode,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
+        plotMin = 1.2*min(minimum(reduce(vcat, x1Modal[mode,:])),minimum(reduce(vcat, x2Modal[mode,:])),minimum(reduce(vcat, x3Modal[mode,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
+
         # Set plot limits
-        if !isnothing(plotLimits)
-            plot!(xlims=[plotLimits[1][1],plotLimits[2][1]],ylims=[plotLimits[1][2],plotLimits[2][2]],zlims=[plotLimits[1][3],plotLimits[2][3]])
-        elseif !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
-            plotMax = max(plotMax,maximum(reduce(vcat, x1Modal[mode,:])),maximum(reduce(vcat, x2Modal[mode,:])),maximum(reduce(vcat, x3Modal[mode,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
-            plotMin = min(plotMin,minimum(reduce(vcat, x1Modal[mode,:])),minimum(reduce(vcat, x2Modal[mode,:])),minimum(reduce(vcat, x3Modal[mode,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
-            plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+        if isPlane
+            if isnothing(plotLimits)
+
+            elseif x1Plane
+                plot!(xlims=plotLimits[2],ylims=plotLimits[3])
+            elseif x2Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[3])
+            elseif x3Plane
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2])
+            end
+        else
+            if isnothing(plotLimits)
+                plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+            else
+                plot!(xlims=plotLimits[1],ylims=plotLimits[2],zlims=plotLimits[3])
+            end
         end
     end
 
@@ -1250,7 +1300,7 @@ Plots the animation of mode shapes of the model in the given eigenproblem
 - `numberOfColors::Union{Missing,Int}`: number of colors in legend color gradient
 - `plotAxes::Bool`: flag to plot axes
 - `plotGrid::Bool`: flag to plot grid
-- `plotLimits::Union{Nothing,Tuple{Vector{Int},Vector{Int}}}` = plot limits
+- `plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}` = plot limits
 - `showLegend::Bool`: flag to show legend
 - `legendFontSize::Int`: legend font size
 - `legendPos`: legend position
@@ -1263,7 +1313,7 @@ Plots the animation of mode shapes of the model in the given eigenproblem
 - `savePath::String`: relative path on which to save the figure
 - `displayProgress::Bool`: flag to display progress of gif creation
 """
-function plot_mode_shapes_animation(problem::EigenProblem; backendSymbol::Symbol=:pyplot,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,matchModeFrequency::Bool=true,scale::Real=1,nFramesPerCycle::Int=51,fps::Int=30,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{Int},Vector{Int}}}=nothing,showLegend::Bool=true,legendFontSize::Int=12,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/anim.gif",displayProgress::Bool=false)
+function plot_mode_shapes_animation(problem::EigenProblem; backendSymbol::Symbol=:pyplot,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,matchModeFrequency::Bool=true,scale::Real=1,nFramesPerCycle::Int=51,fps::Int=30,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showLegend::Bool=true,legendFontSize::Int=12,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/anim.gif",displayProgress::Bool=false)
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -1517,15 +1567,33 @@ function plot_mode_shapes_animation(problem::EigenProblem; backendSymbol::Symbol
                 surface!(Xd,Yd,Zd, c=palette([modeColors[mode],modeColors[mode]],2), colorbar=false, alpha=surfα)
             end
 
+            # Update TF for plane plot
+            isPlane = isnothing(view) && (x1Plane || x2Plane || x3Plane)
+
+            # Compute plot limits
+            plotMax = 1.2*max(maximum(reduce(vcat, x1Modal[mode,:])),maximum(reduce(vcat, x2Modal[mode,:])),maximum(reduce(vcat, x3Modal[mode,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
+            plotMin = 1.2*min(minimum(reduce(vcat, x1Modal[mode,:])),minimum(reduce(vcat, x2Modal[mode,:])),minimum(reduce(vcat, x3Modal[mode,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
+
             # Set plot limits
-            if !isnothing(plotLimits)
-                plot!(xlims=[plotLimits[1][1],plotLimits[2][1]],ylims=[plotLimits[1][2],plotLimits[2][2]],zlims=[plotLimits[1][3],plotLimits[2][3]])
-            elseif !(x1Plane || x2Plane || x3Plane) || !isnothing(view)
-                plotMax = max(plotMax,maximum(reduce(vcat, x1Modal[mode,:])),maximum(reduce(vcat, x2Modal[mode,:])),maximum(reduce(vcat, x3Modal[mode,:])),maximum(reduce(vcat, x1Steady)),maximum(reduce(vcat, x2Steady)),maximum(reduce(vcat, x3Steady)))
-                plotMin = min(plotMin,minimum(reduce(vcat, x1Modal[mode,:])),minimum(reduce(vcat, x2Modal[mode,:])),minimum(reduce(vcat, x3Modal[mode,:])),minimum(reduce(vcat, x1Steady)),minimum(reduce(vcat, x2Steady)),minimum(reduce(vcat, x3Steady)))
-                plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+            if isPlane
+                if isnothing(plotLimits)
+
+                elseif x1Plane
+                    plot!(xlims=plotLimits[2],ylims=plotLimits[3])
+                elseif x2Plane
+                    plot!(xlims=plotLimits[1],ylims=plotLimits[3])
+                elseif x3Plane
+                    plot!(xlims=plotLimits[1],ylims=plotLimits[2])
+                end
+            else
+                if isnothing(plotLimits)
+                    plot!(xlims=[plotMin,plotMax],ylims=[plotMin,plotMax],zlims=[plotMin,plotMax])
+                else
+                    plot!(xlims=plotLimits[1],ylims=plotLimits[2],zlims=plotLimits[3])
+                end
             end
         end
+        
         # Show progress, if applicable
         if displayProgress
             progress = round(counter/length(frameVec)*100,digits=1)

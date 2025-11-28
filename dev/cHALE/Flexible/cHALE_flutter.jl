@@ -4,7 +4,7 @@ using AeroBeams, LinearInterpolations
 aeroSolver = Indicial()
 
 # Stiffness factor
-λ = 1
+λ = 200
 
 # Bending pre-curvature
 k2 = 0.0
@@ -24,11 +24,11 @@ hasInducedDrag = true
 if λ == 1
     nElemWing = 40
 elseif λ > 1
-    nElemWing = 40
+    nElemWing = 20
 end
 nElemTailBoom = 5
 nElemHorzStabilizer = 4
-nElemVertStabilizer = 2
+nElemVertStabilizer = 1
 
 # System solver for trim problem
 relaxFactor = 0.5
@@ -172,7 +172,7 @@ end
 
 using Plots, ColorSchemes
 
-colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])
+colors = cgrad(:rainbow, nModes, categorical=true)
 
 # Set paths
 relPath = "/dev/cHALE/Flexible/outputs/figures/cHALE_flutter"
@@ -184,105 +184,105 @@ mkpath(absPath)
 # display(plt_modes)
 
 # Modes animation
-modesAnim = plot_mode_shapes_animation(eigenProblem[1],scale=10,view=(60,15),modalColorScheme=colors,legendPos=:top,modes2plot=[3,5],nFramesPerCycle=41,plotSteady=false,plotBCs=false,plotAxes=false,legendFontSize=10,fps=20,save=true,savePath=string(relPath,"/cHALE_flutter_modes_k2_",k2,"_lambda",λ,".gif"),displayProgress=true)
+modesAnim = plot_mode_shapes_animation(eigenProblem[1],scale=10,view=(60,15),modalColorScheme=colors,legendPos=:top,modes2plot=[4,5],nFramesPerCycle=41,plotSteady=false,plotBCs=false,plotAxes=false,legendFontSize=10,fps=20,save=true,savePath=string(relPath,"/cHALE_flutter_modes_k2_",k2,"_lambda",λ,".gif"),displayProgress=true)
 display(modesAnim)
 
-# Plot configurations
-modeColors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], nModes)
-ts = 10
-fs = 16
-lfs = 10
-lw = 2
-ms = 3
-msw = 0
-gr()
+    # Plot configurations
+    modeColors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold], nModes)
+    ts = 10
+    fs = 16
+    lfs = 10
+    lw = 2
+    ms = 3
+    msw = 0
+    gr()
 
-# Root locus
-if λ == 1
-    dampLim = [-10,2]
-    freqLim = [0,50]
-elseif λ == 2
-    dampLim = [-10,2]
-    freqLim = [0,80]
-else
-    dampLim = [-10,2]
-    freqLim = [0,100]
-end
-plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
-for mode in 1:nModes
-    plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
-    plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-end
-display(plt_RL)
-savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus.pdf"))
+    # Root locus
+    if λ == 1
+        dampLim = [-10,2]
+        freqLim = [0,50]
+    elseif λ == 2
+        dampLim = [-10,2]
+        freqLim = [0,80]
+    else
+        dampLim = [-10,2]
+        freqLim = [0,100]
+    end
+    plt_RL = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
+    for mode in 1:nModes
+        plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
+        plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+    display(plt_RL)
+    savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus.pdf"))
 
-# Root locus - low frequency modes
-if λ == 1
-    dampLim = [-6,2]
-    freqLim = [0,5]
-elseif λ == 2
-    dampLim = [-6,2]
-    freqLim = [0,10]
-end
-plt_RLlow = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
-for mode in 1:nModes
-    plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
-    plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-end
-display(plt_RLlow)
-savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus_low.pdf"))
+    # Root locus - low frequency modes
+    if λ == 1
+        dampLim = [-6,2]
+        freqLim = [0,5]
+    elseif λ == 2
+        dampLim = [-6,2]
+        freqLim = [0,10]
+    end
+    plt_RLlow = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
+    for mode in 1:nModes
+        plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
+        plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+    display(plt_RLlow)
+    savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus_low.pdf"))
 
-# Root locus (zoom on T-IP modes)
-if λ == 1
-    dampLim = [-2.5,2]
-    freqLim = [2,45]
-elseif λ == 2
-    dampLim = [-2.5,4]
-    freqLim = [5,80]
-end     
-plt_RLTIP = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs))
-for mode in 1:nModes
-    plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
-    plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-end
-display(plt_RLTIP)
-savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus_TIP.pdf"))
+    # Root locus (zoom on T-IP modes)
+    if λ == 1
+        dampLim = [-2.5,2]
+        freqLim = [2,45]
+    elseif λ == 2
+        dampLim = [-2.5,4]
+        freqLim = [5,80]
+    end     
+    plt_RLTIP = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs))
+    for mode in 1:nModes
+        plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
+        plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+    display(plt_RLTIP)
+    savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus_TIP.pdf"))
 
-# Root locus - phugoid
-if λ == 1
-    dampLim = [-0.15,0.15]
-    freqLim = [0,0.5]
-elseif λ == 2
-    dampLim = [-0.15,0.35]
-    freqLim = [0,0.5]
-end
-plt_RLphu = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
-for mode in 1:nModes
-    plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
-    plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
-end
-display(plt_RLphu)
-savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus_phugoid.pdf"))
+    # Root locus - phugoid
+    if λ == 1
+        dampLim = [-0.15,0.15]
+        freqLim = [0,0.5]
+    elseif λ == 2
+        dampLim = [-0.15,0.35]
+        freqLim = [0,0.5]
+    end
+    plt_RLphu = plot(xlabel="Damping [1/s]", ylabel="Frequency [rad/s]", xlims=dampLim, ylims=freqLim, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend_position=:topleft)
+    for mode in 1:nModes
+        plot!(modeDampings[mode], modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
+        plot!([modeDampings[mode][1]], [modeFrequencies[mode][1]], c=modeColors[mode], shape=:circle, ms=ms, msw=2, msα=1, msc=:black, markerstrokestyle=:solid, label=false)
+    end
+    display(plt_RLphu)
+    savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_rootlocus_phugoid.pdf"))
 
-# V-g-f
-if λ == 1
-    dampLim = [-0.3,0.2]
-    freqLim = [0,50]
-elseif λ == 2
-    dampLim = [-0.3,0.25]
-    freqLim = [0,80]
-end
-plt_Vf = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=freqLim, tickfont=font(ts), guidefont=font(12))
-for mode in 1:nModes
-    plot!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
-end
-plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[URange[1],URange[end]], ylims=dampLim, tickfont=font(ts), guidefont=font(12), legendfontsize=lfs, legend=:topleft)
-plot!(plt_Vg,URange,zeros(length(URange)), c=:gray, lw=lw, ls=:dash, label=false)
-for mode in 1:nModes
-    plot!(URange, modeDampings[mode]./modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
-end
-plt_Vgf = plot(plt_Vf,plt_Vg, layout=(2,1))
-display(plt_Vgf)
-savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_Vgf.pdf"))
+    # V-g-f
+    if λ == 1
+        dampLim = [-0.3,0.2]
+        freqLim = [0,50]
+    elseif λ == 2
+        dampLim = [-0.3,0.25]
+        freqLim = [0,80]
+    end
+    plt_Vf = plot(ylabel="Frequency [rad/s]", xlims=[URange[1],URange[end]], ylims=freqLim, tickfont=font(ts), guidefont=font(12))
+    for mode in 1:nModes
+        plot!(URange, modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
+    end
+    plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[URange[1],URange[end]], ylims=dampLim, tickfont=font(ts), guidefont=font(12), legendfontsize=lfs, legend=:topleft)
+    plot!(plt_Vg,URange,zeros(length(URange)), c=:gray, lw=lw, ls=:dash, label=false)
+    for mode in 1:nModes
+        plot!(URange, modeDampings[mode]./modeFrequencies[mode], c=modeColors[mode], shape=:circle, ms=ms, msw=msw, label=false)
+    end
+    plt_Vgf = plot(plt_Vf,plt_Vg, layout=(2,1))
+    display(plt_Vgf)
+    savefig(string(absPath,"/cHALE_flutter_lambda",λ,"_k2_",k2,"_Vgf.pdf"))
 
 println("Finished cHALE_flutter.jl")
