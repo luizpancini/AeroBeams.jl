@@ -50,7 +50,8 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot trimmed shape and undeformed shape
-plt_trimmedShape = plot_steady_deformation(trimProblem,backendSymbol=:gr,plotBCs=false,plotDistLoads=false,plotAxes=false,plotGrid=false,legendPos=(0.47,0.7),view=(30,30),plotLimits=([-L*2/3,L*2/3],[-L*2/3,L*2/3],[-L*2/3,L*2/3]),save=true,savePath=string(relPath,"/cHALE_trimShape_lambda",λ,"_k2",k2,"_U",U,".pdf"))
+L = 16
+plt_trimmedShape = plot_steady_deformation(trimProblem,backendSymbol=:gr,plotUndeformed=false,plotBCs=false,plotDistLoads=false,plotAxes=false,plotGrid=false,legendPos=(0.47,0.7),view=(30,30),plotLimits=([-L*2/3,L*2/3],[-L*2/3,L*2/3],[-L*2/3,L*2/3]),save=true,savePath=string(relPath,"/cHALE_trimShape_lambda",λ,"_k2",k2,"_U",U,".pdf"))
 display(plt_trimmedShape)
 
 println("Finished cHALE_trimShape.jl")

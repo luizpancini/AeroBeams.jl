@@ -150,7 +150,7 @@ end
 # Root angle of attack
 plt_AoA = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]", xlims=[0,tf], ylims=[-5,30], yticks=vcat(-90:15:90), tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:topleft)
 for (i,Δδ) in enumerate(ΔδRange)
-    plot!(t[i], rootAoA[i]*180/π, c=colors[i], lw=lw, label=string("\$\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
+    plot!(t[i], rootAoA[i]*180/π, c=colors[i], lw=lw, label=string("\$\\Delta\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
 end
 display(plt_AoA)
 savefig(plt_AoA,string(absPath,"/heliosPitchManeuverDeltaSweepSingle_AoAcurves_",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".pdf"))
@@ -158,7 +158,7 @@ savefig(plt_AoA,string(absPath,"/heliosPitchManeuverDeltaSweepSingle_AoAcurves_"
 # Animated root angle of attack
 plt_AoA_anim = plot(xlabel="Time [s]", ylabel="Root angle of attack [deg]", xlims=[0,tf], ylims=[-5,30], yticks=vcat(-90:15:90), tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legend=:topleft, dpi=DPI)
 for (i,Δδ) in enumerate(ΔδRange)
-    plot!([NaN], [NaN], c=colors[i], lw=lw, label=string("\$\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
+    plot!([NaN], [NaN], c=colors[i], lw=lw, label=string("\$\\Delta\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
 end
 anim = @animate for (j,timeNow) in enumerate(t[1])
     if j > 1 && rem(j,plotFrequency) > 0
@@ -182,7 +182,7 @@ display(plt_cma)
 savefig(plt_cma,string(absPath,"/heliosPitchManeuverDeltaSweepSingle_cmcurves_",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".pdf"))
 
 # Animation
-anim = plot_dynamic_deformations(dynamicProblem,refBasis="I",followAssembly=true,view=(60,15),fps=fps,plotFrequency=plotFrequency,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[0,500],[-200,50]),legendEntries=["\$ \\delta_f = $(round(Int,δ*180/π)) ^\\circ \$" for δ in ΔδRange],legendPos=(0.1,0.8),save=true,savePath=string(relPath,"/heliosPitchManeuverDeltaSweepSingle__",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".gif"),displayProgress=true)
+anim = plot_dynamic_deformations(dynamicProblem,refBasis="I",followAssembly=true,view=(60,15),fps=fps,plotFrequency=plotFrequency,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[0,500],[-200,50]),legendEntries=["\$\\Delta\\delta_f = $(round(Int,δ*180/π)) ^\\circ \$" for δ in ΔδRange],legendPos=(0.1,0.8),save=true,savePath=string(relPath,"/heliosPitchManeuverDeltaSweepSingle__",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".gif"),displayProgress=true)
 display(anim)
 
 println("Finished heliosPitchManeuverDeltaSweepSingle.jl")

@@ -165,7 +165,7 @@ for (i,aeroSolver) in enumerate(aeroSolvers)
             n+=1
         end
         if i==1
-            plot!(t[i,j], rootAoA[i,j]*180/π, c=colors[n], lw=lw, label=string("\$\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
+            plot!(t[i,j], rootAoA[i,j]*180/π, c=colors[n], lw=lw, label=string("\$\\Delta\\delta_f\$ = ", round(Int,Δδ*180/π), "\$^\\circ\$"))
         else
             plot!(t[i,j], rootAoA[i,j]*180/π, c=colors[n], lw=lw, label=false)
         end

@@ -82,10 +82,8 @@ for (i,k2) in enumerate(k2Range)
         # Set initial guess solution as previous known solution
         x0Trim = j == 1 ? zeros(0) : trimProblem[i,j-1].x
         if λ == 1 && k2 == 0.045 && U ≈ 42.4
-            @load string(pwd(),"/dev/cHALE/Flexible/outputs/data/cHALE_trim_k2_range/cHALE_trim_lambda",λ,"_k20045_U424.jld2") trimProblem_k2_0045_U424
-            if length(trimProblem_k2_0045_U424.x) == (cHALEtrim.systemOrder+cHALEtrim.nTrimVariables)
-                x0Trim = trimProblem_k2_0045_U424.x
-            end
+            jU22 = findfirst(x->x≈22,URange)
+            x0Trim = trimProblem[i,jU22].x
         elseif λ == 2 && k2 == 0.015 && U ≈ 68.5
             jU325 = findfirst(x->x≈32.5,URange)
             x0Trim = trimProblem[i,jU325].x
@@ -466,8 +464,8 @@ plot!(flutterOnsetTipOOPWingMatched,flutterOnsetSpeedWingMatched, marker=(:squar
 display(plt_Uf)
 savefig(string(absPath,"/cHALEwing_flutter_matchedPitch_k2_range_speedOn_OOP_lambda",λ,".pdf"))
 
-# # Steady plot of straight wing at lowest airspeed
-# plt_steady = plot_steady_deformation(eigenProblem[2,1],backendSymbol=:gr,plotUndeformed=false,plotBCs=true,plotDistLoads=false,plotLegend=false,plotAxes=false,plotGrid=false,view=(30,30),plotLimits=([-L*1/4,L*3/4],[-L*1/2,L*1/2],[-L*1/2,L*1/2]),save=true,savePath=string(relPath,"/cHALEwing_flutter_matchedPitch_k2_range_steady_k0U0_lambda",λ,".pdf"))
-# display(plt_steady)
+# Steady plot of straight wing at lowest airspeed
+plt_steady = plot_steady_deformation(eigenProblem[2,1],backendSymbol=:gr,plotUndeformed=false,plotBCs=true,plotDistLoads=false,plotLegend=false,plotAxes=false,plotGrid=false,view=(30,30),plotLimits=([-L*1/4,L*3/4],[-L*1/2,L*1/2],[-L*1/2,L*1/2]),save=true,savePath=string(relPath,"/cHALEwing_flutter_matchedPitch_k2_range_steady_k0U0_lambda",λ,".pdf"))
+display(plt_steady)
 
 println("Finished cHALEwing_flutter_matchedPitch_k2_range.jl")

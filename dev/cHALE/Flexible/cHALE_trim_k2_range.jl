@@ -65,6 +65,13 @@ for (i,k2) in enumerate(k2Range)
         model,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
         # Set initial guess solution as previous known solution
         x0Trim = j == 1 ? zeros(0) : trimProblem[i,j-1].x
+        if λ == 1 && k2 == 0.045 && U ≈ 42.4
+            jU22 = findfirst(x->x≈22,URange)
+            x0Trim = trimProblem[i,jU22].x
+        elseif λ == 2 && k2 == 0.015 && U ≈ 68.5
+            jU325 = findfirst(x->x≈32.5,URange)
+            x0Trim = trimProblem[i,jU325].x
+        end
         # Create and solve trim problem
         trimProblem[i,j] = create_TrimProblem(model=model,systemSolver=NR,x0=x0Trim)
         solve!(trimProblem[i,j])
