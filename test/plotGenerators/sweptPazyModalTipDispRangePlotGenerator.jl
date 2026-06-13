@@ -28,4 +28,22 @@ end
 display(plt1)
 savefig(string(absPath,"/sweptPazyModalTipDispRange.pdf"))
 
+# Tip displacement vs. sweep angle for largest load
+tip_u3_maxload = tip_u3[:,end]
+plt_u3 = plot(xlabel="Sweep angle [deg]", ylabel="Tip \$u_3/L\$")
+for i in eachindex(ΛRange)
+    plot!(ΛRange*180/π, tip_u3_maxload/L, c=:black, lw=lw, label=false)
+end
+display(plt_u3)
+savefig(string(absPath,"/sweptPazyModalTipDispRangeDisp.pdf"))
+
+# Tip twist vs. sweep angle for largest load
+tip_twist_maxload = tip_twist[:,end]
+plt_twist = plot(xlabel="Sweep angle [deg]", ylabel="Tip twist [deg]")
+for i in eachindex(ΛRange)
+    plot!(ΛRange*180/π, tip_twist_maxload, c=:black, lw=lw, label=false)
+end
+display(plt_twist)
+savefig(string(absPath,"/sweptPazyModalTipDispRangeTwist.pdf"))
+
 println("Finished sweptPazyModalTipDispRangePlotGenerator.jl")

@@ -61,6 +61,7 @@ function stiffness_matrices_Pazy(; withSkin::Bool,sweepStructuralCorrections::Bo
     if sweepStructuralCorrections
         # EIy .*= cos(Λ)
         GJ ./= cos(Λ)^2
+        # c_GJ_EIy .*= -5
     end
 
     # Set matrices

@@ -68,7 +68,7 @@ UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory)
 UD = minimum(UDvec)
 iD = findlast(x -> x<UD, URange)
 
-# Approximate divergence speed - Eq. 4.103 of Hodges and Pierce
+# Approximate divergence speed - Eq. 4.104 of Hodges and Pierce
 βD = -19/3
 qDRef = βD*EIy/(c*2π*L^3*sin(Λ)*cos(Λ))
 UDRef = sqrt(2*qDRef/ρ)

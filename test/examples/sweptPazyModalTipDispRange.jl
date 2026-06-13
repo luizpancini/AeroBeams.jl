@@ -27,6 +27,8 @@ freqs = Array{Vector{Float64}}(undef,length(ΛRange),length(F3TipRange))
 damps = Array{Vector{Float64}}(undef,length(ΛRange),length(F3TipRange))
 modeFrequencies = Array{Vector{Float64}}(undef,length(ΛRange),nModes)
 tipOOP = Array{Float64}(undef,length(ΛRange),length(F3TipRange))
+tip_u3 = Array{Float64}(undef,length(ΛRange),length(F3TipRange))
+tip_twist = Array{Float64}(undef,length(ΛRange),length(F3TipRange))
 
 # System solver
 absTol = 1e-7
@@ -50,9 +52,15 @@ for (i,Λ) in enumerate(ΛRange)
         untrackedDamps[i,j] = round_off!(problem[i,j].dampingsOscillatory,1e-8)
         untrackedEigenvectors[i,j] = problem[i,j].eigenvectorsOscillatoryCplx
         tipOOP[i,j] = problem[i,j].nodalStatesOverσ[end][nElem].u_n2_b[3]
+        # Displacement outputs
+        tip_u3[i,j] = problem[i,j].nodalStatesOverσ[end][nElem].u_n2[3]
+        tip_p = problem[i,j].nodalStatesOverσ[end][nElem].p_n2
+        R,_ = rotation_tensor_WM(tip_p)
+        Δ = R*[0; 1; 0]
+        tip_twist[i,j] = asind(Δ[3])
     end
     # Apply mode tracking
-    freqs[i,:],damps[i,:],_ = mode_tracking_hungarian(F3TipRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
+    freqs[i,:],damps[i,:],_ = mode_tracking(F3TipRange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
     # Separate frequencies by mode
     for mode in 1:nModes
         modeFrequencies[i,mode] = [freqs[i,j][mode] for j in eachindex(F3TipRange)]
