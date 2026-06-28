@@ -1008,7 +1008,7 @@ Plots the mode shapes of the model in the given eigenproblem
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_mode_shapes(problem::EigenProblem; backendSymbol::Symbol=:pyplot,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,scale::Real=1,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_mode_shapes(problem::EigenProblem; backendSymbol::Symbol=:gr,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,scale::Real=1,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -1313,7 +1313,7 @@ Plots the animation of mode shapes of the model in the given eigenproblem
 - `savePath::String`: relative path on which to save the figure
 - `displayProgress::Bool`: flag to display progress of gif creation
 """
-function plot_mode_shapes_animation(problem::EigenProblem; backendSymbol::Symbol=:pyplot,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,matchModeFrequency::Bool=true,scale::Real=1,nFramesPerCycle::Int=51,fps::Int=30,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showLegend::Bool=true,legendFontSize::Int=12,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/anim.gif",displayProgress::Bool=false)
+function plot_mode_shapes_animation(problem::EigenProblem; backendSymbol::Symbol=:gr,plotBCs::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,nModes::Union{Nothing,Int}=nothing,modes2plot::Union{Nothing,AbstractArray{Int}}=nothing,matchModeFrequency::Bool=true,scale::Real=1,nFramesPerCycle::Int=51,fps::Int=30,element2centralize::Union{Nothing,Int}=nothing,nullDampingTol::Real=1e-4,plotSteady::Bool=true,lw::Real=2,colorSteady=:black,modalColorScheme=:rainbow,numberOfColors::Union{Missing,Int}=missing,plotAxes::Bool=true,plotGrid::Bool=true,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showLegend::Bool=true,legendFontSize::Int=12,legendPos=:topright,modeLabels::Union{Nothing,Vector{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/anim.gif",displayProgress::Bool=false)
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -1652,7 +1652,7 @@ Plots the animated deformation of the model in the given problem
 - `timeStampPos::Vector{<:Real}`: position of time stamp on plot
 - `displayProgress::Bool`: flag to display progress of gif creation
 """
-function plot_dynamic_deformation(problem::DynamicProblem; backendSymbol::Symbol=:pyplot,refBasis::String="A",plotFrequency::Int=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,plotAxes::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Int=30,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotGrid::Bool=true,legendPos=:topright,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,loadsSizeScaler::Real=1,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,followAssembly::Bool=false,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Real}=[0.1;0.05;0.05],timeStampPos::Vector{<:Real}=[0.5;0.05;0.05],displayProgress::Bool=false)
+function plot_dynamic_deformation(problem::DynamicProblem; backendSymbol::Symbol=:gr,refBasis::String="A",plotFrequency::Int=1,plotUndeformed::Bool=false,plotBCs::Bool=true,plotDistLoads::Bool=true,plotAxes::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Int=30,scale::Real=1,lw::Real=1,colorUndef=:black,colorDef=:blue,plotGrid::Bool=true,legendPos=:topright,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,loadsSizeScaler::Real=1,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,followAssembly::Bool=false,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showScale::Bool=true,showTimeStamp::Bool=true,scalePos::Vector{<:Real}=[0.1;0.05;0.05],timeStampPos::Vector{<:Real}=[0.5;0.05;0.05],displayProgress::Bool=false)
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -1904,7 +1904,7 @@ function plot_dynamic_deformation(problem::DynamicProblem; backendSymbol::Symbol
                 end
                 annotate!(a, b, text("Time: $(roundedTime) s", 8))
             else
-                plot!([NaN], [NaN], c=:white, lw=0, label="Time: $(roundedTime) s")
+                showScale ? title!("Time = $(roundedTime) s\nScale = $(scale)×") : title!("Time = $(roundedTime) s")       
             end
         end
 
@@ -1935,7 +1935,7 @@ function plot_dynamic_deformation(problem::DynamicProblem; backendSymbol::Symbol
                 end
                 annotate!(a, b, text(scaleString, 8))
             else
-                plot!([NaN], [NaN], c=:white, lw=0, label=scaleString)
+                showTimeStamp ? title!("Time = $(roundedTime) s\nScale = $(scale)×") : title!("Scale = $(scale)×")
             end
         end
 
@@ -1999,7 +1999,7 @@ Plots the animated deformation of the models in the given problems
 - `showTimeStamp::Bool`: flag to show time stamp on plot
 - `displayProgress::Bool`: flag to display progress of gif creation
 """
-function plot_dynamic_deformations(problems::Array{DynamicProblem}; backendSymbol::Symbol=:pyplot,refBasis::String="A",plotFrequency::Int=1,timeTol::Real=1e-8,plotBCs::Bool=true,plotDistLoads::Bool=true,plotAxes::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Int=30,lw::Real=1,colorScheme::Symbol=:rainbow,plotGrid::Bool=true,legendPos=:topright,legendEntries::Union{Nothing,Array{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,loadsSizeScaler::Real=1,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,followAssembly::Bool=false,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showTimeStamp::Bool=true,displayProgress::Bool=false)
+function plot_dynamic_deformations(problems::Array{DynamicProblem}; backendSymbol::Symbol=:gr,refBasis::String="A",plotFrequency::Int=1,timeTol::Real=1e-8,plotBCs::Bool=true,plotDistLoads::Bool=true,plotAxes::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,fps::Int=30,lw::Real=1,colorScheme::Symbol=:rainbow,plotGrid::Bool=true,legendPos=:topright,legendEntries::Union{Nothing,Array{String}}=nothing,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,loadsSizeScaler::Real=1,plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,followAssembly::Bool=false,DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.gif",showTimeStamp::Bool=true,displayProgress::Bool=false)
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -2302,7 +2302,7 @@ Plots the deformed states for the model in the given dynamic problem at specifie
 - `save::Bool`: flag to save the figure
 - `savePath::String`: relative path on which to save the figure
 """
-function plot_snapshots(problem::DynamicProblem; backendSymbol::Symbol=:pyplot,refBasis::String="A",plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Real=1,lw::Real=1,ls::Symbol=:dash,color=:black,plotAxes::Bool=true,plotGrid::Bool=true,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,snapshots::Vector{<:Real},plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
+function plot_snapshots(problem::DynamicProblem; backendSymbol::Symbol=:gr,refBasis::String="A",plotBCs::Bool=true,plotDistLoads::Bool=true,view::Union{Nothing,Tuple{Real,Real}}=nothing,scale::Real=1,lw::Real=1,ls::Symbol=:dash,color=:black,plotAxes::Bool=true,plotGrid::Bool=true,tolPlane::Real=1e-8,plotAeroSurf::Bool=true,surfα::Float64=0.5,snapshots::Vector{<:Real},plotLimits::Union{Nothing,Tuple{Vector{<:Real},Vector{<:Real},Vector{<:Real}}}=nothing,showScale::Bool=false,scalePos::Vector{<:Real}=[0,0],DPI::Int=300,save::Bool=false,savePath::String="/test/outputs/figures/fig.pdf")
 
     # Validate
     @assert backendSymbol in Plots.backends()
@@ -2498,11 +2498,10 @@ function plot_snapshots(problem::DynamicProblem; backendSymbol::Symbol=:pyplot,r
     # Plot scale, if applicable
     if showScale
         # Display scale
-        scaleString = "Deformation scale: $(string(scale))×"
         if isPlane
-            annotate!(scalePos[1], scalePos[2], text(scaleString, 8))
+            annotate!(scalePos[1], scalePos[2], text("Deformation scale: $(string(scale))×", 8))
         else
-            plot!([NaN], [NaN], c=:white, lw=0, label=scaleString)
+            title!("Scale = $(scale)×")
         end
     end
 
