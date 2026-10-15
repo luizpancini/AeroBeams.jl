@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Modal analysis of a two-story frame · AeroBeams.jl</title><meta name="title" content="Modal analysis of a two-story frame · AeroBeams.jl"/><meta property="og:title" content="Modal analysis of a two-story frame · AeroBeams.jl"/><meta property="twitter:title" content="Modal analysis of a two-story frame · AeroBeams.jl"/><meta name="description" content="Documentation for AeroBeams.jl."/><meta property="og:description" content="Documentation for AeroBeams.jl."/><meta property="twitter:description" content="Documentation for AeroBeams.jl."/><meta property="og:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/twoStoryFrame/"/><meta property="twitter:url" content="https://luizpancini.github.io/AeroBeams.jl/literate/twoStoryFrame/"/><link rel="canonical" href="https://luizpancini.github.io/AeroBeams.jl/literate/twoStoryFrame/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AeroBeams.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/">Theory</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../archUnderFollowerPressure/">Static structural analysis of an arch under follower pressure</a></li><li><a class="tocitem" href="../compositeCantileverMD/">Static structural analysis of composite beams</a></li><li><a class="tocitem" href="../PazyWingTorsionTest/">Static structural analysis of the Pazy wing</a></li><li><a class="tocitem" href="../sweptTipRotor/">Modal analysis of a rotating beam</a></li><li class="is-active"><a class="tocitem" href>Modal analysis of a two-story frame</a></li><li><a class="tocitem" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions</a></li><li><a class="tocitem" href="../flyingScissors/">Dynamic analysis of an articulated beam</a></li><li><a class="tocitem" href="../typicalSectionFlutterAndDivergence/">Flutter and divergence of a typical aeroelastic section</a></li><li><a class="tocitem" href="../OMCgustTests/">Gust response of an airfoil section</a></li><li><a class="tocitem" href="../PazyWingPitchRange/">Steady aeroelastic analysis of the Pazy Wing</a></li><li><a class="tocitem" href="../HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/">Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../PazyWingFlutterPitchRange/">Flutter analysis of the Pazy wing</a></li><li><a class="tocitem" href="../HealyBaselineFFWTfreeFlutterAoARangeURange/">Flutter analysis of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../HealyBaselineFFWTOMCGustFloating/">Gust response of a wing with flared folding wingtip (FFWT)</a></li><li><a class="tocitem" href="../cHALEmodel/">Creating a HALE aircraft model</a></li><li><a class="tocitem" href="../heliosTrim/">Trimming a flying-wing HALE</a></li><li><a class="tocitem" href="../BWBflutter/">Flutter of a Blended-Wing-Body</a></li><li><a class="tocitem" href="../cHALECheckedPitchManeuver/">Pitch maneuver of a HALE aircraft</a></li><li><a class="tocitem" href="../cHALECheckedRollManeuver/">Roll maneuver of a HALE aircraft</a></li></ul></li><li><a class="tocitem" href="../../publicAPI/">Public API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Modal analysis of a two-story frame</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Modal analysis of a two-story frame</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/eigenStructural/twoStoryFrame.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Modal-analysis-of-a-two-story-frame"><a class="docs-heading-anchor" href="#Modal-analysis-of-a-two-story-frame">Modal analysis of a two-story frame</a><a id="Modal-analysis-of-a-two-story-frame-1"></a><a class="docs-heading-anchor-permalink" href="#Modal-analysis-of-a-two-story-frame" title="Permalink"></a></h1><p>This example illustrates how to set up a modal analysis, using a two-story beam frame. Moreover, it also shows how to assemble a model where the beams are not all connected in sequence. This problem was proposed by <a href="https://doi.org/10.1017/CBO9780511761195">Petyt</a>.</p><p><img src="../../assets/twoStoryFrame.png" alt/></p><p><em>Geometry of the two-story frame</em> by <a href="https://doi.org/10.1017/CBO9780511761195">Petyt</a></p><div class="admonition is-success" id="Tip-b89da9ead8cb2586"><header class="admonition-header">Tip<a class="admonition-anchor" href="#Tip-b89da9ead8cb2586" title="Permalink"></a></header><div class="admonition-body"><p>The code for this example is available <a href="https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/eigenStructural/twoStoryFrame.jl">here</a>.</p></div></div><h3 id="Problem-variables"><a class="docs-heading-anchor" href="#Problem-variables">Problem variables</a><a id="Problem-variables-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-variables" title="Permalink"></a></h3><p>The first step is to define the variables of our problem: geometric and material properties, and discretization. There are two types of beams in the frame: vertical ones have cross-section base <code>b1</code> and horizontal ones have base <code>b2</code>, but all are made of the same material. We also apply an uniform discretization.</p><pre><code class="language-julia hljs">using AeroBeams
+
+# Geometric properties
+L = 1
+b1,b2,h = 5e-2, 15e-2, 5e-2
+A1,Iy1,Iz1 = b1*h, b1*h^3/12, h*b1^3/12
+A2,Iy2,Iz2 = b2*h, b2*h^3/12, h*b2^3/12
+J1 = A1^4/(Iy1+Iz1)/40
+J2 = A2^4/(Iy2+Iz2)/40
+Kt1,Kt2 = 10/9, 3.0864
+
+# Assembly angles
+α = [0, 0, π/2, 0, 0, π/2, 0, 0, 0, 0, 0, 0, π/2, 0, 0, π/2]
+β = -[π/2, π/2, 0, -π/2, -π/2, 0, 0, 0, 0, 0, -π/2, π/2, 0, -π/2, -π/2, 0]
+
+# Material properties
+E = 219.9e9
+ν = 0.25
+G = E/(2*(1+ν))
+ρ = 7.9e3
+∞ = 1e12
+
+# Stiffness and inertia matrices
+S1 = isotropic_stiffness_matrix(∞=∞,EA=E*A1,GJ=G*J1*Kt1,EIy=E*Iy1,EIz=E*Iz1)
+S2 = isotropic_stiffness_matrix(∞=∞,EA=E*A2,GJ=G*J2*Kt2,EIy=E*Iy2,EIz=E*Iz2)
+I1 = inertia_matrix(ρ=ρ,A=A1,Iy=Iy1,Iz=Iz1)
+I2 = inertia_matrix(ρ=ρ,A=A2,Iy=Iy2,Iz=Iz2)
+
+S = [S1, S1, S2, S1, S1, S2, S2, S2, S2, S2, S1, S1, S2, S1, S1, S2]
+I = [I1, I1, I2, I1, I1, I2, I2, I2, I2, I2, I1, I1, I2, I1, I1, I2]
+
+# Number of elements for each beam
+nElem = 10</code></pre><h3 id="Beams-of-the-frame"><a class="docs-heading-anchor" href="#Beams-of-the-frame">Beams of the frame</a><a id="Beams-of-the-frame-1"></a><a class="docs-heading-anchor-permalink" href="#Beams-of-the-frame" title="Permalink"></a></h3><p>In the following we create the array of beams. Notice that their disposition in space is defined by the rotation parameters <code>p0</code> from the body-attached (global) basis <span>$\mathcal{A}$</span> to the undeformed beam basis <span>$b^+$</span>. Moreover, since this is a frame, the beams are not all connected in sequence. That means there are connections between beams, which need to be specified. That is done by setting <code>beamConnections</code> (a vector of beam connection pairs) and <code>nodeConnections</code> (a vector of the corresponding node pairs that are connected).</p><pre><code class="language-julia hljs"># Beams
+beams = [create_Beam(
+    name=&quot;beam$i&quot;,
+    length=L,
+    nElements=nElem,
+    S=[S[i]],
+    I=[I[i]],
+    p0=transform_to_WM([α[i], β[i], 0],from=:E321))
+    for i in 1:16
+    ]
+
+# Beam and node connections
+connections = [
+    (beams[2] =&gt; beams[1], 1 =&gt; nElem+1),
+    (beams[3] =&gt; beams[2], 1 =&gt; nElem+1),
+    (beams[4] =&gt; beams[3], 1 =&gt; nElem+1),
+    (beams[5] =&gt; beams[4], 1 =&gt; nElem+1),
+    (beams[6] =&gt; beams[1], 1 =&gt; nElem+1),
+    (beams[6] =&gt; beams[4], nElem+1 =&gt; nElem+1),
+    (beams[7] =&gt; beams[1], 1 =&gt; nElem+1),
+    (beams[8] =&gt; beams[4], 1 =&gt; nElem+1),
+    (beams[9] =&gt; beams[2], 1 =&gt; nElem+1),
+    (beams[10] =&gt; beams[3], 1 =&gt; nElem+1),
+    (beams[11] =&gt; beams[7], 1 =&gt; nElem+1),
+    (beams[12] =&gt; beams[7], 1 =&gt; nElem+1),
+    (beams[12] =&gt; beams[9], nElem+1 =&gt; nElem+1),
+    (beams[13] =&gt; beams[9], 1 =&gt; nElem+1),
+    (beams[13] =&gt; beams[10], nElem+1 =&gt; nElem+1),
+    (beams[14] =&gt; beams[13], 1 =&gt; nElem+1),
+    (beams[14] =&gt; beams[8], nElem+1 =&gt; nElem+1),
+    (beams[15] =&gt; beams[8], 1 =&gt; nElem+1),
+    (beams[16] =&gt; beams[7], 1 =&gt; nElem+1),
+    (beams[16] =&gt; beams[8], nElem+1 =&gt; nElem+1),
+]</code></pre><h3 id="Boundary-conditions"><a class="docs-heading-anchor" href="#Boundary-conditions">Boundary conditions</a><a id="Boundary-conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Boundary-conditions" title="Permalink"></a></h3><p>The frame is clamped at the four base points.</p><pre><code class="language-julia hljs"># BCs
+clampedBeams = [beams[1],beams[5],beams[11],beams[15]]
+clampedNodes = [1,nElem+1,nElem+1,nElem+1]
+clamps = [create_BC(
+    name=&quot;clamp$i&quot;,
+    beam=beam,
+    node=node,
+    conditions=Dict(:u1A=&gt;0,:u2A=&gt;0,:u3A=&gt;0,:p1A=&gt;0,:p2A=&gt;0,:p3A=&gt;0))
+    for (i,(beam,node)) in enumerate(zip(clampedBeams,clampedNodes))
+    ]</code></pre><h3 id="Model"><a class="docs-heading-anchor" href="#Model">Model</a><a id="Model-1"></a><a class="docs-heading-anchor-permalink" href="#Model" title="Permalink"></a></h3><p>Our model is composed of the beams and boundary conditions. We further specify the units, merely for plotting purposes, using the constructor <a href="../../publicAPI/#AeroBeams.create_UnitsSystem"><code>create_UnitsSystem</code></a>.</p><pre><code class="language-julia hljs"># Model
+twoStoryFrame = create_Model(
+    name=&quot;twoStoryFrame&quot;,
+    beams=beams,
+    connections=connections,
+    BCs=clamps,
+    units=create_UnitsSystem(length=&quot;m&quot;,frequency=&quot;Hz&quot;)
+    )</code></pre><p>p1 = plot<em>undeformed</em>assembly(twoStoryFrame, view=(30,30)) display(p1)</p><h3 id="System-solver"><a class="docs-heading-anchor" href="#System-solver">System solver</a><a id="System-solver-1"></a><a class="docs-heading-anchor-permalink" href="#System-solver" title="Permalink"></a></h3><p>We create a linear system solver, which will be used to solve the eigenproblem.</p><pre><code class="language-julia hljs"># System solver
+solver = create_LinearSolver()</code></pre><h3 id="Create-and-solve-problem"><a class="docs-heading-anchor" href="#Create-and-solve-problem">Create and solve problem</a><a id="Create-and-solve-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Create-and-solve-problem" title="Permalink"></a></h3><p>We create and solve the eigenproblem, specifying the model, the linear system solver, the eigensolver method, and the number of eigenvalues to be computed.</p><pre><code class="language-julia hljs"># Number of modes to track
+nModes = 4
+
+# Eigensolver method and minimum number of eigenvalues to be computed
+eigenmethod = :krylovkit
+nev = 40
+
+# Problem
+problem = create_EigenProblem(
+    model=twoStoryFrame,
+    systemSolver=solver,
+    eigenmethod=eigenmethod,
+    nev=nev
+    )
+solve!(problem)</code></pre><h3 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post-processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h3><p>We can now extract the frequencies of vibration and compare to the reference finite element solution. The agreement is very good. Notice that only the first and seconding bending mode (swaying modes) in a specific direction are compared, since this problem is symmetric.</p><pre><code class="language-julia hljs"># Unpack eigenvalues
+λ = problem.eigensolution.λ
+
+# Get oscillatory frequencies in Hz and keep desired number of modes
+freqs,_ = filter_tracked_modes(rads2Hz.(imag.(λ)), fmin=eps(), maxTracks=nModes)
+
+# Reference frequencies (in Hz)
+refFreqs = [11.8, 34.1]
+
+# Display relative errors
+ϵ_rel = freqs[[1,4]]./refFreqs .- 1.0
+println(&quot;Relative frequency errors: $(round.(100ϵ_rel, sigdigits=2)) %&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Relative frequency errors: [0.58, 0.62] %</code></pre><p>We can also visualize the mode shapes using the function <a href="../../publicAPI/#AeroBeams.plot_mode_shapes"><code>plot_mode_shapes</code></a> with the appropriate arguments. They compare well to thosed described in the reference.</p><pre><code class="language-julia hljs">modesPlot = plot_mode_shapes(problem,nModes=nModes,view=(45,30),legendPos=(0.4,0.95))</code></pre><p><img src="../twoStoryFrame_modeShapes.svg" alt/> <img src="../../assets/twoStoryFrameModes.png" alt/></p><p><em>Swaying modes of the two-story frame</em> by <a href="https://doi.org/10.1017/CBO9780511761195">Petyt</a></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../sweptTipRotor/">« Modal analysis of a rotating beam</a><a class="docs-footer-nextpage" href="../initialDispAndVelBeam/">Motion of a simply supported beam under initial conditions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 15 October 2026 14:52">Thursday 15 October 2026</span>. Using Julia version 1.13.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
