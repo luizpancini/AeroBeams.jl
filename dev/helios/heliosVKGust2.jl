@@ -258,7 +258,7 @@ for (i,seed) in enumerate(seeds)
         Δalt_min_DS = min(-20,round(Int,minimum(Δu3[i,2])))
         Δalt_max_DS = max(+20,round(Int,maximum(Δu3[i,2])))
         # Animations
-        # plot_dynamic_deformation(dynamicProblem[i,2],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=5,followAssembly=true,plotLimits=([-40,40],[-10,Δforward_DS],[Δalt_min_DS,Δalt_max_DS]),save=saveFigures,savePath=string(relPath,"/heliosVKGust_ds_elastic_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".gif"),displayProgress=true)
+        # plot_dynamic_deformation(dynamicProblem[i,2],view=(60,15),plotDistLoads=false,plotFrequency=5,follow=:basisA,plotLimits=([-40,40],[-10,Δforward_DS],[Δalt_min_DS,Δalt_max_DS]),save=saveFigures,savePath=string(relPath,"/heliosVKGust_ds_elastic_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".gif"),displayProgress=true)
     end
 
     # GC

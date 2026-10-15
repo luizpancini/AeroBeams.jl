@@ -1,49 +1,71 @@
-"""
-    PointInertia composite type
-
+# PointInertia composite type
 # Fields
-- `elementID::Int`: local element ID to which the point inertia is attached
+# - `mass`: mass of the point inertia
+# - `η`: position vector of the point inertia relative to the element's midpoint, resolved in the local basis of the beam element
+# - `inertiaMatrix`: mass moment of inertia matrix
+#
+@with_kw struct PointInertia
+
+    mass::Float64
+    η::SVector{3,Float64}
+    inertiaMatrix::SMatrix{3,3,Float64,9}
+
+end
+
+
+"""
+    create_PointInertia(; kwargs...)
+
+Point inertia constructor (a point mass with mass moment of inertia to be attached to a beam element)
+
+# Keyword arguments
 - `mass::Real`: mass
-- `η::Vector{Real}`: position relative to element's midpoint's reference line
+- `η::AbstractVector{<:Real}`: position vector relative to element's midpoint's reference line
 - `Ixx::Real`: mass moment of inertia about the x1-axis
 - `Iyy::Real`: mass moment of inertia about the x2-axis
 - `Izz::Real`: mass moment of inertia about the x3-axis
 - `Ixy::Real`: mass product of inertia with respect to the x1-axis and x2-axis
 - `Ixz::Real`: mass product of inertia with respect to the x1-axis and x3-axis
 - `Iyz::Real`: mass product of inertia with respect to the x2-axis and x3-axis
-- `inertiaMatrix::Union{Matrix{Real},Matrix{Nothing}}`: mass moment of inertia matrix (tensor)
+- `inertiaMatrix::Union{Missing,AbstractMatrix{<:Real}}`: mass moment of inertia matrix
 """
-@with_kw mutable struct PointInertia
+function create_PointInertia(; 
+    mass::Real=0,
+    η::AbstractVector{<:Real}=zeros(3),
+    Iyy::Real=0,
+    Izz::Real=0,
+    Ixx::Real=Iyy+Izz,
+    Ixy::Real=0,
+    Ixz::Real=0,
+    Iyz::Real=0,
+    inertiaMatrix::Union{Missing,AbstractMatrix{<:Real}}=missing,
+    )
 
-    elementID::Int
-    η::Vector{<:Real} = zeros(3)
-    mass::Real = 0
-    Iyy::Real = 0
-    Izz::Real = 0
-    Ixx::Real = Iyy+Izz
-    Ixy::Real = 0
-    Ixz::Real = 0
-    Iyz::Real = 0
-    inertiaMatrix::Union{Matrix{<:Real},Matrix{Nothing}} = fill(nothing,3,3)
+    # Validate inputs
+    @assert mass >= 0 "mass must be non-negative"
+    @assert all(x -> x >= 0, [Ixx, Iyy, Izz]) "mass moments of inertia must be non-negative"
+    @assert length(η) == 3 "η must be a 3-element vector"
 
-    # Constructor
-    function PointInertia(elementID::Int,η::Vector{<:Real},mass::Real,Iyy::Real,Izz::Real,Ixx::Real,Ixy::Real,Ixz::Real,Iyz::Real,inertiaMatrix::Union{Matrix{<:Real},Matrix{Nothing}})
-
-        # Validate inputs
-        @assert mass >= 0
-        @assert Ixx >= 0
-        @assert Iyy >= 0
-        @assert Izz >= 0
-        @assert length(η) == 3
-        @assert size(inertiaMatrix) == (3, 3)
-
-        # Initialize inertia matrix if it was not input
-        if all(x -> x === nothing, inertiaMatrix)
-            inertiaMatrix = [Ixx Ixy Ixz; Ixy Iyy Iyz; Ixz Iyz Izz]
-        end
-
-        return new(elementID,η,mass,Iyy,Izz,Ixx,Ixy,Ixz,Iyz,inertiaMatrix)
-
+    # Set inertia matrix
+    if ismissing(inertiaMatrix)
+        inertiaMatrix = [
+            Ixx Ixy Ixz
+            Ixy Iyy Iyz
+            Ixz Iyz Izz
+        ]
+    else
+        @assert size(inertiaMatrix) == (3,3) "inertiaMatrix must be a 3x3 matrix"
     end
+
+    # Convert to correct types
+    mass = Float64(mass)
+    η = SVector{3,Float64}(η)
+    inertiaMatrix = SMatrix{3,3,Float64,9}(inertiaMatrix)
+
+    return PointInertia(
+        mass,
+        η,
+        inertiaMatrix
+        )
 end
-export PointInertia
+export create_PointInertia

@@ -45,7 +45,7 @@ for (i,frame,airfoil,a₀,a₁,b,k,Ma,U) in zip(1:length(frames),frames,airfoil_
         # Update airfoil parameters
         update_Airfoil_params!(airfoil,Ma=Ma,U=U,b=b)
         # Aerodynamic surface
-        surf = create_AeroSurface(solver=aeroSolver,airfoil=airfoil,c=2*b,normSparPos=0.25,updateAirfoilParameters=false)
+        surf = create_AeroSurface(ppSolver=aeroSolver,airfoil=airfoil,c=2*b,normSparPos=0.25,updateAirfoilParameters=false)
         # Wing
         wing = create_Beam(name="wing",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=ρA,ρIy=ρI,ρIz=ρI)],rotationParametrization="E321",p0=[0;0;a₀-a₁],aeroSurface=surf,pdot0_of_x1=x1->[pdot(0); 0.0; 0.0])
         # BCs
@@ -57,10 +57,8 @@ for (i,frame,airfoil,a₀,a₁,b,k,Ma,U) in zip(1:length(frames),frames,airfoil_
         nCycles = 6
         Δt = τ[i]/1000
         tf = nCycles*τ[i]
-        # Initial velocities update options
-        initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2, tol=1e-12, displayProgress=true, relaxFactor=0.5, Δt=Δt/1e3)
         # Create and solve dynamic problem
-        problem[i,j] = create_DynamicProblem(model=model,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
+        problem[i,j] = create_DynamicProblem(model=model,finalTime=tf,Δt=Δt)
         solve!(problem[i,j])
         # Get outputs
         t[i,j] = problem[i,j].savedTimeVector
@@ -250,7 +248,7 @@ savefig(string(absPath,"/ct.pdf"))
 # Animations
 for (i,frame,airfoil) in zip(eachindex(frames),frames,airfoil_frames)
     for (j,aeroSolver) in enumerate(aeroSolvers)
-        anim = plot_dynamic_deformation(problem[i,j],backendSymbol=:plotlyjs,view=(88,0),plotLimits=([-0.4,0.4],[-0.4,0.4],[-0.4,0.4]),plotFrequency=ceil(Int,ΔtAnim[i]/problem[i,j].Δt),fps=fps,loadsSizeScaler=10,plotDistLoads=true,plotBCs=false,plotAxes=false,legendPos=:topright,DPI=DPI,save=true,savePath=string(relPath,"/heliosAirfoilLoads_frame",frame,"_",miniLabels[j],".gif"),displayProgress=true)
+        anim = plot_dynamic_deformation(problem[i,j],backendSymbol=:plotlyjs,follow=:basisA,view=(88,0),plotLimits=([-0.4,0.4],[-0.4,0.4],[-0.4,0.4]),plotFrequency=ceil(Int,ΔtAnim[i]/problem[i,j].Δt),fps=fps,loadsSizeScaler=10,plotDistLoads=true,plotBCs=false,plotAxes=false,legendPos=:topright,DPI=DPI,save=true,savePath=string(relPath,"/heliosAirfoilLoads_frame",frame,"_",miniLabels[j],".gif"),displayProgress=true)
         display(anim)
     end
 end

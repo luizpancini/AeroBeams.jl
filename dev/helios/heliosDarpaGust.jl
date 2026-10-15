@@ -233,7 +233,7 @@ if saveFigures
 end
 
 # Animations
-plot_dynamic_deformation(dynamicProblem[1,1],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,1000],[-40,10]),save=saveFigures,savePath=string(relPath,"/heliosDarpaGust_attached_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
-plot_dynamic_deformation(dynamicProblem[2,1],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,800],[-200,10]),save=saveFigures,savePath=string(relPath,"/heliosDarpaGust_ds_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
+plot_dynamic_deformation(dynamicProblem[1,1],view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,1000],[-40,10]),save=saveFigures,savePath=string(relPath,"/heliosDarpaGust_attached_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
+plot_dynamic_deformation(dynamicProblem[2,1],view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,800],[-200,10]),save=saveFigures,savePath=string(relPath,"/heliosDarpaGust_ds_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
 
 println("Finished heliosDarpaGust.jl")

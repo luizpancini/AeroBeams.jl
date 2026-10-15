@@ -229,7 +229,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Animation
-plot_dynamic_deformation(dynamicProblem,refBasis="A",plotFrequency=round(Int,5e-2/Δt),plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/S10PazyAirspeedSweep_",idString,"_deformation.gif"),displayProgress=true)
+plot_dynamic_deformation(dynamicProblem,follow=:basisA,plotFrequency=round(Int,5e-2/Δt),plotLimits=([-L/2,L/2],[-L/2,L/2],[0,L]),save=true,savePath=string(relPath,"/S10PazyAirspeedSweep_",idString,"_deformation.gif"),displayProgress=true)
 
 # Plot configurations
 showAirspeedInPlots = true

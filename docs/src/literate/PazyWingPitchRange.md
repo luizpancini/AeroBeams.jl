@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/PazyWingPitchRange.jl"
+EditURL = "../../../test/examples/steadyAeroelastic/PazyWingPitchRange.jl"
 ```
 
 # Steady aeroelastic analysis of the Pazy wing
@@ -10,22 +10,19 @@ This example illustrates how to set up a steady aeroelastic analysis, using the 
 *Pazy wing in the wind tunnel* by [Avin et al.](https://doi.org/10.2514/1.J060621)
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/PazyWingPitchRange.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/steadyAeroelastic/PazyWingPitchRange.jl).
 
 ### Problem setup
 Let's begin by setting the variables of our problem. In this example we will analyze the displacements and twist of the clamped wing under several combinations of root pitch angle and airspeed, which are defined by the arrays `θRange` and `URange`. The wing was tested with a balance mass of 0.01 kg attached to its tip store, at a position of 40 mm behind the trailing-edge. Notice that we bring into scope some fixed geometrical and discretization properties of the wing's beam through the function [`geometrical_properties_Pazy`](@ref geometrical_properties_Pazy).
 
 ````@example PazyWingPitchRange
-using AeroBeams, DelimitedFiles
+using AeroBeams
 
 # Aerodynamic solver
-aeroSolver = QuasiSteady()
-
-# Derivation method
-derivationMethod = AD()
+aeroSolver = Indicial()
 
 # Airfoil section
-airfoil = deepcopy(flatPlate)
+airfoil = deepcopy(FlatPlate)
 
 # Flag for upright position
 upright = true
@@ -37,17 +34,18 @@ g = 0
 smallAngles = true
 
 # Fixed geometrical and discretization properties
-nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+nElem,L,chord,normSparPos,nodalPositions = geometrical_properties_Pazy()
 
 # Tip mass (for test 1, 0.01 kg, 40 mm behind the trailing-edge)
 tipMass = 0.01
 ηtipMass = [0; -chord*(1-normSparPos)-0.04; 0]
 
-# Root angle (in degrees) and airspeed ranges
-θRange = [3, 5, 7]
-URange = collect(0:1:60)
+# Root pitch angle [rad] and airspeed [m/s] ranges
+θRange = deg2rad.([3,5,7])
+URange = vcat(1e-3,1:1:100)
 
 # Initialize outputs
+problem = Array{SteadyProblem}(undef,length(θRange),length(URange))
 tip_OOP = Array{Float64}(undef,length(θRange),length(URange))
 tip_IP = Array{Float64}(undef,length(θRange),length(URange))
 tip_twist = Array{Float64}(undef,length(θRange),length(URange))
@@ -61,21 +59,24 @@ In the following loops, we create new model instances with the combination of pi
 ````@example PazyWingPitchRange
 # Sweep root angle
 for (i,θ) in enumerate(θRange)
+    # Initialize guess solution
+    x0 = zeros(0)
     # Sweep airspeed
     for (j,U) in enumerate(URange)
         # Update model
-        PazyWingPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,upright=upright,θ=θ*π/180,airspeed=U,g=g,tipMass=tipMass,ηtipMass=ηtipMass,smallAngles=smallAngles)
+        PazyWingPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],tipMass=tipMass,ηtipMass=ηtipMass,smallAngles=smallAngles)
         # Create and solve problem
-        global problem = create_SteadyProblem(model=PazyWingPitchRange)
-        solve!(problem)
+        problem[i,j] = create_SteadyProblem(model=PazyWingPitchRange,x0=x0)
+        solve!(problem[i,j])
         # Get tip twist, AoA, IP and OOP displacement at beam reference line
-        tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
-        R,_ = rotation_tensor_WM(tip_p)
-        Δ = R*[0; 1; 0]
-        tip_twist[i,j] = asind(Δ[3])
-        tip_OOP[i,j] = problem.nodalStatesOverσ[end][nElem].u_n2_b[3]
-        tip_IP[i,j] = -problem.nodalStatesOverσ[end][nElem].u_n2_b[2]
-        tip_AoA[i,j] = problem.model.elements[end].aero.flowAnglesAndRates.αₑ*180/π
+        tipElemFinalAero = problem[i,j].loadstepHistory.aeroVariables[end][nElem]
+        tipNodeFinalState = problem[i,j].loadstepHistory.states[end][nElem].nodal
+        tip_twist[i,j] = twist_angle(tipNodeFinalState.p2_b)
+        tip_OOP[i,j] = tipNodeFinalState.u2_b[3]
+        tip_IP[i,j] = -tipNodeFinalState.u2_b[2]
+        tip_AoA[i,j] = rad2deg(tipElemFinalAero.unsteadyKin.αₑ)
+        # Set initial guess solution for next iteration
+        x0 = problem[i,j].systemArrays.x
     end
 end
 nothing #hide
@@ -105,26 +106,25 @@ We can now plot the outputs as a function of airspeed for each of the root pitch
 
 ````@example PazyWingPitchRange
 using Suppressor #hide
-using Plots, ColorSchemes
+colors = cgrad(:rainbow,  length(θRange), categorical=true)
 gr()
 ENV["GKSwstype"] = "100" #hide
-colors = get(colorschemes[:rainbow], LinRange(0, 1, length(θRange)))
 
 # Tip OOP displacement vs. airspeed
-plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP displacement [% semispan]", xlims=[URange[1],URange[end]], ylims=[0,50], legend=:topleft)
+plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Tip OOP displacement [% semispan]", xlims=[0,60], ylims=[0,50], legend=:topleft)
 plot!([NaN], [NaN], c=:black, lw=2, ls=:solid, label="AeroBeams")
 plot!([NaN], [NaN], c=:black, lw=2, ls=:dashdot, label="UM/NAST")
 scatter!([NaN], [NaN], c=:black, ms=4, label="Exp. (test 1)")
 scatter!([NaN], [NaN], c=:black, shape=:diamond, ms=4, label="Exp. (test 2)")
 for (i,θ) in enumerate(θRange)
-    plot!(URange, tip_OOP[i,:]/L*100, c=colors[i], lw=2, ls=:solid, label=string("\$\\alpha_r=",round(Int,θ),"^\\circ\$"))
-   if θ==3
-       scatter!(sqrt.(2*tip_u3Vsq_rootPitch3_ExpTest1[1,:]/ρTest2), tip_u3Vsq_rootPitch3_ExpTest1[2,:]*100/L, mc=colors[i], shape=:diamond, ms=4, msw=0, label=false)
-    elseif θ==5
+    plot!(URange, tip_OOP[i,:]/L*100, c=colors[i], lw=2, ls=:solid, label=string("\$\\alpha_r=",round(Int,rad2deg(θ)),"^\\circ\$"))
+    if i==1
+        scatter!(sqrt.(2*tip_u3Vsq_rootPitch3_ExpTest1[1,:]/ρTest2), tip_u3Vsq_rootPitch3_ExpTest1[2,:]*100/L, mc=colors[i], shape=:diamond, ms=4, msw=0, label=false)
+    elseif i==2
         plot!(tip_u3VsU_rootPitch5_UMNAST[1,:], tip_u3VsU_rootPitch5_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_u3VsU_rootPitch5_Exp[1,:], tip_u3VsU_rootPitch5_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
         scatter!(sqrt.(2*tip_u3Vsq_rootPitch5_ExpTest1[1,:]/ρTest2), tip_u3Vsq_rootPitch5_ExpTest1[2,:]*100/L, mc=colors[i], shape=:diamond, ms=4, msw=0, label=false)
-    elseif θ==7
+    elseif i==3
         plot!(tip_u3VsU_rootPitch7_UMNAST[1,:], tip_u3VsU_rootPitch7_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_u3VsU_rootPitch7_Exp[1,:], tip_u3VsU_rootPitch7_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
         scatter!(sqrt.(2*tip_u3Vsq_rootPitch7_ExpTest1[1,:]/ρTest2), tip_u3Vsq_rootPitch7_ExpTest1[2,:]*100/L, mc=colors[i], shape=:diamond, ms=4, msw=0, label=false)
@@ -134,13 +134,13 @@ savefig("PazyWingPitchRange_tipOOP.svg") #hide
 nothing #hide
 
 # Tip twist vs. airspeed
-plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[URange[1],URange[end]], legend=:topleft)
+plt2 = plot(xlabel="Airspeed [m/s]", ylabel="Tip twist [deg]", xlims=[0,60], legend=:topleft)
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_twist[i,:], c=colors[i], lw=2, label=false)
-    if θ==5
+    if i==2
         plot!(tip_thetaVsU_rootPitch5_UMNAST[1,:], tip_thetaVsU_rootPitch5_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_thetaVsU_rootPitch5_Exp[1,:], tip_thetaVsU_rootPitch5_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
-    elseif θ==7
+    elseif i==3
         plot!(tip_thetaVsU_rootPitch7_UMNAST[1,:], tip_thetaVsU_rootPitch7_UMNAST[2,:], lw=2, ls=:dashdot, c=colors[i], label=false)
         scatter!(tip_thetaVsU_rootPitch7_Exp[1,:], tip_thetaVsU_rootPitch7_Exp[2,:], mc=colors[i], ms=4, msw=0, label=false)
     end
@@ -149,7 +149,7 @@ savefig("PazyWingPitchRange_tipTwist.svg") #hide
 nothing #hide
 
 # Tip AoA vs. airspeed
-plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip AoA [deg]", xlims=[URange[1],URange[end]], legend=:bottomright)
+plt3 = plot(xlabel="Airspeed [m/s]", ylabel="Tip AoA [deg]", xlims=[0,60], legend=:bottomright)
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_AoA[i,:], c=colors[i], lw=2, label=false)
 end
@@ -157,7 +157,7 @@ savefig("PazyWingPitchRange_tipAoA.svg") #hide
 nothing #hide
 
 # Tip in-plane displacement vs. airspeed
-plt4 = plot(xlabel="Airspeed [m/s]", ylabel="Tip IP displacement [% semispan]", xlims=[URange[1],URange[end]], legend=:topleft)
+plt4 = plot(xlabel="Airspeed [m/s]", ylabel="Tip IP displacement [% semispan]", xlims=[0,60], legend=:topleft)
 for (i,θ) in enumerate(θRange)
     plot!(URange, tip_IP[i,:]/L*100, c=colors[i], lw=2, label=false)
 end
@@ -175,7 +175,7 @@ Let's leverage the built-in function [`plot_steady_outputs`](@ref plot_steady_ou
 ````@example PazyWingPitchRange
 # Lift coefficient over span for the last problem (θ = θRange[end] and U = URange[end])
 @suppress begin #hide
-plot_steady_outputs(problem,outputs=["cl"],colorScheme=:grays,lw=2)
+plot_steady_outputs(problem[end],outputs=["cl"],colorScheme=:grays,lw=2)
 savefig("PazyWingPitchRange_cl.svg") #hide
 nothing #hide
 end #hide
@@ -192,7 +192,7 @@ Finally, we can visualize the deformed state of the wing using the [`plot_steady
 ````@example PazyWingPitchRange
 # Deformed state of last problem (θ = θRange[end] and U = URange[end])
 @suppress begin #hide
-deformationPlot = plot_steady_deformation(problem,view=(45,30),plotBCs=true,plotDistLoads=true)
+deformationPlot = plot_steady_deformation(problem[end],view=(45,30),plotBCs=true,plotDistLoads=true)
 savefig("PazyWingPitchRange_deformation.svg") #hide
 end #hide
 nothing #hide

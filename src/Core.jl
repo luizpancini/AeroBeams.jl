@@ -1,596 +1,487 @@
-# Computes the elemental contributions to the system's arrays (residual, Jacobian)
-function element_arrays!(problem::Problem,model::Model,element::Element)
 
-    ## Generalized velocities of basis b at element's midpoint, resolved in basis A
-    # --------------------------------------------------------------------------
-    element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
+show_debug() = true
 
-    ## States' rates
-    # --------------------------------------------------------------------------
+# Calls f on every element, in order, looping over one group of concretely-typed elements at a time
+@inline foreach_element(f::F, ::Tuple{}) where {F} = nothing
+@inline function foreach_element(f::F, elementGroups::Tuple) where {F}
+    for element in first(elementGroups)
+        f(element)
+    end
+    foreach_element(f, Base.tail(elementGroups))
+end
+
+# Assembles the residual vector of the system of equations
+function f!(problem)
+
+    @unpack x,residual = problem.systemArrays
+    @unpack σ = problem.systemSolver.loadStepState
+    @unpack model = problem
+    @unpack beams,hingeAxisConstraints = model
+    @unpack elementGroups,specialNodes = model.assemblyData
+    timeIndex = time_index(problem)
+    timeNow = time_now(problem)
+    Δt = time_step(problem)
+    isDynamicProblem = problem isa DynamicProblem
+
+    residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+
+    return residual
+
+end
+
+# Assembles the Jacobian matrix of the system of equations
+function j!(problem)
+
+    @unpack x,jacobian = problem.systemArrays
+    @unpack σ = problem.systemSolver.loadStepState
+    @unpack model = problem
+    @unpack beams,hingeAxisConstraints = model
+    @unpack elementGroups,specialNodes = model.assemblyData
+    skipAeroJacobianUpdate = get_skipAeroJacobianUpdate(problem.systemSolver)
+    timeNow = time_now(problem)
+    Δt = time_step(problem)
+    isDynamicProblem = problem isa DynamicProblem
+
+    jacobian!(jacobian,model,elementGroups,specialNodes,hingeAxisConstraints,x,σ,skipAeroJacobianUpdate,timeNow,Δt,isDynamicProblem)
+
+    return jacobian
+
+end
+
+# Assembles the inertia matrix (only for eigenproblems and trim problems, when required)
+function i!(problem)
+
+    @unpack inertia = problem.systemArrays
+    @unpack model = problem
+    @unpack elementGroups = model.assemblyData
+    timeNow = time_now(problem)
+    Δt = time_step(problem)
+    isDynamicProblem = problem isa DynamicProblem
+
+    # Loop over elements and set their contributions to the inertia matrix
+    foreach_element(elementGroups) do element
+        element_inertia!(inertia,model,element,timeNow,Δt,isDynamicProblem)
+    end
+
+end
+                        
+# Assembles the residual vector and Jacobian matrix of the system of equations
+function fj!(problem)
+
+    @unpack x,residual,jacobian = problem.systemArrays
+    @unpack σ = problem.systemSolver.loadStepState
+    @unpack model = problem
+    @unpack beams,hingeAxisConstraints = model
+    @unpack elementGroups,specialNodes = model.assemblyData
+    skipJacobianUpdate = get_skipJacobianUpdate(problem.systemSolver)
+    skipAeroJacobianUpdate = get_skipAeroJacobianUpdate(problem.systemSolver)
+    timeIndex = time_index(problem)
+    timeNow = time_now(problem)
+    Δt = time_step(problem)
+    isDynamicProblem = problem isa DynamicProblem
+
+    # Set residual vector
+    residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+
+    # Set Jacobian matrix, if applicable
+    skipJacobianUpdate || jacobian!(jacobian,model,elementGroups,specialNodes,hingeAxisConstraints,x,σ,skipAeroJacobianUpdate,timeNow,Δt,isDynamicProblem)
+
+    return residual,jacobian
+
+end
+
+# Updates the residual vector of the system of equations
+function residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+
+    # Set flap deflections and their rates
+    for beam in beams
+        flap_deflection!(beam,x,timeIndex)
+    end
+
+    # Set contributions from the elements
+    foreach_element(elementGroups) do element
+        element_residual!(residual,model,element,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+    end
+
+    # Update states of all special nodes first (necessary for convergence with doubly-attached springs)
+    for specialNode in specialNodes
+        special_node_states!(model,specialNode,x,σ)
+    end
+
+    # Set contributions from the special nodes
+    for specialNode in specialNodes
+        special_node_residual!(residual,model,specialNode)
+    end
+
+    # Set contributions from the hinge axis constraints
+    for constraint in hingeAxisConstraints
+        hac_residual!(residual,model,constraint,x)
+    end
+
+end
+
+# Updates the Jacobian matrix of the system of equations
+function jacobian!(jacobian,model,elementGroups,specialNodes,hingeAxisConstraints,x,σ,skipAeroJacobianUpdate,timeNow,Δt,isDynamicProblem)
+
+    # Reset Jacobians associated with spring loads and hinge axis constraints, and the trim flap deflections' columns
+    reset_jacobians!(jacobian,model,specialNodes,hingeAxisConstraints)
+
+    # Set contributions from the elements
+    foreach_element(elementGroups) do element
+        element_jacobian!(jacobian,model,element,timeNow,Δt,isDynamicProblem,skipAeroJacobianUpdate)
+    end
+
+    # Set contributions from the special nodes
+    for specialNode in specialNodes
+        special_node_jacobian!(jacobian,model,specialNode,x,σ)
+    end
+
+    # Set contributions from the hinge axis constraints
+    for constraint in hingeAxisConstraints
+        hac_jacobian!(jacobian,model,constraint)
+    end
+
+end
+
+# Updates the flap deflections of beam surfaces and their rates
+function flap_deflection!(beam,x,timeIndex)
+
+    # Unpack surface
+    @unpack surface = beam.attachments
+
+    # Skip beams without aerodynamic surfaces
+    isnothing(surface) && return
+
+    # Current flap deflection (either a trim state or a time-dependent value) and its rates
+    if surface.assemblyData.δIsTrimVariable
+        @unpack DOF_δ,δMultiplier = surface.assemblyData
+        δ = x[DOF_δ[1]] * δMultiplier
+        δdot = δddot = 0.0
+    else
+        @unpack δVec,δdotVec,δddotVec = surface.assemblyData
+        δ = δVec[timeIndex]
+        δdot = δdotVec[timeIndex]
+        δddot = δddotVec[timeIndex]
+    end
+    
+    # Update surface state
+    setfield!(surface.state, :δ, δ)
+    setfield!(surface.state, :δdot, δdot)
+    setfield!(surface.state, :δddot, δddot)
+
+end
+
+# Computes the contributions from the current element to the residual array
+function element_residual!(residual,model,element,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+
+    @unpack invForceScaling = model.assemblyData
+    @unpack Δℓ,R0,R0T,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element.geometry
+    @unpack eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set = element.assemblyIndices
+    @unpack u,p,F,M,V,Ω,γ,κ,P,H,χ = element.state.midpoint
+    @unpack udot,pdot,Pdot,Hdot,χdot = element.state.rates
+    @unpack v,ω = element.stateCache.kinematicsBasisb
+    @unpack RR0,RR0T,RdotR0,HT,HTinv = element.stateCache.rotationMatrices
+    @unpack f1,f2,m1,m2 = element.stateCache.loadsResultants
+    @unpack A,B = element.aero.stateCache.stateMatrices
+    @unpack F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ = element.stateCache.residuals
+
+    # Generalized velocities of basis b at element's midpoint, resolved in basis A
+    element_velocities_basis_b!(model,element,σ)
+
+    # States
+    element_states!(model,element,x)
+
     # States' rates
-    element_states_rates!(problem,element)
+    isDynamicProblem && element_states_rates!(element,Δt)
     
-    ## Rotation variables
-    # --------------------------------------------------------------------------
-    element_rotation_variables!(problem,element)
+    # Rotation variables
+    element_rotation_variables!(element,isDynamicProblem)
     
-    ## Distributed loads
-    # --------------------------------------------------------------------------
-    element_distributed_loads!(problem,model,element)
-    
-    ## Check intent
-    # If the intent is getting the external forces array, we need to calculate the loads with actual states (because follower loads depend on it), and then reset element states to zero (because R(x) = J*x - F_ext(x), then F_ext = -R only if x = 0)
-    if problem.getExternalForcesArray == true
-        u,p,F,M,V,Ω,udot,pdot,Vdot,Ωdot = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
-        RR0 = element.R0
-        @pack! element = u,p,F,M,V,Ω,udot,pdot,Vdot,Ωdot,RR0
-    end
-    
-    ## Sectional strains, momenta and momenta's rates
-    # --------------------------------------------------------------------------
-    # Strains
-    element_strains!(element)
-    # Momenta
-    element_momenta!(element)
-    # Momenta rates
-    if problem isa DynamicProblem
-        element_momenta_rates!(element)
-    end
-    
-    ## Residual array
-    # --------------------------------------------------------------------------
-    element_residual!(problem,model,element)
-    if problem.getExternalForcesArray || problem.skipJacobianUpdate
-        return
-    end
-    
-    ## Follower distributed loads' derivatives (including aerodynamic loads) w.r.t. the rotation parameters (contributions to Jacobian matrix)
-    # --------------------------------------------------------------------------
-    distributed_loads_derivatives_rotation_parameters!(element)
+    # Distributed loads
+    element_distributed_loads!(model,element,σ,timeIndex,timeNow,Δt,isDynamicProblem)
 
-    ## Aerodynamic derivatives (contributions to Jacobian and inertia matrices)
-    # ------------------------------------------------------------------------- 
-    aero_derivatives!(problem,model,element)
+    # Static terms
+    element_static_residual!(F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,Δℓ,R0,u,p,F,M,γ,κ,RR0,HTinv,f1,f2,m1,m2)
 
-    ## Jacobian matrix
-    # --------------------------------------------------------------------------
-    element_jacobian!(problem,model,element)
-     
+    # Steady terms
+    element_steady_residual!(F_u1,F_u2,F_p1,F_p2,F_V,F_Ω,F_χ,Δℓ,u,V,Ω,P,H,χ,v,ω,RR0,RR0T,A,B)
+
+    # Transient dynamic terms
+    isDynamicProblem && element_transient_residual!(F_u1,F_u2,F_p1,F_p2,F_V,F_Ω,F_χ,Δℓ,R0T,P,H,udot,pdot,Pdot,Hdot,χdot,RR0,RdotR0,HT)
+
+    # Insert resultants into the residual array
+    insert_element_residual!(residual,F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ,invForceScaling,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat)
+
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "ELEMENT $(element.assemblyData.globalID) RESIDUALS"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1: $F_u1"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1: $F_p1"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_F1: $F_F1"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_M1: $F_M1"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_V: $F_V"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_Ω: $F_Ω"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ: $F_χ"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "norm(residual): $(norm(residual))"
+
+    return nothing
+    
 end
-
-
-# Computes the nodal contributions to the system's arrays (residual, Jacobian, inertia)
-function special_node_arrays!(problem::Problem,model::Model,specialNode::SpecialNode)
-
-    # If the intent is getting the external forces vector, we need to calculate
-    # the loads with actual states (because follower loads depend on it), and
-    # then reset nodal displacements to zero (because since R(x) = J*x - F_ext(x), then F_ext = -R only if x = 0)
-    if problem.getExternalForcesArray
-        specialNode.u,specialNode.p = zeros(3),zeros(3)
-    end
-
-    # Add spring loads, if applicable
-    if specialNode.hasSprings
-        spring_loads!(model,specialNode)
-    end
-
-    ## Residual
-    # --------------------------------------------------------------------------
-    special_node_residual!(problem,model,specialNode)
-    if problem.getExternalForcesArray || problem.skipJacobianUpdate
-        return
-    end
-
-    ## Follower loads' derivatives w.r.t. the rotation parameters (contributions to Jacobian matrix)
-    # --------------------------------------------------------------------------
-    special_node_follower_loads_derivatives_rotation_parameters!(problem,specialNode)
-
-    ## Jacobian
-    # --------------------------------------------------------------------------
-    special_node_jacobian!(problem,model,specialNode)
-
-end
-
 
 # Computes the generalized velocities of basis b at the element's midpoint, resolved in basis A
-function element_velocities_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Real=0.0)
+function element_velocities_basis_b!(model,element,σ)
 
-    @unpack R_AT,v_A,ω_A = model
-    @unpack r = element
+    @unpack v_A,ω_A,R_A,R_AT = model.kinematicsBasisA.state
+    @unpack r = element.assemblyData
+    @unpack v,ω = element.stateCache.kinematicsBasisb
 
     # Translational velocity
-    v = σ * R_AT * (v_A(timeNow) + cross(ω_A(timeNow),R_AT'*r))
+    v .= σ * SVector(R_AT * (v_A + cross(ω_A, R_A*r)))
 
     # Angular velocity
-    ω = σ * R_AT * ω_A(timeNow)
-
-    @pack! element = v,ω
-
-    return v,ω
+    ω .= σ * SVector(R_AT * ω_A)
 
 end
-
 
 # Computes the generalized accelerations of basis b at the element's midpoint, resolved in basis A
-function element_accelerations_basis_b!(model::Model,element::Element,σ::Float64=1.0,timeNow::Real=0.0)
+function element_accelerations_basis_b!(model,element,σ)
 
-    @unpack R_AT,v_A,ω_A,vdot_A,ωdot_A = model
-    @unpack r = element
+    @unpack v_A,ω_A,vdot_A,ωdot_A,R_A,R_AT = model.kinematicsBasisA.state
+    @unpack r = element.assemblyData
+    @unpack vdot,ωdot = element.stateCache.kinematicsBasisb
 
     # Translational acceleration
-    vdot = σ * R_AT * (vdot_A(timeNow) + cross(ωdot_A(timeNow),R_AT'*r) + cross(ω_A(timeNow),cross(ω_A(timeNow),R_AT'*r)) - cross(ω_A(timeNow),R_AT'*v_A(timeNow)))
+    vdot .= σ * SVector(R_AT * (vdot_A + 
+                        cross(ωdot_A, R_A*r) + 
+                        cross(ω_A, cross(ω_A, R_A*r)) - 
+                        cross(ω_A, R_A*v_A)
+                        ))
 
     # Angular acceleration
-    ωdot = σ * R_AT * ωdot_A(timeNow)
-
-    @pack! element = vdot,ωdot
-
-    return vdot,ωdot
+    ωdot .= σ * SVector(R_AT * ωdot_A)
 
 end
 
+# Sets the midpoint states (generalized displacements, forces, strains, velocities and aerodynamic) of the element
+function element_states!(model,element,x)
 
-# Gets the states (generalized displacements, forces, velocities and aerodynamic) of the element
-function element_states!(problem::Problem,model::Model,element::Element)
+    @unpack forceScaling = model.assemblyData
+    @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ = element.assemblyIndices
+    @unpack C11,C12,C21,C22,I11,I12,I21,I22 = element.sectional
+    @unpack u,p,F,M,V,Ω,γ,κ,P,H,χ = element.state.midpoint
 
-    @unpack x = problem
-    @unpack forceScaling = model
-    @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ = element
-    @unpack u,p,F,M,V,Ω,χ = element.states
-
+    # Actual midpoint states
     u .= x[DOF_u]
     p .= x[DOF_p]
-    F .= x[DOF_F]*forceScaling
-    M .= x[DOF_M]*forceScaling
+    F .= x[DOF_F] * forceScaling
+    M .= x[DOF_M] * forceScaling
     V .= x[DOF_V]
     Ω .= x[DOF_Ω]
-    χ .= !isempty(DOF_χ) ? x[DOF_χ] : Vector{Float64}()
+    χ .= x[DOF_χ]
 
-    @pack! element.states = u,p,F,M,V,Ω,χ
+    # Complementary midpoint states
+    γ .= C11 * F + C12 * M
+    κ .= C21 * F + C22 * M
+    P .= I11 * V + I12 * Ω
+    H .= I21 * V + I22 * Ω
+
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "ELEMENT $(element.assemblyData.globalID) STATES"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "u: $u"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "p: $p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F: $F"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "M: $M"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "V: $V"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "Ω: $Ω"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "χ: $χ"
 
 end
 
+# Sets the states' rates of the element
+function element_states_rates!(element,Δt)
 
-# Computes the states' rates of the current element
-function element_states_rates!(problem::Problem,element::Element)
-
-    # Skip for all but dynamic problems
-    if !isa(problem,DynamicProblem)
-        return 
-    end
-
-    # Unpack
-    @unpack Δt = problem
-    @unpack udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv = element
-    @unpack u,p,V,Ω,χ = element.states
-    @unpack udot,pdot,Vdot,Ωdot,χdot = element.statesRates
+    @unpack I11,I12,I21,I22 = element.sectional
+    @unpack u,p,V,Ω,χ = element.state.midpoint
+    @unpack udot,pdot,Vdot,Ωdot,Pdot,Hdot,χdot = element.state.rates
+    @unpack udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv = element.stateCache.equivStatesRates
     
-    # Current rates
-    if !isinf(Δt)
-        udot .= 2/Δt*u - udotEquiv
-        pdot .= 2/Δt*p - pdotEquiv
-        Vdot .= 2/Δt*V - VdotEquiv
-        Ωdot .= 2/Δt*Ω - ΩdotEquiv
-        χdot .= 2/Δt*χ - χdotEquiv
+    # Set rates for finite time step
+    if isfinite(Δt)
+        udot .= 2/Δt * u - udotEquiv
+        pdot .= 2/Δt * p - pdotEquiv
+        Vdot .= 2/Δt * V - VdotEquiv
+        Ωdot .= 2/Δt * Ω - ΩdotEquiv
+        χdot .= 2/Δt * χ - χdotEquiv
+        Pdot .= I11 * Vdot + I12 * Ωdot
+        Hdot .= I21 * Vdot + I22 * Ωdot
     end
 
-    @pack! element.statesRates = udot,pdot,Vdot,Ωdot,χdot
-
 end
- 
 
-# Computes the rotation variables for the current element
-function element_rotation_variables!(problem::Problem,element::Element)
+# Computes the rotation variables for the element (values only, derivatives are computed in element_rotation_derivatives!)
+function element_rotation_variables!(element,isDynamicProblem)
 
-    @unpack R0 = element
-    @unpack p = element.states
-    @unpack pdot = element.statesRates
+    @unpack R0 = element.geometry
+    @unpack p = element.state.midpoint
+    @unpack pdot = element.state.rates
+    @unpack R,RR0,RR0T,RdotR0,HT,HTinv = element.stateCache.rotationMatrices
 
-    ## Rotation tensors
-    # --------------------------------------------------------------------------
-    # Rotation tensor from basis b to basis B, resolved in basis A, and associated variables
-    R,Θ,pNorm,λ,ps,ps1,ps2,ps3,ps0,υ,υ²,ps1s,ps2s,ps3s,ps1ps2,ps2ps3,ps1ps3 = rotation_tensor_WM(p)
+    # Set rotation tensor from basis b to basis B, resolved in basis A, and get associated variables
+    ps,ps0,υ²,pspsT,ps_p = R_WM!(R,p)
+    
     # Rotation tensor from basis A to basis B, resolved in basis A, and its transpose
-    RR0 = R*R0 
-    RR0T = Matrix(RR0')
+    RR0 .= R * R0 
+    RR0T .= RR0'
     
-    ## Functions of tangent operator tensor
-    # --------------------------------------------------------------------------
-    HT = tangent_operator_transpose_WM(ps,ps0,υ²)
-    HTinv = tangent_operator_transpose_inverse_WM(ps,ps0)
+    # Functions of tangent operator tensor (HT and its inverse)
+    HT_WM!(HT,ps,ps0,υ²,pspsT,ps_p)
+    HTinv_WM!(HTinv,ps,ps0,pspsT,ps_p)
     
-    ## Rotation tensor derivative w.r.t. extended rotation parameters
-    # --------------------------------------------------------------------------
-    R_p1,R_p2,R_p3,R_ps1,R_ps2,R_ps3,υ²_ps1,υ²_ps2,υ²_ps3,Θ_ps1,Θ_ps2,Θ_ps3,ps_p,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3 = rotation_tensor_derivatives_extended_parameters(p,pNorm,λ,ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,υ,υ²)
-    
-    ## Tangent operator tensors derivative w.r.t. extended rotation parameters
-    # --------------------------------------------------------------------------
-    HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3 = tangent_tensor_functions_derivatives_extended_parameters(HT,ps1,ps2,ps3,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps_p)
-    
-    ## Time derivatives for dynamic analyses
-    # --------------------------------------------------------------------------
-    if problem isa DynamicProblem
-        # Time derivatives of rotation tensor from basis A to basis B, and scaled rotation parameters 
-        Rdot,ps1dot,ps2dot,ps3dot = rotation_tensor_time_derivative(R_ps1,R_ps2,R_ps3,ps_p,pdot) 
-        RdotR0 = Rdot*R0
-        
-        # Derivatives of time derivative of rotation tensor from basis A to basis B w.r.t extended rotation parameters
-        Rdot_p1,Rdot_p2,Rdot_p3 = rotation_tensor_derivatives_time_extended_parameters(ps,ps0,ps1,ps2,ps3,ps1s,ps2s,ps3s,ps1ps2,ps1ps3,ps2ps3,Θ,Θ_ps1,Θ_ps2,Θ_ps3,υ,υ²,υ²_ps1,υ²_ps2,υ²_ps3,ps1dot,ps2dot,ps3dot,ps1_p1,ps2_p1,ps3_p1,ps1_p2,ps2_p2,ps3_p2,ps1_p3,ps2_p3,ps3_p3)
-    else
-        RdotR0,Rdot_p1,Rdot_p2,Rdot_p3 = zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3)
-    end
-
-    @pack! element = R,RR0,RR0T,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3
+    # Time derivative of rotation tensor
+    isDynamicProblem && RdotR0!(RdotR0,R,R0,HT,pdot)
     
 end
-
 
 # Computes the nodal resultants from distributed loads on the current element, resolved in basis A
-function element_distributed_loads!(problem::Problem,model::Model,element::Element)
+function element_distributed_loads!(model,element,σ,timeIndex,timeNow,Δt,isDynamicProblem)
 
-    @unpack σ = problem
-    @unpack f1,f2,m1,m2 = element
+    @unpack f1,f2,m1,m2 = element.stateCache.loadsResultants
+    @unpack f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f_g,m_g = element.stateCache.structuralLoadsResultants
+    @unpack f1χ,f2χ,m1χ,m2χ = element.aero.stateCache.loadsResultants
+    @unpack Ac,Ai,An,Af,Ag,A,B = element.aero.stateCache.stateMatrices
 
     # Gravitational loads 
-    f_g,m_g = gravitational_loads!(model,element,σ)
+    gravitational_loads!(f_g,m_g,model,element,σ)
 
     # Externally applied distributed loads
-    f1_d,f2_d,m1_d,m2_d = distributed_external_loads!(problem,element,σ)
+    distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,element,σ,timeIndex)
 
-    # Aerodynamic loads
-    f1_χ,f2_χ,m1_χ,m2_χ = aerodynamic_loads!(problem,model,element)
+    # Aerodynamic loads (and state arrays)
+    if !isnothing(element.aero.surface)
+        aerodynamic_loads_and_arrays!(f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,A,B,model,element,timeNow,Δt,isDynamicProblem)
+    end
 
     # Total nodal resultants from distributed loads
-    f1 .= f_g + f1_d + f1_χ
-    f2 .= f_g + f2_d + f2_χ
-    m1 .= m_g + m1_d + m1_χ
-    m2 .= m_g + m2_d + m2_χ
-
-    @pack! element = f1,f2,m1,m2
+    f1 .= f_g + f1_ext + f1χ
+    f2 .= f_g + f2_ext + f2χ
+    m1 .= m_g + m1_ext + m1χ
+    m2 .= m_g + m2_ext + m2χ
 
 end
 
-
 # Computes the nodal resultants from the distributed gravitational loads on the current element
-function gravitational_loads!(model::Model,element::Element,σ::Float64)
+function gravitational_loads!(f_g,m_g,model,element,σ)
 
-    @unpack gravityVector,R_AT = model
-    @unpack Δℓ,μ,ηtilde,RR0,RR0T = element
-    @unpack f_g,m_g = element
+    @unpack gravityVector = model
+    @unpack R_AT = model.kinematicsBasisA.state
+    @unpack Δℓ = element.geometry
+    @unpack ηtilde,μ = element.sectional
+    @unpack RR0,RR0T = element.stateCache.rotationMatrices
 
     # Nodal distributed weight force and moment vectors, resolved in basis A
     if any(!iszero(gravityVector)) 
         f_g .= σ * Δℓ/2 * μ * R_AT * gravityVector
-        m_g .= σ * RR0 * ηtilde * RR0T * f_g
-    else
-        f_g,m_g = zeros(3),zeros(3)
+        m_g .= SMatrix(RR0 * ηtilde) * SVector(RR0T * f_g)
     end
 
-    @pack! element = f_g,m_g
-
-    return f_g,m_g
 end
 
+# Computes the nodal resultants from the externally applied distributed loads on the current element, all resolved in basis A
+function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,element,σ,timeIndex)
 
-# Computes the nodal resultants from the externally applied distributed loads on the current element
-function distributed_external_loads!(problem::Problem,element::Element,σ::Float64)
+    @unpack f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,has_f_A,has_m_A,has_f_b,has_m_b,has_ff_A,has_mf_A,has_ff_b,has_mf_b = element.distLoads
+    @unpack R0 = element.geometry
+    @unpack R,RR0 = element.stateCache.rotationMatrices
 
-    @unpack R,R0,RR0,f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,hasDistributedDeadForcesBasisA,hasDistributedDeadMomentsBasisA,hasDistributedDeadForcesBasisb,hasDistributedDeadMomentsBasisb,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = element
+    # Reset to zero
+    zero_arrays!(f1_ext,f2_ext,m1_ext,m2_ext) 
 
-    # Initialize nodal resultants resolved in basis A
-    f1_d,f2_d,m1_d,m2_d = zeros(3),zeros(3),zeros(3),zeros(3)
-
-    # Initialize current values of nodal resultants from distributed follower loads
-    ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b = zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3),zeros(3)
-
+    ## Dead loads
+    # --------------------------------------------------------------------------
     # Add dead forces initially resolved in basis A
-    if hasDistributedDeadForcesBasisA
-        # Interpolate, if needed
-        f1_A,f2_A = interpolate_distributed_loads(problem,σ*f_A)
-        # Add
-        f1_d .+= f1_A
-        f2_d .+= f2_A
+    if has_f_A
+        f1_ext .+= σ * f_A[1,:,timeIndex]
+        f2_ext .+= σ * f_A[2,:,timeIndex]
     end
 
     # Add dead moments initially resolved in basis A
-    if hasDistributedDeadMomentsBasisA
-        # Interpolate, if needed
-        m1_A,m2_A = interpolate_distributed_loads(problem,σ*m_A)
-        # Add
-        m1_d .+= m1_A
-        m2_d .+= m2_A
+    if has_m_A
+        m1_ext .+= σ * m_A[1,:,timeIndex]
+        m2_ext .+= σ * m_A[2,:,timeIndex]
     end
 
     # Add dead forces initially resolved in basis b
-    if hasDistributedDeadForcesBasisb
-        # Interpolate, if needed
-        f1_b,f2_b = interpolate_distributed_loads(problem,σ*f_b)
-        # Add
-        f1_d .+= R0 * f1_b
-        f2_d .+= R0 * f2_b
+    if has_f_b
+        f1_ext .+= R0 * σ * f_b[1,:,timeIndex]
+        f2_ext .+= R0 * σ * f_b[2,:,timeIndex]
     end
 
     # Add dead moments initially resolved in basis b
-    if hasDistributedDeadMomentsBasisb
-        # Interpolate, if needed
-        m1_b,m2_b = interpolate_distributed_loads(problem,σ*m_b)
-        # Add
-        m1_d .+= R0 * m1_b
-        m2_d .+= R0 * m2_b
+    if has_m_b
+        m1_ext .+= R0 * σ * m_b[1,:,timeIndex]
+        m2_ext .+= R0 * σ * m_b[2,:,timeIndex]
     end
 
-    # Add follower forces initially resolved in basis A
-    if hasDistributedFollowerForcesBasisA
-        # Interpolate, if needed
-        ff1_A,ff2_A = interpolate_distributed_loads(problem,σ*ff_A)
-        # Add
-        f1_d .+= R * ff1_A
-        f2_d .+= R * ff2_A
-    end
-
-    # Add follower moments initially resolved in basis A
-    if hasDistributedFollowerMomentsBasisA
-        # Interpolate, if needed
-        mf1_A,mf2_A = interpolate_distributed_loads(problem,σ*mf_A)
-        # Add
-        m1_d .+= R * mf1_A
-        m2_d .+= R * mf2_A
-    end
-
-    # Add follower forces initially resolved in basis b
-    if hasDistributedFollowerForcesBasisb
-        # Interpolate, if needed
-        ff1_b,ff2_b = interpolate_distributed_loads(problem,σ*ff_b)
-        # Add
-        f1_d .+= RR0 * ff1_b
-        f2_d .+= RR0 * ff2_b
-    end
-
-    # Add follower moments initially resolved in basis b
-    if hasDistributedFollowerMomentsBasisb
-        # Interpolate, if needed
-        mf1_b,mf2_b = interpolate_distributed_loads(problem,σ*mf_b)
-        # Add
-        m1_d .+= RR0 * mf1_b
-        m2_d .+= RR0 * mf2_b
-    end
-
-    @pack! element = ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b
-
-    return f1_d,f2_d,m1_d,m2_d
-
-end
-
-
-# Computes the nodal resultants from the aerodynamic loads on the current element
-function aerodynamic_loads!(problem::Problem,model::Model,element::Element)
-
-    # Initialize 
-    f1_χ,f2_χ,m1_χ,m2_χ = zeros(3),zeros(3),zeros(3),zeros(3)
-    
-    # Skip if there are no aerodynamic loads on the element
-    if isnothing(element.aero)
-        @pack! element = f1_χ,f2_χ,m1_χ,m2_χ
-        return f1_χ,f2_χ,m1_χ,m2_χ
-    end
-
-    @unpack x,timeNow = problem
-    @unpack DOF_δ = element
-    @unpack V,Ω,χ = element.states
-    @unpack Vdot,Ωdot = element.statesRates
-    @unpack δ,δMultiplier = element.aero.aeroSurface
-    @unpack airfoil,nTotalAeroStates = element.aero
-    δNow = !isempty(DOF_δ) ? x[DOF_δ]*δMultiplier : δ(timeNow)
-
-    # Compute aerodynamic nodal resutants and state matrices
-    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
-
-    @pack! element = f1_χ,f2_χ,m1_χ,m2_χ
-    @pack! element.aero = A,B
-    @pack! element.aero.aeroSurface = δNow
-
-    return f1_χ,f2_χ,m1_χ,m2_χ
-
-end
-
-
-# Wrapper function for aerodynamic loads using elemental states as inputs
-function wrapper_aerodynamic_loads_from_states!(states,problem::Problem,model::Model,element::Element)
-
-    # Unpack states and states' rates
-    if isempty(element.DOF_δ)
-        V,Ω,χ,δNow = states[1:3],states[4:6],states[7:end],element.aero.aeroSurface.δ(problem.timeNow)
-    else
-        V,Ω,χ,δNow = states[1:3],states[4:6],states[7:end-1],states[end]
-    end
-    @unpack Vdot,Ωdot = element.statesRates
-
-    # Nodal resutants and state matrices
-    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
-
-    # Set outputs array
-    out = vcat([f1_χ,f2_χ,m1_χ,m2_χ,vec(A),B]...)
-    return out
-
-end
-
-
-# Wrapper function for aerodynamic loads using elemental states' rates as inputs
-function wrapper_aerodynamic_loads_from_states_rates!(statesRates,problem::Problem,model::Model,element::Element)
-
-    # Unpack states and states' rates
-    Vdot,Ωdot = statesRates[1:3],statesRates[4:6]
-    @unpack V,Ω,χ = element.states
-    δNow = !isempty(element.DOF_δ) ? problem.x[element.DOF_δ]*element.aero.aeroSurface.δMultiplier : element.aero.aeroSurface.δ(problem.timeNow)
-
-    # Nodal resutants and state matrices
-    f1_χ,f2_χ,m1_χ,m2_χ,A,B = aero_loads_core!(problem,model,element,V,Ω,χ,Vdot,Ωdot,δNow)
-
-    # Set outputs array
-    out = vcat([f1_χ,f2_χ,m1_χ,m2_χ,vec(A),B]...)
-    return out
-
-end
-
-
-# Computes the nodal resutants from aerodynamic loads and aerodynamic state matrices
-function aero_loads_core!(problem::Problem,model::Model,element::Element,V,Ω,χ,Vdot,Ωdot,δNow)
-
-    # Steady aerodynamic kinematics
-    aero_steady_kinematics!(element,V,Ω)
-
-    # Skip if angle of attack is not defined
-    if isnan(element.aero.flowAnglesAndRates.α)
-        f1_χ,f2_χ,m1_χ,m2_χ,A,B = zeros(3),zeros(3),zeros(3),zeros(3),zeros(element.aero.nTotalAeroStates,element.aero.nTotalAeroStates),zeros(element.aero.nTotalAeroStates)
-        return f1_χ,f2_χ,m1_χ,m2_χ,A,B
-    end
-    
-    # Unsteady aerodynamic kinematics
-    aero_unsteady_kinematics!(element,Vdot,Ωdot)
-
-    # Non-dimensional flow parameters
-    nondimensional_flow_parameters!(model,element)
-
-    # Update airfoil parameters
-    update_airfoil_parameters!(element)
-
-    # Update tip loss function, if applicable
-    if problem isa DynamicProblem && element.aero.aeroSurface.tipLossFunctionIsAirspeedDependent
-        update_tip_loss_factor!(problem,model,element)
-    end
-
-    # Get local gust velocity, if applicable
-    if !isnothing(model.gust)
-        local_gust_velocity!(problem,model,element)
-    end
-
-    # Get flap deflection rates, if applicable
-    if !element.parent.aeroSurface.δIsZero
-        flap_deflection_rates!(problem,element)
-    end
-
-    # Effective (unsteady) angle of attack
-    effective_angle_of_attack!(element,χ,δNow)
-
-    # Aerodynamic coefficients 
-    aero_coefficients!(problem,element,χ,δNow)
-
-    # Aerodynamic state matrices 
-    A,B = aero_state_matrices!(element,δNow)
-    
-    # Aerodynamic loads' nodal resultants
-    f1_χ,f2_χ,m1_χ,m2_χ = aero_loads_resultants!(model,element)
-
-    return f1_χ,f2_χ,m1_χ,m2_χ,A,B
-
-end
-
-
-# Interpolates the loads array at the current time
-function interpolate_distributed_loads(problem::Problem,loadArray::Array{Float64})
-
-    # For steady problems, no interpolation is needed
-    if !isa(problem,DynamicProblem)
-        v1 = loadArray[1,:,1]
-        v2 = loadArray[2,:,1]
-        return v1, v2
-    end
-
-    # Unpack
-    @unpack timeNow,timeBeginTimeStep,timeEndTimeStep,indexBeginTimeStep,indexEndTimeStep = problem
-
-    # Check if the current time is between time steps
-    if (timeBeginTimeStep < timeNow < timeEndTimeStep)
-        # Initialize time vector and respective indices' range for interpolations
-        timesBeginAndEnd = [timeBeginTimeStep,timeEndTimeStep]
-        indicesBeginAndEnd = indexBeginTimeStep:indexEndTimeStep
-        # Interpolate
-        v1 = [LinearInterpolations.interpolate(timesBeginAndEnd,loadArray[1,i,indicesBeginAndEnd],timeNow) for i in 1:3]
-        v2 = [LinearInterpolations.interpolate(timesBeginAndEnd,loadArray[2,i,indicesBeginAndEnd],timeNow) for i in 1:3]
-    else
-        # Set values at the begin of the time step
-        v1 = loadArray[1,:,indexBeginTimeStep]
-        v2 = loadArray[2,:,indexBeginTimeStep]
-    end
-
-    return v1, v2
-end
-
-
-# Computes the strains for the current element, resolved in basis B
-function element_strains!(element::Element)
-
-    @unpack states,compStates,C = element
-    @unpack F,M = states
-    @unpack γ,κ = element.compStates
-    
-    # Generalized sectional forces array
-    forces = [F; M]
-    
-    # Sectional strains vector 
-    strains = C*forces
-    γ .= strains[1:3] 
-    κ .= strains[4:6]
-
-    @pack! element.compStates = γ,κ
-    
-end
-
-
-# Computes the momenta for the current element, resolved in basis B
-function element_momenta!(element::Element)
-
-    @unpack states,compStates,I = element
-    @unpack V,Ω = states
-    @unpack P,H = element.compStates
-
-    # Generalized sectional velocities array
-    velocities = [V; Ω]
-    
-    # Sectional linear and angular momenta vector 
-    momenta = I*velocities
-    P .= momenta[1:3]
-    H .= momenta[4:6]
-
-    @pack! element.compStates = P,H
-    
-end
-
-
-# Computes the momenta rates for the current element, resolved in basis B
-function element_momenta_rates!(element::Element)
-
-    @unpack statesRates,compStatesRates,I = element
-    @unpack Vdot,Ωdot = statesRates
-    @unpack Pdot,Hdot = element.compStatesRates
-
-    # Generalized sectional accelerations array
-    accelerations = [Vdot; Ωdot]
-    
-    # Sectional linear and angular momenta rates vector 
-    momentaRates = I*accelerations
-    Pdot .= momentaRates[1:3]
-    Hdot .= momentaRates[4:6]
-
-    @pack! element.compStatesRates = Pdot,Hdot
-    
-end
-
-
-# Computes the contributions from the current element to the residual array
-function element_residual!(problem::Problem,model::Model,element::Element)
-
-    @unpack residual = problem
-    @unpack forceScaling = model
-    @unpack Δℓ,R0,R0T,RR0,RR0T,RdotR0,HT,HTinv,v,ω,f1,f2,m1,m2,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_Fχ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element
-    @unpack u,p,F,M,V,Ω,χ = element.states
-    @unpack γ,κ,P,H = element.compStates
-    @unpack udot,pdot,χdot = element.statesRates
-    @unpack Pdot,Hdot = element.compStatesRates
-    @unpack F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ = element.resultants
-
-    ## Static terms
+    ## Follower loads
     # --------------------------------------------------------------------------
+    # Set and add follower forces initially resolved in basis A
+    if has_ff_A
+        # Set values
+        @views ff1_A .= σ * ff_A[1,:,timeIndex]
+        @views ff2_A .= σ * ff_A[2,:,timeIndex]
+        # Add
+        f1_ext .+= R * ff1_A
+        f2_ext .+= R * ff2_A
+    end
+
+    # Set and add follower moments initially resolved in basis A
+    if has_mf_A
+        # Set values
+        @views mf1_A .= σ * mf_A[1,:,timeIndex]
+        @views mf2_A .= σ * mf_A[2,:,timeIndex]
+        # Add
+        m1_ext .+= R * mf1_A
+        m2_ext .+= R * mf2_A
+    end
+
+    # Set and add follower forces initially resolved in basis b
+    if has_ff_b
+        # Set values
+        @views ff1_b .= σ * ff_b[1,:,timeIndex]
+        @views ff2_b .= σ * ff_b[2,:,timeIndex]
+        # Add
+        f1_ext .+= RR0 * ff1_b
+        f2_ext .+= RR0 * ff2_b
+    end
+
+    # Set and add follower moments initially resolved in basis b
+    if has_mf_b
+        # Set values
+        @views mf1_b .= σ * mf_b[1,:,timeIndex]
+        @views mf2_b .= σ * mf_b[2,:,timeIndex]
+        # Add
+        m1_ext .+= RR0 * mf1_b
+        m2_ext .+= RR0 * mf2_b
+    end
+
+end
+
+# Computes the nodal resultants from the aerodynamic loads and state arrays
+function aerodynamic_loads_and_arrays!(f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,A,B,model,element,timeNow,Δt,isDynamicProblem)
+
+    # Unpack states and rates
+    @unpack p,V,Ω,χ = element.state.midpoint
+    @unpack Vdot,Ωdot = element.state.rates
+    @unpack δ = element.aero.surface.state
+
+    # Unpack aerodynamic state cache
+    @unpack stateCache = element.aero
+
+    # Update aerodynamic nodal loads resutants and state arrays
+    aero_core!(f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,A,B,model,element,stateCache,p,V,Ω,χ,δ,Vdot,Ωdot,timeNow,Δt,isDynamicProblem)
+
+end
+
+# Computes static contributions to the residual array for the current element
+function element_static_residual!(F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,Δℓ,R0,u,p,F,M,γ,κ,RR0,HTinv,f1,f2,m1,m2)
+
     # --- F_u --- #
     tmp = RR0 * F
     F_u1 .= -tmp - f1
@@ -598,118 +489,121 @@ function element_residual!(problem::Problem,model::Model,element::Element)
 
     # --- F_p --- #
     tmp = RR0 * M
-    tmp2 = Δℓ/2 * RR0 * cross(a1+γ,F)
+    tmp2 = Δℓ/2 * RR0 * cross(a1+γ, F)
     F_p1 .= -tmp - m1 - tmp2
     F_p2 .=  tmp - m2 - tmp2
 
     # --- F_F --- #
-    tmp = Δℓ/2 * (RR0 * (a1+γ) - R0*a1)
+    tmp = Δℓ/2 * (RR0 * (a1+γ) - R0 * a1)
     F_F1 .=  u - tmp
     F_F2 .= -u - tmp
 
     # --- F_M --- #
-    tmp = Δℓ/2 * HTinv * R0 * κ
+    tmp = Δℓ/2 * HTinv * SVector(R0 * κ)
     F_M1 .=  p - tmp
     F_M2 .= -p - tmp
 
-    ## Steady terms
-    # ------------------------------------------------------------------------- 
+end
+
+# Computes steady contributions to the residual array for the current element
+function element_steady_residual!(F_u1,F_u2,F_p1,F_p2,F_V,F_Ω,F_χ,Δℓ,u,V,Ω,P,H,χ,v,ω,RR0,RR0T,A,B)
+
     # --- F_u --- #
-    tmp = Δℓ/2 * cross(ω,RR0*P)
+    tmp = Δℓ/2 * cross(ω, RR0 * P)
     F_u1 .+= tmp
     F_u2 .+= tmp
 
     # --- F_p --- #
-    tmp = Δℓ/2 * (cross(ω,RR0*H) + RR0 * cross(V,P))
+    tmp = Δℓ/2 * (cross(ω, RR0 * H) + RR0 * cross(V, P))
     F_p1 .+= tmp
     F_p2 .+= tmp
 
     # --- F_V --- #
-    F_V .= RR0*V - v - cross(ω,u)
+    F_V .= RR0 * V - v - cross(ω, u)
     
     # --- F_Ω --- #
-    F_Ω .= Ω - RR0T*ω
+    F_Ω .= Ω - RR0T * ω
 
     # --- F_χ --- #
-    if !isempty(eqs_Fχ)
-        @unpack A,B = element.aero
-        F_χ .= -(A*χ+B)
-    end
+    F_χ .= - (A * χ + B)
 
-    ## Transient dynamic terms
-    # -------------------------------------------------------------------------
-    if problem isa DynamicProblem
-        # --- F_u --- #
-        tmp = Δℓ/2 * (RdotR0*P + RR0*Pdot)
-        F_u1 .+= tmp
-        F_u2 .+= tmp
+end
 
-        # --- F_p --- #
-        tmp = Δℓ/2 * (RdotR0*H + RR0*Hdot)
-        F_p1 .+= tmp
-        F_p2 .+= tmp
+# Computes transient contributions to the residual array for the current element
+function element_transient_residual!(F_u1,F_u2,F_p1,F_p2,F_V,F_Ω,F_χ,Δℓ,R0T,P,H,udot,pdot,Pdot,Hdot,χdot,RR0,RdotR0,HT)
 
-        # --- F_V --- #
-        F_V .+= -udot
-        
-        # --- F_Ω --- #
-        F_Ω .+= -R0T * HT * pdot
+    # --- F_u --- #
+    tmp = Δℓ/2 * (RdotR0 * P + RR0 * Pdot)
+    F_u1 .+= tmp
+    F_u2 .+= tmp
 
-        # --- F_χ --- #
-        if !isempty(eqs_Fχ)
-            F_χ .+= χdot
-        end
-    end
+    # --- F_p --- #
+    tmp = Δℓ/2 * (RdotR0 * H + RR0 * Hdot)
+    F_p1 .+= tmp
+    F_p2 .+= tmp
 
-    ## Insert element resultants from dynamic equilibrium and generalized displacements compatibility equations into the residual array
-    # -------------------------------------------------------------------------
+    # --- F_V --- #
+    F_V .+= - udot
+    
+    # --- F_Ω --- #
+    F_Ω .+= - R0T * SVector(HT * pdot)
 
-    # Set or add to residuals for the element's first node
+    # --- F_χ --- #
+    F_χ .+= χdot
+
+end
+
+# Inserts the element's contributions to the residual array
+function insert_element_residual!(residual,F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ,invForceScaling,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FV,eqs_FΩ,eqs_Fχ,isSpecialNode1,isSpecialNode2,eqsNode1Set,eqsNode2Set,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat)
+
+    # Convert to static vector for performance
+    F_p1 = SVector(F_p1)
+
+    # First node
     # --------------------------------------------------------------------------
     # The node's equations have not been set yet
     if !eqsNode1Set
         # Set equilibrium equations' residual
-        residual[eqs_Fu1] .= F_u1/forceScaling
-        residual[eqs_Fp1] .= F_p1/forceScaling
+        residual[eqs_Fu1] .= F_u1 * invForceScaling
+        residual[eqs_Fp1] .= F_p1 * invForceScaling
         # Set compatibility equations' residual
         residual[eqs_FF1] .= F_F1
-        residual[eqs_FM1] .= F_M1 
+        residual[eqs_FM1] .= F_M1
     # The node's equations have already been set
     else
-        # Add to existing equilibrium equations' residual (except for hinged degrees-of-freedom)
-        residual[eqs_Fu1] .+= F_u1/forceScaling
-        residual[eqs_Fp1] .+= notHingedNode1Mat*F_p1/forceScaling
-        # Check if is a special node 
-        # ----------------------------------------------------------------------
+        # Add to existing equilibrium equations' residual (except for hinged DOFs)
+        residual[eqs_Fu1] .+= F_u1 * invForceScaling
+        residual[eqs_Fp1] .+= notHingedNode1Mat * F_p1 * invForceScaling
         # This is a standard node (shares compatibility equations)
         if !isSpecialNode1
-            # Add to existing compatibility equations' residual (except for hinged degrees-of-freedom - discard equations) / set separate moment equilibrium equations' residual for hinged degrees-of-freedom
+            # Add to existing compatibility equations' residual (except for hinged DOFs - discard equations) / set separate moment equilibrium equations' residual for hinged DOFs
             residual[eqs_FF1] .+= F_F1
-            residual[eqs_FM1] .+= notHingedNode1Mat*F_M1 + hingedNode1Mat*F_p1/forceScaling 
+            residual[eqs_FM1] .+= notHingedNode1Mat * F_M1 + 
+                                  hingedNode1Mat * F_p1 * invForceScaling 
         # This is a special node (has separate compatibility equations)
         else
-            # Set separate compatibility equations' residual (except for hinged degrees-of-freedom - discard equations) / set separate moment equilibrium equations' residual for hinged degrees-of-freedom
-            residual[eqs_FF1_sep] .= F_F1
-            residual[eqs_FM1_sep] .= notHingedNode1Mat*F_M1 + hingedNode1Mat*F_p1/forceScaling
+            # Set separate compatibility equations' residual (except for hinged DOFs - discard equations) / set separate moment equilibrium equations' residual for hinged DOFs
+            residual[eqs_FF1] .= F_F1
+            residual[eqs_FM1] .= notHingedNode1Mat * F_M1 + 
+                                 hingedNode1Mat * F_p1 * invForceScaling
         end
     end
-    # Set or add to residuals for the element's last node
+
+    # Second node
     # --------------------------------------------------------------------------
     # The node's equations have not been set yet
     if !eqsNode2Set
         # Set equilibrium equations' residual
-        residual[eqs_Fu2] .= F_u2/forceScaling
-        residual[eqs_Fp2] .= F_p2/forceScaling
-        # Set compatibility equations' residual (except for hinged degrees-of-freedom - discard equations)
+        residual[eqs_Fu2] .= F_u2 * invForceScaling
+        residual[eqs_Fp2] .= F_p2 * invForceScaling
+        # Set compatibility equations' residual (except for hinged DOFs - discard equations)
         residual[eqs_FF2] .= F_F2
-        residual[eqs_FM2] .= notHingedNode2Mat*F_M2 
+        residual[eqs_FM2] .= notHingedNode2Mat * F_M2 
     # The node's equations have already been set
     else
         # Add to existing equilibrium equations' residual
-        residual[eqs_Fu2] .+= F_u2/forceScaling
-        residual[eqs_Fp2] .+= F_p2/forceScaling
-        # Check if is a special node 
-        # ----------------------------------------------------------------------
+        residual[eqs_Fu2] .+= F_u2 * invForceScaling
+        residual[eqs_Fp2] .+= F_p2 * invForceScaling
         # This is a standard node (shares compatibility equations)
         if !isSpecialNode2 
             # Add to existing compatibility equations' residual 
@@ -718,290 +612,523 @@ function element_residual!(problem::Problem,model::Model,element::Element)
         # This is a special node (has separate compatibility equations)
         else
             # Set separate compatibility equations' residual 
-            residual[eqs_FF2_sep] .= F_F2
-            residual[eqs_FM2_sep] .= F_M2
+            residual[eqs_FF2] .= F_F2
+            residual[eqs_FM2] .= F_M2
         end
     end
 
-    # Generalized velocity-displacement residuals
+    ## Midpoint
+    # --------------------------------------------------------------------------
+    # Generalized velocity-displacement
     residual[eqs_FV] .= F_V
     residual[eqs_FΩ] .= F_Ω
 
-    # Aerodynamic states residuals
-    if !isempty(eqs_Fχ)
-        residual[eqs_Fχ] .= F_χ
-    end
+    # Aerodynamic
+    residual[eqs_Fχ] .= F_χ
 
-    @pack! problem = residual
-    @pack! element.resultants = F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,F_V,F_Ω,F_χ
 end
 
+# Resets Jacobian entries that accumulate
+function reset_jacobians!(jacobian,model,specialNodes,hingeAxisConstraints)
+
+    # Reset spring loads' Jacobians to zero 
+    reset_spring_loads_jacobians!(jacobian,specialNodes)
+
+    # Reset trim flap deflections' columns to zero (all elements of a surface contribute to the same column)
+    reset_trim_flap_deflections_jacobians!(jacobian,model)
+
+end
+
+# Resets cumulative Jacobians associated with spring loads
+function reset_spring_loads_jacobians!(jacobian,specialNodes)
+
+    @unpack nzval = jacobian
+
+    # Loop special nodes
+    for specialNode in specialNodes
+
+        # Unpack special node data
+        @unpack springs = specialNode
+        @unpack doubleAttachmentSpringsData = specialNode.assemblyData
+        @unpack Fu_uF,Fp_pM,Fu_uFother,Fp_pMother = specialNode.jacobianMaps
+
+        # Initialize counter for double-attached springs
+        c = 0
+        
+        # Loop special node's springs
+        for spring in springs
+            @unpack hasDoubleAttachment = spring.assemblyData
+            if hasDoubleAttachment
+                # Update counter
+                c += 1
+                # Reset Jacobians
+                set_block!(nzval, Fu_uF, Z3)
+                set_block!(nzval, Fp_pM, Z3)
+                set_block!(nzval, Fu_uFother[c], Z3)
+                set_block!(nzval, Fp_pMother[c], Z3)
+            else
+                set_block!(nzval, Fu_uF, Z3)
+                set_block!(nzval, Fp_pM, Z3)
+            end
+        end
+
+    end
+
+end
+
+# Resets cumulative Jacobians associated with the trim flap deflections
+function reset_trim_flap_deflections_jacobians!(jacobian,model)
+
+    @unpack colptr,nzval = jacobian
+    @unpack rangeTrimδ = model.assemblyData
+
+    # Loop trim flap deflections' columns
+    for k in rangeTrimδ
+        k < length(colptr) || break
+        @views nzval[colptr[k]:colptr[k+1]-1] .= 0
+    end
+
+end
+
+# Computes the contributions from the current element to the Jacobian matrix
+function element_jacobian!(jacobian,model,element,timeNow,Δt,isDynamicProblem,skipAeroJacobianUpdate)
+
+    @unpack forceScaling,invForceScaling = model.assemblyData
+    @unpack jacobianMaps = element
+    @unpack Δℓ,R0,R0T,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element.geometry
+    @unpack C11,C12,C21,C22,I11,I12,I21,I22 = element.sectional
+    @unpack F,M,V,Ω,γ,κ,P,H,χ = element.state.midpoint
+    @unpack pdot,Vdot,Ωdot,Pdot,Hdot,χdot = element.state.rates
+    @unpack ω = element.stateCache.kinematicsBasisb
+    @unpack RR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,RT_p1,RT_p2,RT_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3 = element.stateCache.rotationMatrices
+    @unpack f1_p,f2_p,m1_p,m2_p = element.stateCache.loadsJacobians
+    @unpack f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot = element.stateCache.aeroLoadsJacobians
+    @unpack F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,F_χ_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot = element.stateCache.jacobians
+
+    # Derivatives of the rotation variables w.r.t. the rotation parameters
+    element_rotation_derivatives!(element,Δt,isDynamicProblem)
+
+    # Convert to static matrices for performance
+    RR0 = SMatrix(RR0)
+
+    # Aerodynamic derivatives (contributions to Jacobian matrix)
+    if !skipAeroJacobianUpdate 
+        aero_derivatives_states!(model,element,timeNow,Δt,isDynamicProblem)
+        isDynamicProblem && aero_derivatives_states_rates!(model,element,timeNow,Δt,isDynamicProblem)
+    end
+
+    # Follower distributed loads' derivatives (including aerodynamic loads) w.r.t. the rotation parameters (contributions to Jacobian matrix)
+    distributed_loads_derivatives_rotation_parameters!(element)
+
+    # Static terms
+    element_static_jacobians!(F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,Δℓ,R0,C11,C12,C21,C22,F,M,γ,κ,RR0,HTinv,R_p1,R_p2,R_p3,HTinv_p1,HTinv_p2,HTinv_p3,f1_p,f2_p,m1_p,m2_p)
+
+    # Steady-state terms
+    element_steady_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,Δℓ,I11,I12,I21,I22,R0,R0T,ω,V,P,H,RR0,R_p1,R_p2,R_p3,RT_p1,RT_p2,RT_p3,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ)
+
+    # Transient dynamic terms
+    isDynamicProblem && element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_V_u,F_Ω_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,Δt,Δℓ,I11,I12,I21,I22,R0,R0T,P,H,pdot,Pdot,Hdot,RR0,RdotR0,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,Rdot_p1,Rdot_p2,Rdot_p3)
+
+    # Insert element resultants into the Jacobian matrix
+    insert_element_jacobians!(jacobian,F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,F_χ_p,F_χ_V,F_χ_Ω,F_χ_χ,forceScaling,invForceScaling,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,jacobianMaps)
+
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "ELEMENT $(element.assemblyData.globalID) JACOBIANS"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_p: $F_u1_p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_F: $F_u1_F"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_V: $F_u1_V"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_Ω: $F_u1_Ω"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_p: $F_p1_p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_F: $F_p1_F"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_M: $F_p1_M"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_V: $F_p1_V"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_Ω: $F_p1_Ω"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_F1_u: $F_F1_u"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_F1_p: $F_F1_p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_F1_F: $F_F1_F"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_F1_M: $F_F1_M"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_M1_p: $F_M1_p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_M1_F: $F_M1_F"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_M1_M: $F_M1_M"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_V_u: $F_V_u"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_V_p: $F_V_p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_V_V: $F_V_V"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_Ω_p: $F_Ω_p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_Ω_Ω: $F_Ω_Ω"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ_p: $F_χ_p"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ_V: $F_χ_V"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ_Ω: $F_χ_Ω"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ_χ: $F_χ_χ"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_δ: $F_u1_δ"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u2_δ: $F_u2_δ"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_δ: $F_p1_δ"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p2_δ: $F_p2_δ"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) (norm(jacobian))
+    # if size(jacobian, 1) == size(jacobian, 2)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) (det(jacobian))
+    # end
+
+    return nothing
+    
+end
+
+# Computes the derivatives of the rotation variables w.r.t. the extended rotation parameters (required by the Jacobian and inertia matrices only)
+function element_rotation_derivatives!(element,Δt,isDynamicProblem)
+
+    @unpack p = element.state.midpoint
+    @unpack pdot = element.state.rates
+    @unpack R,HT,R_p1,R_p2,R_p3,RT_p1,RT_p2,RT_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3 = element.stateCache.rotationMatrices
+
+    # Derivatives of the rotation tensor and the tangent operator tensors w.r.t. extended rotation parameters
+    ∂R_∂p_and_∂HT_∂p_and_∂HTinv_∂p!(R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,p)
+
+    # Transposes
+    RT_p1 .= R_p1'
+    RT_p2 .= R_p2'
+    RT_p3 .= R_p3'
+
+    # Derivatives of the time derivative of rotation tensor for dynamic analyses
+    isDynamicProblem && ∂Rdot_∂p!(Rdot_p1,Rdot_p2,Rdot_p3,R,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,pdot,Δt)
+
+end
 
 # Computes the derivatives of the distributed loads w.r.t the rotation parameters
-function distributed_loads_derivatives_rotation_parameters!(element::Element)
+function distributed_loads_derivatives_rotation_parameters!(element)
 
-    @unpack f1_p,f2_p,m1_p,m2_p = element
+    @unpack f1_ext_p,f2_ext_p,m1_ext_p,m2_ext_p,mg_p = element.stateCache.structuralLoadsJacobians
+    @unpack f1χ_p,f2χ_p,m1χ_p,m2χ_p = element.stateCache.aeroLoadsJacobians
+    @unpack f1_p,f2_p,m1_p,m2_p = element.stateCache.loadsJacobians
 
     # Derivatives of gravitational loads w.r.t. extended rotation parameters
-    mg_p = gravitational_loads_derivatives_rotation_parameters(element)
+    gravitational_loads_derivatives_rotation_parameters!(mg_p,element)
 
     # Derivatives of externally applied follower distributed loads w.r.t. extended rotation parameters
-    f1d_p,f2d_p,m1d_p,m2d_p = distributed_external_loads_derivatives_rotation_parameters(element)
+    distributed_external_loads_derivatives_rotation_parameters!(f1_ext_p,f2_ext_p,m1_ext_p,m2_ext_p,element)
 
-    # Derivatives of aerodynamic loads w.r.t. extended rotation parameters
-    f1χ_p,f2χ_p,m1χ_p,m2χ_p = aero_loads_derivatives_rotation_parameters(element)
+    # Derivatives of aerodynamic loads w.r.t. extended rotation parameters (f1χ_p,f2χ_p,m1χ_p,m2χ_p) already computed by aero_derivatives_states!    
 
     # Total nodal resultants' derivatives w.r.t. extended rotation parameters
-    f1_p .= f1χ_p + f1d_p
-    m1_p .= mg_p + m1χ_p + m1d_p
-    f2_p .= f2χ_p + f2d_p
-    m2_p .= mg_p + m2χ_p + m2d_p
-
-    @pack! element = f1_p,f2_p,m1_p,m2_p
+    f1_p .= f1_ext_p + f1χ_p
+    f2_p .= f2_ext_p + f2χ_p
+    m1_p .= m1_ext_p + m1χ_p + mg_p
+    m2_p .= m2_ext_p + m2χ_p + mg_p
 
 end
 
 
 # Computes the contributions of the gravitational loads to the Jacobian matrix
-function gravitational_loads_derivatives_rotation_parameters(element::Element)
+function gravitational_loads_derivatives_rotation_parameters!(mg_p,element)
 
-    @unpack R,RR0,R0T,R_p1,R_p2,R_p3,f_g,m_g,ηtilde = element
+    @unpack R0T = element.geometry
+    @unpack ηtilde = element.sectional
+    @unpack R,RR0,R_p1,R_p2,R_p3,RT_p1,RT_p2,RT_p3 = element.stateCache.rotationMatrices
+    @unpack f_g,m_g = element.stateCache.structuralLoadsResultants
 
-    # Distributed weight moment vector derivative w.r.t. extended rotation parameters
+    # Derivatives of gravitational loads w.r.t. extended rotation parameters
     if any(!iszero(f_g))
-        mg_p = mul3(R_p1,R_p2,R_p3,R'*m_g) + RR0*ηtilde*R0T*mul3(R_p1',R_p2',R_p3',f_g)
-    else
-        mg_p = zeros(3,3)
+        mg_p .= mul3(R_p1,R_p2,R_p3,SVector(R'*m_g)) + 
+            SMatrix(RR0 * ηtilde) * SMatrix(R0T * mul3(RT_p1,RT_p2,RT_p3,f_g))
     end
-
-    return mg_p
 
 end
 
 
 # Computes the contributions of the externally applied distributed loads to the Jacobian matrix
-function distributed_external_loads_derivatives_rotation_parameters(element::Element)
+function distributed_external_loads_derivatives_rotation_parameters!(f1_ext_p,f2_ext_p,m1_ext_p,m2_ext_p,element)
 
-    @unpack ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,R_p1,R_p2,R_p3,R0,hasDistributedFollowerForcesBasisA,hasDistributedFollowerMomentsBasisA,hasDistributedFollowerForcesBasisb,hasDistributedFollowerMomentsBasisb = element
-
-    # Initialize derivatives of externally applied distributed loads w.r.t. extended rotation parameters
-    f1d_p,f2d_p,m1d_p,m2d_p = zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3)
+    @unpack R0 = element.geometry
+    @unpack R_p1,R_p2,R_p3 = element.stateCache.rotationMatrices
+    @unpack has_ff_A,has_mf_A,has_ff_b,has_mf_b = element.distLoads
+    @unpack ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b = element.stateCache.structuralLoadsResultants
+    
+    # Reset to zero arrays
+    zero_arrays!(f1_ext_p,f2_ext_p,m1_ext_p,m2_ext_p)
 
     # Contributions from follower forces initially resolved in basis A
-    if hasDistributedFollowerForcesBasisA
-        f1d_p .+= mul3(R_p1,R_p2,R_p3,ff1_A)
-        f2d_p .+= mul3(R_p1,R_p2,R_p3,ff2_A)
+    if has_ff_A
+        f1_ext_p .+= mul3(R_p1,R_p2,R_p3,ff1_A)
+        f2_ext_p .+= mul3(R_p1,R_p2,R_p3,ff2_A)
     end
 
     # Contributions from follower moments initially resolved in basis A
-    if hasDistributedFollowerMomentsBasisA
-        m1d_p .+= mul3(R_p1,R_p2,R_p3,mf1_A)
-        m2d_p .+= mul3(R_p1,R_p2,R_p3,mf2_A)
+    if has_mf_A
+        m1_ext_p .+= mul3(R_p1,R_p2,R_p3,mf1_A)
+        m2_ext_p .+= mul3(R_p1,R_p2,R_p3,mf2_A)
     end
 
     # Contributions from follower forces initially resolved in basis b
-    if hasDistributedFollowerForcesBasisb
-        f1d_p .+= mul3(R_p1,R_p2,R_p3,R0*ff1_b)
-        f2d_p .+= mul3(R_p1,R_p2,R_p3,R0*ff2_b)
+    if has_ff_b
+        f1_ext_p .+= mul3(R_p1,R_p2,R_p3,R0*ff1_b)
+        f2_ext_p .+= mul3(R_p1,R_p2,R_p3,R0*ff2_b)
     end
 
     # Contributions from follower moements initially resolved in basis b
-    if hasDistributedFollowerMomentsBasisb
-        m1d_p .+= mul3(R_p1,R_p2,R_p3,R0*mf1_b)
-        m2d_p .+= mul3(R_p1,R_p2,R_p3,R0*mf2_b)
+    if has_mf_b
+        m1_ext_p .+= mul3(R_p1,R_p2,R_p3,R0*mf1_b)
+        m2_ext_p .+= mul3(R_p1,R_p2,R_p3,R0*mf2_b)
     end
-
-    return f1d_p,f2d_p,m1d_p,m2d_p
 
 end
 
-
-# Computes the derivatives of the aerodynamic loads w.r.t the extended rotation parameters
-function aero_loads_derivatives_rotation_parameters(element::Element)
-
-    @unpack aero = element
-
-    # Skip if there are no aero loads
-    if isnothing(aero)
-        f1χ_p,f2χ_p,m1χ_p,m2χ_p = zeros(3,3),zeros(3,3),zeros(3,3),zeros(3,3)
-        return f1χ_p,f2χ_p,m1χ_p,m2χ_p
-    end
-
-    @unpack R_p1,R_p2,R_p3 = element
-    @unpack RwR0,F = aero
-
-    f1χ_p = mul3(R_p1,R_p2,R_p3,RwR0*F[1:3])
-    m1χ_p = mul3(R_p1,R_p2,R_p3,RwR0*F[4:6])
-    f2χ_p = mul3(R_p1,R_p2,R_p3,RwR0*F[7:9])
-    m2χ_p = mul3(R_p1,R_p2,R_p3,RwR0*F[10:12])
-
-    return f1χ_p,f2χ_p,m1χ_p,m2χ_p
-
-end
-
-
-# Computes the derivatives of the aerodynamic loads and aerodynamic states w.r.t remaining elemental states and their rates (excludes rotation parameters, already computed)
-function aero_derivatives!(problem::Problem,model::Model,element::Element)
+# Computes the derivatives of the aerodynamic loads and aerodynamic states w.r.t elemental states (excludes rotation parameters, already computed)
+function aero_derivatives_states!(model,element,timeNow,Δt,isDynamicProblem)
 
     @unpack aero = element
-    @unpack aeroSurface = element.parent
 
-    # Skip if there are no aero loads, or angle of attack is undefined, or the convergence rate in a dynamic problem is higher than the required minimum
-    if isnothing(aero) || isnan(aero.flowAnglesAndRates.α) || (problem isa DynamicProblem && problem.systemSolver.convRate > problem.systemSolver.minConvRateAeroJacUpdate)
+    # Skip if there is no aerodynamic surface, or angle of attack is undefined
+    if isnothing(aero.surface) || isnan(aero.stateCache.attachedVars.steadyKin.α)
+        @unpack f1χ_p,f2χ_p,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_p,m2χ_p,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = element.stateCache.aeroLoadsJacobians
+        @unpack F_χ_p,F_χ_V,F_χ_Ω = element.stateCache.jacobians
+        zero_arrays!(f1χ_p,f2χ_p,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_p,m2χ_p,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_p,F_χ_V,F_χ_Ω)
         return
     end
 
     # Unpack element data
-    @unpack DOF_δ = element
-    @unpack V,Ω,χ = element.states
-    @unpack derivationMethod,δMultiplier = aeroSurface
-    @unpack nTotalAeroStates,A,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ = aero
+    @unpack p,V,Ω,χ = element.state.midpoint
+    @unpack δ = element.aero.surface.state
+    @unpack derivationMethod = aero.surface.solvers
+    @unpack DOF_δ = aero.surface.assemblyData
 
-    # Set input states for aero loads wrapper functions
-    states = isempty(DOF_δ) ? vcat([V,Ω,χ]...) : vcat([V,Ω,χ,problem.x[DOF_δ]*δMultiplier]...)
-
-    # Get derivatives of aerodynamic loads and state matrices w.r.t. states
-    if typeof(derivationMethod) == AD
-        derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states)
-    elseif typeof(derivationMethod) == FD
-        derivatives = first(FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states!(x,problem,model,element), states))
-    end
-
-    # Deal with possible NaN values
-    NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
-    while !isempty(NaNind)
-        if NaNind[1] == 1
-            derivatives[1] = 0.0
-            popat!(NaNind,1)
-        end
-        derivatives[NaNind] .= derivatives[NaNind .- 1]
-        NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
-    end
-
-    # Extract derivatives
-    f1χ_V .= derivatives[1:3,1:3]
-    f2χ_V .= derivatives[4:6,1:3]
-    m1χ_V .= derivatives[7:9,1:3]
-    m2χ_V .= derivatives[10:12,1:3]
-    f1χ_Ω .= derivatives[1:3,4:6]
-    f2χ_Ω .= derivatives[4:6,4:6]
-    m1χ_Ω .= derivatives[7:9,4:6]
-    m2χ_Ω .= derivatives[10:12,4:6]
-    f1χ_χ .= derivatives[1:3,7:6+nTotalAeroStates]
-    f2χ_χ .= derivatives[4:6,7:6+nTotalAeroStates]
-    m1χ_χ .= derivatives[7:9,7:6+nTotalAeroStates]
-    m2χ_χ .= derivatives[10:12,7:6+nTotalAeroStates]
-    A_V = reshape(derivatives[13:12+nTotalAeroStates^2,1:3],(nTotalAeroStates,nTotalAeroStates,3))
-    A_Ω = reshape(derivatives[13:12+nTotalAeroStates^2,4:6],(nTotalAeroStates,nTotalAeroStates,3))
-    B_V = derivatives[13+nTotalAeroStates^2:end,1:3]
-    B_Ω = derivatives[13+nTotalAeroStates^2:end,4:6]
+    # Input states for aero loads and matrices wrapper function
+    states = aero.stateCache.statesBuffer
+    copyto!(view(states,1:3), p)
+    copyto!(view(states,4:6), V)
+    copyto!(view(states,7:9), Ω)
+    copyto!(view(states,10:9+length(χ)), χ)
     if !isempty(DOF_δ)
-        f1χ_δ .= derivatives[1:3,end]
-        f2χ_δ .= derivatives[4:6,end]
-        m1χ_δ .= derivatives[7:9,end]
-        m2χ_δ .= derivatives[10:12,end]
+        @inbounds states[end] = δ
     end
 
-    # Set derivatives of aerodynamic states w.r.t. states
-    F_χ_χ .= -A
-    if !isempty(χ)
-        for i=1:3
-            F_χ_V[:,i] .= -(A_V[:,:,i]*χ+B_V[:,i])
-            F_χ_Ω[:,i] .= -(A_Ω[:,:,i]*χ+B_Ω[:,i])
-        end
-    end
-
-    # Reset complementary variables of dynamic stall model
-    if typeof(derivationMethod) == AD
-        element.aero.BLiCompVars = reset_dual_numbers(element.aero.BLiCompVars)
-        element.aero.BLoCompVars = reset_dual_numbers(element.aero.BLoCompVars)
-    end
-
-    @pack! element.aero = f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ,F_χ_V,F_χ_Ω,F_χ_χ
-
-    # Skip if not an EigenProblem
-    if !isa(problem,EigenProblem)
-        return
-    end
-
-    # Unpack element data
-    @unpack Vdot,Ωdot = element.statesRates
-    @unpack f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.aero
-
-    # Set input states' rates for aero loads wrapper function
-    statesRates = vcat([Vdot,Ωdot]...)
-
-    # Get derivatives of aerodynamic loads and state matrices w.r.t. states' rates
-    if typeof(derivationMethod) == AD
-        derivatives = ForwardDiff.jacobian(x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates)
-    elseif typeof(derivationMethod) == FD
-        derivatives = first(FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aerodynamic_loads_from_states_rates!(x,problem,model,element), statesRates))
-    end
-
-    # Deal with possible NaN values
-    NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
-    while !isempty(NaNind)
-        if NaNind[1] == 1
-            derivatives[1] = 0.0
-            popat!(NaNind,1)
-        end
-        derivatives[NaNind] .= derivatives[NaNind .- 1]
-        NaNind = LinearIndices(derivatives)[findall(isnan,derivatives)]
-    end
-
-    # Extract derivatives
-    f1χ_Vdot .= derivatives[1:3,1:3]
-    f2χ_Vdot .= derivatives[4:6,1:3]
-    m1χ_Vdot .= derivatives[7:9,1:3]
-    m2χ_Vdot .= derivatives[10:12,1:3]
-    f1χ_Ωdot .= derivatives[1:3,4:6]
-    f2χ_Ωdot .= derivatives[4:6,4:6]
-    m1χ_Ωdot .= derivatives[7:9,4:6]
-    m2χ_Ωdot .= derivatives[10:12,4:6]
-    A_Vdot = reshape(derivatives[13:12+nTotalAeroStates^2,1:3],(nTotalAeroStates,nTotalAeroStates,3))
-    A_Ωdot = reshape(derivatives[13:12+nTotalAeroStates^2,4:6],(nTotalAeroStates,nTotalAeroStates,3))
-    B_Vdot = derivatives[13+nTotalAeroStates^2:end,1:3]
-    B_Ωdot = derivatives[13+nTotalAeroStates^2:end,4:6]
-
-    # Set derivatives of aerodynamic states w.r.t. states' rates
-    if !isempty(χ)
-        for i=1:3
-            F_χ_Vdot[:,i] .= -(A_Vdot[:,:,i]*χ+B_Vdot[:,i])
-            F_χ_Ωdot[:,i] .= -(A_Ωdot[:,:,i]*χ+B_Ωdot[:,i])
-        end
-    end
-
-    # Reset complementary variables of dynamic stall model
-    if typeof(derivationMethod) == AD
-        element.aero.BLiCompVars = reset_dual_numbers(element.aero.BLiCompVars)
-        element.aero.BLoCompVars = reset_dual_numbers(element.aero.BLoCompVars)
-    end
-
-    @pack! element.aero = f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot
+    # Jacobians of aerodynamic loads and state matrices w.r.t. states
+    aero_jacobians_states!(states,model,element,timeNow,Δt,isDynamicProblem,derivationMethod)
 
 end
 
+# Computes the aerodynamic Jacobians of states with Automatic Differentiation
+function aero_jacobians_states!(states,model,element,timeNow,Δt,isDynamicProblem,derivationMethod::AD)
 
-# Computes the contributions from the current element to the Jacobian matrix
-function element_jacobian!(problem::Problem,model::Model,element::Element)
+    # Derivatives of aerodynamic loads and state matrices w.r.t. states
+    J = ForwardDiff.jacobian(x -> wrapper_aero_loads_and_matrices_from_states!(x,model,element,timeNow,Δt,isDynamicProblem), SVector(states))
 
-    @unpack jacobian = problem
-    @unpack forceScaling = model
-    @unpack Δℓ,C_11,C_12,C_21,C_22,I_11,I_12,I_21,I_22,ω,R0,R0T,RR0,RdotR0,HT,HTinv,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3,f1_p,f2_p,m1_p,m2_p,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FF1,eqs_FF2,eqs_FM1,eqs_FM2,eqs_FF1_sep,eqs_FF2_sep,eqs_FM1_sep,eqs_FM2_sep,eqs_FV,eqs_FΩ,eqs_Fχ,DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,DOF_χ,DOF_δ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,aero = element
-    @unpack F,M,V,Ω = element.states
-    @unpack pdot,Vdot,Ωdot = element.statesRates
-    @unpack γ,κ,P,H = element.compStates
-    @unpack Pdot,Hdot = element.compStatesRates
-    @unpack F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω = element.jacobians
+    # Set derivatives
+    set_aero_jacobians_of_states!(J,element)
 
-    ## Static terms
-    # --------------------------------------------------------------------------
+end
+
+# Computes the aerodynamic Jacobians of states with Finite Differences
+function aero_jacobians_states!(states,model,element,timeNow,Δt,isDynamicProblem,derivationMethod::FD)
+
+    # Derivatives of aerodynamic loads and state matrices w.r.t. states
+    J = first(FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aero_loads_and_matrices_from_states!(x,model,element,timeNow,Δt,isDynamicProblem), states))
+
+    # Set derivatives
+    set_aero_jacobians_of_states!(J,element)
+
+end
+
+# Wrapper function for aerodynamic loads and state matrices using elemental states as inputs
+function wrapper_aero_loads_and_matrices_from_states!(states,model,element,timeNow,Δt,isDynamicProblem)
+
+    # Unpack states and rates
+    p = @view states[1:3]
+    V = @view states[4:6]
+    Ω = @view states[7:9]
+    χ = @view states[10:9+length(element.state.midpoint.χ)]
+    δ = !isempty(element.aero.surface.assemblyData.DOF_δ) ? 
+        states[end] :
+        element.aero.surface.state.δ
+    @unpack Vdot,Ωdot = element.state.rates
+
+    # Set state cache for derivatives calculations
+    stateCacheDiff = get_diff_state_cache!(element.aero,eltype(states))
+
+    # Unpack resultants and arrays
+    @unpack f1χ,f2χ,m1χ,m2χ = stateCacheDiff.loadsResultants
+    @unpack Ac,Ai,An,Af,Ag,A,B = stateCacheDiff.stateMatrices
+
+    # Compute nodal resultants and state arrays
+    f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,B = aero_core!(f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,A,B,model,element,stateCacheDiff,p,V,Ω,χ,δ,Vdot,Ωdot,timeNow,Δt,isDynamicProblem)
+
+    # Set outputs array
+    outBuffer = stateCacheDiff.outBuffer
+    write_aero_jacobians_outputs!(outBuffer, f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,B)
+
+    return outBuffer
+
+end
+
+# Writes the aerodynamic loads and state matrices into the output buffer
+@inline function write_aero_jacobians_outputs!(out, f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,B)
+    @inbounds begin
+        copyto!(view(out, 1:3),   f1χ)
+        copyto!(view(out, 4:6),   f2χ)
+        copyto!(view(out, 7:9),   m1χ)
+        copyto!(view(out, 10:12), m2χ)
+
+        i = 13
+
+        n = length(Ac); copyto!(view(out, i:i+n-1), Ac); i += n
+        n = length(Ai); copyto!(view(out, i:i+n-1), Ai); i += n
+        n = length(An); copyto!(view(out, i:i+n-1), An); i += n
+        n = length(Af); copyto!(view(out, i:i+n-1), Af); i += n
+        n = length(Ag); copyto!(view(out, i:i+n-1), Ag); i += n
+        n = length(B);  copyto!(view(out, i:i+n-1), B)
+    end
+    return out
+end
+
+# Computes the aerodynamic derivatives of the element's states
+function set_aero_jacobians_of_states!(J,element)
+
+    # Unpack element data
+    @unpack χ = element.state.midpoint
+    @unpack ppSolver = element.aero.surface.solvers
+    @unpack DOF_δ = element.aero.surface.assemblyData
+    @unpack f1χ_p,f2χ_p,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_p,m2χ_p,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = element.stateCache.aeroLoadsJacobians
+    @unpack F_χ_p,F_χ_V,F_χ_Ω,F_χ_χ = element.stateCache.jacobians
+    @unpack A,B,Ac,Ai,An,Af,Ag = element.aero.stateCache.stateMatrices
+    @unpack Ac_p,Ai_p,An_p,Af_p,Ag_p,Ac_V,Ai_V,An_V,Af_V,Ag_V,Ac_Ω,Ai_Ω,An_Ω,Af_Ω,Ag_Ω,Ac_χ,Ai_χ,An_χ,Af_χ,Ag_χ,A_p,A_V,A_Ω,A_χ,B_p,B_V,B_Ω,B_χ = element.aero.matricesDerivatives
+
+    # Derivatives of aerodynamic nodal loads resultants w.r.t. p
+    f1χ_p .= @view J[1:3, 1:3]
+    f2χ_p .= @view J[4:6, 1:3]
+    m1χ_p .= @view J[7:9, 1:3]
+    m2χ_p .= @view J[10:12, 1:3]
+
+    # Derivatives of aerodynamic nodal loads resultants w.r.t. V
+    f1χ_V .= @view J[1:3, 4:6]
+    f2χ_V .= @view J[4:6, 4:6]
+    m1χ_V .= @view J[7:9, 4:6]
+    m2χ_V .= @view J[10:12, 4:6]
+
+    # Derivatives of aerodynamic nodal loads resultants w.r.t. Ω
+    f1χ_Ω .= @view J[1:3, 7:9]
+    f2χ_Ω .= @view J[4:6, 7:9]
+    m1χ_Ω .= @view J[7:9, 7:9]
+    m2χ_Ω .= @view J[10:12, 7:9]
+
+    # Derivatives of aerodynamic nodal loads resultants w.r.t. χ
+    if !isempty(χ)
+        f1χ_χ .= @view J[1:3, 10:9+length(χ)]
+        f2χ_χ .= @view J[4:6, 10:9+length(χ)]
+        m1χ_χ .= @view J[7:9, 10:9+length(χ)]
+        m2χ_χ .= @view J[10:12, 10:9+length(χ)]
+    end
+
+    # Derivatives of aerodynamic nodal loads resultants w.r.t. δ
+    if !isempty(DOF_δ)
+        f1χ_δ .= @view J[1:3, end]
+        f2χ_δ .= @view J[4:6, end]
+        m1χ_δ .= @view J[7:9, end]
+        m2χ_δ .= @view J[10:12, end]
+    end
+
+    # Derivatives of aerodynamic equations w.r.t. V and Ω
+    if !isempty(χ)
+
+        # Lengths of arrays
+        Nc = length(Ac)
+        Ni = length(Ai)
+        Nn = length(An)
+        Nf = length(Af)
+        Ng = length(Ag)
+
+        # Derivatives of state arrays
+        Ac_p .= @view J[13 : 12+Nc, 1:3]
+        Ac_V .= @view J[13 : 12+Nc, 4:6]
+        Ac_Ω .= @view J[13 : 12+Nc, 7:9]
+        Ac_χ .= @view J[13 : 12+Nc, 10:9+length(χ)]
+        Ai_p .= @view J[13+Nc : 12+Nc+Ni, 1:3]
+        Ai_V .= @view J[13+Nc : 12+Nc+Ni, 4:6]
+        Ai_Ω .= @view J[13+Nc : 12+Nc+Ni, 7:9]
+        Ai_χ .= @view J[13+Nc : 12+Nc+Ni, 10:9+length(χ)]
+        An_p .= @view J[13+Nc+Ni : 12+Nc+Ni+Nn, 1:3]
+        An_V .= @view J[13+Nc+Ni : 12+Nc+Ni+Nn, 4:6]
+        An_Ω .= @view J[13+Nc+Ni : 12+Nc+Ni+Nn, 7:9]
+        An_χ .= @view J[13+Nc+Ni : 12+Nc+Ni+Nn, 10:9+length(χ)]
+        Af_p .= @view J[13+Nc+Ni+Nn : 12+Nc+Ni+Nn+Nf, 1:3]
+        Af_V .= @view J[13+Nc+Ni+Nn : 12+Nc+Ni+Nn+Nf, 4:6]
+        Af_Ω .= @view J[13+Nc+Ni+Nn : 12+Nc+Ni+Nn+Nf, 7:9]
+        Af_χ .= @view J[13+Nc+Ni+Nn : 12+Nc+Ni+Nn+Nf, 10:9+length(χ)]
+        Ag_p .= @view J[13+Nc+Ni+Nn+Nf : 12+Nc+Ni+Nn+Nf+Ng, 1:3]
+        Ag_V .= @view J[13+Nc+Ni+Nn+Nf : 12+Nc+Ni+Nn+Nf+Ng, 4:6]
+        Ag_Ω .= @view J[13+Nc+Ni+Nn+Nf : 12+Nc+Ni+Nn+Nf+Ng, 7:9]        
+        Ag_χ .= @view J[13+Nc+Ni+Nn+Nf : 12+Nc+Ni+Nn+Nf+Ng, 10:9+length(χ)]
+
+        # Set A_p, A_V, A_Ω and A_χ
+        @inbounds for k = 1:3
+            @views begin
+                i = 1
+                if ppSolver isa Inflow
+                    n = isqrt(Nc)
+                    A_p[i:i+n-1, i:i+n-1, k] .= reshape(Ac_p[:,k], (n,n))
+                    A_V[i:i+n-1, i:i+n-1, k] .= reshape(Ac_V[:,k], (n,n))
+                    A_Ω[i:i+n-1, i:i+n-1, k] .= reshape(Ac_Ω[:,k], (n,n))
+                    i += n
+                else
+                    i = assemble_A_diagonal_block!((A_p,A_V,A_Ω), (Ac_p[:,k],Ac_V[:,k],Ac_Ω[:,k]), i, k)
+                end
+                i = assemble_A_diagonal_block!((A_p,A_V,A_Ω), (Ai_p[:,k],Ai_V[:,k],Ai_Ω[:,k]), i, k)
+                i = assemble_A_diagonal_block!((A_p,A_V,A_Ω), (An_p[:,k],An_V[:,k],An_Ω[:,k]), i, k)
+                i = assemble_A_diagonal_block!((A_p,A_V,A_Ω), (Af_p[:,k],Af_V[:,k],Af_Ω[:,k]), i, k)
+                i = assemble_A_diagonal_block!((A_p,A_V,A_Ω), (Ag_p[:,k],Ag_V[:,k],Ag_Ω[:,k]), i, k)
+            end
+        end
+        @inbounds for k in eachindex(χ)
+            @views begin
+                i = 1
+                if ppSolver isa Inflow
+                    n = isqrt(Nc)
+                    A_χ[i:i+n-1, i:i+n-1, k] .= reshape(Ac_χ[:,k], (n,n))
+                    i += n
+                else
+                    i = assemble_A_diagonal_block!((A_χ,), (Ac_χ[:,k],), i, k)
+                end
+                i = assemble_A_diagonal_block!((A_χ,), (Ai_χ[:,k],), i, k)
+                i = assemble_A_diagonal_block!((A_χ,), (An_χ[:,k],), i, k)
+                i = assemble_A_diagonal_block!((A_χ,), (Af_χ[:,k],), i, k)
+                i = assemble_A_diagonal_block!((A_χ,), (Ag_χ[:,k],), i, k)
+            end
+        end
+
+        # Set B_p, B_V, B_Ω and B_χ
+        B_p .= @view J[end-length(χ)+1:end, 1:3]
+        B_V .= @view J[end-length(χ)+1:end, 4:6]
+        B_Ω .= @view J[end-length(χ)+1:end, 7:9]
+        B_χ .= @view J[end-length(χ)+1:end, 10:9+length(χ)]
+
+        # Set Jacobians
+        @inbounds for i=1:3
+            F_χ_p[:,i] .= - (A_p[:,:,i] * χ + B_p[:,i])
+            F_χ_V[:,i] .= - (A_V[:,:,i] * χ + B_V[:,i])
+            F_χ_Ω[:,i] .= - (A_Ω[:,:,i] * χ + B_Ω[:,i])
+        end
+        @inbounds for i in eachindex(χ)
+            F_χ_χ[:,i] .= -(A[:,i] + A_χ[:,:,i] * χ + B_χ[:,i])
+        end
+    end
+    
+end
+
+# Assembles a diagonal block into an arbitrary number of derivative arrays A_x[:,:,k]
+@inline function assemble_A_diagonal_block!(As::Tuple, vs::Tuple, i, k)
+    n = length(first(vs))
+    @inbounds for j = 1:n
+        for m in eachindex(As)
+            As[m][i+j-1, i+j-1, k] = vs[m][j]
+        end
+    end
+    return i + n
+end
+
+# Computes static contributions to the Jacobian matrix from the current element
+function element_static_jacobians!(F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,Δℓ,R0,C11,C12,C21,C22,F,M,γ,κ,RR0,HTinv,R_p1,R_p2,R_p3,HTinv_p1,HTinv_p2,HTinv_p3,f1_p,f2_p,m1_p,m2_p)
+
     # Repeatedly used variables
-    F_tilde = tilde(F)
+    F̃ = tilde(F)
         
     # --- F_u --- #
     # F_u_p
-    tmp = mul3(R_p1,R_p2,R_p3,R0*F)
+    tmp = mul3(R_p1,R_p2,R_p3,SVector(R0*F))
     F_u1_p .= -tmp - f1_p
     F_u2_p .=  tmp - f2_p
     # F_u_F
@@ -1010,487 +1137,580 @@ function element_jacobian!(problem::Problem,model::Model,element::Element)
 
     # --- F_p --- #
     # F_p_p
-    tmp1 = mul3(R_p1,R_p2,R_p3,R0*M)
+    tmp1 = mul3(R_p1,R_p2,R_p3,SVector(R0*M))
     tmp2 = Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*cross(a1+γ,F))
     F_p1_p .= -tmp1 - m1_p - tmp2
     F_p2_p .=  tmp1 - m2_p - tmp2
     # F_p_F
-    F_p1_F .= -Δℓ/2 * RR0 * (tilde(a1+γ)-F_tilde*C_11)
+    F_p1_F .= -Δℓ/2 * RR0 * (tilde(a1+γ) - F̃ * C11)
     F_p2_F .= F_p1_F
     # F_p_M
-    tmp = Δℓ/2 * RR0 * F_tilde * C_12
+    tmp = Δℓ/2 * RR0 * F̃ * C12
     F_p1_M .= tmp - RR0
     F_p2_M .= tmp + RR0
 
     # --- F_F --- #
-    # F_F_u
-    F_F1_u .= I3
-    F_F2_u .= -F_F1_u
+    # F_F_u (already set as constants)
+    # F_F1_u .=  I3
+    # F_F2_u .= -I3
     # F_F_p
-    F_F1_p .= -mul3(R_p1,R_p2,R_p3,Δℓ/2*R0*(a1+γ))
+    F_F1_p .= -Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*(a1+γ))
     F_F2_p .= F_F1_p
     # F_F_F
-    F_F1_F .= -Δℓ/2 * RR0 * C_11
+    F_F1_F .= -Δℓ/2 * RR0 * C11
     F_F2_F .= F_F1_F
     # F_F_M
-    F_F1_M .= -Δℓ/2 * RR0 * C_12
+    F_F1_M .= -Δℓ/2 * RR0 * C12
     F_F2_M .= F_F1_M
 
     # --- F_M --- #
     # F_M_p
-    tmp = mul3(HTinv_p1,HTinv_p2,HTinv_p3,Δℓ/2*R0*κ)
+    tmp = Δℓ/2 * mul3(HTinv_p1,HTinv_p2,HTinv_p3,SVector(R0*κ))
     F_M1_p .=  I3 - tmp
     F_M2_p .= -I3 - tmp
     # F_M_F
-    tmp = -Δℓ/2 * HTinv * R0
-    F_M1_F .= tmp * C_21
+    tmp = -Δℓ/2 * SMatrix(HTinv * R0)
+    F_M1_F .= tmp * C21
     F_M2_F .= F_M1_F
     # F_M_M
-    F_M1_M .= tmp * C_22
+    F_M1_M .= tmp * C22
     F_M2_M .= F_M1_M
 
-    ## Steady-state terms
-    # --------------------------------------------------------------------------
+end
+
+# Computes steady-state contributions to the Jacobian matrix from the current element
+function element_steady_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,Δℓ,I11,I12,I21,I22,R0,R0T,ω,V,P,H,RR0,R_p1,R_p2,R_p3,RT_p1,RT_p2,RT_p3,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ)
+
     # Repeatedly used variables
-    ω_tilde = tilde(ω)
-    ω_tilde_RR0 = ω_tilde*RR0
-    V_tilde = tilde(V)
-    R0P = R0*P
-    R0H = R0*H
-    
+    ω̃ = tilde(ω)
+    ω̃RR0 = ω̃ * RR0
+    Ṽ = tilde(V)
+
     # --- F_u --- #
     # F_u_p
-    tmp = Δℓ/2 * ω_tilde * mul3(R_p1,R_p2,R_p3,R0P)
+    tmp = Δℓ/2 * ω̃ * mul3(R_p1,R_p2,R_p3,SVector(R0*P))
     F_u1_p .+= tmp
-    F_u2_p .+= tmp 
+    F_u2_p .+= tmp
     # F_u_V
-    tmp = Δℓ/2 * ω_tilde_RR0 * I_11
-    F_u1_V .= tmp
-    F_u2_V .= copy(tmp)
+    tmp = Δℓ/2 * ω̃RR0 * I11
+    F_u1_V .= tmp - f1χ_V
+    F_u2_V .= tmp - f2χ_V
     # F_u_Ω
-    tmp = Δℓ/2 * ω_tilde_RR0 * I_12
-    F_u1_Ω .= tmp
-    F_u2_Ω .= copy(tmp)
+    tmp = Δℓ/2 * ω̃RR0 * I12
+    F_u1_Ω .= tmp - f1χ_Ω
+    F_u2_Ω .= tmp - f2χ_Ω
+    # F_u_χ
+    F_u1_χ .= - f1χ_χ
+    F_u2_χ .= - f2χ_χ
+    # F_u_δ
+    F_u1_δ .= - f1χ_δ
+    F_u2_δ .= - f2χ_δ
     
-    # --- F_p --- # 
+    # --- F_p --- #
     # F_p_p
-    tmp = Δℓ/2 * (ω_tilde*mul3(R_p1,R_p2,R_p3,R0H) + mul3(R_p1,R_p2,R_p3,R0*cross(V,P)))
-    F_p1_p .+= tmp
+    tmp = Δℓ/2 * (ω̃ * mul3(R_p1,R_p2,R_p3,SVector(R0*H)) + 
+                  mul3(R_p1,R_p2,R_p3,SVector(R0*cross(V,P))))
+    F_p1_p .+= tmp 
     F_p2_p .+= tmp
     # F_p_V
-    tmp = Δℓ/2 * (ω_tilde_RR0*I_21 + RR0*(V_tilde*I_11-tilde(P)))
-    F_p1_V .= tmp 
-    F_p2_V .= copy(tmp)
+    tmp = Δℓ/2 * (ω̃RR0 * I21 + RR0 * ( Ṽ * I11 - tilde(P) ))
+    F_p1_V .= tmp - m1χ_V
+    F_p2_V .= tmp - m2χ_V
     # F_p_Ω
-    tmp = Δℓ/2 * (ω_tilde_RR0*I_22 + RR0*V_tilde*I_12)
-    F_p1_Ω .= tmp 
-    F_p2_Ω .= copy(tmp) 
+    tmp = Δℓ/2 * (ω̃RR0 * I22 + RR0 * Ṽ * I12)
+    F_p1_Ω .= tmp - m1χ_Ω
+    F_p2_Ω .= tmp - m2χ_Ω
+    # F_p_χ
+    F_p1_χ .= - m1χ_χ
+    F_p2_χ .= - m2χ_χ
+    # F_p_δ
+    F_p1_δ .= - m1χ_δ
+    F_p2_δ .= - m2χ_δ
     
     # --- F_V --- #
     # F_V_u
-    F_V_u .= -ω_tilde
+    F_V_u .= - ω̃
     # F_V_p
-    F_V_p .= mul3(R_p1,R_p2,R_p3,R0*V) 
+    F_V_p .= mul3(R_p1,R_p2,R_p3,SVector(R0*V))
     # F_V_V
     F_V_V .= RR0
     
     # --- F_Ω --- #
     # F_Ω_p
-    F_Ω_p .= -R0T * mul3(Matrix(R_p1'),Matrix(R_p2'),Matrix(R_p3'),ω)
-    # F_Ω_Ω
-    F_Ω_Ω .= I3
-
-    ## Transient dynamic terms
-    # --------------------------------------------------------------------------
-    if problem isa DynamicProblem
-
-        @unpack Δt = problem
-        
-        # Repeatedly used variables
-        RdotR0_plus_2oΔtRR0 = RdotR0 + 2/Δt*RR0
-        
-        # --- F_u --- #
-        # F_u_p
-        tmp = Δℓ/2 * (mul3(Rdot_p1,Rdot_p2,Rdot_p3,R0P) + mul3(R_p1,R_p2,R_p3,R0*Pdot))
-        F_u1_p .+= tmp
-        F_u2_p .+= tmp
-        # F_u_V
-        tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_11
-        F_u1_V .+= tmp
-        F_u2_V .+= tmp
-        # F_u_Ω
-        tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_12
-        F_u1_Ω .+= tmp
-        F_u2_Ω .+= tmp
-
-        # --- F_p --- #
-        # F_p_p
-        tmp = Δℓ/2 * (mul3(Rdot_p1,Rdot_p2,Rdot_p3,R0H) + mul3(R_p1,R_p2,R_p3,R0*Hdot))
-        F_p1_p .+= tmp
-        F_p2_p .+= tmp
-        # F_p_V
-        tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_21
-        F_p1_V .+= tmp
-        F_p2_V .+= tmp
-        # F_p_Ω
-        tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I_22
-        F_p1_Ω .+= tmp
-        F_p2_Ω .+= tmp
-        
-        # --- F_V --- #
-        # F_V_u
-        F_V_u .+= -2/Δt * I3
-
-        # --- F_Ω --- #
-        # F_Ω_p
-        F_Ω_p .+= -R0T * (mul3(HT_p1,HT_p2,HT_p3,pdot) + 2/Δt*HT)
-
-    end
-
-    ## Aerodynamic terms 
-    # --------------------------------------------------------------------------
-    if !isnothing(aero)
-        @unpack nTotalAeroStates,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,F_χ_V,F_χ_Ω,F_χ_χ = element.aero
-        # F_u_V
-        F_u1_V .-= f1χ_V
-        F_u2_V .-= f2χ_V 
-        # F_u_Ω
-        F_u1_Ω .-= f1χ_Ω
-        F_u2_Ω .-= f2χ_Ω
-        # F_p_V
-        F_p1_V .-= m1χ_V
-        F_p2_V .-= m2χ_V
-        # F_p_Ω
-        F_p1_Ω .-= m1χ_Ω
-        F_p2_Ω .-= m2χ_Ω
-        # F_χ_χ 
-        if problem isa DynamicProblem && nTotalAeroStates > 0
-            F_χ_χ .+= Matrix(2/Δt*LinearAlgebra.I,nTotalAeroStates,nTotalAeroStates)
-        end
-    end
-
-
-    ## Insert element resultants into the Jacobian matrix
-    # --------------------------------------------------------------------------
-
-    ## Dynamic equilibrium and generalized displacements compatibility equations' contributions
-    # --------------------------------------------------------------------------
-    # ---------- Node 1 ----------- #
-    # Equilibrium equations' Jacobian entries for the element's first node
-    # --- F_u1 --- #
-    jacobian[eqs_Fu1,DOF_p] .= F_u1_p/forceScaling
-    jacobian[eqs_Fu1,DOF_F] .= F_u1_F
-    jacobian[eqs_Fu1,DOF_V] .= F_u1_V/forceScaling
-    jacobian[eqs_Fu1,DOF_Ω] .= F_u1_Ω/forceScaling
-    # --- F_p1 --- #
-    jacobian[eqs_Fp1,DOF_p] .= notHingedNode1Mat*F_p1_p/forceScaling
-    jacobian[eqs_Fp1,DOF_F] .= notHingedNode1Mat*F_p1_F
-    jacobian[eqs_Fp1,DOF_M] .= notHingedNode1Mat*F_p1_M
-    jacobian[eqs_Fp1,DOF_V] .= notHingedNode1Mat*F_p1_V/forceScaling
-    jacobian[eqs_Fp1,DOF_Ω] .= notHingedNode1Mat*F_p1_Ω/forceScaling
-    # Compatibility equations' Jacobian entries for the element's first node. If the shared compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
-    if eqsNode1Set && isSpecialNode1
-        # --- F_F1 --- #
-        jacobian[eqs_FF1_sep,DOF_u] .= F_F1_u
-        jacobian[eqs_FF1_sep,DOF_p] .= F_F1_p
-        jacobian[eqs_FF1_sep,DOF_F] .= F_F1_F*forceScaling
-        jacobian[eqs_FF1_sep,DOF_M] .= F_F1_M*forceScaling
-        # --- F_M1 --- #
-        jacobian[eqs_FM1_sep,DOF_p] .= notHingedNode1Mat*F_M1_p + hingedNode1Mat*F_p1_p/forceScaling
-        jacobian[eqs_FM1_sep,DOF_F] .= notHingedNode1Mat*F_M1_F*forceScaling + hingedNode1Mat*F_p1_F
-        jacobian[eqs_FM1_sep,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling + hingedNode1Mat*F_p1_M
-    else
-        # --- F_F1 --- #
-        jacobian[eqs_FF1,DOF_u] .= F_F1_u
-        jacobian[eqs_FF1,DOF_p] .= F_F1_p
-        jacobian[eqs_FF1,DOF_F] .= F_F1_F*forceScaling
-        jacobian[eqs_FF1,DOF_M] .= F_F1_M*forceScaling
-        # --- F_M1 --- #
-        jacobian[eqs_FM1,DOF_p] .= notHingedNode1Mat*F_M1_p + hingedNode1Mat*F_p1_p/forceScaling
-        jacobian[eqs_FM1,DOF_F] .= notHingedNode1Mat*F_M1_F*forceScaling + hingedNode1Mat*F_p1_F
-        jacobian[eqs_FM1,DOF_M] .= notHingedNode1Mat*F_M1_M*forceScaling + hingedNode1Mat*F_p1_M
-    end
-
-    # ---------- Node 2 ----------- #
-    # Equilibrium equations' Jacobian entries for the element's second node
-    # --- F_u2 --- #
-    jacobian[eqs_Fu2,DOF_p] .= F_u2_p/forceScaling
-    jacobian[eqs_Fu2,DOF_F] .= F_u2_F
-    jacobian[eqs_Fu2,DOF_V] .= F_u2_V/forceScaling
-    jacobian[eqs_Fu2,DOF_Ω] .= F_u2_Ω/forceScaling
-    # --- F_p2 --- #
-    jacobian[eqs_Fp2,DOF_p] .= F_p2_p/forceScaling
-    jacobian[eqs_Fp2,DOF_F] .= F_p2_F
-    jacobian[eqs_Fp2,DOF_M] .= F_p2_M
-    jacobian[eqs_Fp2,DOF_V] .= F_p2_V/forceScaling
-    jacobian[eqs_Fp2,DOF_Ω] .= F_p2_Ω/forceScaling
-    # Compatibility equations' Jacobian entries for the element's second node. If the shared compatibility equations' Jacobians have already been set for this special node, use node's separate compatibility equations
-    if eqsNode2Set && isSpecialNode2
-        # --- F_F2 --- #
-        jacobian[eqs_FF2_sep,DOF_u] .= F_F2_u
-        jacobian[eqs_FF2_sep,DOF_p] .= F_F2_p
-        jacobian[eqs_FF2_sep,DOF_F] .= F_F2_F*forceScaling
-        jacobian[eqs_FF2_sep,DOF_M] .= F_F2_M*forceScaling
-        # --- F_M2 --- #
-        jacobian[eqs_FM2_sep,DOF_p] .= F_M2_p
-        jacobian[eqs_FM2_sep,DOF_F] .= F_M2_F*forceScaling
-        jacobian[eqs_FM2_sep,DOF_M] .= F_M2_M*forceScaling
-    else
-        # --- F_F2 --- #
-        jacobian[eqs_FF2,DOF_u] .= F_F2_u
-        jacobian[eqs_FF2,DOF_p] .= F_F2_p
-        jacobian[eqs_FF2,DOF_F] .= F_F2_F*forceScaling
-        jacobian[eqs_FF2,DOF_M] .= F_F2_M*forceScaling
-        # --- F_M2 --- #
-        jacobian[eqs_FM2,DOF_p] .= notHingedNode2Mat*F_M2_p
-        jacobian[eqs_FM2,DOF_F] .= notHingedNode2Mat*F_M2_F*forceScaling
-        jacobian[eqs_FM2,DOF_M] .= notHingedNode2Mat*F_M2_M*forceScaling
-    end
-
-    ## Generalized velocities' Jacobian contributions
-    # --------------------------------------------------------------------------
-    # --- F_V --- #
-    jacobian[eqs_FV,DOF_u] .= F_V_u
-    jacobian[eqs_FV,DOF_p] .= F_V_p
-    jacobian[eqs_FV,DOF_V] .= F_V_V
-    # --- F_Ω --- #
-    jacobian[eqs_FΩ,DOF_p] .= F_Ω_p
-    jacobian[eqs_FΩ,DOF_Ω] .= F_Ω_Ω
-
-    ## Aerodynamic states' Jacobians
-    # --------------------------------------------------------------------------
-    if !isempty(DOF_χ)
-        # --- F_u --- #
-        jacobian[eqs_Fu1,DOF_χ] .= -f1χ_χ/forceScaling
-        jacobian[eqs_Fu2,DOF_χ] .= -f2χ_χ/forceScaling
-        # --- F_p --- #
-        jacobian[eqs_Fp1,DOF_χ] .= -m1χ_χ/forceScaling
-        jacobian[eqs_Fp2,DOF_χ] .= -m2χ_χ/forceScaling
-        # --- F_χ --- #
-        jacobian[eqs_Fχ,DOF_V] .= F_χ_V
-        jacobian[eqs_Fχ,DOF_Ω] .= F_χ_Ω
-        jacobian[eqs_Fχ,DOF_χ] .= F_χ_χ
-    end
-
-    ## Flap trim state's Jacobians
-    if !isempty(DOF_δ)
-        @unpack f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ = element.aero
-        # --- F_u --- #
-        jacobian[eqs_Fu1,DOF_δ] .= -f1χ_δ/forceScaling
-        jacobian[eqs_Fu2,DOF_δ] .= -f2χ_δ/forceScaling
-        # --- F_p --- #
-        jacobian[eqs_Fp1,DOF_δ] .= -m1χ_δ/forceScaling
-        jacobian[eqs_Fp2,DOF_δ] .= -m2χ_δ/forceScaling
-    end
-
-    @pack! problem = jacobian
-    @pack! element.jacobians = F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω
+    F_Ω_p .= - R0T * mul3(RT_p1,RT_p2,RT_p3,ω)
+    # F_Ω_Ω (already set as constant)
+    # F_Ω_Ω .= I3
 
 end
 
+# Computes transient dynamic contributions to the Jacobian matrix from the current element
+function element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_V_u,F_Ω_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,Δt,Δℓ,I11,I12,I21,I22,R0,R0T,P,H,pdot,Pdot,Hdot,RR0,RdotR0,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,Rdot_p1,Rdot_p2,Rdot_p3)
 
-# Computes the contributions from the current element to the inertia matrix
-function element_inertia!(problem::Problem,model::Model,element::Element)
-
-    @unpack inertia = problem
-    @unpack forceScaling = model
-    @unpack Δℓ,I_11,I_12,I_21,I_22,R0,R0T,RR0,HT,HTinv,ω,R_p1,R_p2,R_p3,eqs_Fu1,eqs_Fu2,eqs_Fp1,eqs_Fp2,eqs_FV,eqs_FΩ,eqs_Fχ,DOF_u,DOF_p,DOF_V,DOF_Ω,DOF_χ,eqsNode1Set,eqsNode2Set,isSpecialNode1,isSpecialNode2,aero = element
-    @unpack V,Ω = element.states
-    @unpack Vdot,Ωdot = element.statesRates
-    @unpack P,H = element.compStates
-    @unpack F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot = element.jacobians
-
-    ## Structural terms
-    # --------------------------------------------------------------------------
+    # Repeatedly used variables
+    RdotR0_plus_2oΔtRR0 = SMatrix(RdotR0 + 2/Δt*RR0)
+    
     # --- F_u --- #
-    # F_u_pdot
-    F_u1_pdot .= Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*P)
-    F_u2_pdot .= F_u1_pdot
-    # F_u_Vdot
-    tmp = Δℓ/2 * RR0 * I_11
-    F_u1_Vdot .= tmp
-    F_u2_Vdot .= copy(tmp)
-    # F_u_Ωdot
-    tmp = Δℓ/2 * RR0 * I_12
-    F_u1_Ωdot .= tmp
-    F_u2_Ωdot .= copy(tmp)
+    # F_u_p
+    tmp = Δℓ/2 * (mul3(Rdot_p1,Rdot_p2,Rdot_p3,SVector(R0*P)) + 
+                  mul3(R_p1,R_p2,R_p3,SVector(R0*Pdot)))
+    F_u1_p .+= tmp
+    F_u2_p .+= tmp
+    # F_u_V
+    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I11
+    F_u1_V .+= tmp - f1χ_Vdot * 2/Δt
+    F_u2_V .+= tmp - f2χ_Vdot * 2/Δt
+    # F_u_Ω
+    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I12
+    F_u1_Ω .+= tmp - f1χ_Ωdot * 2/Δt
+    F_u2_Ω .+= tmp - f2χ_Ωdot * 2/Δt
 
     # --- F_p --- #
-    # F_p_pdot
-    F_p1_pdot .= Δℓ/2 * mul3(R_p1,R_p2,R_p3,R0*H)
-    F_p2_pdot .= F_p1_pdot
-    # F_p_Vdot
-    tmp = Δℓ/2 * RR0 * I_21
-    F_p1_Vdot .= tmp
-    F_p2_Vdot .= copy(tmp)
-    # F_p_Ωdot
-    tmp = Δℓ/2 * RR0 * I_22
-    F_p1_Ωdot .= tmp
-    F_p2_Ωdot .= copy(tmp)
-
+    # F_p_p
+    tmp = Δℓ/2 * (mul3(Rdot_p1,Rdot_p2,Rdot_p3,SVector(R0*H)) + 
+                  mul3(R_p1,R_p2,R_p3,SVector(R0*Hdot)))
+    F_p1_p .+= tmp
+    F_p2_p .+= tmp
+    # F_p_V
+    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I21
+    F_p1_V .+= tmp - m1χ_Vdot * 2/Δt
+    F_p2_V .+= tmp - m2χ_Vdot * 2/Δt
+    # F_p_Ω
+    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I22
+    F_p1_Ω .+= tmp - m1χ_Ωdot * 2/Δt
+    F_p2_Ω .+= tmp - m2χ_Ωdot * 2/Δt
+    
     # --- F_V --- #
-    # F_V_udot
-    F_V_udot .= -I3
+    # F_V_u
+    F_V_u .+= - 2/Δt * I3
 
     # --- F_Ω --- #
-    # F_Ω_pdot
-    F_Ω_pdot .= -R0T * HT
+    # F_Ω_p
+    F_Ω_p .+= -R0T * (mul3(HT_p1,HT_p2,HT_p3,pdot) + 2/Δt*HT)
 
-    ## Aerodynamic loads terms
-    # --------------------------------------------------------------------------
-    if !isnothing(aero)
-        @unpack f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot = element.aero
-        # F_u_Vdot
-        F_u1_Vdot .-= f1χ_Vdot
-        F_u2_Vdot .-= f2χ_Vdot
-        # F_u_Ωdot
-        F_u1_Ωdot .-= f1χ_Ωdot
-        F_u2_Ωdot .-= f2χ_Ωdot
-        # F_p_Vdot
-        F_p1_Vdot .-= m1χ_Vdot
-        F_p2_Vdot .-= m2χ_Vdot
-        # F_p_Ωdot
-        F_p1_Ωdot .-= m1χ_Ωdot
-        F_p2_Ωdot .-= m2χ_Ωdot
+    # --- F_χ --- #
+    # F_χ_V
+    F_χ_V .+= F_χ_Vdot * 2/Δt
+    # F_χ_Ω
+    F_χ_Ω .+= F_χ_Ωdot * 2/Δt
+    # F_χ_χ
+    @inbounds for i in diagind(F_χ_χ)
+        F_χ_χ[i] += 2/Δt
     end
 
-    ## Insert element resultants into the inertia matrix
+end
+
+# Inserts the element's Jacobian contributions into the global Jacobian matrix using precomputed maps for the indices
+function insert_element_jacobians!(jacobian,F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,F_χ_p,F_χ_V,F_χ_Ω,F_χ_χ,forceScaling,invForceScaling,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,jacobianMaps)
+
+    # Unpack
+    @unpack Fu1_p,Fu1_F,Fu1_V,Fu1_Ω,Fu1_χ,Fu1_δ,Fp1_p,Fp1_F,Fp1_M,Fp1_V,Fp1_Ω,Fp1_χ,Fp1_δ,FF1_u,FF1_p,FF1_F,FF1_M,FM1_p,FM1_F,FM1_M,Fu2_p,Fu2_F,Fu2_V,Fu2_Ω,Fu2_χ,Fu2_δ,Fp2_p,Fp2_F,Fp2_M,Fp2_V,Fp2_Ω,Fp2_χ,Fp2_δ,FF2_u,FF2_p,FF2_F,FF2_M,FM2_p,FM2_F,FM2_M,FV_u,FV_p,FV_V,FΩ_p,FΩ_Ω,Fχ_p,Fχ_V,Fχ_Ω,Fχ_χ = jacobianMaps
+    @unpack nzval = jacobian
+
+    ## Node 1 - equilibrium
     # --------------------------------------------------------------------------
-    # First node
-    inertia[eqs_Fu1,DOF_p] .= F_u1_pdot/forceScaling
-    inertia[eqs_Fu1,DOF_V] .= F_u1_Vdot/forceScaling
-    inertia[eqs_Fu1,DOF_Ω] .= F_u1_Ωdot/forceScaling
-    inertia[eqs_Fp1,DOF_p] .= F_p1_pdot/forceScaling
-    inertia[eqs_Fp1,DOF_V] .= F_p1_Vdot/forceScaling
-    inertia[eqs_Fp1,DOF_Ω] .= F_p1_Ωdot/forceScaling
+    # --- F_u1 --- #
+    set_block!(nzval, Fu1_p, F_u1_p * invForceScaling)
+    set_block!(nzval, Fu1_F, F_u1_F)
+    set_block!(nzval, Fu1_V, F_u1_V * invForceScaling)
+    set_block!(nzval, Fu1_Ω, F_u1_Ω * invForceScaling)
+    set_block!(nzval, Fu1_χ, F_u1_χ * invForceScaling)
+    add_block!(nzval, Fu1_δ, F_u1_δ * invForceScaling)
+    # --- F_p1 --- #
+    set_block!(nzval, Fp1_p, notHingedNode1Mat * F_p1_p * invForceScaling)
+    set_block!(nzval, Fp1_F, notHingedNode1Mat * F_p1_F)
+    set_block!(nzval, Fp1_M, notHingedNode1Mat * F_p1_M)
+    set_block!(nzval, Fp1_V, notHingedNode1Mat * F_p1_V * invForceScaling)
+    set_block!(nzval, Fp1_Ω, notHingedNode1Mat * F_p1_Ω * invForceScaling)
+    set_block!(nzval, Fp1_χ, F_p1_χ * invForceScaling)
+    add_block!(nzval, Fp1_δ, F_p1_δ * invForceScaling)
 
-    # Second node
-    inertia[eqs_Fu2,DOF_p] .= F_u2_pdot/forceScaling
-    inertia[eqs_Fu2,DOF_V] .= F_u2_Vdot/forceScaling
-    inertia[eqs_Fu2,DOF_Ω] .= F_u2_Ωdot/forceScaling
-    inertia[eqs_Fp2,DOF_p] .= F_p2_pdot/forceScaling
-    inertia[eqs_Fp2,DOF_V] .= F_p2_Vdot/forceScaling
-    inertia[eqs_Fp2,DOF_Ω] .= F_p2_Ωdot/forceScaling
+    ## Node 1 — compatibility
+    # --------------------------------------------------------------------------
+    # --- F_F1 --- #
+    set_block!(nzval, FF1_u, F_F1_u)
+    set_block!(nzval, FF1_p, F_F1_p)
+    set_block!(nzval, FF1_F, F_F1_F * forceScaling)
+    set_block!(nzval, FF1_M, F_F1_M * forceScaling)
+    # --- F_M1 --- #
+    set_block!(nzval, FM1_p, notHingedNode1Mat * F_M1_p + hingedNode1Mat * F_p1_p * invForceScaling)
+    set_block!(nzval, FM1_F, notHingedNode1Mat * F_M1_F * forceScaling + hingedNode1Mat * F_p1_F)
+    set_block!(nzval, FM1_M, notHingedNode1Mat * F_M1_M * forceScaling + hingedNode1Mat * F_p1_M)
 
-    # Element's midpoint
-    inertia[eqs_FV,DOF_u] .= F_V_udot
-    inertia[eqs_FΩ,DOF_p] .= F_Ω_pdot
-    if !isempty(eqs_Fχ)
-        @unpack F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.aero
-        inertia[eqs_Fχ,DOF_V] .= F_χ_Vdot
-        inertia[eqs_Fχ,DOF_Ω] .= F_χ_Ωdot
-        inertia[eqs_Fχ,DOF_χ] .= F_χ_χdot
-    end
+    ## Node 2 — equilibrium
+    # --------------------------------------------------------------------------
+    # --- F_u2 --- #
+    set_block!(nzval, Fu2_p, F_u2_p * invForceScaling)
+    set_block!(nzval, Fu2_F, F_u2_F)
+    set_block!(nzval, Fu2_V, F_u2_V * invForceScaling)
+    set_block!(nzval, Fu2_Ω, F_u2_Ω * invForceScaling)
+    set_block!(nzval, Fu2_χ, F_u2_χ * invForceScaling)
+    add_block!(nzval, Fu2_δ, F_u2_δ * invForceScaling)
+    # --- F_p2 --- #
+    set_block!(nzval, Fp2_p, F_p2_p * invForceScaling)
+    set_block!(nzval, Fp2_F, F_p2_F)
+    set_block!(nzval, Fp2_M, F_p2_M)
+    set_block!(nzval, Fp2_V, F_p2_V * invForceScaling)
+    set_block!(nzval, Fp2_Ω, F_p2_Ω * invForceScaling)
+    set_block!(nzval, Fp2_χ, F_p2_χ * invForceScaling)
+    add_block!(nzval, Fp2_δ, F_p2_δ * invForceScaling)
 
-    @pack! problem = inertia
-    @pack! element.jacobians = F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot
-end
+    ## Node 2 — compatibility
+    # --------------------------------------------------------------------------
+    # --- F_F2 --- #
+    set_block!(nzval, FF2_u, F_F2_u)
+    set_block!(nzval, FF2_p, F_F2_p)
+    set_block!(nzval, FF2_F, F_F2_F * forceScaling)
+    set_block!(nzval, FF2_M, F_F2_M * forceScaling)
+    # --- F_M2 --- #
+    set_block!(nzval, FM2_p, notHingedNode2Mat * F_M2_p)
+    set_block!(nzval, FM2_F, notHingedNode2Mat * F_M2_F * forceScaling)
+    set_block!(nzval, FM2_M, notHingedNode2Mat * F_M2_M * forceScaling)
 
-
-# Sets the augmented inertia matrix (in case there are hinge axis constraints)
-function augmented_inertia_matrix!(problem::Problem)
-
-    @unpack augmentedJacobian,inertia = problem
-    @unpack systemOrder = problem.model
-
-    # Size of augmented system
-    N = size(augmentedJacobian,1)
-
-    # Set augmented inertia matrix
-    augmentedInertia = spzeros(N,N)
-    augmentedInertia[1:systemOrder,1:systemOrder] = inertia
-
-    @pack! problem = augmentedInertia
-
-end
-
-
-# Updates the nodal states of the element
-function element_nodal_states!(element::Element)
-
-    @unpack Δℓ,k,R0,RR0,RR0T,HTinv,f1,f2,m1,m2,R0_n1,R0_n2,R0T_n1,R0T_n2,nodalStates = element
-    @unpack u,p,F,M,V,Ω = element.states
-    @unpack γ,κ,P,H = element.compStates
-    @unpack Pdot,Hdot = element.compStatesRates
-
-    # Midpoint generalized displacements' derivatives with respect to x1
-    u_prime = RR0*(a1+γ)-R0*a1
-    p_prime = HTinv*R0*κ
-
-    # Midpoint deformed curvature vector, resolved in basis B
-    K = k+κ
-
-    # Midpoint generalized forces' derivatives with respect to x1
-    F_prime = Pdot+cross(Ω,P)-cross(K,F)
-    M_prime = Hdot+cross(Ω,H)+cross(V,P)-cross(a1+γ,F)-cross(K,M)
-
-    # Nodal displacements and rotation parameters' vectors, resolved in basis A
-    u_n1 = u - Δℓ/2 * u_prime
-    u_n2 = u + Δℓ/2 * u_prime
-    p_n1 = p - Δℓ/2 * p_prime
-    p_n2 = p + Δℓ/2 * p_prime
-
-    # Nodal rotation angles
-    θ_n1 = rotation_angle(p_n1)
-    θ_n2 = rotation_angle(p_n2)
-
-    # Nodal displacements and rotation parameters' vectors, resolved in basis b
-    u_n1_b = R0T_n1*u_n1
-    u_n2_b = R0T_n2*u_n2
-    p_n1_b = R0T_n1*p_n1
-    p_n2_b = R0T_n2*p_n2
-
-    # Nodal generalized internal forces, resolved in basis B
-    F_n1 = F - (Δℓ/2*F_prime - RR0T*f1)
-    F_n2 = F + (Δℓ/2*F_prime - RR0T*f2)
-    M_n1 = M - (Δℓ/2*M_prime - RR0T*m1)
-    M_n2 = M + (Δℓ/2*M_prime - RR0T*m2)
- 
-    @pack! element.nodalStates = u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
+    ## Midpoint - generalized velocities
+    # --------------------------------------------------------------------------
+    # --- F_V --- #
+    set_block!(nzval, FV_u, F_V_u)
+    set_block!(nzval, FV_p, F_V_p)
+    set_block!(nzval, FV_V, F_V_V)
+    # --- F_Ω --- #
+    set_block!(nzval, FΩ_p, F_Ω_p)
+    set_block!(nzval, FΩ_Ω, F_Ω_Ω)
+    # --- F_χ --- #
+    set_block!(nzval, Fχ_p, F_χ_p)
+    set_block!(nzval, Fχ_V, F_χ_V)
+    set_block!(nzval, Fχ_Ω, F_χ_Ω)
+    set_block!(nzval, Fχ_χ, F_χ_χ)
 
 end
 
+# Computes the contributions from the current element to the inertia matrix
+function element_inertia!(inertia,model,element,timeNow,Δt,isDynamicProblem)
 
-# Computes the nodal states
-function special_node_states!(problem::Problem,model::Model,specialNode::SpecialNode)
+    @unpack invForceScaling = model.assemblyData
+    @unpack inertiaMaps = element
+    @unpack Δℓ,R0,R0T = element.geometry
+    @unpack I11,I12,I21,I22 = element.sectional
+    @unpack P,H = element.state.midpoint
+    @unpack RR0,HT,R_p1,R_p2,R_p3 = element.stateCache.rotationMatrices
+    @unpack f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot = element.stateCache.aeroLoadsJacobians
+    @unpack F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.stateCache.jacobians
 
-    @unpack x,σ = problem
-    @unpack uIsPrescribed,pIsPrescribed,trimIsPrescribed,BCs,DOF_uF,DOF_pM,DOF_trimLoads = specialNode
+    # Derivatives of the rotation variables w.r.t. the rotation parameters (time derivative of rotation tensor not required)
+    element_rotation_derivatives!(element,Δt,false)
 
-    # Check if node is not BC'ed - all nodal states are generalized displacements, externally applied forces are null
-    if isempty(BCs)
-        u = x[DOF_uF]
-        p = x[DOF_pM]
-        F = zeros(3)
-        M = zeros(3)
-        @pack! specialNode = u,p,F,M
+    # Compute aerodynamic contributions
+    aero_derivatives_states_rates!(model,element,timeNow,Δt,isDynamicProblem)
+
+    # Compute resultants
+    element_inertia_resultants!(F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot,Δℓ,R0,R0T,I11,I12,I21,I22,P,H,RR0,HT,R_p1,R_p2,R_p3,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot)
+
+    # Insert resultants into the inertia matrix
+    insert_element_inertias!(inertia,F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot,invForceScaling,inertiaMaps)
+
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "ELEMENT $(element.assemblyData.globalID) INERTIAS"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_pdot: $F_u1_pdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_Vdot: $F_u1_Vdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_u1_Ωdot: $F_u1_Ωdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_pdot: $F_p1_pdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_Vdot: $F_p1_Vdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p1_Ωdot: $F_p1_Ωdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_V_udot: $F_V_udot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_Ω_pdot: $F_Ω_pdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ_Vdot: $F_χ_Vdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ_Ωdot: $F_χ_Ωdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_χ_χdot: $F_χ_χdot"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) (norm(inertia))
+
+end
+
+# Computes the derivatives of the aerodynamic loads and aerodynamic states w.r.t elemental states' rates
+function aero_derivatives_states_rates!(model,element,timeNow,Δt,isDynamicProblem)
+
+    # Skip if there are no aero loads, or angle of attack is undefined
+    if isnothing(element.aero.surface) || isnan(element.aero.stateCache.attachedVars.steadyKin.α)
+        @unpack f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot = element.stateCache.aeroLoadsJacobians
+        @unpack F_χ_Vdot,F_χ_Ωdot = element.stateCache.jacobians
+        zero_arrays!(f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,F_χ_Vdot,F_χ_Ωdot)
         return
     end
 
-    @unpack forceScaling = model
+    # Unpack
+    @unpack derivationMethod = element.aero.surface.solvers
+    @unpack Vdot,Ωdot = element.state.rates
 
-    # Initialize states
-    u,p,F,M = zeros(3),zeros(3),zeros(3),zeros(3)
+    # Set input states' rates for aero loads wrapper function
+    rates = element.aero.stateCache.statesRatesBuffer
+    copyto!(view(rates,1:3), Vdot)
+    copyto!(view(rates,4:6), Ωdot)
+
+    # Jacobians of aerodynamic loads and state matrices w.r.t. states' rates
+    aero_jacobians_states_rates!(rates,model,element,timeNow,Δt,isDynamicProblem,derivationMethod)
+
+end
+
+# Computes the aerodynamic Jacobians of states' rates with Automatic Differentiation
+function aero_jacobians_states_rates!(rates,model,element,timeNow,Δt,isDynamicProblem,derivationMethod::AD)
+
+    # Derivatives of aerodynamic loads and state matrices w.r.t. states' rates
+    J = ForwardDiff.jacobian(x -> wrapper_aero_loads_and_matrices_from_states_rates!(x,model,element,timeNow,Δt,isDynamicProblem), SVector(rates))
+
+    # Set derivatives
+    set_aero_jacobians_of_states_rates!(J,element)
+
+end
+
+# Computes the aerodynamic Jacobians of states' rates with Finite Differences
+function aero_jacobians_states_rates!(rates,model,element,timeNow,Δt,isDynamicProblem,derivationMethod::FD)
+
+    # Derivatives of aerodynamic loads and state matrices w.r.t. states' rates
+    J = first(FiniteDifferences.jacobian(derivationMethod.method, x -> wrapper_aero_loads_and_matrices_from_states_rates!(x,model,element,timeNow,Δt,isDynamicProblem), rates))
+
+    # Set derivatives
+    set_aero_jacobians_of_states_rates!(J,element)
+
+end
+
+# Wrapper function for aerodynamic loads and state matrices using elemental states' rates as inputs
+function wrapper_aero_loads_and_matrices_from_states_rates!(rates,model,element,timeNow,Δt,isDynamicProblem)
+
+    # Unpack states
+    @unpack p,V,Ω,χ = element.state.midpoint
+    @unpack δ = element.aero.surface.state
+    Vdot = @view rates[1:3]
+    Ωdot = @view rates[4:6]
+
+    # Set state cache for derivatives calculations
+    stateCacheDiff = get_diff_state_cache!(element.aero,eltype(rates))
+
+    # Unpack resultants and arrays
+    @unpack f1χ,f2χ,m1χ,m2χ = stateCacheDiff.loadsResultants
+    @unpack Ac,Ai,An,Af,Ag,A,B = stateCacheDiff.stateMatrices
+
+    # Nodal resutants and state arrays
+    f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,B = aero_core!(f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,A,B,model,element,stateCacheDiff,p,V,Ω,χ,δ,Vdot,Ωdot,timeNow,Δt,isDynamicProblem)
+
+    # Set outputs array
+    outBuffer = stateCacheDiff.outBuffer
+    write_aero_jacobians_outputs!(outBuffer, f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,B)
+
+    return outBuffer
+
+end
+
+# Computes the aerodynamic derivatives of the element's states' rates
+function set_aero_jacobians_of_states_rates!(J,element)
+
+    # Unpack element data
+    @unpack χ = element.state.midpoint
+    @unpack f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot = element.stateCache.aeroLoadsJacobians
+    @unpack F_χ_Vdot,F_χ_Ωdot = element.stateCache.jacobians
+    @unpack ppSolver = element.aero.surface.solvers
+    @unpack Ac,Ai,An,Af,Ag = element.aero.stateCache.stateMatrices
+    @unpack Ac_Vdot,Ai_Vdot,An_Vdot,Af_Vdot,Ag_Vdot,Ac_Ωdot,Ai_Ωdot,An_Ωdot,Af_Ωdot,Ag_Ωdot,A_Vdot,A_Ωdot,B_Vdot,B_Ωdot = element.aero.matricesDerivatives
+
+    # Derivatives of aerodynamic nodal loads resultants w.r.t. Vdot
+    f1χ_Vdot .= @view J[1:3, 1:3]
+    f2χ_Vdot .= @view J[4:6, 1:3]
+    m1χ_Vdot .= @view J[7:9, 1:3]
+    m2χ_Vdot .= @view J[10:12, 1:3]
+
+    # Derivatives of aerodynamic nodal loads resultants w.r.t. Ωdot
+    f1χ_Ωdot .= @view J[1:3, 4:6]
+    f2χ_Ωdot .= @view J[4:6, 4:6]
+    m1χ_Ωdot .= @view J[7:9, 4:6]
+    m2χ_Ωdot .= @view J[10:12, 4:6]
+
+    # Derivatives of aerodynamic equations w.r.t. Vdot and Ωdot
+    if !isempty(χ)
+
+        # Set lengths of arrays
+        Nc = length(Ac)
+        Ni = length(Ai)
+        Nn = length(An)
+        Nf = length(Af)
+        Ng = length(Ag)
+
+        # Derivatives of state arrays
+        Ac_Vdot .= @view J[13 : 12+Nc, 1:3]
+        Ac_Ωdot .= @view J[13 : 12+Nc, 4:6]
+        Ai_Vdot .= @view J[13+Nc : 12+Nc+Ni, 1:3]
+        Ai_Ωdot .= @view J[13+Nc : 12+Nc+Ni, 4:6]
+        An_Vdot .= @view J[13+Nc+Ni : 12+Nc+Ni+Nn, 1:3]
+        An_Ωdot .= @view J[13+Nc+Ni : 12+Nc+Ni+Nn, 4:6]
+        Af_Vdot .= @view J[13+Nc+Ni+Nn : 12+Nc+Ni+Nn+Nf, 1:3]
+        Af_Ωdot .= @view J[13+Nc+Ni+Nn : 12+Nc+Ni+Nn+Nf, 4:6]
+        Ag_Vdot .= @view J[13+Nc+Ni+Nn+Nf : 12+Nc+Ni+Nn+Nf+Ng, 1:3]
+        Ag_Ωdot .= @view J[13+Nc+Ni+Nn+Nf : 12+Nc+Ni+Nn+Nf+Ng, 4:6]
+
+        # Set A_Vdot and A_Ωdot
+        @inbounds for k=1:3
+            @views begin
+                i = 1
+                # Set _c block
+                if ppSolver isa Inflow
+                    n = isqrt(Nc)
+                    A_Vdot[i:i+n-1, i:i+n-1, k] .= reshape(Ac_Vdot[:,k],(n,n,1))
+                    A_Ωdot[i:i+n-1, i:i+n-1, k] .= reshape(Ac_Ωdot[:,k],(n,n,1))
+                    i += n
+                else
+                    i = assemble_A_diagonal_block!(A_Vdot,A_Ωdot,Ac_Vdot[:,k],Ac_Ωdot[:,k],i,k)
+                end
+                # Set _i, _n, _f and _g diagonal blocks
+                i = assemble_A_diagonal_block!(A_Vdot,A_Ωdot,Ai_Vdot[:,k],Ai_Ωdot[:,k],i,k)
+                i = assemble_A_diagonal_block!(A_Vdot,A_Ωdot,An_Vdot[:,k],An_Ωdot[:,k],i,k)
+                i = assemble_A_diagonal_block!(A_Vdot,A_Ωdot,Af_Vdot[:,k],Af_Ωdot[:,k],i,k)
+                i = assemble_A_diagonal_block!(A_Vdot,A_Ωdot,Ag_Vdot[:,k],Ag_Ωdot[:,k],i,k)
+            end
+        end
+
+        # Set B_Vdot and B_Ωdot
+        B_Vdot .= @view J[end-length(χ)+1:end, 1:3]
+        B_Ωdot .= @view J[end-length(χ)+1:end, 4:6]
+
+        # Set Jacobians
+        @inbounds for i=1:3
+            F_χ_Vdot[:,i] .= -(A_Vdot[:,:,i] * χ + B_Vdot[:,i])
+            F_χ_Ωdot[:,i] .= -(A_Ωdot[:,:,i] * χ + B_Ωdot[:,i])
+        end
+
+    end
+
+end
+
+# Assembles a diagonal block in A_Vdot and A_Ωdot
+@inline function assemble_A_diagonal_block!(A_V,A_Ω,v1,v2,i,k)
+    n = length(v1)
+    @inbounds for j = 1:n
+        A_V[i+j-1, i+j-1, k] = v1[j]
+        A_Ω[i+j-1, i+j-1, k] = v2[j]
+    end
+    return i + n
+end
+
+# Computes the structural and aerodynamic contributions from the current element to the inertia matrix
+function element_inertia_resultants!(F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot,Δℓ,R0,R0T,I11,I12,I21,I22,P,H,RR0,HT,R_p1,R_p2,R_p3,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot)
+
+    # --- F_u --- #
+    # F_u_pdot
+    tmp = Δℓ/2 * mul3(R_p1,R_p2,R_p3,SVector(R0*P))
+    F_u1_pdot .= tmp
+    F_u2_pdot .= tmp
+    # F_u_Vdot
+    tmp = Δℓ/2 * SMatrix(RR0 * I11)
+    F_u1_Vdot .= tmp - f1χ_Vdot
+    F_u2_Vdot .= tmp - f2χ_Vdot
+    # F_u_Ωdot
+    tmp = Δℓ/2 * SMatrix(RR0 * I12)
+    F_u1_Ωdot .= tmp - f1χ_Ωdot
+    F_u2_Ωdot .= tmp - f2χ_Ωdot
+
+    # --- F_p --- #
+    # F_p_pdot
+    tmp = Δℓ/2 * mul3(R_p1,R_p2,R_p3,SVector(R0*H))
+    F_p1_pdot .= tmp
+    F_p2_pdot .= tmp
+    # F_p_Vdot
+    tmp = Δℓ/2 * SMatrix(RR0 * I21)
+    F_p1_Vdot .= tmp - m1χ_Vdot
+    F_p2_Vdot .= tmp - m2χ_Vdot
+    # F_p_Ωdot
+    tmp = Δℓ/2 * SMatrix(RR0 * I22)
+    F_p1_Ωdot .= tmp - m1χ_Ωdot
+    F_p2_Ωdot .= tmp - m2χ_Ωdot
+
+    # --- F_V --- #
+    # F_V_udot (already set as constant)
+    # F_V_udot .= - I3
+
+    # --- F_Ω --- #
+    # F_Ω_pdot
+    F_Ω_pdot .= - SMatrix(R0T * HT)
+
+end
+
+# Inserts the element's contributions to the inertia matrix into the global inertia matrix
+function insert_element_inertias!(inertia,F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot,invForceScaling,inertiaMaps)
+
+    @unpack Fu1_pdot,Fu1_Vdot,Fu1_Ωdot,Fp1_pdot,Fp1_Vdot,Fp1_Ωdot,Fu2_pdot,Fu2_Vdot,Fu2_Ωdot,Fp2_pdot,Fp2_Vdot,Fp2_Ωdot,FV_udot,FΩ_pdot,Fχ_Vdot,Fχ_Ωdot,Fχ_χdot = inertiaMaps
+    @unpack nzval = inertia
+
+    ## Node 1
+    # --------------------------------------------------------------------------
+    # --- F_u1 --- #
+    set_block!(nzval, Fu1_pdot, F_u1_pdot * invForceScaling)
+    set_block!(nzval, Fu1_Vdot, F_u1_Vdot * invForceScaling)
+    set_block!(nzval, Fu1_Ωdot, F_u1_Ωdot * invForceScaling)
+    # --- F_p1 --- #
+    set_block!(nzval, Fp1_pdot, F_p1_pdot * invForceScaling)
+    set_block!(nzval, Fp1_Vdot, F_p1_Vdot * invForceScaling)
+    set_block!(nzval, Fp1_Ωdot, F_p1_Ωdot * invForceScaling)
+
+    ## Node 2
+    # --------------------------------------------------------------------------
+    # --- F_u2 --- #
+    set_block!(nzval, Fu2_pdot, F_u2_pdot * invForceScaling)
+    set_block!(nzval, Fu2_Vdot, F_u2_Vdot * invForceScaling)
+    set_block!(nzval, Fu2_Ωdot, F_u2_Ωdot * invForceScaling)
+    # --- F_p2 --- #
+    set_block!(nzval, Fp2_pdot, F_p2_pdot * invForceScaling)
+    set_block!(nzval, Fp2_Vdot, F_p2_Vdot * invForceScaling)
+    set_block!(nzval, Fp2_Ωdot, F_p2_Ωdot * invForceScaling)
+
+    ## Midpoint
+    # --------------------------------------------------------------------------
+    # --- F_V --- #
+    set_block!(nzval, FV_udot, F_V_udot)
+    # --- F_Ω --- #
+    set_block!(nzval, FΩ_pdot, F_Ω_pdot)
+    # --- F_χ --- #
+    set_block!(nzval, Fχ_Vdot, F_χ_Vdot)
+    set_block!(nzval, Fχ_Ωdot, F_χ_Ωdot)
+    set_block!(nzval, Fχ_χdot, F_χ_χdot)
+
+end
+
+# Computes the nodal states
+function special_node_states!(model,specialNode,x,σ)
+
+    @unpack forceScaling = model.assemblyData
+    @unpack BCs = specialNode
+    @unpack uIsPrescribed,pIsPrescribed,trimIsPrescribed = specialNode.flags
+    @unpack u,p,F,M = specialNode.state
+    @unpack DOF_uF,DOF_pM,DOF_T = specialNode.assemblyData
+
+    # Check if node is not BC'ed - all nodal states are generalized displacements, externally applied forces are null
+    if isempty(BCs)
+        u .= x[DOF_uF]
+        p .= x[DOF_pM]
+        F .= 0.0
+        M .= 0.0
+        return
+    end
+
+    # Reset loads to zero
+    zero_arrays!(F,M)
 
     # Loop boundary conditions
     for BC in BCs
 
-        @unpack currentValue,isLoad,isFollower,isTrim,R0_n = BC
+        @unpack isLoad,isFollower,isTrim = BC.deducedData
+        @unpack currentValue = BC.state
+        @unpack F̂,M̂,Ftrim,Mtrim = BC.stateCache
 
         ## Generalized displacements
         # ----------------------------------------------------------------------
         # Loop directions and set displacements and rotations, resolved in basis A, as either nodal states or prescribed values
-        for i=1:3
+        @inbounds for i=1:3
             if uIsPrescribed[i] && !isLoad[i]
                 # u[i] is a prescribed value
-                u[i] = σ*currentValue[i]
+                u[i] = σ * currentValue[i]
             elseif !uIsPrescribed[i] && isLoad[i]
                 # u[i] is a nodal state
                 u[i] = x[DOF_uF[i]]
             end
             if pIsPrescribed[i] && !isLoad[i+3]
                 # p[i] is a prescribed value
-                p[i] = σ*currentValue[i+3]
+                p[i] = σ * currentValue[i+3]
             elseif !pIsPrescribed[i] && isLoad[i+3]
                 # p[i] is a nodal state 
                 p[i] = x[DOF_pM[i]]
@@ -1499,658 +1719,706 @@ function special_node_states!(problem::Problem,model::Model,specialNode::Special
 
         ## Prescribed values of generalized forces, resolved in basis A
         # ----------------------------------------------------------------------
-        # Nodal rotation tensor from basis b to basis B 
-        R,_ = rotation_tensor_WM(p) 
+        # Reset prescribed (hatted) and trim nodal values of current BC
+        zero_arrays!(F̂,M̂,Ftrim,Mtrim)
 
-        # Initialize prescribed nodal values (hatted values) for the loads of current BC
-        F̂,M̂ = zeros(3),zeros(3)
-
-        # Initialize trim nodal values
-        Ftrim,Mtrim = zeros(3),zeros(3)
+        # Nodal rotation tensor from basis b to basis B
+        R = rotation_tensor_WM(p)
         
         # Loop orthogonal directions
-        for i=1:3
+        @inbounds for i=1:3
             # Add non-trim forces
             if isLoad[i] && !isTrim[i]
                 # Add dead forces (dead values are constant when resolved in basis A)
-                F̂ += σ*currentValue[i]*!isFollower[i]*I3[:,i]
+                F̂ .+= σ * currentValue[i] * !isFollower[i] * I3[:,i]
                 # Add follower forces (follower values are constant when resolved in basis B - transform to basis A)
-                F̂ += σ*currentValue[i]*isFollower[i]*R[:,i]
+                F̂ .+= σ * currentValue[i] * isFollower[i] * R[:,i]
             end
             # Add trim forces
             if isTrim[i]
                 # Add dead trim forces
-                Ftrim += x[DOF_trimLoads[i]]*!isFollower[i]*I3[:,i]*forceScaling
+                Ftrim .+= x[DOF_T[i]] * !isFollower[i] * I3[:,i] * forceScaling
                 # Add follower trim forces
-                Ftrim += x[DOF_trimLoads[i]]*isFollower[i]*R[:,i]*forceScaling
+                Ftrim .+= x[DOF_T[i]] * isFollower[i] * R[:,i] * forceScaling
             end
             # Add non-trim moments
             if isLoad[i+3] && !isTrim[i+3]
                 # Add dead moments (dead values are constant when resolved in basis A)
-                M̂ += σ*currentValue[i+3]*!isFollower[i+3]*I3[:,i]
+                M̂ .+= σ * currentValue[i+3] * !isFollower[i+3] * I3[:,i]
                 # Add follower moments (follower values are constant when resolved in basis B - transform to basis A)
-                M̂ += σ*currentValue[i+3]*isFollower[i+3]*R[:,i]
+                M̂ .+= σ * currentValue[i+3] * isFollower[i+3] * R[:,i]
             end
             # Add trim moments
             if isTrim[i+3]
                 # Add dead trim moments
-                Mtrim += x[DOF_trimLoads[i+3]]*!isFollower[i+3]*I3[:,i]*forceScaling
+                Mtrim .+= x[DOF_T[i+3]] * !isFollower[i+3] * I3[:,i] * forceScaling
                 # Add follower trim moments
-                Mtrim += x[DOF_trimLoads[i+3]]*isFollower[i+3]*R[:,i]*forceScaling
+                Mtrim .+= x[DOF_T[i+3]] * isFollower[i+3] * R[:,i] * forceScaling
             end
         end
     
         ## Generalized forces ------------------------------------------------------------------------
         # Loop directions and set forces and moments, resolved in basis A, as either nodal states or prescribed values
-        for i=1:3
+        @inbounds for i=1:3
             if isLoad[i] && !isTrim[i]
-                # F[i] is a prescribed value
-                F[i] += F̂[i]
+                # F[i] is a prescribed value (plus the component of trim follower forces, which rotate into this direction)
+                F[i] += F̂[i] + Ftrim[i]
             elseif isTrim[i]
                 # F[i] is a trim value
                 F[i] = Ftrim[i]
             elseif !trimIsPrescribed[i]
                 # F[i] is a nodal state
-                F[i] = x[DOF_uF[i]]*forceScaling
+                F[i] = x[DOF_uF[i]] * forceScaling
             end
             if isLoad[i+3] && !isTrim[i+3]
-                # M[i] is a prescribed value
-                M[i] += M̂[i] 
+                # M[i] is a prescribed value (plus the component of trim follower moments, which rotate into this direction)
+                M[i] += M̂[i] + Mtrim[i]
             elseif isTrim[i+3] 
                 # M[i] is a trim value
                 M[i] = Mtrim[i]
             elseif !trimIsPrescribed[i+3]
                 # M[i] is a nodal state
-                M[i] = x[DOF_pM[i]]*forceScaling
+                M[i] = x[DOF_pM[i]] * forceScaling
             end
         end
     end
 
-    @pack! specialNode = u,p,F,M
 end
 
-
 # Adds the contributions of attached springs to the special node's loads
-function spring_loads!(model::Model,specialNode::SpecialNode)
+function spring_loads!(model,specialNode)
 
-    @unpack u,p,F,M,springs,globalID = specialNode
+    @unpack springs = specialNode
+    @unpack doubleAttachmentSpringsData = specialNode.assemblyData
+    @unpack u,p,F,M = specialNode.state
+
+    # Initialize counter for double attachment springs
+    c = 0
 
     # Loop springs
     for spring in springs
-        @unpack hasDoubleAttachment,Ku,Kp = spring
-        # Double attachment springs
-        if hasDoubleAttachment
-            @unpack nodesSpecialIDs,nodesGlobalIDs = spring
-            # Node of other attachment
-            otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
-            # Displacement and rotation of that node
-            uOtherNode = otherNode.u
-            pOtherNode = otherNode.p
-            # Generalized spring displacements, resolved in basis A (Δp is scaled by rotation_between_WM(pOtherNode,p))
-            Δu = u - uOtherNode
-            Δp = rotation_between_WM(pOtherNode,p)
-            # Spring loads, resolved in basis A
-            Fs = - Ku * Δu
-            Ms = - Kp * Δp
-            # Add spring loads to nodal loads
-            F .+= Fs
-            M .+= Ms
-            # Pack data
-            @pack! spring = Fs,Ms,Δu,Δp
-        # Single attachment springs
-        else
-            # Generalized spring displacements, resolved in basis A (Δp must be scaled)
-            Δu = u
-            Δp = scaled_rotation_parameters(p)
-            # Spring loads, resolved in basis A
-            Fs = - Ku * Δu
-            Ms = - Kp * Δp
-            # Add spring loads to nodal loads
-            F .+= Fs
-            M .+= Ms
-            # Pack data
-            @pack! spring = Fs,Ms,Δu,Δp
+        @unpack hasDoubleAttachment = spring.assemblyData
+        @unpack FsFun,MsFun = spring.assemblyConstitutive
+        @unpack Δu,Δp,Fs,Ms = spring.state
+        # Generalized spring displacements, resolved in basis A
+        if hasDoubleAttachment # Double attachment springs
+            # Update counter
+            c += 1
+            # Unpack double attachment spring data for this spring
+            @unpack otherNodeSpecialID,uOtherNode,pOtherNode,otherNodeDOF_uF,otherNodeDOF_pM = doubleAttachmentSpringsData[c]
+            # Node of other attachment point
+            otherNode = model.assemblyData.specialNodes[otherNodeSpecialID]
+            # Other node's states
+            uOtherNode .= otherNode.state.u
+            pOtherNode .= otherNode.state.p
+            # Generalized spring displacements
+            Δu .= u - uOtherNode
+            Δp .= rotation_between_WM(pOtherNode,p)
+        else # Single attachment springs
+            Δu .= u
+            Δp .= scaled_rotation_parameters(p)
         end
+        # Spring loads, resolved in basis A
+        Fs .= - FsFun(Δu)
+        Ms .= - MsFun(Δp)
+        # Add spring loads to nodal loads
+        F .+= Fs
+        M .+= Ms
     end
 
-    @pack! specialNode = F,M
 end
-
 
 # Computes the contributions from the current node to the residual array
-function special_node_residual!(problem::Problem,model::Model,specialNode::SpecialNode)
+function special_node_residual!(residual,model,specialNode)
 
-    @unpack residual = problem
-    @unpack forceScaling = model
-    @unpack ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,u,p,F,M = specialNode
+    @unpack invForceScaling = model.assemblyData
+    @unpack springs = specialNode
+    @unpack u,p,F,M = specialNode.state
+    @unpack ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM = specialNode.assemblyData
 
-    # Loop connected elements of the node
-    for e in eachindex(ζonElements)
-        # Check if the node has separate compatibility equations
-        if isempty(eqs_FF_sep[e])
-            # Add to node's equilibrium and compatibility equations' residuals
-            residual[eqs_Fu[e]] .-= F/forceScaling
-            residual[eqs_Fp[e]] .-= M/forceScaling
-            residual[eqs_FF[e]] .+= ζonElements[e]*u
-            residual[eqs_FM[e]] .+= ζonElements[e]*p
-        else
-            # Add to node's separate compatibility equations
-            residual[eqs_FF_sep[e]] .+= ζonElements[e]*u
-            residual[eqs_FM_sep[e]] .+= ζonElements[e]*p
-        end
-    end
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "SPECIAL NODE $(specialNode.assemblyData.globalID) RESIDUALS"
 
-    @pack! problem = residual
+    # Add spring loads, if applicable
+    isempty(springs) || spring_loads!(model,specialNode)
+
+    # Insert the contributions from the current special node into the residual array
+    insert_special_node_residual!(residual,u,p,F,M,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,invForceScaling)
+
+    # @logmsg LogLevel(show_debug() ? 0 : -1) residual[eqs_Fu]
+    # @logmsg LogLevel(show_debug() ? 0 : -1) residual[eqs_Fp]
+    # for e in eachindex(ζonElements)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) residual[eqs_FF[e]]
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) residual[eqs_FM[e]]
+    # end
 
 end
 
+# Inserts the contributions from the current special node into the residual array
+function insert_special_node_residual!(residual,u,p,F,M,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,invForceScaling)
 
-# Computes the contributions from the nodal follower loads to the Jacobian matrix
-function special_node_follower_loads_derivatives_rotation_parameters!(problem::Problem,specialNode::SpecialNode)
+    ## Equilibrium equations
+    # ----------------------------------------------------------------------
+    # Add to node's equilibrium and compatibility equations' residuals
+    residual[eqs_Fu] .-= F * invForceScaling
+    residual[eqs_Fp] .-= M * invForceScaling
 
-    @unpack x,σ = problem
-    @unpack forceScaling = problem.model
-    @unpack BCs,p,DOF_trimLoads = specialNode
+    ## Compatibility equations
+    # ----------------------------------------------------------------------
+    # Loop connected elements of the node
+    for e in eachindex(ζonElements)
+        # Add to node's compatibility equations' residuals
+        residual[eqs_FF[e]] .+= ζonElements[e] * u
+        residual[eqs_FM[e]] .+= ζonElements[e] * p
+    end
+    
+end
 
-    # Initialize
-    F_p,M_p = zeros(3,3),zeros(3,3)
+# Computes the contributions from the current node to the Jacobian matrix
+function special_node_jacobian!(jacobian,model,specialNode,x,σ)
 
-    # Check if the node is BC'ed or if there are any follower loads
-    followers = vcat([BC.isFollower for BC in BCs]...)
-    if isempty(BCs) || !any(followers)
-        @pack! specialNode = F_p,M_p
-        return 
+    @unpack invForceScaling = model.assemblyData
+    @unpack BCs,springs,jacobianMaps = specialNode
+    @unpack uIsPrescribed,pIsPrescribed,allBCflags,uNotPrescribedMat,pNotPrescribedMat = specialNode.flags
+    @unpack p,R,F_p,M_p = specialNode.state
+    @unpack ζonElements,doubleAttachmentSpringsData,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,DOF_uF,DOF_pM,DOF_T = specialNode.assemblyData
+
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "SPECIAL NODE $(specialNode.assemblyData.globalID) JACOBIANS"
+
+    # Follower loads' derivatives w.r.t. the rotation parameters (contributions to Jacobian matrix)
+    special_node_follower_loads_derivatives_rotation_parameters!(jacobian,model,specialNode,x,σ)
+
+    # Add contributions from the current BC (if any) on the current node
+    for (isLoad, isTrim, isFollower) in (isempty(BCs) ? _emptyBCflags : allBCflags)
+        insert_special_node_jacobian!(jacobian,invForceScaling,F_p,M_p,R,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,DOF_uF,DOF_pM,DOF_T,uIsPrescribed,pIsPrescribed,isLoad,isTrim,isFollower)
     end
 
+    # if !isempty(springs)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) "SPECIAL NODE $(specialNode.assemblyData.globalID) SPRING JACOBIANS"
+    # end
+
+    # Add contributions from the springs attached to the current node
+    spring_loads_jacobians!(model,springs,jacobian,jacobianMaps,invForceScaling,doubleAttachmentSpringsData,p,uNotPrescribedMat,pNotPrescribedMat)
+
+end
+
+# Computes the contributions from the nodal follower loads to the Jacobian matrix
+function special_node_follower_loads_derivatives_rotation_parameters!(jacobian,model,specialNode,x,σ)
+
+    @unpack forceScaling = model.assemblyData
+    @unpack BCs = specialNode
+    @unpack hasFollowers = specialNode.flags
+    @unpack p,R,F_p,M_p = specialNode.state
+    @unpack DOF_T = specialNode.assemblyData
+
+    # Skip if there are no follower loads
+    hasFollowers || return
+
+    # Reset to zero
+    zero_arrays!(F_p,M_p)
+
+    # Nodal rotation tensor from basis b to basis B (gives the directions of the follower loads)
+    R .= rotation_tensor_WM(p)
+
     # Get nodal rotation tensor's derivatives w.r.t. the extended rotation parameters
-    R_p1,R_p2,R_p3 = rotation_tensor_derivatives_extended_parameters(p)
+    R_p1,R_p2,R_p3 = ∂R_∂p(p)
 
     # Loop boundary conditions
     for BC in BCs
 
-        @unpack currentValue,isLoad,isFollower,isTrim,R0_n = BC
+        @unpack isLoad,isFollower,isTrim = BC.deducedData
+        @unpack currentValue = BC.state
+        @unpack Ff,Mf = BC.stateCache
 
         # Skip if there are no follower loads
-        if !any(isFollower)
-            continue
-        end
+        any(isFollower) || continue
 
-        # Nodal follower load components in the undeformed configuration, resolved in basis A
-        F₀,M₀ = zeros(3),zeros(3)
-        for i=1:3
+        # Nodal follower load components, resolved in basis A
+        @inbounds for i=1:3
             # Forces
             if isTrim[i] && isFollower[i]
                 # Trim variable 
-                F₀[i] = x[DOF_trimLoads[i]]*forceScaling
+                Ff[i] = x[DOF_T[i]] * forceScaling
             elseif isFollower[i]
                 # Not a trim variable
-                F₀[i] = σ*currentValue[i]
+                Ff[i] = σ * currentValue[i]
             end
             # Moments
             if isTrim[i+3] && isFollower[i+3]
                 # Trim variable 
-                M₀[i] = x[DOF_trimLoads[i+3]]*forceScaling
+                Mf[i] = x[DOF_T[i+3]] * forceScaling
             elseif isFollower[i+3]
                 # Not a trim variable
-                M₀[i] = σ*currentValue[i]
+                Mf[i] = σ * currentValue[i+3]
             end
         end
 
         # Add to derivatives of the follower loads w.r.t. the extended rotation parameters 
-        F_p .+= mul3(R_p1,R_p2,R_p3,F₀)
-        M_p .+= mul3(R_p1,R_p2,R_p3,M₀)
-    end
+        F_p .+= mul3(R_p1,R_p2,R_p3,Ff)
+        M_p .+= mul3(R_p1,R_p2,R_p3,Mf)
 
-    @pack! specialNode = F_p,M_p
+    end
 
 end
-
-
-# Computes the contributions from the current node to the Jacobian matrix
-function special_node_jacobian!(problem::Problem,model::Model,specialNode::SpecialNode)
-
-    @unpack jacobian = problem
-    @unpack forceScaling = model
-    @unpack globalID,ζonElements,BCs,uIsPrescribed,pIsPrescribed,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,u,p,F,M,F_p,M_p,springs = specialNode
-
-    # Check if the node is BC'ed
-    if !isempty(BCs)
-        # Loop applied BCs
-        for BC in BCs
-            @unpack isLoad,isTrim = BC
-            jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed,isLoad,isTrim)
-        end
-    else
-        jacobian = update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed)
-    end
-
-    # Add spring loads' contributions
-    for spring in springs
-        jacobian = spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
-    end
-
-    @pack! problem = jacobian
-
-end
-
 
 # Updates the Jacobian matrix with the contributions from the current BC (if any) on the current node 
-function update_special_node_jacobian!(jacobian,forceScaling,F_p,M_p,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,eqs_FF_sep,eqs_FM_sep,DOF_uF,DOF_pM,DOF_trimLoads,uIsPrescribed,pIsPrescribed,isLoad=trues(6),isTrim=falses(6))
+function insert_special_node_jacobian!(jacobian,invForceScaling,F_p,M_p,R,ζonElements,eqs_Fu,eqs_Fp,eqs_FF,eqs_FM,DOF_uF,DOF_pM,DOF_T,uIsPrescribed,pIsPrescribed,isLoad,isTrim,isFollower)
 
+    ## Equilibrium equations
+    # ----------------------------------------------------------------------
+    # Outer loop over node's DOFs
+    @inbounds for i=1:3
+        # If F[i] is prescribed, u[i] is the nodal state
+        if isLoad[i] && !uIsPrescribed[i]
+            # Inner loop over node's DOFs
+            @inbounds for j=1:3
+                # If M[j] is prescribed, p[j] is the nodal state
+                if isLoad[j+3] && !pIsPrescribed[j]
+                    # Equilibrium Jacobian: d(-F)/d(p) = -∂F/∂p
+                    jacobian[eqs_Fu[i],DOF_pM[j]] = -F_p[i,j] * invForceScaling
+                end
+            end
+        # Otherwise u[i] is prescribed, and F[i] is the nodal state    
+        else
+            # Equilibrium Jacobian: d(-F)/d(F) = -1
+            jacobian[eqs_Fu[i],DOF_uF[i]] = -1
+        end
+        # If F[i] is also a trim variable
+        if isTrim[i]
+            # Equilibrium Jacobian: d(-F)/d(T) = -1 along direction i for dead trim forces, or -R[:,i] for follower trim forces (which have components along all directions of basis A)
+            @inbounds for j=1:3
+                if isFollower[i] ? (isLoad[j] || isTrim[j]) : j == i
+                    jacobian[eqs_Fu[j],DOF_T[i]] = isFollower[i] ? -R[j,i] : -1
+                end
+            end
+        end
+        # If M[i] is prescribed, p[i] is the nodal state
+        if isLoad[i+3] && !pIsPrescribed[i]
+            # Inner loop over node's DOFs
+            @inbounds for j=1:3
+                # If M[j] is prescribed, p[j] is the nodal state
+                if isLoad[j+3] && !pIsPrescribed[j]
+                    # Equilibrium Jacobian d(-M)/d(p) = -∂M/∂p
+                    jacobian[eqs_Fp[i],DOF_pM[j]] = -M_p[i,j] * invForceScaling
+                end
+            end
+        # If p[i] is prescribed, M[i] is the nodal state    
+        else
+            # Equilibrium Jacobian: d(-M)/d(M) = -1
+            jacobian[eqs_Fp[i],DOF_pM[i]] = -1
+        end
+        # If M[i] is also a trim variable
+        if isTrim[i+3]
+            # Equilibrium Jacobian: d(-M)/d(T) = -1 along direction i for dead trim moments, or -R[:,i] for follower trim moments
+            @inbounds for j=1:3
+                if isFollower[i+3] ? (isLoad[j+3] || isTrim[j+3]) : j == i
+                    jacobian[eqs_Fp[j],DOF_T[i+3]] = isFollower[i+3] ? -R[j,i] : -1
+                end
+            end
+        end
+    end
+
+    ## Compatibility equations
+    # ----------------------------------------------------------------------
     # Loop connected elements of the node
     for e in eachindex(ζonElements)
-        # If the node does not have separate compatibility equations
-        if isempty(eqs_FF_sep[e])
-            # Loop directions and set Jacobian components for the node's equilibrium and compatibility equations
-            for i=1:3
-                # Forces/displacements DOFs
-                if isLoad[i] && !uIsPrescribed[i]
-                    # If F[i] is prescribed, u[i] is the nodal state: Set compatibility equation's Jacobian component [d(-/+u)/d(u) = -/+1 = ζonElements[e]] 
-                    jacobian[eqs_FF[e][i],DOF_uF[i]] = ζonElements[e] 
-                    for j=1:3 
-                        # Loop over node's moments/rotations DOFs
-                        if isLoad[j+3] && !pIsPrescribed[j]
-                            # If M(j) is prescribed, p(j) is the nodal state: Set equilibrium equation's Jacobian component (follower load component)
-                            jacobian[eqs_Fu[e][i],DOF_pM[j]] = -F_p[i,j]/forceScaling
-                        end
-                    end
-                else
-                    # If u[i] is prescribed, F[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
-                    jacobian[eqs_Fu[e][i],DOF_uF[i]] = -1
-                end
-                if isTrim[i]
-                    # If F[i] is also a trim variable: Set equilibrium equation's Jacobian component [d(-F)/d(F) = -1]
-                    jacobian[eqs_Fu[e][i],DOF_trimLoads[i]] = -1
-                end 
-                # Moments/rotations DOFs
-                if isLoad[i+3] && !pIsPrescribed[i]
-                    # If M[i] is prescribed, p[i] is the nodal state: Set compatibility equation's Jacobian component [d(-/+p)/d(p) = -/+1 = ζonElements[e]] 
-                    jacobian[eqs_FM[e][i],DOF_pM[i]] = ζonElements[e]
-                    for j=1:3
-                        # Loop over node's moments/rotations DOFs
-                        if isLoad[j+3] && !pIsPrescribed[j]
-                            # If M(j) is prescribed, p(j) is the nodal state: Add equilibrium equation's Jacobian component (follower load component)
-                            jacobian[eqs_Fp[e][i],DOF_pM[j]] = -M_p[i,j]/forceScaling
-                        end
-                    end
-                else
-                    # If p[i] is prescribed, M[i] is the nodal state: Set equilibrium equation's Jacobian component [d(-M)/d(M) = -1]
-                    jacobian[eqs_Fp[e][i],DOF_pM[i]] = -1
-                end
-                if isTrim[i+3]
-                    # If M[i] is a trim variable: Set equilibrium equation's Jacobian component [d(-M)/d(M) = -1]
-                    jacobian[eqs_Fp[e][i],DOF_trimLoads[i+3]] = -1
-                end
-            end  
-        # Else, set Jacobian components for the node's separate compatibility equations
-        else
-            # Loop over node's forces/displacements DOFs
-            for i=1:3
-                # If F[i] is prescribed, u[i] is the nodal state: Set separate compatibility equation's Jacobian component [d(-/+u)/d(u) = -/+1 = ζonElements[e]]
-                if isLoad[i] && !uIsPrescribed[i]
-                    jacobian[eqs_FF_sep[e][i],DOF_uF[i]] = ζonElements[e]
-                end
+        # Loop over node's DOFs
+        @inbounds for i=1:3
+            # If F[i] is prescribed, u[i] is the nodal state
+            if isLoad[i] && !uIsPrescribed[i]
+                # Compatibility Jacobian: d(-/+u)/d(u) = -/+1 = ζonElements[e]
+                jacobian[eqs_FF[e][i],DOF_uF[i]] = ζonElements[e]
             end
-            # Loop over node's moments/rotations DOFs
-            for i=1:3
-                # If M[i] is prescribed, p[i] is the nodal state: Set separate compatibility equation's Jacobian component [d(-/+p)/d(p) = -/+1 = ζonElements[e]]
-                if isLoad[i+3] && !pIsPrescribed[i]
-                    jacobian[eqs_FM_sep[e][i],DOF_pM[i]] = ζonElements[e]
-                end
+            # If M[i] is prescribed, p[i] is the nodal state
+            if isLoad[i+3] && !pIsPrescribed[i]
+                # Compatibility Jacobian: d(-/+p)/d(p) = -/+1 = ζonElements[e]
+                jacobian[eqs_FM[e][i],DOF_pM[i]] = ζonElements[e]
             end
         end
     end
 
-    return jacobian
-end
+    # @logmsg LogLevel(show_debug() ? 0 : -1) Matrix(jacobian[[eqs_Fu; eqs_Fp], [DOF_uF; DOF_pM]])
+    # for e in eachindex(ζonElements)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) Matrix(jacobian[[eqs_FF[e]; eqs_FM[e]], [DOF_uF; DOF_pM]])
+    # end
+    # @logmsg LogLevel(show_debug() ? 0 : -1) (norm(jacobian))
+    # if size(jacobian, 1) == size(jacobian, 2)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) (det(jacobian))
+    # end
 
+end
 
 # Adds the contributions of the spring loads to the Jacobian matrix
-function spring_loads_jacobians!(model,jacobian,forceScaling,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM,spring,p,uIsPrescribed,pIsPrescribed)
+function spring_loads_jacobians!(model,springs,jacobian,jacobianMaps,invForceScaling,doubleAttachmentSpringsData,p,uNotPrescribedMat,pNotPrescribedMat)
 
-    @unpack hasDoubleAttachment,Ku,Kp,nodesSpecialIDs,nodesGlobalIDs = spring
+    # Unpack node data
+    @unpack Fu_uF,Fp_pM,Fu_uFother,Fp_pMother = jacobianMaps
+    @unpack nzval = jacobian
 
-    # Double attachment springs
-    if hasDoubleAttachment
-        # Node of other attachment
-        otherNode = globalID == nodesGlobalIDs[1] ? model.specialNodes[nodesSpecialIDs[2]] : model.specialNodes[nodesSpecialIDs[1]]
-        # Rotation of that node and DOF indices
-        pOtherNode = otherNode.p
-        DOF_uF_otherNode = otherNode.DOF_uF
-        DOF_pM_otherNode = otherNode.DOF_pM
-        # Add translational spring Jacobians (if node's displacements are not prescribed): ∂(-F_spring)/∂(u) = Ku/forceScaling and ∂(-F_spring)/∂(uOtherNode) = -Ku/forceScaling
-        jacobian[eqs_Fu[1],DOF_uF] .+= Ku/forceScaling * Diagonal(.!uIsPrescribed)
-        jacobian[eqs_Fu[1],DOF_uF_otherNode] .+= -Ku/forceScaling * Diagonal(.!otherNode.uIsPrescribed)
-        # Derivative of spring rotation with respect to rotation of each of its attachment nodes
-        if isapprox(p, pOtherNode; atol=1e-10)
-            Δp_p = I3
-            Δp_pOtherNode = -I3
-        else
-            Δp_p = ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p)
-            Δp_pOtherNode = ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode)
-        end
-        # Add rotational spring Jacobians (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp/forceScaling * ∂Δp/∂p and ∂(-M_spring)/∂(pOtherNode) = Kp/forceScaling * ∂Δp/∂pOtherNode
-        jacobian[eqs_Fp[1],DOF_pM] .+= Kp/forceScaling * Δp_p * Diagonal(.!pIsPrescribed)
-        jacobian[eqs_Fp[1],DOF_pM_otherNode] .+= Kp/forceScaling * Δp_pOtherNode * Diagonal(.!otherNode.pIsPrescribed)
-    # Single attachment springs
-    else
-        # Add translational spring Jacobian (if node's displacements are not prescribed): ∂(-F_spring)/∂(u) = Ku/forceScaling
-        jacobian[eqs_Fu[1],DOF_uF] .+= Ku/forceScaling * Diagonal(.!uIsPrescribed)
-        # Add rotational spring Jacobian (if node's rotations are not prescribed): ∂(-M_spring)/∂(p) = Kp*λ/forceScaling
-        λ,_,_ = rotation_parameter_scaling(p)
-        jacobian[eqs_Fp[1],DOF_pM] .+= Kp*λ/forceScaling * Diagonal(.!pIsPrescribed)
-    end
+    # Initialize counter for double attachment springs
+    c = 0
 
-    return jacobian
-end
+    # Loop over springs
+    for spring in springs
 
+        # Unpack spring data
+        @unpack hasDoubleAttachment = spring.assemblyData
+        @unpack Fs_ΔuFun,Ms_ΔpFun = spring.assemblyConstitutive
+        @unpack Δu,Δp = spring.state
 
-# Resets Jacobians associated with spring loads
-function reset_spring_loads_jacobians!(problem::Problem,specialNodes)
+        # Derivatives of spring loads w.r.t. deformations
+        Fs_Δu = Fs_ΔuFun(Δu)
+        Ms_Δp = Ms_ΔpFun(Δp)
 
-    @unpack jacobian = problem
-
-    # Loop special nodes
-    for specialNode in specialNodes
-        @unpack springs,globalID,eqs_Fu,eqs_Fp,DOF_uF,DOF_pM = specialNode
-        # Loop springs
-        for spring in springs
-            @unpack hasDoubleAttachment,Ku,Kp,nodesSpecialIDs,nodesGlobalIDs = spring
-            # Double attachment springs
-            if hasDoubleAttachment
-                # Node of other attachment
-                otherNode = globalID == nodesGlobalIDs[1] ? specialNodes[nodesSpecialIDs[2]] : specialNodes[nodesSpecialIDs[1]]
-                # DOF indices of that node
-                DOF_uF_otherNode = otherNode.DOF_uF
-                DOF_pM_otherNode = otherNode.DOF_pM
-                # Reset Jacobians
-                jacobian[eqs_Fu[1],DOF_uF] .= zeros(3,3)
-                jacobian[eqs_Fu[1],DOF_uF_otherNode] .= zeros(3,3)
-                jacobian[eqs_Fp[1],DOF_pM] .= zeros(3,3)
-                jacobian[eqs_Fp[1],DOF_pM_otherNode] .= zeros(3,3)
-            # Single attachment springs
+        # Double attachment springs
+        if hasDoubleAttachment
+            # Update counter
+            c += 1
+            # Unpack double attachment spring data for this spring
+            @unpack otherNodeSpecialID,otherNodeDOF_uF,otherNodeDOF_pM,pOtherNode = doubleAttachmentSpringsData[c]
+            # Node of other attachment point
+            otherNode = model.assemblyData.specialNodes[otherNodeSpecialID]
+            # Add translational spring Jacobians (for DOFs that are not prescribed): Δu = u - uOtherNode → ∂(-Fs)/∂u = Fs_Δu and ∂(-Fs)/∂uOtherNode = -Fs_Δu
+            add_block!(nzval, Fu_uF, Fs_Δu * invForceScaling * uNotPrescribedMat)
+            add_block!(nzval, Fu_uFother[c], - Fs_Δu * invForceScaling * otherNode.flags.uNotPrescribedMat)
+            # Derivative of spring rotation w.r.t rotation of each of its attachment nodes
+            if isapprox(p, pOtherNode; atol=1e-10)
+                Δp_p = I3
+                Δp_pOtherNode = -I3
             else
-                # Reset Jacobians
-                jacobian[eqs_Fu[1],DOF_uF] .= zeros(3,3)
-                jacobian[eqs_Fp[1],DOF_pM] .= zeros(3,3)
+                Δp_p = SMatrix{3,3}(ForwardDiff.jacobian(x -> rotation_between_WM(pOtherNode,x), p))
+                Δp_pOtherNode = SMatrix{3,3}(ForwardDiff.jacobian(x -> rotation_between_WM(x,p), pOtherNode))
             end
+            # Add rotational spring Jacobians (for DOFs that are not prescribed):  Δp = rotation_between_WM(p,pOtherNode) → ∂(-Ms)/∂p = ∂(-Ms)/∂Δp*∂Δp/∂p = Ms_Δp*Δp_p and ∂(-Ms)/∂pOtherNode = ∂(-Ms)/∂Δp*∂Δp/∂pOtherNode = Ms_Δp*Δp_pOtherNode
+            add_block!(nzval, Fp_pM, Ms_Δp * Δp_p * invForceScaling * pNotPrescribedMat)
+            add_block!(nzval, Fp_pMother[c], Ms_Δp * Δp_pOtherNode * invForceScaling * otherNode.flags.pNotPrescribedMat)
+        # Single attachment springs
+        else
+            # Add translational spring Jacobians (for DOFs that are not prescribed): Δu = u → ∂(-Fs)/∂u = Fs_Δu
+            add_block!(nzval, Fu_uF, Fs_Δu * invForceScaling * uNotPrescribedMat)
+            # Add rotational spring Jacobian (for DOFs that are not prescribed):  Δp = scaled_rotation_parameters(p) → ∂(-Ms)/∂p = ∂(-Ms)/∂Δp*∂Δp/∂p = Ms_Δp*∂ps/∂p
+            λ,_,_,pNorm,_ = rotation_parameter_scaling(p)
+            Δp_p = ∂ps_∂p(λ,p,pNorm)
+            add_block!(nzval, Fp_pM, Ms_Δp * Δp_p * invForceScaling * pNotPrescribedMat)
         end
+
     end
 
-    @pack! problem = jacobian
+    # if !isempty(springs)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) reshape(Vector(nzval[Fu_uF]), 3, 3)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) reshape(Vector(nzval[Fp_pM]), 3, 3)
+    #     if !isempty(Fu_uFother)
+    #         @logmsg LogLevel(show_debug() ? 0 : -1) reshape(Vector(nzval[Fu_uFother[1]]), 3, 3)
+    #         @logmsg LogLevel(show_debug() ? 0 : -1) reshape(Vector(nzval[Fp_pMother[1]]), 3, 3)
+    #     end
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) (norm(jacobian))
+    # end
+    # if size(jacobian, 1) == size(jacobian, 2)
+    #     @logmsg LogLevel(show_debug() ? 0 : -1) (det(jacobian))
+    # end
 
 end
 
+# Computes the contributions from the hinge axis constraints to the residual array
+function hac_residual!(residual,model,constraint,x)
 
-# Computes the hinge rotation parameters, given the master and slave rotation parameters (pM and pS)
-function hinge_rotation_parameters(pM,pS)
+    @unpack rotationIsFixed,initialHingeAxis,slaveDir,pHValuePrescribed = constraint
+    @unpack eqs_Fp,eqs_λ = constraint.assemblyData
+    @unpack λ,B,GᵀBᵀ,pM,pS = constraint.state
 
-    # Master and slave rotation tensors
-    RM,_ = rotation_tensor_WM(pM)
-    RS,_ = rotation_tensor_WM(pS)
+    # Update state
+    hac_state!(model,constraint,x)
+    
+    # Insert residual contributions from the hinge axis constraint
+    insert_hac_residual!(residual,rotationIsFixed,initialHingeAxis,slaveDir,pHValuePrescribed,eqs_Fp,eqs_λ,λ,GᵀBᵀ,pM,pS)
 
-    # Hinge rotation tensor
-    RH = RS*RM'
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "HAC STATES"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "λ: $λ"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "pM: $pM"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "pS: $pS"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "B: $B"
+    
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "HAC RESIDUALS"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "C: $(residual[eqs_λ])"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "F_p: $(residual[eqs_Fp])"
 
-    # Hinge rotation parameters
-    pH = rotation_parameters_WM(RH)
-
-    return pH
 end
 
+# Updates the states of the hinge axis constraints
+function hac_state!(model,constraint,x; updateOutputs=false)
+    
+    @unpack forceScaling = model.assemblyData
+    @unpack rotationIsFixed,initialHingeAxis,slaveDir,pHValuePrescribed = constraint
+    @unpack DOF_pM,DOF_pS,DOF_λ = constraint.assemblyData
+    @unpack λ,B,Bᵀ,Gᵀ,GᵀBᵀ,pM,pS,balanceMoment = constraint.state
 
-# Computes the deformed hinge axis, given the master element rotation parameters (pM) and the initial hinge axis (n₀)
-function deformed_hinge_axis(pM,n₀)
-    return first( rotation_tensor_WM(pM) ) * n₀
-end
+    # Lagrange multipliers
+    λ .= x[DOF_λ]
 
+    # Rotation parameters of master and slave elements
+    pM .= x[DOF_pM]
+    pS .= x[DOF_pS]
 
-# Computes the signed magnitude of the rotation, given the hinge rotation parameters (pH) and the deformed hinge axis (n)
-function hinge_rotation_value(pH,n)
-    return dot(pH,n)
-end
+    # Mapping from virtual rotations to rotation parameters' variations
+    Gᵀ .= GT(pM,pS)
 
-# Computes the slave rotation parameters, given the master rotation parameters (pM), the initial hinge axis (n₀), and the rotation magnitude (pHValue)
-function pS_from_pM_and_pHValue(pM,n₀,pHValue)
+    # Constraint matrix (Jacobian of the constraint equations) and its transpose
+    B .= ∂C_∂p(pM,pS,initialHingeAxis,rotationIsFixed,pHValuePrescribed,slaveDir)
+    Bᵀ .= B'
 
-    # Current hinge rotation axis
-    n = deformed_hinge_axis(pM,n₀)
+    # Transpose of the constraint matrix w.r.t. virtual rotations (constraint moments' matrix)
+    GᵀBᵀ .= Gᵀ * Bᵀ
 
-    # Hinge rotation parameters and associated rotation tensor
-    pH = pHValue*n
-    RH,_ = rotation_tensor_WM(pH)
-
-    # Master element rotation tensor
-    RM,_ = rotation_tensor_WM(pM)
-
-    # Slave element rotation tensor and associated parameters
-    RS = RH*RM
-    pS = rotation_parameters_WM(RS)
-
-    return pS
-end
-
-
-# Hinge constraint equations
-function C(pM,pS,initialHingeAxis; pHValue=nothing,slaveDir=[1,2,3])
-    pH = hinge_rotation_parameters(pM,pS)
-    n = deformed_hinge_axis(pM,initialHingeAxis)
-    ψ = something(pHValue, hinge_rotation_value(pH,n))
-    c = pH - ψ*n
-    return c[slaveDir]
-end
-
-
-# Jacobian functions of constraint equations w.r.t. system states
-function ∂C_∂pM(pM,pS,initialHingeAxis; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
-    if method == :AD
-        return ForwardDiff.jacobian(x -> C(x,pS,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir),pM)
-    elseif method == :FD
-        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x,pS,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir), pM))
-    else
-        error("select method as :AD or :FD")
+    # Update output states, if applicable
+    if updateOutputs
+        # Balance moment vector
+        @views balanceMoment .= (GᵀBᵀ * λ)[4:6] * forceScaling
+        # Hinge moment (magnitude of balance moment)
+        hingeMoment = norm(balanceMoment)
+        # Deformed hinge axis
+        deformedHingeAxis = deformed_hinge_axis(pM,initialHingeAxis)
+        # Hinge rotation parameters
+        pH = hinge_rotation_parameters(pM,pS)
+        pHValue = hinge_rotation_value(pH,deformedHingeAxis)
+        # Hinge rotation angle
+        ϕ = rotation_angle_limited(pH)
+        @pack! constraint.state = deformedHingeAxis,pH,pHValue,ϕ,hingeMoment
     end
-end
-function ∂C_∂pS(pM,pS,initialHingeAxis; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
-    if method == :AD
-        return ForwardDiff.jacobian(x -> C(pM,x,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir),pS)
-    elseif method == :FD
-        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir), pS))
-    else
-        error("select method as :AD or :FD")
-    end
-end
-function ∂C_∂p(pM,pS,initialHingeAxis; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
-    if method == :AD
-        return ForwardDiff.jacobian(x -> C(x[1:3],x[4:6],initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir), vcat(pM,pS))
-    elseif method == :FD
-        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> C(x[1:3],x[4:6],initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir), vcat(pM,pS)))
-    else
-        error("select method as :AD or :FD")
-    end
+
 end
 
+# Inserts the residual contributions from the hinge axis constraints into the residual vector
+function insert_hac_residual!(residual,rotationIsFixed,initialHingeAxis,slaveDir,pHValuePrescribed,eqs_Fp,eqs_λ,λ,GᵀBᵀ,pM,pS)
 
-# Constraint Hessian functions
-function ∂2CTλ_∂pM2(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
-    if method == :AD
-        return ForwardDiff.jacobian(x -> ∂C_∂pM(x,pS,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir)'*λ, pM)
-    elseif method == :FD
-        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(x,pS,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pM))
-    else
-        error("select method as :AD or :FD")
-    end
-end
-function ∂2CTλ_∂pS2(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
-    if method == :AD
-        return ForwardDiff.jacobian(x -> ∂C_∂pS(pM,x,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir)'*λ, pS)
-    elseif method == :FD
-        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pS))
-    else
-        error("select method as :AD or :FD")
-    end
-end
-function ∂2CTλ_∂pMpS(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
-    if method == :AD
-        return ForwardDiff.jacobian(x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pS)
-    elseif method == :FD
-        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pM(pM,x,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pS))
-    else
-        error("select method as :AD or :FD")
-    end
-end
-function ∂2CTλ_∂pSpM(pM,pS,initialHingeAxis,λ; method::Symbol=:AD, pHValue=nothing,slaveDir=[1,2,3])
-    if method == :AD
-        return ForwardDiff.jacobian(x -> ∂C_∂pS(x,pS,initialHingeAxis, pHValue=pHValue,slaveDir=slaveDir)'*λ, pM)
-    elseif method == :FD
-        return first(FiniteDifferences.jacobian(central_fdm(3,1), x -> ∂C_∂pS(x,pS,initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)'*λ, pM))
-    else
-        error("select method as :AD or :FD")
-    end
-end
-function ∂2CTλ_∂p2(pM,pS,initialHingeAxis,λ; pHValue=nothing, slaveDir=[1,2,3])
-    Jb = zeros(6,6)
-    for k in eachindex(λ)
-        Jb .+= λ[k] * ForwardDiff.hessian(x -> C(x[1:3],x[4:6],initialHingeAxis,pHValue=pHValue,slaveDir=slaveDir)[k], vcat(pM,pS))
-    end
-    return Jb
+    # Add to residual of nominal system
+    residual[eqs_Fp] .+= GᵀBᵀ * λ
+
+    # Set constraint equations' residual
+    residual[eqs_λ] .= C(pM,pS,initialHingeAxis,rotationIsFixed,pHValuePrescribed,slaveDir)
+
 end
 
-# Computes the modal states (generalized displacements, forces, strains, velocities and momenta) of the element at midpoint and at the nodes
-function element_modal_states(element::Element,eigenvector::Vector{T},forceScaling::Float64) where T<:Union{Float64,ComplexF64}
+# Computes the contributions from the hinge axis constraints to the Jacobian matrix
+function hac_jacobian!(jacobian,model,constraint)
 
-    @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω,Δℓ,k,R0,C,I,f1,f2,m1,m2,R0_n1,R0_n2,R0T_n1,R0T_n2 = element
+    @unpack invForceScaling = model.assemblyData
+    @unpack rotationIsFixed,slaveDir,initialHingeAxis,pHValuePrescribed = constraint
+    @unpack jacobianMaps = constraint
+    @unpack λ,B,Bᵀ,Gᵀ,GᵀBᵀ,GᵀBᵀλ_p,pM,pS = constraint.state
 
-    # Midpoint states 
-    u = eigenvector[DOF_u]
-    p = eigenvector[DOF_p]
-    F = eigenvector[DOF_F]*forceScaling
-    M = eigenvector[DOF_M]*forceScaling
-    V = eigenvector[DOF_V]
-    Ω = eigenvector[DOF_Ω]
+    # Update constraint moments Jacobian w.r.t the master and slave elements' rotation parameters
+    GᵀBᵀλ_p .= ∂GTBTλ_∂p(λ,Bᵀ,Gᵀ,pM,pS,initialHingeAxis,rotationIsFixed,pHValuePrescribed,slaveDir)
 
-    # Midpoint complementary states
-    strains = C*[F; M]
-    momenta = I*[V; Ω]
-    γ = strains[1:3] 
-    κ = strains[4:6]
-    P = momenta[1:3]
-    H = momenta[4:6]
+    # Insert the hinge axis constraints' contributions into the Jacobian matrix
+    insert_hac_jacobian!(jacobian,jacobianMaps,B,GᵀBᵀ,GᵀBᵀλ_p)
 
-    # Rotation tensors
-    R,_ = rotation_tensor_WM(p) 
-    RR0 = R*R0
-    RR0T = Matrix(RR0')
-    HTinv = tangent_operator_transpose_inverse_WM(p)
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "HAC JACOBIANS"
+    # @logmsg LogLevel(show_debug() ? 0 : -1) "GᵀBᵀλ_p: $GᵀBᵀλ_p"
 
-    # Midpoint generalized displacements' derivatives with respect to x1
-    u_prime = RR0*(a1+γ)-R0*a1
-    p_prime = HTinv*R0*κ
+end
 
-    # Midpoint deformed curvature vector, resolved in basis B
-    K = k+κ
+# Inserts the hinge axis constraints' contributions into the Jacobian matrix
+function insert_hac_jacobian!(jacobian,jacobianMaps,B,GᵀBᵀ,GᵀBᵀλ_p)
 
-    # Midpoint generalized forces' derivatives with respect to x1
-    F_prime = cross(Ω,P)-cross(K,F)
-    M_prime = cross(Ω,H)+cross(V,P)-cross(a1+γ,F)-cross(K,M)
+    @unpack nzval = jacobian
+    @unpack Fp_pMS,Fp_λ,Fλ_pMS = jacobianMaps
 
-    # Nodal displacements and rotation parameters' vectors, resolved in basis A
-    u_n1 = u - Δℓ/2 * u_prime
-    u_n2 = u + Δℓ/2 * u_prime
-    p_n1 = p - Δℓ/2 * p_prime
-    p_n2 = p + Δℓ/2 * p_prime
+    # --- F_p --- #
+    add_block!(nzval, Fp_pMS, GᵀBᵀλ_p)
+    set_block!(nzval, Fp_λ, GᵀBᵀ)
 
-    # Nodal rotation angles
-    θ_n1 = rotation_angle(p_n1)
-    θ_n2 = rotation_angle(p_n2)
+    # --- C --- #
+    set_block!(nzval, Fλ_pMS, B)
 
-    # Nodal displacements and rotation parameters' vectors, resolved in basis b
-    u_n1_b = R0T_n1*u_n1
-    u_n2_b = R0T_n2*u_n2
-    p_n1_b = R0T_n1*p_n1
-    p_n2_b = R0T_n2*p_n2
-
-    # Nodal generalized internal forces, resolved in basis B
-    F_n1 = F - (Δℓ/2*F_prime - RR0T*f1)
-    F_n2 = F + (Δℓ/2*F_prime - RR0T*f2)
-    M_n1 = M - (Δℓ/2*M_prime - RR0T*m1)
-    M_n2 = M + (Δℓ/2*M_prime - RR0T*m2)
-
-    return u,p,F,M,V,Ω,γ,κ,P,H,u_n1,u_n2,p_n1,p_n2,u_n1_b,u_n2_b,p_n1_b,p_n2_b,F_n1,F_n2,M_n1,M_n2,θ_n1,θ_n2
 end
 
 
 # Updates the elemental and nodal states
-function update_states!(problem::Problem)
+function update_states!(problem)
 
+    @unpack x = problem.systemArrays
+    @unpack σ = problem.systemSolver.loadStepState
     @unpack model = problem
-    @unpack elements = model
+    timeNow = time_now(problem)
+    timeIndex = time_index(problem)
+    Δt = time_step(problem)
+    isDynamicProblem = problem isa DynamicProblem
 
-    for element in elements
+    update_states!(model,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
 
-        ## Generalized velocities of basis b at element's midpoint, resolved in basis A
+end
+function update_states!(model,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+
+    @unpack hingeAxisConstraints = model
+    @unpack elementGroups,specialNodes = model.assemblyData
+
+    # Loop over elements
+    foreach_element(elementGroups) do element
+
+        ## Generalized velocities and accelerations of basis b at element's midpoint, resolved in basis A
         # ----------------------------------------------------------------------
         # Velocities
-        element_velocities_basis_b!(model,element,problem.σ,problem.timeNow)
+        element_velocities_basis_b!(model,element,σ)
         # Accelerations
-        element_accelerations_basis_b!(model,element,problem.σ,problem.timeNow)
+        element_accelerations_basis_b!(model,element,σ)
 
         ## States and states' rates
         # ----------------------------------------------------------------------
         # States
-        element_states!(problem,model,element)
+        element_states!(model,element,x)
         # States' rates
-        element_states_rates!(problem,element)
+        isDynamicProblem && element_states_rates!(element,Δt)
         
         ## Rotation variables
         # ----------------------------------------------------------------------
-        element_rotation_variables!(problem,element)
+        element_rotation_variables!(element,isDynamicProblem)
         
         ## Distributed loads
         # ----------------------------------------------------------------------
-        element_distributed_loads!(problem,model,element)
-        
-        ## Sectional strains, momenta and momenta's rates
-        # ----------------------------------------------------------------------
-        # Strains
-        element_strains!(element)
-        # Momenta
-        element_momenta!(element)
-        # Momenta rates
-        element_momenta_rates!(element)
+        element_distributed_loads!(model,element,σ,timeIndex,timeNow,Δt,isDynamicProblem)
 
-        ## Update nodal states of the element (mere outputs)
+        ## Update nodal states of the element
         # ----------------------------------------------------------------------
         element_nodal_states!(element)
+
+    end
+
+    # Loop over hinge axis constraints
+    for constraint in hingeAxisConstraints
+        hac_state!(model,constraint,x; updateOutputs=true)
+    end
+
+    # Loop over special nodes
+    for specialNode in specialNodes
+
+        ## Update nodal states of the special node
+        # ----------------------------------------------------------------------
+        special_node_states!(model,specialNode,x,σ)
+
+        ## Add contributions of attached springs to the special node's loads
+        # ----------------------------------------------------------------------
+        spring_loads!(model,specialNode)
+
     end
 
 end
 
+# Updates the nodal states of the element
+function element_nodal_states!(element)
 
-# Resets dual numbers from the ForwardDiff package back into their values
-function reset_dual_numbers(obj)
+    @unpack Δℓ,k,R0,R0_n1,R0_n2,R0T_n1,R0T_n2 = element.geometry
+    @unpack RR0,RR0T,HTinv = element.stateCache.rotationMatrices
+    @unpack u,p,F,M,V,Ω,γ,κ,P,H = element.state.midpoint
+    @unpack Pdot,Hdot = element.state.rates
+    @unpack u1,u2,p1,p2,u1_b,u2_b,p1_b,p2_b,F1,F2,M1,M2,θ = element.state.nodal
+    @unpack f1,f2,m1,m2 = element.stateCache.loadsResultants
 
-    # Loop fields of data structure
-    for field in fieldnames(typeof(obj))
-        value = getfield(obj, field)
-        if typeof(value) in [Airfoil,AttachedFlowParameters,BLiParameters,BLoParameters,FlowParameters,FlowAnglesAndRates,FlowVelocitiesAndRates,AeroCoefficients,BLiNamedStates,BLoNamedStates,BLiKinematics,BLiFlowVariables,BLoFlowVariables,BLiComplementaryVariables,BLoComplementaryVariables]
-            setfield!(obj, field, reset_dual_numbers(value))
-        elseif (value isa ForwardDiff.Dual) || (value isa AbstractArray && length(value) > 0 && value[1] isa ForwardDiff.Dual)
-            setfield!(obj, field, convert_to_values(value))
-        end
-    end
+    # Midpoint generalized displacements' derivatives w.r.t x1
+    u_prime = RR0 * (a1 + γ) - R0 * a1
+    p_prime = HTinv * SVector(R0 * κ)
 
-    return obj
+    # Midpoint deformed curvature vector, resolved in basis B
+    K = k + κ
+
+    # Midpoint generalized forces' derivatives w.r.t x1
+    F_prime = Pdot + cross(Ω,P) - cross(K,F)
+    M_prime = Hdot + cross(Ω,H) + cross(V,P) - cross(a1+γ,F) - cross(K,M)
+
+    # Nodal displacements and rotation parameters' vectors, resolved in basis A
+    u1 .= u - Δℓ/2 * u_prime
+    u2 .= u + Δℓ/2 * u_prime
+    p1 .= p - Δℓ/2 * p_prime
+    p2 .= p + Δℓ/2 * p_prime
+
+    # Nodal displacements and rotation parameters' vectors, resolved in basis b
+    u1_b .= R0T_n1 * u1
+    u2_b .= R0T_n2 * u2
+    p1_b .= R0T_n1 * p1
+    p2_b .= R0T_n2 * p2
+
+    # Nodal generalized internal forces, resolved in basis B
+    F1 .= F - (Δℓ/2 * F_prime - RR0T * f1)
+    F2 .= F + (Δℓ/2 * F_prime - RR0T * f2)
+    M1 .= M - (Δℓ/2 * M_prime - RR0T * m1)
+    M2 .= M + (Δℓ/2 * M_prime - RR0T * m2)
+
+    # Nodal rotation angles
+    θ[1] = rotation_angle(p1)
+    θ[2] = rotation_angle(p2)
+
 end
 
+# Computes the modal states (generalized displacements, forces, strains, velocities and momenta) of the element at midpoint and at the nodes
+function element_modal_states!(element,modalState,eigenvector,forceScaling)
 
-# Functional unit of reset_dual_numbers()
-function convert_to_values(arr)
-    if isa(arr, AbstractArray)
-        return map(convert_to_values, arr)
-    elseif isa(arr, ForwardDiff.Dual)
-        return ForwardDiff.value(arr)
-    else
-        return arr
-    end
+    @unpack Δℓ,k,R0,R0_n1,R0_n2,R0T_n1,R0T_n2 = element.geometry
+    @unpack C11,C12,C21,C22,I11,I12,I21,I22 = element.sectional
+    @unpack DOF_u,DOF_p,DOF_F,DOF_M,DOF_V,DOF_Ω = element.assemblyIndices
+    @unpack f1,f2,m1,m2 = element.stateCache.loadsResultants
+    @unpack u,p,F,M,V,Ω,γ,κ,P,H = modalState.midpoint
+    @unpack u1,u2,u1_b,u2_b,p1,p2,p1_b,p2_b,F1,F2,M1,M2,θ = modalState.nodal
+
+    # Steady-state midpoint states, about which the modal states (perturbations) are defined
+    γS = element.state.midpoint.γ
+    κS = element.state.midpoint.κ
+    RR0S = element.stateCache.rotationMatrices.RR0
+    HTinvS = element.stateCache.rotationMatrices.HTinv
+    R_p1S = element.stateCache.rotationMatrices.R_p1
+    R_p2S = element.stateCache.rotationMatrices.R_p2
+    R_p3S = element.stateCache.rotationMatrices.R_p3
+    HTinv_p1S = element.stateCache.rotationMatrices.HTinv_p1
+    HTinv_p2S = element.stateCache.rotationMatrices.HTinv_p2
+    HTinv_p3S = element.stateCache.rotationMatrices.HTinv_p3
+
+    # Midpoint states 
+    u .= eigenvector[DOF_u]
+    p .= eigenvector[DOF_p]
+    F .= eigenvector[DOF_F] * forceScaling
+    M .= eigenvector[DOF_M] * forceScaling
+    V .= eigenvector[DOF_V]
+    Ω .= eigenvector[DOF_Ω]
+
+    # Midpoint complementary states
+    γ .= C11 * F + C12 * M
+    κ .= C21 * F + C22 * M
+    P .= I11 * V + I12 * Ω
+    H .= I21 * V + I22 * Ω
+
+    # Rotation tensors
+    R = rotation_tensor_WM(p)
+    RR0 = R * R0
+    RR0T = RR0'
+
+    # Midpoint generalized displacements' derivatives w.r.t x1, linearized about the steady state
+    u_prime = mul3(R_p1S,R_p2S,R_p3S,SVector(R0 * (a1 + γS))) * p + RR0S * γ
+    p_prime = mul3(HTinv_p1S,HTinv_p2S,HTinv_p3S,SVector(R0 * κS)) * p + HTinvS * SVector(R0 * κ)
+
+    # Midpoint deformed curvature vector, resolved in basis B
+    K = k + κ
+
+    # Midpoint generalized forces' derivatives w.r.t x1 (not linearized, approximate)
+    F_prime = cross(Ω,P) - cross(K,F)
+    M_prime = cross(Ω,H) + cross(V,P) - cross(a1+γ,F) - cross(K,M)
+
+    # Nodal displacements and rotation parameters' vectors, resolved in basis A
+    u1 .= u - Δℓ/2 * u_prime
+    u2 .= u + Δℓ/2 * u_prime
+    p1 .= p - Δℓ/2 * p_prime
+    p2 .= p + Δℓ/2 * p_prime
+
+    # Nodal rotation angles
+    θ[1] = rotation_angle(p1)
+    θ[2] = rotation_angle(p2)
+
+    # Nodal displacements and rotation parameters' vectors, resolved in basis b
+    u1_b .= R0T_n1 * u1
+    u2_b .= R0T_n2 * u2
+    p1_b .= R0T_n1 * p1
+    p2_b .= R0T_n2 * p2
+
+    # Nodal generalized internal forces, resolved in basis B
+    F1 .= F - (Δℓ/2 * F_prime - RR0T * f1)
+    F2 .= F + (Δℓ/2 * F_prime - RR0T * f2)
+    M1 .= M - (Δℓ/2 * M_prime - RR0T * m1)
+    M2 .= M + (Δℓ/2 * M_prime - RR0T * m2)
+
 end

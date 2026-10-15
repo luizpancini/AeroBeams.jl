@@ -31,7 +31,7 @@ steadyProblem = Array{SteadyProblem}(undef,length(k2Range))
 for (i,k2) in enumerate(k2Range)
     println("Solving for k2 = $k2")
     # Model for steady problem
-    model,_ = create_conventional_HALE(stiffnessFactor=λ,k2=k2,g=g,airspeed=1e-4,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,rootClamped=true)
+    model,_ = create_cHALE(stiffnessFactor=λ,k2=k2,g=g,airspeed=1e-4,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,rootClamped=true)
     # Create and solve steady problem
     steadyProblem[i] = create_SteadyProblem(model=model,systemSolver=NR)
     solve!(steadyProblem[i])

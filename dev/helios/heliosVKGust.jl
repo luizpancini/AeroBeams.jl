@@ -319,7 +319,7 @@ for (i,seed) in enumerate(seeds)
 
     # Animation
     Δtanim = 1
-    anim = plot_dynamic_deformations(dynamicProblem[i,:],refBasis="I",view=(60,15),legendEntries=["Attached-flow", "Dynamic stall"],plotBCs=false,plotDistLoads=false,plotFrequency=ceil(Int,Δtanim/Δt),fps=fps,followAssembly=true,plotLimits=([Δu1_min,Δu1_max],[Δu2_min,Δu2_max],[Δu3_min,Δu3_max]),save=true,savePath=string(relPath,"/heliosVKGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".gif"),displayProgress=true)
+    anim = plot_dynamic_deformations(dynamicProblem[i,:],view=(60,15),legendEntries=["Attached-flow", "Dynamic stall"],plotBCs=false,plotDistLoads=false,plotFrequency=ceil(Int,Δtanim/Δt),fps=fps,follow=:basisA,plotLimits=([Δu1_min,Δu1_max],[Δu2_min,Δu2_max],[Δu3_min,Δu3_max]),save=true,savePath=string(relPath,"/heliosVKGust_P",Pstr,"_tau",τstr,"_gamma",γstr,"_seed",seed,".gif"),displayProgress=true)
     display(anim)
 
     # GC

@@ -8,3 +8,6 @@ LinearInterpolations = "b20c7882-2490-4592-a606-fbbfe9e745e8"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
+
+[sources]
+AeroBeams = {path = ".."}

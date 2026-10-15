@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/typicalSectionFlutterAndDivergence.jl"
+EditURL = "../../../test/examples/eigenAeroelastic/typicalSectionFlutterAndDivergence.jl"
 ```
 
 # Flutter and divergence of a typical aeroelastic section
@@ -9,19 +9,16 @@ This example illustrates how to set up a flutter/divergence analysis of a 2-DOF 
 *Typical section*
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/typicalSectionFlutterAndDivergence.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/eigenAeroelastic/typicalSectionFlutterAndDivergence.jl).
 
 ### Problem setup
 Let's begin by setting up the variables of our problem: we'll model the 2-DOF (pitch and plunge) typical section, which is a two-dimensional idealization, by setting up a rigid wing supported by displacement and rotation springs. We leverage the function [`typical_section_data`](@ref typical_section_data) to extract the typical section parameters.
 
 ````@example typicalSectionFlutterAndDivergence
-using AeroBeams, LinearInterpolations, DelimitedFiles
+using AeroBeams
 
 # Aerodynamic solver
-aeroSolver = Inflow(nInflowStates=6)
-
-# Derivation method
-derivationMethod = AD()
+aeroSolver = Inflow()
 
 # Atmosphere
 altitude = 0
@@ -30,7 +27,7 @@ atmosphere = standard_atmosphere(altitude)
 
 # Given typical section data
 typicalSectionName = "HP-1"
-airfoil = deepcopy(flatPlate)
+airfoil = deepcopy(FlatPlate)
 a,e,μ,rα²,σ,ωα,c = typical_section_data(typicalSectionName)
 
 # Derived typical section data: semichord, mass per unit length, pitching inertia, distance from elastic axis to mass axis, plunge stiffness and pitch stiffness
@@ -50,20 +47,25 @@ We now create the aerodynamic surface to be attached to the wing's beam, the att
 
 ````@example typicalSectionFlutterAndDivergence
 # Aerodynamic surface
-surf = create_AeroSurface(solver=aeroSolver,derivationMethod=derivationMethod,airfoil=airfoil,c=c,normSparPos=(a+1)/2,updateAirfoilParameters=false)
+surf = create_AeroSurface(ppSolver=aeroSolver,airfoil=airfoil,c=c,normSparPos=(a+1)/2,updateAirfoilParameters=false)
 nothing #hide
-
-# Attachment springs (in pitch and plunge)
-springs = create_Spring(elementsIDs=[1],nodesSides=[2],ku=kh*[0;0;1],kp=kα*[1;0;0])
 
 # Rigid wing
 L = 1
-∞ = 1e15
-wing = create_Beam(name="wing",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=m,ρIy=Iα/2,ρIz=Iα/2,e2=e2)],aeroSurface=surf,springs=[springs])
+∞ = 1e10
+wing = create_Beam(name="wing",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞)],I=[inertia_matrix(ρA=m,ρIy=Iα/2,ρIz=Iα/2,e2=e2)],surface=surf)
+nothing #hide
+
+# Attachment springs (in pitch and plunge)
+pitchSpring = create_Spring(kp=kα)
+plungeSpring = create_Spring(ku=kh)
+add_spring_to_beam!(beam=wing,spring=plungeSpring,nodeID=div(nElem,2)+1,p=[0,π/2,0])
+add_spring_to_beam!(beam=wing,spring=pitchSpring,nodeID=div(nElem,2)+1)
+nothing #hide
 
 # BCs
-journal1 = create_BC(name="journal-1",beam=wing,node=1,types=["u1A","u2A","p2A","p3A"],values=[0,0,0,0])
-journal2 = create_BC(name="journal-2",beam=wing,node=nElem+1,types=["u1A","u2A","p2A","p3A"],values=[0,0,0,0])
+journal1 = create_BC(name="journal-1",beam=wing,node=1,conditions=Dict(:u1A=>0,:u2A=>0,:p2A=>0,:p3A=>0))
+journal2 = create_BC(name="journal-2",beam=wing,node=nElem+1,conditions=Dict(:u1A=>0,:u2A=>0,:p2A=>0,:p3A=>0))
 nothing #hide
 ````
 
@@ -74,18 +76,19 @@ The model consists of the beam and boundary conditions. We also select the airsp
 typicalSectionFlutterAndDivergence = create_Model(name="typicalSectionFlutterAndDivergence",beams=[wing],BCs=[journal1,journal2])
 
 # Airspeed range
-URange = b*ωα*collect(0.2:0.025:3)
+URangeNorm = collect(0.025:0.025:3)
+URange = b * ωα * URangeNorm
 
-# Number of oscillatory and non-oscillatory modes
-nModes = 2
-nNOmodes = 2
+# Number of modes to track
+nModesOsc = 2
+nModesNonOsc = 1
 
-# Pre-allocate memory and initialize output arrays
-untrackedFreqs = Array{Vector{Float64}}(undef,length(URange))
-untrackedDamps = Array{Vector{Float64}}(undef,length(URange))
-untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(URange))
-dampingsNonOscillatory = Array{Vector{Float64}}(undef,length(URange))
-problem = Array{EigenProblem}(undef,length(URange))
+# Eigensolver method and minimum number of eigenvalues to be computed
+eigenmethod = :krylovkit
+nev = 20
+
+# Initialize outputs
+eigensols = Array{EigenSolution}(undef,length(URange))
 nothing #hide
 ````
 
@@ -93,67 +96,42 @@ nothing #hide
 We're now ready to solve the eigenproblem at each airspeed value.
 
 ````@example typicalSectionFlutterAndDivergence
+# Initialize guess solution
+x0 = zeros(0)
 # Sweep airspeed
 for (i,U) in enumerate(URange)
     # Update airspeed on model
-    set_motion_basis_A!(model=typicalSectionFlutterAndDivergence,v_A=[0;U;0])
+    update_v_A!(typicalSectionFlutterAndDivergence,v_A=[0,U,0])
     # Create and solve eigenproblem
-    problem[i] = create_EigenProblem(model=typicalSectionFlutterAndDivergence,nModes=nModes,frequencyFilterLimits=[1e-3,Inf])
-    solve!(problem[i])
-    # Frequencies, dampings and eigenvectors
-    untrackedFreqs[i] = problem[i].frequenciesOscillatory
-    untrackedDamps[i] = problem[i].dampingsOscillatory
-    untrackedEigenvectors[i] = problem[i].eigenvectorsOscillatoryCplx
-    dampingsNonOscillatory[i] = problem[i].dampingsNonOscillatory[1:nNOmodes]
+    problem = create_EigenProblem(model=typicalSectionFlutterAndDivergence,eigenmethod=eigenmethod,nev=nev,x0=x0)
+    solve!(problem)
+    # Eigensolution
+    eigensols[i] = problem.eigensolution
+    # Set initial guess solution for next iteration
+    global x0 = problem.systemArrays.x
 end
 nothing #hide
 ````
 
 ### Post-processing
-The first post-processing step is to use the built-in mode tracking algorithm to enhance our chances of correctly tracking the oscillatory modes. We then set arrays for the frequecies and dampings of each mode, and find the flutter onset and offset (actually absent in this case) speeds. To identify the divergence, we have to look at the damping of the non-oscillatory (zero-frequency) modes.
+The first post-processing step is to use the built-in mode tracking algorithm to enhance our chances of correctly tracking modes, while also extracting frequencies and dampings from the eigensolution. Then, we filter the tracked modes into oscillatory and non-oscillatory categories. With that, we can find the flutter and divergence variables of interest.
 
 ````@example typicalSectionFlutterAndDivergence
 # Apply mode tracking
-freqs,damps,_ = mode_tracking_hungarian(URange,untrackedFreqs,untrackedDamps,untrackedEigenvectors)
+freqs,damps,_ = mode_tracking(eigensols)
 
-# Separate frequencies and damping ratios by mode
-modeFrequencies = Array{Vector{Float64}}(undef,nModes)
-modeDampings = Array{Vector{Float64}}(undef,nModes)
-for mode in 1:nModes
-    modeFrequencies[mode] = [freqs[i][mode] for i in eachindex(URange)]
-    modeDampings[mode] = [damps[i][mode] for i in eachindex(URange)]
-end
+# Get frequencies and dampings of oscillatory and non-oscillatory modes
+freqsOsc,dampsOsc,_ = filter_tracked_modes(freqs,damps; fmin=eps(), fmax=1.5*ωα, maxTracks=nModesOsc, dropOutsideBounds=true)
+freqsNonOsc,dampsNonOsc,_ = filter_tracked_modes(freqs,damps; fmin=0, fmax=0, maxTracks=nModesNonOsc)
 
-# Flutter speed and flutter frequency
-flutterOnsetSpeed = [Float64[] for _ in 1:nModes]
-flutterOnsetFreq = [Float64[] for _ in 1:nModes]
-flutterOffsetSpeed = [Float64[] for _ in 1:nModes]
-flutterOffsetFreq = [Float64[] for _ in 1:nModes]
-for mode in 1:nModes
-    # Flutter onset
-    iOnset = 1 .+ findall(i -> modeDampings[mode][i] < 0 && modeDampings[mode][i+1] > 0, 1:length(modeDampings[mode])-1)
-    if isempty(iOnset) || isempty(filter!(x->x!=1,iOnset))
-        continue
-    end
-    for i in iOnset
-        push!(flutterOnsetSpeed[mode],interpolate(modeDampings[mode][i-1:i],URange[i-1:i],0))
-        push!(flutterOnsetFreq[mode],interpolate(modeDampings[mode][i-1:i],modeFrequencies[mode][i-1:i],0))
-    end
-    # Flutter offset
-    iOffset = 1 .+ findall(i -> modeDampings[mode][i] > 0 && modeDampings[mode][i+1] < 0, 1:length(modeDampings[mode])-1)
-    if isempty(iOffset)
-        continue
-    end
-    for i in iOffset
-        push!(flutterOffsetSpeed[mode],interpolate(-modeDampings[mode][i-1:i],URange[i-1:i],0))
-        push!(flutterOffsetFreq[mode],interpolate(-modeDampings[mode][i-1:i],modeFrequencies[mode][i-1:i],0))
-    end
-end
+# Flutter speed and frequency
+flutterOnsetSpeeds,flutterOnsetFreqs,_ = find_flutter(URange,freqsOsc,dampsOsc)
+flutterSpeed = minimum(flutterOnsetSpeeds)
+flutterFreq = minimum(flutterOnsetFreqs)
 
 # Divergence speed
-UDvec,_ = find_non_oscillatory_instability(URange,dampingsNonOscillatory)
-divergenceSpeed = minimum(UDvec)
-println("Nondimensional divergence speed = $(divergenceSpeed/(b*ωα))")
+divergenceSpeeds,divergenceMode,_ = find_divergence(URange,freqsNonOsc,dampsNonOsc)
+divergenceSpeed = minimum(divergenceSpeeds)
 nothing #hide
 ````
 
@@ -166,40 +144,36 @@ dampsRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/typicalSectionFlutterA
 nothing #hide
 ````
 
-We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly! Notice that once the damping of the non-oscillatory mode leading to divergence becomes positive, AeroBeams can no longer identify it. This is a current limitation of package, albeit the divergence speed can be computed in spite of it.
+We'll visualize the results through the V-g-f diagrams, *i.e.*, the evolution of the frequencies and dampings (both normalized by the *in vacuo* pitching frequency) with airspeed. The flutter speed is that at which the damping of an oscillatory mode, in this case the pitch mode, becomes positive. Conversely, the divergence speed is that at which the damping of a non-oscillatory mode becomes positive. The results match almost exactly.
 
 ````@example typicalSectionFlutterAndDivergence
-using Plots, ColorSchemes
 gr()
 ENV["GKSwstype"] = "100" #hide
 nothing #hide
 
 # Plot configurations
-modeColors = cgrad(:rainbow, nModes+1, categorical=true)
-modeLabels = ["Plunge" "Pitch"]
+modeColors = cgrad(:rainbow, nModesOsc+nModesNonOsc, categorical=true)
+modeLabels = ["Plunge", "Pitch", "Non-oscillatory"]
 lw = 3
-ms = 2
 msw = 0
+nothing #hide
 
 # Frequency plot
-plt11 = plot(ylabel="Frequency ratio", xlims=[0,URange[end]/(b*ωα)], ylims=[0,1.02])
-for mode in 1:nModes
-    plot!(URange/(b*ωα), modeFrequencies[mode]/ωα, c=modeColors[mode], lw=lw,  label=false)
+plt11 = plot(ylabel="Frequency ratio", xlims=extrema(URangeNorm), ylims=[0,1.02])
+for mode in 1:nModesOsc
+    plot!(URangeNorm, freqsOsc[mode,:]/ωα, c=modeColors[mode], lw=lw, label=false)
 end
-plot!(freqsRef[1,:], freqsRef[2,:], ls=:dash, lw=1, marker=:circle, ms=2, msw=msw, c=modeColors[end], label=false)
+plot!(freqsRef[1,:], freqsRef[2,:], ls=:dash, lw=1, marker=:circle, ms=2, msw=msw, c=:black, label=false)
 # Damping plot
-plt12 = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,URange[end]/(b*ωα)], ylims=[-0.15,0.15],legend=:topleft)
-for i in eachindex(URange)
-    for j in eachindex(dampingsNonOscillatory[i])
-        scatter!([URange[i]/(b*ωα)], [dampingsNonOscillatory[i][j]/ωα], c=:black, ms=ms, msw=msw, label=false)
-    end
+plt12 = plot(xlabel="Normalized airspeed, \$U/b\\omega_\\alpha\$", ylabel="Damping ratio", xlims=extrema(URangeNorm), ylims=[-0.15,0.15], legend=:topleft)
+for mode in 1:nModesOsc
+    plot!(URangeNorm, dampsOsc[mode,:]/ωα, c=modeColors[mode], lw=lw, label=modeLabels[mode])
 end
-scatter!([NaN], [NaN], c=:black, ms=ms, msw=msw, label="Non-oscillatory")
-for mode in 1:nModes
-    plot!(URange/(b*ωα), modeDampings[mode]/ωα, c=modeColors[mode], lw=lw, label=modeLabels[mode])
+for mode in 1:nModesNonOsc
+    plot!(URangeNorm, dampsNonOsc[mode,:]/ωα, c=modeColors[nModesOsc+mode], lw=lw, label=modeLabels[nModesOsc+mode])
 end
-plot!(dampsRef[1,:], dampsRef[2,:], ls=:dash, lw=1, marker=:circle, ms=2, msw=msw, c=modeColors[end], label="Hodges & Pierce (2011) - \$p\$ method")
-plt1 = plot(plt11,plt12, layout=(2,1))
+plot!(dampsRef[1,:], dampsRef[2,:], ls=:dash, lw=1, marker=:circle, ms=2, msw=msw, c=:black, label="Hodges & Pierce (2011) - \$p\$ method")
+plt1 = plot(plt11, plt12, layout=(2,1))
 savefig("typicalSectionFlutter_Vgf.svg") #hide
 nothing #hide
 ````
@@ -209,14 +183,39 @@ nothing #hide
 Finally, we show the numerical values of the nondimensional flutter speed and frequency. The values computed by Hodges & Pierce are 2.165 and 0.6545, respectively.
 
 ````@example typicalSectionFlutterAndDivergence
-# Compute nondimensional flutter speed and frequency
-flutterSpeedAll = vcat(flutterOnsetSpeed...)
-flutterFreqAll = vcat(flutterOnsetFreq...)
-ind = argmin(flutterSpeedAll)
-flutterSpeed = flutterSpeedAll[ind]
-flutterFreq = flutterFreqAll[ind]
-println("Nondimensional flutter speed = $(flutterSpeed/(b*ωα))")
-println("Nondimensional flutter frequency = $(flutterFreq/ωα)")
+# Nondimensional speeds and frequencies
+Ud = divergenceSpeed / (b * ωα)
+Uf = flutterSpeed / (b * ωα)
+ωf = flutterFreq / ωα
+nothing #hide
+
+# Reference values
+UfRef = 2.165
+ωfRef  = 0.6545
+nothing #hide
+
+# Relative errors (%)
+ϵUf = 100 * (Uf./UfRef .- 1)
+ϵωf  = 100 * (ωf./ωfRef .- 1)
+nothing #hide
+
+# Pretty table of results
+data = [
+    "Divergence speed"   Ud  missing missing
+    "Flutter speed"      Uf  UfRef   ϵUf
+    "Flutter frequency"  ωf  ωfRef   ϵωf
+]
+pretty_table(
+    data;
+    column_labels = ["", "AeroBeams", "Hodges & Pierce", "Δ [%]"],
+    title         = "Pitch-plunge typical section",
+    formatters    = [
+        (v, i, j) -> (v isa Number) ? round(v, sigdigits=4) : v,
+        (v, i, j) -> (j == 4 && v isa Number) ? string(round(v, digits=2), " %") : v,
+    ],
+    source_notes  = "Reference: Hodges & Pierce, Introduction to Structural Dynamics and Aeroelasticity",
+)
+nothing #hide
 ````
 
 ---

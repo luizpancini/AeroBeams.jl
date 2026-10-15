@@ -50,7 +50,7 @@ NRtrim = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,desiredIt
 NReigen = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,desiredIterations=div(maxIter,4),initialLoadFactor=σ0e,relativeTolerance=relTol,displayStatus=true)
 
 # Model for trim problem
-cHALEtrim,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
+cHALEtrim,_ = create_cHALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
 
 # Solve trim problem at smaller airspeed for better initial guess, if applicable
 global x0Trim = zeros(0)
@@ -171,7 +171,7 @@ end
 # Animation
 L = 16
 animTimeStep = 0.25
-anim = plot_dynamic_deformation(dynamicProblem,refBasis="I",followAssembly=true,view=(60,15),plotDistLoads=false,plotBCs=true,plotFrequency=ceil(Int,animTimeStep/Δt),plotLimits=([0,L],[-L/2,L/2],[0,L]),fps=30,save=true,savePath=string(relPathFig,"/cHALEwing_dynamic_lambda",λ,"_U",U,"_k2",k2,".gif"),displayProgress=true)
+anim = plot_dynamic_deformation(dynamicProblem,follow=:basisA,view=(60,15),plotDistLoads=false,plotBCs=true,plotFrequency=ceil(Int,animTimeStep/Δt),plotLimits=([0,L],[-L/2,L/2],[0,L]),fps=30,save=true,savePath=string(relPathFig,"/cHALEwing_dynamic_lambda",λ,"_U",U,"_k2",k2,".gif"),displayProgress=true)
 display(anim)
 
 println("Finished cHALEwing_dynamic.jl")

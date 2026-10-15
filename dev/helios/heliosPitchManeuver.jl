@@ -231,7 +231,7 @@ end
 display(plt_cma)
 
 # Snapshots
-plt_snap = plot_snapshots(dynamicProblem[1,1],refBasis="I",scale=1,plotBCs=false,plotDistLoads=false,plotAxes=true,plotGrid=true,view=(120,15),snapshots=[0,5,10,20,30,60],plotLimits=([-50,50],[-5,800],[-50,5]),save=true,savePath=string(relPath,"/heliosPitchManeuver_P",round(P),"_delta",round(Int,Δδ*180/pi),"_snapshots.pdf"))
+plt_snap = plot_snapshots(dynamicProblem[1,1],scale=1,plotBCs=false,plotDistLoads=false,plotAxes=true,plotGrid=true,view=(120,15),snapshots=[0,5,10,20,30,60],plotLimits=([-50,50],[-5,800],[-50,5]),save=true,savePath=string(relPath,"/heliosPitchManeuver_P",round(P),"_delta",round(Int,Δδ*180/pi),"_snapshots.pdf"))
 display(plt_snap)
 gr()
 
@@ -249,13 +249,13 @@ if saveFigures
 end
 
 # Animations
-anim_af = plot_dynamic_deformation(dynamicProblem[1,1],refBasis="I",followAssembly=true,view=(60,15),plotDistLoads=false,plotFrequency=4,plotLimits=([-40,40],[-40,40],[-80,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_attached_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
+anim_af = plot_dynamic_deformation(dynamicProblem[1,1],follow=:basisA,view=(60,15),plotDistLoads=false,plotFrequency=4,plotLimits=([-40,40],[-40,40],[-80,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_attached_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
 display(anim_af)
 
-anim_ds = plot_dynamic_deformation(dynamicProblem[2,1],refBasis="I",followAssembly=true,view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-40,40],[-250,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_ds_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
+anim_ds = plot_dynamic_deformation(dynamicProblem[2,1],follow=:basisA,view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-40,40],[-250,10]),save=saveFigures,savePath=string(relPath,"/heliosPitchManeuver_ds_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
 display(anim_ds)
 
-anim_both = plot_dynamic_deformations(dynamicProblem[:,1],refBasis="I",followAssembly=true,view=(60,15),plotFrequency=10,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[-5,190],[-200,10]),legendEntries=["Attached flow", "Dynamic stall"],legendPos=(0.1,0.75),save=true,savePath=string(relPath,"/heliosPitchManeuver_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
+anim_both = plot_dynamic_deformations(dynamicProblem[:,1],follow=:basisA,view=(60,15),plotFrequency=10,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[-5,190],[-200,10]),legendEntries=["Attached flow", "Dynamic stall"],legendPos=(0.1,0.75),save=true,savePath=string(relPath,"/heliosPitchManeuver_elastic_P",round(P),"_delta",round(Int,Δδ*180/pi),".gif"),displayProgress=true)
 display(anim_both)
 
 println("Finished heliosPitchManeuver.jl")

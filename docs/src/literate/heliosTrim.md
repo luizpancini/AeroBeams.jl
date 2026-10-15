@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/heliosTrim.jl"
+EditURL = "../../../test/examples/trimAeroelastic/heliosTrim.jl"
 ```
 
 # Trimming a flying-wing HALE
@@ -12,16 +12,13 @@ This example illustrates how to set up a trim analysis of an aircraft in free fl
 *Flying-wing properties* by [Patil and Hodges](https://doi.org/10.2514/1.17640)
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/heliosTrim.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/trimAeroelastic/heliosTrim.jl).
 
 ### Problem setup
 Let's begin by setting up the variables of our problem. We select the airfoil for the wing, and the optional flags to include the vertical beam pods and of setting the payload on the wing. Our set up matches that of [Patil and Hodges](https://doi.org/10.2514/1.17640). We will investigate the longitudinal trim of the aircraft at both rigid and elastic (nominal) configurations, using the payload at the center station as the varying parameter.
 
 ````@example heliosTrim
-using AeroBeams, DelimitedFiles
-
-# Wing airfoil
-wingAirfoil = deepcopy(HeliosWingAirfoil)
+using AeroBeams
 
 # Flag to include beam pods
 beamPods = true
@@ -32,16 +29,16 @@ payloadOnWing = false
 # Aerodynamic solver
 aeroSolver = Indicial()
 
-# Set NR system solver
-relaxFactor = 0.5
-pseudoInverseMethod = :dampedLeastSquares
-NR = create_NewtonRaphson(ρ=relaxFactor,pseudoInverseMethod=pseudoInverseMethod)
+# System solver
+NR = create_NewtonRaphson(absTol=1e-6,relTol=1e-6,trimSolverMethod=:LM)
 
-# Airspeed (40 ft/s) [m]
-U = 40*0.3048
+# Airspeed [m/s]
+U = feet2meters(40)
 
-# Set stiffness factor and payload ranges
+# Stiffness factor range
 λRange = [1,50]
+
+# Payload range [lb]
 PRange = collect(0:20:500)
 
 # Initialize outputs
@@ -61,16 +58,18 @@ for (i,λ) in enumerate(λRange)
     # Sweep payload
     for (j,P) in enumerate(PRange)
         # Model
-        helios,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,wingAirfoil=wingAirfoil,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
-        # Set initial guess solution as previous known solution
-        x0 = (j==1) ? zeros(0) : problem[i,j-1].x
+        helios,midSpanElem,_ = create_Helios(aeroSolver=aeroSolver,beamPods=beamPods,payloadOnWing=payloadOnWing,stiffnessFactor=λ,payloadPounds=P,airspeed=U,δIsTrimVariable=true,thrustIsTrimVariable=true)
+        # Initial guess for the trim problem
+        x0 = j==1 ? zeros(0) : problem[i,j-1].systemArrays.x
         # Create and solve trim problem
         problem[i,j] = create_TrimProblem(model=helios,systemSolver=NR,x0=x0)
         solve!(problem[i,j])
         # Trim results
-        trimAoA[i,j] = problem[i,j].aeroVariablesOverσ[end][midSpanElem].flowAnglesAndRates.αₑ*180/π
-        trimThrust[i,j] = problem[i,j].x[end-1]*problem[i,j].model.forceScaling
-        trimδ[i,j] = problem[i,j].x[end]*180/π
+        trimSol = problem[i,j].trimSolution
+        aeroVars = problem[i,j].loadstepHistory.aeroVariables
+        trimAoA[i,j] = rad2deg(aeroVars[end][midSpanElem].unsteadyKin.αₑ)
+        trimThrust[i,j] = trimSol.trimLoads[1]
+        trimδ[i,j] = rad2deg(trimSol.trimδ[1])
     end
 end
 nothing #hide
@@ -93,22 +92,26 @@ We now plot the trim outputs as functions of the payload, for both rigid and ela
 
 ````@example heliosTrim
 # Plot configurations
-using Plots, ColorSchemes
-gr()
 ENV["GKSwstype"] = "100" #hide
-colors = get(colorschemes[:rainbow], LinRange(0, 1, length(λRange)))
+colors = cgrad(:rainbow, length(λRange), categorical=true)
 labels = ["Flexible" "Rigid"]
 lw = 2
 ms = 3
 msw = 0
+ts = 10
+fs = 16
+gr()
 nothing #hide
 
 # Trim root angle of attack
-plt1 = plot(xlabel="Payload [lb]", ylabel="Trim root AoA [deg]", xlims=[0,500], ylims=[0,5])
+plt1 = plot(xlabel="Payload [lb]", ylabel="Trim root AoA [deg]", xlims=[0,500], ylims=[0,5], tickfont=font(ts), guidefont=font(fs), legend=:bottomleft, legendfontsize=12)
 plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
 scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")
 for (i,λ) in enumerate(λRange)
-    plot!(PRange, trimAoA[i,:], c=colors[i], lw=lw, label=labels[i])
+    plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
+end
+for (i,λ) in enumerate(λRange)
+    plot!(PRange, trimAoA[i,:], c=colors[i], lw=lw, label=false)
     if i==1
         scatter!(αFlexibleRef[1,:], αFlexibleRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
     else
@@ -118,11 +121,9 @@ end
 savefig("heliosTrim_AoA.svg") #hide
 
 # Trim elevator deflection
-plt2 = plot(xlabel="Payload [lb]", ylabel="Trim elevator deflection [deg]", xlims=[0,500], ylims=[0,10])
-plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")
+plt2 = plot(xlabel="Payload [lb]", ylabel="Trim elevator deflection [deg]", xlims=[0,500], ylims=[0,8], tickfont=font(ts), guidefont=font(fs))
 for (i,λ) in enumerate(λRange)
-    plot!(PRange, trimδ[i,:], c=colors[i], lw=lw, label=labels[i])
+    plot!(PRange, trimδ[i,:], c=colors[i], lw=lw, label=false)
     if i==1
         scatter!(δFlexibleRef[1,:], δFlexibleRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
     else
@@ -132,11 +133,9 @@ end
 savefig("heliosTrim_delta.svg") #hide
 
 # Trim thrust per motor
-plt3 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500], ylims=[0,60])
-plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
-scatter!([NaN], [NaN], c=:black, ms=ms, label="Patil & Hodges (2006)")
+plt3 = plot(xlabel="Payload [lb]", ylabel="Trim thrust per motor [N]", xlims=[0,500], ylims=[0,40], tickfont=font(ts), guidefont=font(fs))
 for (i,λ) in enumerate(λRange)
-    plot!(PRange, trimThrust[i,:], c=colors[i], lw=lw, label=labels[i])
+    plot!(PRange, trimThrust[i,:], c=colors[i], lw=lw, label=false)
     scatter!(TRef[1,:], TRef[2,:], c=colors[i], ms=ms, msw=msw, label=false)
 end
 savefig("heliosTrim_thrust.svg") #hide

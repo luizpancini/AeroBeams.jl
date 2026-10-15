@@ -1,27 +1,75 @@
+## LINKS COMPOSITE TYPES
+# ------------------------------------------------------------------------------
+# TrimLoadsLink master and slave composite type
+# Fields
+# - `masterBC`: master BC
+# - `masterBeam`: master beam
+# - `slaveBCs`: slave BCs
+# - `slaveBeams`: slave beams
 #
-# @with_kw mutable struct TrimLoadsLink
+struct TrimLoadsLinkMasterAndSlave
 
-# TrimLoadsLink composite type
-
-#
-@with_kw mutable struct TrimLoadsLink
-
-    # Primary fields (inputs)
     masterBC::BC
-    slaveBCs::Vector{BC}
-    # Secondary fields (outputs)
     masterBeam::Beam
-    masterNodeLocalID::Int
+
+    slaveBCs::Vector{BC}
     slaveBeams::Vector{Beam}
-    slaveNodesLocalIDs::Vector{Int}
-    masterNodeGlobalID::Int
-    slaveNodesGlobalIDs::Vector{Int}
 
 end
 
 
+# TrimLoadsLink assembly data composite type
+# Fields
+# - `masterNodeGlobalID`: global ID of the master node
+# - `slaveNodesGlobalIDs`: global IDs of the slave nodes
+#
+struct TrimLoadsLinkAssemblyData
+
+    masterNodeGlobalID::Int
+    slaveNodesGlobalIDs::Vector{Int}
+
+end
+TrimLoadsLinkAssemblyData() = TrimLoadsLinkAssemblyData(
+    0, zeros(Int,0)
+)
+
+
+# TrimLoadsLink composite type
+# Fields
+# - `masterAndSlave`: master and slave data for the trim loads link
+# - `assemblyData`: assembly data for the trim loads link
+#
+@with_kw mutable struct TrimLoadsLink
+
+    # Definition fields
+    masterAndSlave::TrimLoadsLinkMasterAndSlave
+
+    # Assembly-dependent field (to be set by Model)
+    assemblyData::TrimLoadsLinkAssemblyData = TrimLoadsLinkAssemblyData()
+
+end
+
+
+# FlapLink composite type
+# Fields
+# - `masterBeam`: master beam
+# - `slaveBeams`: slave beams
+# - `δMultipliers`: multiplication factors of flap deflection in slave surfaces relative to the master surface
+#
+@with_kw struct FlapLink
+
+    # Definition fields (inputs for FlapLink creation)
+    masterBeam::Beam
+    slaveBeams::Vector{Beam}
+    δMultipliers::Vector{Float64}
+
+end
+
+
+## PUBLIC API
+# ------------------------------------------------------------------------------
 """
-    create_TrimLoadsLink(; masterBC::BC,slaveBCs::Vector{BC})
+    create_TrimLoadsLink(; kwargs...)
 
 Trim loads link constructor (a link between trim loads so that they are equal)
 
@@ -29,51 +77,39 @@ Trim loads link constructor (a link between trim loads so that they are equal)
 - `masterBC::BC`: master BC
 - `slaveBCs::Vector{BC}`: slave BCs
 """
-function create_TrimLoadsLink(; masterBC::BC,slaveBCs::Vector{BC})
-
-    # Get BCs information
-    masterBeam = masterBC.beam
-    masterNodeLocalID = masterBC.node
-    slaveBeams = [BC.beam for BC in slaveBCs]
-    slaveNodesLocalIDs = [BC.node for BC in slaveBCs]
+function create_TrimLoadsLink(; 
+    masterBC::BC,
+    slaveBCs::Vector{BC}
+    )
 
     # Validate
-    validLoadTypes = ["F1A","F2A","F3A","M1A","M2A","M3A","F1b","F2b","F3b","M1b","M2b","M3b","Ff1A","Ff2A","Ff3A","Mf1A","Mf2A","Mf3A","Ff1b","Ff2b","Ff3b","Mf1b","Mf2b","Mf3b"]
-    for masterLoadType in masterBC.types
-        @assert masterLoadType in validLoadTypes "invalid load type for master load BC"
+    validLoadTypes = [:F1A,:F2A,:F3A,:M1A,:M2A,:M3A,:F1b,:F2b,:F3b,:M1b,:M2b,:M3b,:Ff1A,:Ff2A,:Ff3A,:Mf1A,:Mf2A,:Mf3A,:Ff1b,:Ff2b,:Ff3b,:Mf1b,:Mf2b,:Mf3b]
+    for masterLoadType in masterBC.definition.types
+        @assert masterLoadType in validLoadTypes "invalid load type for masterBC, must be one of: $(validLoadTypes)"
     end
-    for slaveBC in slaveBCs
-        @assert length(slaveBC.types) == length(masterBC.types) "set one slave BC type for each master BC type"
-        for slaveLoadType in slaveBC.types
-            @assert slaveLoadType in validLoadTypes "invalid load type for slave load BC"
+    for (i, slaveBC) in enumerate(slaveBCs)
+        for (j, type) in enumerate(slaveBC.definition.types)
+            @assert type == masterBC.definition.types[j] "slaveBC $(i) types do not match masterBC's"
         end
     end
-    @assert any(masterBC.isTrim) "master load BC does not contain any trim loads"
-    for slaveBC in slaveBCs
-        @assert any(slaveBC.isTrim) "slave load BC does not contain any trim loads"
+    @assert any(masterBC.deducedData.isTrim) "masterBC does not contain any trim loads"
+    for (i, slaveBC) in enumerate(slaveBCs)
+        @assert slaveBC.deducedData.isTrim == masterBC.deducedData.isTrim "slaveBC $(i) isTrim flags do not match masterBC's"
     end
 
-    # Global IDs are updated upon assembly of the model
+    # Get beams from BCs
+    masterBeam = masterBC.definition.beam
+    slaveBeams = [BC.definition.beam for BC in slaveBCs]
 
-    return TrimLoadsLink(masterBC,slaveBCs,masterBeam,masterNodeLocalID,slaveBeams,slaveNodesLocalIDs,0,Vector{Int}())
+    # Set master and slave data
+    masterAndSlave = TrimLoadsLinkMasterAndSlave(masterBC,masterBeam,slaveBCs,slaveBeams)
+
+    return TrimLoadsLink(
+        masterAndSlave=masterAndSlave,
+        )
 
 end
 export create_TrimLoadsLink
-
-
-#
-# @with_kw mutable struct FlapLink
-
-#     FlapLink composite type
-    
-#
-@with_kw mutable struct FlapLink
-
-    masterBeam::Beam
-    slaveBeams::Vector{Beam}
-    δMultipliers::Vector{<:Real}
-
-end
 
 
 """
@@ -86,19 +122,30 @@ Flap link constructor (a link between flapped surfaces)
 - `slaveBeams::Vector{Beam}`: beams of the slave surfaces
 - `δMultipliers::Vector{<:Real}`: multiplication factors of flap deflection in slave surfaces relative to the master surface
 """
-function create_FlapLink(; masterBeam::Beam,slaveBeams::Vector{Beam},δMultipliers::Vector{<:Real}=ones(length(slaveBeams)))
+function create_FlapLink(; 
+    masterBeam::Beam,
+    slaveBeams::Vector{Beam},
+    δMultipliers::Vector{<:Real}=ones(length(slaveBeams))
+    )
 
     # Validate 
-    @assert !isnothing(masterBeam.aeroSurface) "master beam has no aerodynamic surface"
-    @assert !isnothing(masterBeam.aeroSurface.normFlapSpan) "master beam's aerodynamic surface has no flap"
+    @assert !isnothing(masterBeam.attachments.surface) "master beam has no aerodynamic surface"
+    @assert !isnothing(masterBeam.attachments.surface.geometry.normFlapSpan) "master beam's aerodynamic surface has no flap"
     for beam in slaveBeams
         @assert beam !== masterBeam "beam set as both slave and master"
-        @assert !isnothing(beam.aeroSurface) "slave beam has no aerodynamic surface"
-        @assert !isnothing(beam.aeroSurface.normFlapSpan) "slave beam's aerodynamic surface has no flap"
+        @assert !isnothing(beam.attachments.surface) "slave beam has no aerodynamic surface"
+        @assert !isnothing(beam.attachments.surface.geometry.normFlapSpan) "slave beam's aerodynamic surface has no flap"
     end
     @assert length(δMultipliers) == length(slaveBeams) "specify one deflection multiplier for each slave surface"
 
-    return FlapLink(masterBeam,slaveBeams,δMultipliers)
+    # Set correct type
+    δMultipliers = Float64.(δMultipliers)
+
+    return FlapLink(
+        masterBeam,
+        slaveBeams,
+        δMultipliers
+        )
 
 end
 export create_FlapLink

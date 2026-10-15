@@ -35,7 +35,7 @@ NR = create_NewtonRaphson(ρ=relaxFactor,maximumIterations=maxIter,pseudoInverse
 URange = collect(20:1:35)
 
 # Dummy model
-model,leftWing,rightWing,_ = create_conventional_HALE(aeroSolver=aeroSolver,altitude=h,stiffnessFactor=1,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,airspeed=20)
+model,leftWing,rightWing,_ = create_cHALE(aeroSolver=aeroSolver,altitude=h,stiffnessFactor=1,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,airspeed=20)
 
 # Get element ranges and nodal arclength positions of right wing
 x1_0 = vcat([vcat(rightWing.elements[e].r_n1[1],rightWing.elements[e].r_n2[1]) for e in 1:rightWing.nElements]...)
@@ -55,7 +55,7 @@ for (i,λ) in enumerate(λRange)
         # Display progress
         println("Trimming for λ = $λ, U = $U m/s")
         # Model
-        model,_ = create_conventional_HALE(aeroSolver=aeroSolver,altitude=h,stiffnessFactor=λ,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,airspeed=U)
+        model,_ = create_cHALE(aeroSolver=aeroSolver,altitude=h,stiffnessFactor=λ,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,airspeed=U)
         # Set initial guess solution as previous known solution
         x0 = j == 1 ? zeros(0) : trimProblem[i,j-1].x
         # Create and solve trim problem
@@ -70,9 +70,9 @@ for (i,λ) in enumerate(λRange)
 end
 
 # Load reference solutions
-trimAoAERef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/conventionalHALE/trimAoAVsAirspeedElastic.txt")
-trimAoARRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/conventionalHALE/trimAoAVsAirspeedRigid.txt")
-trimDispRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/conventionalHALE/trimDispAtU25.txt")
+trimAoAERef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/cHALE/trimAoAVsAirspeedElastic.txt")
+trimAoARRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/cHALE/trimAoAVsAirspeedRigid.txt")
+trimDispRef = readdlm(pkgdir(AeroBeams)*"/test/referenceData/cHALE/trimDispAtU25.txt")
 
 using Plots, ColorSchemes
 

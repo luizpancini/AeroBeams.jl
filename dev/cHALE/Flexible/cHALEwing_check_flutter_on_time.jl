@@ -65,7 +65,7 @@ x3_def = Array{Vector{Float64}}(undef,length(URange))
 for (j,U) in enumerate(URange)
     println("Solving for U = $U m/s")
     # Model for trim problem
-    cHALEtrim,_,_,tailBoom,_ = create_conventional_HALE(aeroSolver=aeroSolver,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag,altitude=h)
+    cHALEtrim,_,_,tailBoom,_ = create_cHALE(aeroSolver=aeroSolver,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag,altitude=h)
     # Set initial guess solution as previous known solution
     x0Trim = j == 1 ? zeros(0) : trimProblem[j-1].x
     # Create and trim problem
@@ -170,7 +170,7 @@ for (ind,j) in enumerate(indicesFlutterOnset)
         )
     )
     # Model for dynamic problem
-    cHALEdynamic,_ = create_conventional_HALE(aeroSolver=aeroSolver,altitude=h,airspeed=URange[j],nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,δElev=δ,thrust=trimThrust[j])
+    cHALEdynamic,_ = create_cHALE(aeroSolver=aeroSolver,altitude=h,airspeed=URange[j],nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,hasInducedDrag=hasInducedDrag,k2=k2,δElev=δ,thrust=trimThrust[j])
     # Create and solve dynamic problem
     dynamicProblem[ind] = create_DynamicProblem(model=cHALEdynamic,x0=trimProblem[j].x[1:end-2],finalTime=tf,Δt=Δt,skipInitialStatesUpdate=true)
     solve!(dynamicProblem[ind])

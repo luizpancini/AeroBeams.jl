@@ -1,44 +1,27 @@
+## ATMOSPHERE COMPOSITE TYPE
+# ------------------------------------------------------------------------------
+# Atmosphere composite type
+# Fields:
+# - `altitude::Float64`: altitude
+# - `ρ::Float64`: air density
+# - `μ::Float64`: dynamic viscosity
+# - `a::Float64`: speed of sound
+# - `g::Float64`: acceleration of gravity
 #
+@with_kw struct Atmosphere
 
-    # Atmosphere composite type
-
-#
-@with_kw mutable struct Atmosphere
-
-    ρ::Real = 1.225
-    μ::Real = 1.7894e-5
-    a::Real = 340.3
-    g::Real = 9.80665
+    altitude::Float64 = 0.0
+    ρ::Float64 = 1.225
+    μ::Float64 = 1.7894e-5
+    a::Float64 = 340.3
+    g::Float64 = 9.80665
 
 end
 export Atmosphere
 
 
-# Calculates air properties from given pressure and temperature
-function air_properties_from_pressure_and_temperature(p::Real,T::Real,R::Real=287.05864074988347,γ::Real=1.4,β::Real=1.458e-6,S::Real=110.4)
-
-    # Check inputs
-    @assert p > 0
-    @assert T > 0
-    @assert R > 0
-    @assert γ > 0
-    @assert β > 0
-    @assert S > 0
-
-    # Density [kg/m^3]
-    ρ = p/(R*T)
-
-    # Dynamic viscosity [Pa.s] 
-    μ = β/(T+S)*T^(3/2)
-
-    # Sound speed [m/s]
-    a = sqrt(γ*R*T)
-
-    return ρ,μ,a
-
-end
-
-
+## PUBLIC API
+# ------------------------------------------------------------------------------
 """
     standard_atmosphere(altitude::Real)
 
@@ -50,11 +33,10 @@ Atmosphere constructor based on the International Standard Atmosphere (https://e
 function standard_atmosphere(altitude::Real)
 
     # Check altitude
-    if altitude > 47e3
-        error("Cannot calculate ISA for an altitude greater than 47 km")
-    end
+    @assert altitude >= 0 "altitude must be non-negative"
+    @assert altitude <= 47e3 "cannot calculate ISA for an altitude greater than 47 km"
 
-    # Mean-sea-level values
+    # Mean sea-level values
     #---------------------------------------------------------------------------
     # Pressure [Pa]
     p₀ = 101325
@@ -104,12 +86,47 @@ function standard_atmosphere(altitude::Real)
     end
     
     # Corresponding air density, sound speed and dynamic viscosity
-    ρ,μ,a = air_properties_from_pressure_and_temperature(p,T)
+    ρ,μ,a = air_properties_from_pressure_and_temperature(p,T,R,γ,β,S)
 
-    # Set atmosphere
-    atmosphere = Atmosphere(ρ,μ,a,g)
-
-    return atmosphere
+    return Atmosphere(altitude=altitude,ρ=ρ,μ=μ,a=a,g=g)
 
 end
 export standard_atmosphere
+
+
+"""
+    air_properties_from_pressure_and_temperature(p::Real,T::Real,R::Real,γ::Real,β::Real,S::Real)
+
+Calculates air properties from given pressure and temperature.
+
+# Arguments
+- `p::Real`: pressure
+- `T::Real`: temperature
+- `R::Real`: specific gas constant of air (default: 287.05864074988347)
+- `γ::Real`: specific heat ratio (default: 1.4)
+- `β::Real`: Sutherland's law constant (default: 1.458e-6)
+- `S::Real`: Sutherland's law constant (default: 110.4)
+
+# Returns
+- `ρ::Float64`: air density
+- `μ::Float64`: dynamic viscosity
+- `a::Float64`: speed of sound
+"""
+function air_properties_from_pressure_and_temperature(p::Real,T::Real,R::Real=287.05864074988347,γ::Real=1.4,β::Real=1.458e-6,S::Real=110.4)
+
+    # Check inputs
+    @assert all(x -> x>0, (p,T,R,γ,β,S)) "all inputs must be positive real numbers"
+
+    # Density
+    ρ = p/(R*T)
+
+    # Dynamic viscosity
+    μ = β/(T+S)*T^(3/2)
+
+    # Sound speed
+    a = sqrt(γ*R*T)
+
+    return ρ,μ,a
+
+end
+export air_properties_from_pressure_and_temperature
