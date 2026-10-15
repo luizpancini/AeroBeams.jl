@@ -8,7 +8,6 @@ using Parameters
 using Plots
 using PrettyTables
 using Random
-using Revise
 using SparseArrays
 using StaticArrays
 
