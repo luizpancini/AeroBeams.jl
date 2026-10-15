@@ -1,0 +1,45 @@
+name: Register
+# Requests a new release from JuliaRegistrator whenever the version in Project.toml changes on main.
+# TagBot (see TagBot.yml) then creates the tag/release after the General registry merges it.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Project.toml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Decide whether to register
+        id: check
+        run: |
+          new=$(grep -m1 '^version' Project.toml | cut -d'"' -f2)
+          old=$(git show HEAD^:Project.toml 2>/dev/null | grep -m1 '^version' | cut -d'"' -f2 || true)
+          echo "version=$new" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$new" != "$old" ]; then
+            if git ls-remote --exit-code --tags origin "refs/tags/v$new" >/dev/null 2>&1; then
+              echo "Tag v$new already exists; nothing to do."
+              echo "register=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "register=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "Version unchanged ($new); nothing to do."
+            echo "register=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Ask JuliaRegistrator to register v${{ steps.check.outputs.version }}
+        if: steps.check.outputs.register == 'true'
+        env:
+          # Personal access token (classic: public_repo, or fine-grained: Contents read/write) of a repo
+          # collaborator. Comments made with the default GITHUB_TOKEN are not accepted by Registrator.
+          GH_TOKEN: ${{ secrets.REGISTRATOR_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body='@JuliaRegistrator register'
