@@ -53,7 +53,7 @@ include("Visualization.jl")
 include("Utilities.jl")
 
 # ColorSchemes exports
-export cgrad
+export cgrad, palette
 
 # DelimitedFiles exports
 export readdlm, writedlm
