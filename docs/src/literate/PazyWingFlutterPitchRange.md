@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/PazyWingFlutterPitchRange.jl"
+EditURL = "../../../test/examples/eigenAeroelastic/PazyWingFlutterPitchRange.jl"
 ```
 
 # Flutter analysis of the Pazy wing
@@ -10,19 +10,25 @@ This example illustrates how to set up a flutter (eigen) analysis, using the Tec
 *Pazy wing in the wind tunnel* by [Avin et al.](https://doi.org/10.2514/1.J060621)
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/PazyWingFlutterPitchRange.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/eigenAeroelastic/PazyWingFlutterPitchRange.jl).
 
 ### Problem setup
 Let's begin by setting the variables of our problem. In this example we will analyze the flutter onset and offset boundaries of the clamped wing under several root pitch angles, defined by the array `θRange`.
 
 ````@example PazyWingFlutterPitchRange
-using AeroBeams, LinearInterpolations, DelimitedFiles
+using AeroBeams
+
+# Pitch angle range [rad]
+θRange = unique([vcat(0:0.25:1)...,vcat(1:0.5:7)...])
+
+# Airspeed range [m/s]
+URange = vcat(1e-3,1:1:120)
 
 # Aerodynamic solver
 aeroSolver = Indicial()
 
 # Airfoil section
-airfoil = deepcopy(flatPlate)
+airfoil = deepcopy(FlatPlate)
 
 # Flag for tip correction
 hasTipCorrection = true
@@ -42,31 +48,28 @@ smallAngles = true
 # Fixed geometrical and discretization properties
 nElem,L,chord,normSparPos = geometrical_properties_Pazy()
 
-# Set system solver options
-σ0 = 0.5
-σstep = 0.5
-NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep)
+# Number of modes to track
+nModes = 5
 
-# Number of vibration modes
-nModes = 3
-
-# Set pitch angle and airspeed ranges
-θRange = unique([vcat(0:0.25:1)...,vcat(1:0.5:7)...])
-URange = collect(0:1:120)
+# Eigensolver method and minimum number of eigenvalues to be computed
+eigenmethod = :krylovkit
+nev = 90
 
 # Initialize outputs
-untrackedFreqs = Array{Vector{Float64}}(undef,length(θRange),length(URange))
-untrackedDamps = Array{Vector{Float64}}(undef,length(θRange),length(URange))
-untrackedEigenvectors = Array{Matrix{ComplexF64}}(undef,length(θRange),length(URange))
-freqs = Array{Vector{Float64}}(undef,length(θRange),length(URange))
-damps = Array{Vector{Float64}}(undef,length(θRange),length(URange))
+eigensols = Array{EigenSolution}(undef,length(θRange),length(URange))
 tip_OOP = Array{Float64}(undef,length(θRange),length(URange))
-flutterOnsetSpeedsOfMode = Array{Vector{Float64}}(undef,length(θRange),nModes)
-flutterOnsetFreqsOfMode = Array{Vector{Float64}}(undef,length(θRange),nModes)
-flutterOnsetDispOfMode = Array{Vector{Float64}}(undef,length(θRange),nModes)
-flutterOffsetSpeedsOfMode = Array{Vector{Float64}}(undef,length(θRange),nModes)
-flutterOffsetFreqsOfMode = Array{Vector{Float64}}(undef,length(θRange),nModes)
-flutterOffsetDispOfMode = Array{Vector{Float64}}(undef,length(θRange),nModes)
+freqsOsc = Array{Matrix{Float64}}(undef,length(θRange))
+dampsOsc = Array{Matrix{Float64}}(undef,length(θRange))
+freqsNonOsc = Array{Matrix{Float64}}(undef,length(θRange))
+dampsNonOsc = Array{Matrix{Float64}}(undef,length(θRange))
+flutterOnsetSpeeds = Array{Vector{Float64}}(undef,length(θRange))
+flutterOnsetFreqs = Array{Vector{Float64}}(undef,length(θRange))
+flutterOnsetModes = Array{Vector{Int}}(undef,length(θRange))
+flutterOnsetDisp = Array{Vector{Float64}}(undef,length(θRange))
+flutterOffsetSpeeds = Array{Vector{Float64}}(undef,length(θRange))
+flutterOffsetFreqs = Array{Vector{Float64}}(undef,length(θRange))
+flutterOffsetModes = Array{Vector{Int}}(undef,length(θRange))
+flutterOffsetDisp = Array{Vector{Float64}}(undef,length(θRange))
 nothing #hide
 ````
 
@@ -76,73 +79,32 @@ In the following loops, we create new model instances with the combination of pi
 ````@example PazyWingFlutterPitchRange
 # Sweep root angle
 for (i,θ) in enumerate(θRange)
+    # Initialize guess solution
+    x0 = zeros(0)
     # Sweep airspeed
     for (j,U) in enumerate(URange)
         # Model
-        PazyWingFlutterPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,upright=upright,θ=θ*π/180,airspeed=U,g=g,smallAngles=smallAngles)
+        PazyWingFlutterPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,upright=upright,pitchAngle=deg2rad(θ),airspeed=U,gravityVector=[0,0,-g],smallAngles=smallAngles)
         # Create and solve problem
-        problem = create_EigenProblem(model=PazyWingFlutterPitchRange,nModes=nModes,systemSolver=NR)
+        problem = create_EigenProblem(model=PazyWingFlutterPitchRange,eigenmethod=eigenmethod,nev=nev,x0=x0)
         solve!(problem)
-        # Frequencies, dampings and eigenvectors
-        untrackedFreqs[i,j] = problem.frequenciesOscillatory
-        untrackedDamps[i,j] = round_off!(problem.dampingsOscillatory,1e-8)
-        untrackedEigenvectors[i,j] = problem.eigenvectorsOscillatoryCplx
-        # Get OOP displacement at midchord
-        tip_p = problem.nodalStatesOverσ[end][nElem].p_n2_b
-        R,_ = rotation_tensor_WM(tip_p)
-        Δ = R*[0; 1; 0]
-        tip_twist = asind(Δ[3])
-        tip_OOP[i,j] = -(problem.nodalStatesOverσ[end][nElem].u_n2[1] - chord*(1/2-normSparPos)*sind(tip_twist))
+        # Tip OOP displacement at midchord
+        states = problem.loadstepHistory.states
+        tipTwist = twist_angle(states[end][nElem].nodal.p2_b, outputUnit=:deg)
+        tip_OOP[i,j] = -(states[end][nElem].nodal.u2[1] - chord*(1/2-normSparPos)*sind(tipTwist))/L*100
+        # Eigensolution
+        eigensols[i,j] = problem.eigensolution
+        # Set initial guess solution for next iteration
+        x0 = problem.systemArrays.x
     end
     # Apply mode tracking
-    freqs[i,:],damps[i,:],_ = mode_tracking(URange,untrackedFreqs[i,:],untrackedDamps[i,:],untrackedEigenvectors[i,:])
-    # Separate frequencies and damping ratios by mode
-    modeFrequencies = Array{Vector{Float64}}(undef,nModes)
-    modeDampings = Array{Vector{Float64}}(undef,nModes)
-    modeDampingRatios = Array{Vector{Float64}}(undef,nModes)
-    for mode in 1:nModes
-        modeFrequencies[mode] = [freqs[i,j][mode] for j in eachindex(URange)]
-        modeDampings[mode] = [damps[i,j][mode] for j in eachindex(URange)]
-        modeDampingRatios[mode] = modeDampings[mode]./modeFrequencies[mode]
-    end
-    # Loop over modes: compute flutter onset and offset speeds, respective frequencies and OOP displacements
-    for mode in 1:nModes
-        # Find flutter onset indices
-        onsetIndices = findall((modeDampings[mode][2:end] .> 0) .& (modeDampings[mode][1:end-1] .< 0)) .+ 1
-        nIndOn = length(onsetIndices)
-        # Loop flutter onset indices
-        flutterOnsetSpeeds,flutterOnsetFreqs,flutterOnsetDisp = Vector{Float64}(undef,nIndOn),Vector{Float64}(undef,nIndOn),Vector{Float64}(undef,nIndOn)
-        for (n,k) in enumerate(onsetIndices)
-            flutterOnsetSpeeds[n] = LinearInterpolations.interpolate(modeDampings[mode][k-1:k],URange[k-1:k],0)
-            flutterOnsetFreqs[n] = LinearInterpolations.interpolate(modeDampings[mode][k-1:k],modeFrequencies[mode][k-1:k],0)
-            flutterOnsetDisp[n] = LinearInterpolations.interpolate(modeDampings[mode][k-1:k],tip_OOP[i,k-1:k]/L*100,0)
-        end
-        if nIndOn == 0
-            flutterOnsetSpeeds,flutterOnsetFreqs,flutterOnsetDisp = [NaN],[NaN],[NaN]
-        end
-        # Set flutter onset variables for current mode
-        flutterOnsetSpeedsOfMode[i,mode] = flutterOnsetSpeeds
-        flutterOnsetFreqsOfMode[i,mode] = flutterOnsetFreqs
-        flutterOnsetDispOfMode[i,mode] = flutterOnsetDisp
-        # Find flutter offset indices
-        offsetIndices = findall((modeDampings[mode][2:end] .< 0) .& (modeDampings[mode][1:end-1] .> 0)) .+ 1
-        nIndOff = length(offsetIndices)
-        # Find flutter offset variables
-        flutterOffsetSpeeds,flutterOffsetFreqs,flutterOffsetDisp = Vector{Float64}(undef,nIndOff),Vector{Float64}(undef,nIndOff),Vector{Float64}(undef,nIndOff)
-        # Loop flutter offset indices
-        for (n,k) in enumerate(offsetIndices)
-            flutterOffsetSpeeds[n] = LinearInterpolations.interpolate(-modeDampings[mode][k-1:k],URange[k-1:k],0)
-            flutterOffsetFreqs[n] = LinearInterpolations.interpolate(-modeDampings[mode][k-1:k],modeFrequencies[mode][k-1:k],0)
-            flutterOffsetDisp[n] = LinearInterpolations.interpolate(-modeDampings[mode][k-1:k],tip_OOP[i,k-1:k]/L*100,0)
-        end
-        if nIndOff == 0
-            flutterOffsetSpeeds,flutterOffsetFreqs,flutterOffsetDisp = [NaN],[NaN],[NaN]
-        end
-        # Set flutter offset variables for current mode
-        flutterOffsetSpeedsOfMode[i,mode] = flutterOffsetSpeeds
-        flutterOffsetFreqsOfMode[i,mode] = flutterOffsetFreqs
-        flutterOffsetDispOfMode[i,mode] = flutterOffsetDisp
-    end
+    freqs,damps,_ = mode_tracking(eigensols[i,:])
+    rads2Hz!(freqs)
+    # Get frequencies and dampings of oscillatory and non-oscillatory modes
+    freqsOsc[i],dampsOsc[i],_ = filter_tracked_modes(freqs,damps; fmin=1e-1, fmax=150, maxTracks=nModes)
+    freqsNonOsc[i],dampsNonOsc[i],_ = filter_tracked_modes(freqs,damps; fmin=0, fmax=0)
+    # Flutter onset and offset speeds, frequencies and tip OOP displacements
+    flutterOnsetSpeeds[i],flutterOnsetFreqs[i],flutterOnsetModes[i],flutterOnsetDisp[i],flutterOffsetSpeeds[i],flutterOffsetFreqs[i],flutterOffsetModes[i],flutterOffsetDisp[i] = find_flutter(URange,freqsOsc[i],dampsOsc[i],tip_OOP[i,:])
 end
 nothing #hide
 ````
@@ -152,14 +114,14 @@ Post-processing begins by loading the reference experimental data by [Drachinski
 
 ````@example PazyWingFlutterPitchRange
 # Load reference data
-rootPitchVelUp = [3; 5; 7]
-rootPitchVelDown = [3; 5]
-flutterOnsetVelUp = [49; 43; 38]
-flutterOffsetVelUp = [58; 51; 46]
-flutterOnsetVelDown = [55; 48]
-flutterOffsetVelDown = [40; 36]
-flutterOnsetDispUp = [23; 24.5; 26]
-flutterOnsetDispDown = [28.5; 31.5]
+rootPitchVelUp = [3, 5, 7]
+rootPitchVelDown = [3, 5]
+flutterOnsetVelUp = [49, 43, 38]
+flutterOffsetVelUp = [58, 51, 46]
+flutterOnsetVelDown = [55, 48]
+flutterOffsetVelDown = [40, 36]
+flutterOnsetDispUp = [23, 24.5, 26]
+flutterOnsetDispDown = [28.5, 31.5]
 flutterBoundaryDisp_UMNAST = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/flutterBoundaryDisp_UMNAST.txt")
 flutterBoundaryPitch_UMNAST = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/flutterBoundaryPitch_UMNAST.txt")
 flutterBoundaryDisp_UMNAST_PanelCoeffs = readdlm(pkgdir(AeroBeams)*"/test/referenceData/Pazy/flutterBoundaryDisp_UMNAST_PanelCoeffs.txt")
@@ -172,7 +134,6 @@ nothing #hide
 The Pazy wing is known from the tests of [Drachinski et al.](https://doi.org/10.2514/1.J061717) to have a hump flutter mode, that is, a mode that becomes unstable over a certain region of airspeeds. The size of this region is dependent on the root pitch angle of the wing. Let us now plot the flutter boundaries of this hump mode. There is good agreement with the experimental data, but notice that to capture the hysterysis on the flutter onset and offset we would need an analysis more complex than an eigenvalue one. The UM/NAST data by [Riso and Cesnik](https://doi.org/10.2514/6.2022-2313), [Riso and Cesnik](https://doi.org/10.1016/j.jfluidstructs.2023.103897) and the Sharpy results are also plotted for comparison.
 
 ````@example PazyWingFlutterPitchRange
-using Plots, ColorSchemes
 ts = 10
 fs = 16
 lfs = 9
@@ -183,18 +144,40 @@ msw = 0
 gr()
 ENV["GKSwstype"] = "100" #hide
 # Flutter onset and offset speeds vs root pitch angle
+# Extract flutter onset and offset data for the hump mode
 humpMode = 3
-x1 = [flutterOnsetSpeedsOfMode[i,humpMode][1] for i in eachindex(θRange)]
-x2 = [flutterOffsetSpeedsOfMode[i,humpMode][1] for i in eachindex(θRange)]
+UfOn = Float64[]
+UfOff = Float64[]
+ufOn = Float64[]
+ufOff = Float64[]
+for i in eachindex(θRange)
+    for m in eachindex(flutterOnsetModes[i])
+        if flutterOnsetModes[i][m] == humpMode
+            push!(UfOn, flutterOnsetSpeeds[i][m])
+            push!(ufOn, flutterOnsetDisp[i][m])
+            break
+        end
+    end
+    for m in eachindex(flutterOffsetModes[i])
+        if flutterOffsetModes[i][m] == humpMode
+            push!(UfOff, flutterOffsetSpeeds[i][m])
+            push!(ufOff, flutterOffsetDisp[i][m])
+            break
+        end
+    end
+end
+nothing #hide
+
+# Flutter onset and offset speeds vs root pitch angle
 plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Root pitch angle [deg]", xlims=[30,90], ylims=[0,7.25], xticks=collect(30:10:90), yticks=collect(0:1:7), legend=:topright, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
-plot!(Shape(vcat(x1,reverse(x2)),vcat(θRange,reverse(θRange))), fillcolor = plot_color(:red, 0.25), lw=lw, label="AeroBeams hump flutter region")
+plot!(Shape(vcat(UfOn,reverse(UfOff)),vcat(θRange,reverse(θRange))), fillcolor = plot_color(:red, 0.25), lw=lw, label="AeroBeams hump flutter region")
 scatter!(flutterOnsetVelUp, rootPitchVelUp, shape=:rtriangle, mc=:red, ms=ms, msw=msw, label="Test onset up")
 scatter!(flutterOffsetVelUp, rootPitchVelUp, shape=:rtriangle, mc=:green, ms=ms, msw=msw, label="Test offset up")
 scatter!(flutterOnsetVelDown, rootPitchVelDown, shape=:ltriangle, mc=:red, ms=ms, msw=msw, label="Test onset down")
 scatter!(flutterOffsetVelDown, rootPitchVelDown, shape=:ltriangle, mc=:green, ms=ms, msw=msw, label="Test offset down")
-plot!(flutterBoundaryPitch_UMNAST[1,:], flutterBoundaryPitch_UMNAST[2,:], c=:gold, ls=:dash, lw=lw, marker=:circle, ms=ms2, msw=msw, label="UM/NAST (Exp. loss)")
+plot!(flutterBoundaryPitch_UMNAST[1,:], flutterBoundaryPitch_UMNAST[2,:], c=:olive, ls=:dash, lw=lw, marker=:circle, ms=ms2, msw=msw, label="UM/NAST (Exp. loss)")
 plot!(flutterBoundaryPitch_UMNAST_PanelCoeffs[1,:], flutterBoundaryPitch_UMNAST_PanelCoeffs[2,:], c=:brown, ls=:dash, lw=lw, marker=:circle, ms=ms2, msw=msw, label="UM/NAST (Panel coeffs.)")
-plot!(flutterBoundary_UVsPitch_Lambda0_Sharpy[1,1:19], flutterBoundary_UVsPitch_Lambda0_Sharpy[2,1:19], c=:magenta, ls=:dash, lw=lw, marker=:diamond, ms=ms2, msw=msw, label="Sharpy")
+plot!(flutterBoundary_UVsPitch_Lambda0_Sharpy[1,1:19], flutterBoundary_UVsPitch_Lambda0_Sharpy[2,1:19], c=:magenta, ls=:dash, lw=lw, marker=:diamond, ms=ms2, msw=msw, label="Sharpy (VLM)")
 savefig("PazyWingFlutterPitchRange_flutterBoundaryPitch.svg") #hide
 nothing #hide
 
@@ -203,21 +186,17 @@ nothing #hide
 indθ2plot = findall(x -> any(isapprox(x, θ; atol=1e-10) for θ in θ2plot), θRange)
 θcolors = cgrad([:blue, :red], length(θ2plot), categorical=true)
 xθ = [ 5,  9, 12, 14, 16, 17.5]
-yθ = [60, 55, 48, 43, 38, 34]
-x1 = [flutterOnsetDispOfMode[i,humpMode][1] for i in eachindex(θRange)]
-x2 = [flutterOffsetDispOfMode[i,humpMode][1] for i in eachindex(θRange)]
-y1 = [flutterOnsetSpeedsOfMode[i,humpMode][1] for i in eachindex(θRange)]
-y2 = [flutterOffsetSpeedsOfMode[i,humpMode][1] for i in eachindex(θRange)]
-plt2 = plot(xlabel="Tip OOP displacement [% semispan]", ylabel="Airspeed [m/s]", xlims=[0,32], ylims=[30,90], xticks=collect(0:5:30), yticks=collect(30:10:90), legend=:bottomleft)
-plot!(Shape(vcat(x1,reverse(x2)),vcat(y1,reverse(y2))), fillcolor = plot_color(:red, 0.25), lw=2, label="Hump flutter region")
+yθ = [59, 55, 48, 44, 38, 34]
+plt2 = plot(xlabel="Tip OOP displacement [% semispan]", ylabel="Airspeed [m/s]", xlims=[0,32], ylims=[30,90], xticks=collect(0:5:30), yticks=collect(30:10:90), legend=:bottomleft, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
+plot!(Shape(vcat(ufOn,reverse(ufOff)),vcat(UfOn,reverse(UfOff))), fillcolor = plot_color(:red, 0.25), lw=lw, label=false)
 for (n,ind) in enumerate(indθ2plot)
     θ = θ2plot[n]
-    plot!(tip_OOP[ind,:]/L*100, URange, c=θcolors[n], ls=:dash, lw=2, label=false)
+    plot!(tip_OOP[ind,:], URange, c=θcolors[n], ls=:dash, lw=2, label=false)
     annotate!([xθ[n]],[yθ[n]], text("\$$(round(θ2plot[n],digits=1)) ^\\circ\$", 10, :bottom, θcolors[n]))
 end
-scatter!(flutterOnsetDispUp, flutterOnsetVelUp, shape=:rtriangle, mc=:red, ms=ms, msw=msw, label="Test onset up")
-scatter!(flutterOnsetDispDown, flutterOnsetVelDown, shape=:ltriangle, mc=:red, ms=ms, msw=msw, label="Test onset down")
-plot!(flutterBoundaryDisp_UMNAST[1,:], flutterBoundaryDisp_UMNAST[2,:], c=:gold, ls=:dash, lw=lw, marker=:circle, ms=ms2, msw=msw, label=false)
+scatter!(flutterOnsetDispUp, flutterOnsetVelUp, shape=:rtriangle, mc=:red, ms=ms, msw=msw, label=false)
+scatter!(flutterOnsetDispDown, flutterOnsetVelDown, shape=:ltriangle, mc=:red, ms=ms, msw=msw, label=false)
+plot!(flutterBoundaryDisp_UMNAST[1,:], flutterBoundaryDisp_UMNAST[2,:], c=:olive, ls=:dash, lw=lw, marker=:circle, ms=ms2, msw=msw, label=false)
 plot!(flutterBoundaryDisp_UMNAST_PanelCoeffs[1,:], flutterBoundaryDisp_UMNAST_PanelCoeffs[2,:], c=:brown, ls=:dash, lw=lw, marker=:circle, ms=ms2, msw=msw, label=false)
 plot!(flutterBoundary_dispVsU_Lambda0_Sharpy[1,:]*100,flutterBoundary_dispVsU_Lambda0_Sharpy[2,:], c=:magenta, ls=:dash, lw=lw, marker=:diamond, ms=ms2, msw=msw, label=false)
 savefig("PazyWingFlutterPitchRange_flutterBoundaryDisp.svg") #hide

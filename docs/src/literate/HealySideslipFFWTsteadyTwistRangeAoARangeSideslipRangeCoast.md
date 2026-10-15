@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl"
+EditURL = "../../../test/examples/steadyAeroelastic/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl"
 ```
 
 # Steady aeroelastic analysis of a wing with flared folding wingtip (FFWT)
@@ -14,54 +14,42 @@ This example illustrates how to set up a steady aeroelastic analysis for a wing 
 *Front view of aircraft model featuring a FFWT* by [Healy et al.](https://doi.org/10.2514/6.2023-0376)
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/steadyAeroelastic/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.jl).
 
 ### Problem setup
-Let's begin by setting the variables of our problem. In this example we will analyze the coasting angle of the FFWT under several combinations of wingtip twist, root pitch angle and sideslip angle, which are defined by the arrays `φRange`, `θRange` and `βRange`, respectively. The flare angle of the wingtip is of 20 degrees, and the airspeed is 22 m/s. A very soft rotational spring is introduced here to avoid the singularity associated with the hinge, through the variable `kSpring`. We also assume a fixed spanwise lift distribution through the parameter `tipLossDecayFactor`, in order to model three-dimensional aerodynamic effects.
+Let's begin by setting the variables of our problem. In this example we will analyze the coasting angle of the FFWT under several combinations of wingtip twist, root pitch angle and sideslip angle, which are defined by the arrays `φRange`, `θRange` and `βRange`, respectively. The flare angle of the wingtip is of 20 degrees, and the airspeed is 22 m/s. We assume a fixed spanwise lift distribution through the parameter `tipLossDecayFactor`, in order to model three-dimensional aerodynamic effects.
 
 ````@example HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast
-using AeroBeams, DelimitedFiles
+using AeroBeams
 
-# Wingtip twist angle range
-φRange = π/180*[-6,0,9]
+# Wingtip twist angle range [rad]
+φRange = deg2rad.([-6,0,9])
 
-# Root pitch angle range
-θRange = π/180*vcat(-3:3:12)
+# Root pitch angle range [rad]
+θRange = deg2rad.(vcat(-3:3:12))
 
-# Sideslip angle range
-βRange = π/180*vcat(-10:1:30)
+# Sideslip angle range [rad]
+βRange = deg2rad.(vcat(-10:1:30))
 
 # Flare angle [rad]
-Λ = 20*π/180
+Λ = deg2rad(20)
 
-# Airspeed
+# Airspeed [m/s]
 U = 22
-
-# Spring stiffness
-kSpring = 1e-4
-kIPBendingHinge = 1e-1
 
 # Discretization
 nElementsInner = 15
 nElementsFFWT = 5
 
-# Tip loss options (the value of tipLossDecayFactor is assumed to match the experimental results, since it strongly influences the solution, especially at lower airspeeds)
+# Tip loss options
 hasTipCorrection = true
 tipLossDecayFactor = 10
 
-# Solution method for constraint
-solutionMethod = "addedResidual"
-updateAllDOFinResidual = false
-
 # System solver
-σ0 = 1
-maxIter = 100
-relTol = 1e-8
-NR = create_NewtonRaphson(displayStatus=false,initialLoadFactor=σ0,maximumIterations=maxIter,relativeTolerance=relTol)
+systemSolver = create_NLsolver(method=:newton,linesearch=true)
 
 # Initialize outputs
 ϕHinge = Array{Float64}(undef,length(φRange),length(θRange),length(βRange))
-problem = Array{SteadyProblem}(undef,length(φRange),length(θRange),length(βRange))
 nothing #hide
 ````
 
@@ -74,22 +62,23 @@ using Suppressor #hide
 for (i,φ) in enumerate(φRange)
     # Loop root pitch angle
     for (j,θ) in enumerate(θRange)
+        # Initialize guess solution
+        x0 = zeros(0)
         # Loop sideslip angle
         for (k,β) in enumerate(βRange)
             # Update model
-            model = create_HealySideslipFFWT(solutionMethod=solutionMethod,updateAllDOFinResidual=updateAllDOFinResidual,flareAngle=Λ,kSpring=kSpring,kIPBendingHinge=kIPBendingHinge,airspeed=U,pitchAngle=θ,wingtipTwist=φ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β);cos(β);0])
-            # Set initial guess solution as the one from previous sideslip angle
-            x0 = (k>1 && problem[i,j,k-1].systemSolver.convergedFinalSolution) ? problem[i,j,k-1].x : zeros(0)
+            model = create_HealySideslipFFWT(flareAngle=Λ,airspeed=U,pitchAngle=θ,wingtipTwist=φ,hasTipCorrection=hasTipCorrection,tipLossDecayFactor=tipLossDecayFactor,nElementsInner=nElementsInner,nElementsFFWT=nElementsFFWT,flightDirection=[sin(β),cos(β),0])
             # Create and solve problem
-            problem[i,j,k] = create_SteadyProblem(model=model,systemSolver=NR,x0=x0)
+            problem = create_SteadyProblem(model=model,systemSolver=systemSolver,x0=x0)
            @suppress begin #hide
-                solve!(problem[i,j,k])
+                solve!(problem)
            end #hide
-            converged = problem[i,j,k].systemSolver.convergedFinalSolution
-            # Get outputs, if converged
-            ϕHinge[i,j,k] = problem[i,j,k].model.hingeAxisConstraints[1].ϕ*180/π
-            # Skip remaining sideslip angles, if unconverged or if solution for hinge angle has jumped
-            if !converged || (k > 1 && ϕHinge[i,j,k]*ϕHinge[i,j,k-1] < 0)
+            # Coasting angle
+            ϕHinge[i,j,k] = rad2deg(problem.loadstepHistory.hacStates[end][1].ϕ)
+            # Set guess solution for next iteration
+            x0 = problem.systemArrays.x
+            # Skip remaining sideslip angles if unconverged
+            if !problem.systemSolver.state.converged
                 ϕHinge[i,j,k:end] .= NaN
                 break
             end
@@ -149,13 +138,12 @@ nothing #hide
 We can now plot the coasting angle of the FFWT as a function of sideslip angle for each of the root pitch and wingtip twist angles. The following reference results (both numerical and experimental) were taken from Fig. 7.34 of [Healy's PhD Thesis](https://research-information.bris.ac.uk/ws/portalfiles/portal/388426634/Final_Copy_2024_01_23_Healy_F_PhD_Redacted.pdf). Healy's numerical method is composed of a Rayleigh-Ritz structural model coupled to a VLM for aerodynamics, with the flared folding wingtip being modeled as a point inertia connected to the inner wing via a hinge. For the most part, the correlation of AeroBeams' results with the reference data is good, especially for the case of zero wingtip twist. This twist profile is very agressively introduced at the very tip of the wing, and similar convergence problems for these cases were also reported by [Jan et al.](https://www.researchgate.net/profile/Romain-Jan/publication/377725388_Experimental_validation_of_an_aeroelasticity_framework_ASWING_Part_IV_Aeroelasticity/links/6692718a3e0edb1e0fe110c7/Experimental-validation-of-an-aeroelasticity-framework-ASWING-Part-IV-Aeroelasticity.pdf) with [ASWING](https://web.mit.edu/drela/Public/web/aswing/). Also note that the wingtip is limited to a fold angle of $\pm125^\degree$, a detail that is not implemented yet in AeroBeams.
 
 ````@example HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast
-using Plots, ColorSchemes
-gr()
 ENV["GKSwstype"] = "100" #hide
 colors = cgrad(:rainbow, length(θRange), categorical=true)
 lw = 2
 ms = 6
 msw = 0
+gr()
 figureNames = ["HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phim6.svg" "HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phi0.svg" "HealySideslipFFWTsteadySideslipRangeAoARangeCoast_phi9.svg"]
 nothing #hide
 

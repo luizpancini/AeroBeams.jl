@@ -1,21 +1,21 @@
 ```@meta
-EditURL = "../../../test/examples/initialDispAndVelBeam.jl"
+EditURL = "../../../test/examples/dynamicStructural/initialDispAndVelBeam.jl"
 ```
 
 # Motion of a simply supported beam under initial conditions
 This example illustrates how to set up a dynamic analysis with initial conditions. To do that, we take a simply supported beam under a specified combination of sinusoidal initial displacement and velocity.
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/initialDispAndVelBeam.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/dynamicStructural/initialDispAndVelBeam.jl).
 
 ### Initial conditions
-The setup of our problem begins by specifying the initial conditions, defined by the variable `initialConditions`. These could theoretically be defined by the displacement (`u3`), the angle of rotation (`θ2`), or both. However, experience shows that the most accurate results are found with the first option. The displacement and rotation (and their time rates) correspond to those of a simply supported beam's second bending mode shape. Notice that `θ2` is the angle of rotation over the beam's arclength coordinate (`x1`) and `p2` is the corresponding Wiener-Milenkovic rotation parameter.
+The setup of our problem begins by specifying the initial conditions, defined by the variable `initialConditions`. These can be defined by the displacement (`u3`), the angle of rotation (`θ2`), or both (in this example, each one with its time rate). The package makes the initial states of the dynamic problem consistent with whichever data are specified, so the three options lead to practically the same solution. The displacement and rotation (and their time rates) correspond to those of a simply supported beam's second bending mode shape. Notice that `θ2` is the angle of rotation over the beam's arclength coordinate (`x1`) and `p2` is the corresponding Wiener-Milenkovic rotation parameter.
 
 ````@example initialDispAndVelBeam
 using AeroBeams
 
-# Select initial conditions as either "displacement", "rotation" or "both"
-initialConditions = "displacement"
+# Select initial conditions as either :displacement, :rotation or :both
+initialConditions = :displacement
 
 # Initial conditions: sinusoidal displacement and velocity of u3 and/or rotation of θ2
 δ = 1e-3
@@ -25,12 +25,12 @@ u3 = x1 -> δ*sin.(2π*x1/L)
 p2 = x1 -> 4*tan.(θ2(x1)/4)
 udot3 = x1 -> σ*sin.(2π*x1/L)
 θdot2 = x1 -> -σ*2π/L*cos.(2π*x1/L)
-pdot2 = x1 -> sec.(0/4).^2 .* θdot2(x1)
+pdot2 = x1 -> sec.(θ2(x1)/4).^2 .* θdot2(x1)
 nothing #hide
 ````
 
 ### Beam
-We create a simple isotropic beam for this example. The only relevant properties are the beam's length (`L`), bending stiffness (`EI`) and mass per unit length (`ρA`). The initial conditions are appended to the beam accordingly, and it is later updated (to incorporate those conditions) with the function [`update_beam!`](@ref update_beam!).
+We create a simple isotropic beam for this example. The only relevant properties are the beam's length (`L`), bending stiffness (`EI`) and mass per unit length (`ρA`). The initial conditions are appended to the beam accordingly, with the function [`add_initial_conditions_to_beam!`](@ref add_initial_conditions_to_beam!).
 
 ````@example initialDispAndVelBeam
 # Beam
@@ -38,23 +38,19 @@ L = 1
 EI = 1
 ρA = 1
 ∞ = 1e4
-nElem = 48
+nElem = 40
 beam = create_Beam(name="beam",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(∞=∞,EIy=EI)],I=[inertia_matrix(ρA=ρA)])
-if initialConditions == "displacement"
-    beam.u0_of_x1=x1->[0; 0; u3(x1)]
-    beam.udot0_of_x1=x1->[0; 0; udot3(x1)]
-elseif initialConditions == "rotation"
-    beam.p0_of_x1=x1->[0; p2(x1); 0]
-    beam.pdot0_of_x1=x1->[0; pdot2(x1); 0]
-elseif initialConditions == "both"
-    beam.u0_of_x1=x1->[0; 0; u3(x1)]
-    beam.p0_of_x1=x1->[0; p2(x1); 0]
-    beam.udot0_of_x1=x1->[0; 0; udot3(x1)]
-    beam.pdot0_of_x1=x1->[0; pdot2(x1); 0]
+
+# Set initial conditions
+if initialConditions == :displacement
+    add_initial_conditions_to_beam!(beam=beam, conditions=Dict(:u0_of_x1 => x1->[0; 0; u3(x1)], :udot0_of_x1 => x1->[0; 0; udot3(x1)]))
+elseif initialConditions == :rotation
+    add_initial_conditions_to_beam!(beam=beam, conditions=Dict(:p0_of_x1 => x1->[0; p2(x1); 0], :pdot0_of_x1 => x1->[0; pdot2(x1); 0]))
+elseif initialConditions == :both
+    add_initial_conditions_to_beam!(beam=beam, conditions=Dict(:u0_of_x1 => x1->[0; 0; u3(x1)], :p0_of_x1 => x1->[0; p2(x1); 0], :udot0_of_x1 => x1->[0; 0; udot3(x1)], :pdot0_of_x1 => x1->[0; pdot2(x1); 0]))
 else
-    error("Wrong initialConditions")
+    error("initialConditions must be either :displacement, :rotation or :both")
 end
-update_beam!(beam)
 nothing #hide
 ````
 
@@ -63,8 +59,8 @@ The beam is simply-supported: pinned at one end and with a roller at the other.
 
 ````@example initialDispAndVelBeam
 # BCs
-pin = create_BC(name="pin",beam=beam,node=1,types=["u1A","u2A","u3A","p1A","p3A"],values=[0,0,0,0,0])
-roller = create_BC(name="roller",beam=beam,node=nElem+1,types=["u3A"],values=[0])
+pin = create_BC(name="pin",beam=beam,node=1,conditions=Dict(:u1A=>0,:u2A=>0,:u3A=>0,:p1A=>0,:p3A=>0))
+roller = create_BC(name="roller",beam=beam,node=nElem+1,conditions=Dict(:u3A=>0))
 nothing #hide
 ````
 
@@ -82,34 +78,20 @@ The time and frequency variables of our problem are defined by the beam's second
 
 ````@example initialDispAndVelBeam
 # Time and frequency variables
-ω2 = (2π/L)^2*sqrt(EI/ρA)
+ω2 = (2π/L)^2 * sqrt(EI/ρA)
 T = 2π/ω2
 cycles = 1
-tf = cycles*T
+tf = cycles * T
 Δt = T/100
 nothing #hide
 ````
 
-In initial conditions problems, in general we do not know the initial values of all the states of the formulation (displacements, rotations, internal loads and sectional velocities). Thus, we have to estimate the unknown states in the initial step, most importantly the velocities and their rates. The whole simulation is dependent on the accuracy of that estimation, which can be controlled through the dynamic problem's keyword argument `initialVelocitiesUpdateOptions`. We create an instance of such a variable using the constructor [`InitialVelocitiesUpdateOptions`](@ref InitialVelocitiesUpdateOptions). The most important arguments of that are the maximum number of iterations (for which the best value is often 2), `maxIter`, the relaxation factor (for which the best value is often 0.5), `relaxFactor`, and the time step (for which the best value is problem-dependent, but has to smaller than the time step of the problem itself), `Δt`.
-
-````@example initialDispAndVelBeam
-# Initial velocities update options
-if initialConditions == "displacement"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2,displayProgress=true, relaxFactor=0.5, Δt=Δt/1e3)
-elseif initialConditions == "rotation"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2, tol=1e-8, displayProgress=true, relaxFactor=0.5, Δt=Δt/1e3)
-elseif initialConditions == "both"
-    initialVelocitiesUpdateOptions = InitialVelocitiesUpdateOptions(maxIter=2, displayProgress=true, relaxFactor=0.5, Δt=Δt/1e3)
-end
-nothing #hide
-````
-
-Now we can create the problem and solve it.
+In initial conditions problems, in general we do not know the initial values of all the states of the formulation (displacements, rotations, internal loads and sectional velocities) and of their time rates. Thus, they have to be determined together with the initial step, which is automatically done by the dynamic problem: the unspecified displacements and rotations are those of the static equilibrium, the unspecified velocities follow the specified ones as in a quasi-static motion, and the accelerations satisfy the equations of motion at the initial time. This procedure does not depend on any tuning parameters. Now we can create the problem and solve it.
 
 ````@example initialDispAndVelBeam
 # Create and solve the problem
 using Suppressor #hide
-problem = create_DynamicProblem(model=initialDispAndVelBeam,finalTime=tf,Δt=Δt,initialVelocitiesUpdateOptions=initialVelocitiesUpdateOptions)
+problem = create_DynamicProblem(model=initialDispAndVelBeam,finalTime=tf,Δt=Δt)
 @suppress begin #hide
 solve!(problem)
 end #hide
@@ -121,14 +103,19 @@ First, we unpack the numerical solution of our variables of interest and compute
 
 ````@example initialDispAndVelBeam
 # Unpack numerical solution
-t = problem.timeVector
+sol = problem.solutionHistory
+t = sol.t
+states = sol.states
+Nt = length(t)
 tNorm = t/T
-u3_quarter = [problem.nodalStatesOverTime[i][div(nElem,4)].u_n2[3] for i in 1:length(tNorm)]
-V3_quarter = [(problem.elementalStatesOverTime[i][div(nElem,4)].V[3]+problem.elementalStatesOverTime[i][div(nElem,4)+1].V[3])/2.0 for i in 1:length(tNorm)]
-Vdot3_quarter = [(problem.elementalStatesRatesOverTime[i][div(nElem,4)].Vdot[3]+problem.elementalStatesRatesOverTime[i][div(nElem,4)+1].Vdot[3])/2.0 for i in 1:length(tNorm)]
-θ2_root = [problem.nodalStatesOverTime[i][1].θ_n1 for i in 1:length(tNorm)]
-Ω2_mid = [(problem.elementalStatesOverTime[i][div(nElem,2)].Ω[2]+problem.elementalStatesOverTime[i][div(nElem,2)+1].Ω[2])/2.0 for i in 1:length(tNorm)]
-Ωdot2_mid = [(problem.elementalStatesRatesOverTime[i][div(nElem,2)].Ωdot[2]+problem.elementalStatesRatesOverTime[i][div(nElem,2)+1].Ωdot[2])/2.0 for i in 1:length(tNorm)]
+midElem = div(nElem,2)
+quarterElem = div(nElem,4)
+u3_quarter = [states[i][quarterElem].nodal.u2[3] for i in 1:Nt]
+V3_quarter = [(states[i][quarterElem].midpoint.V[3]+states[i][quarterElem+1].midpoint.V[3])/2 for i in 1:Nt]
+Vdot3_quarter = [(states[i][quarterElem].rates.Vdot[3]+states[i][quarterElem+1].rates.Vdot[3])/2 for i in 1:Nt]
+θ2_root = [states[i][1].nodal.θ[2] for i in 1:Nt]
+Ω2_mid = [(states[i][midElem].midpoint.Ω[2]+states[i][midElem+1].midpoint.Ω[2])/2 for i in 1:Nt]
+Ωdot2_mid = [(states[i][midElem].rates.Ωdot[2]+states[i][midElem+1].rates.Ωdot[2])/2 for i in 1:Nt]
 
 # Compute analytical values
 u3_quarter_analytic = δ*cos.(ω2*t)*sin(2π*1/4) + σ/ω2*sin.(ω2*t)*sin(2π*1/4)
@@ -140,10 +127,9 @@ Vdot3_quarter_analytic = -δ*ω2^2*cos.(ω2*t)*sin(2π*1/4) + -σ*ω2*sin.(ω2*t
 nothing #hide
 ````
 
-Now let's plot the displacement, rotation, velocities and accelerations at the appropriate points of the beam. The correspondance with the analytical reference is very good, except for the angular acceleration at the midpoint, which oscillates around the analytical solution. That indicates the estimation of the initial value of that variable was not accurate, which may happen for the rates of the velocity states ($\dot{V}$ and $\dot{\Omega}$).
+Now let's plot the displacement, rotation, velocities and accelerations at the appropriate points of the beam. The correspondance with the analytical reference is very good.
 
 ````@example initialDispAndVelBeam
-using Plots
 gr()
 ENV["GKSwstype"] = "100" #hide
 
@@ -168,7 +154,7 @@ savefig("initialDispAndVelBeam_acc.svg") #hide
 # Rotation at root
 plt4 = plot(xlabel="\$t/T\$", ylabel="\$\\theta/(2\\pi)\$ at \$x_1=0\$")
 plot!(tNorm,θ2_root/(2π), c=:black, lw=2, label="AeroBeams")
-scatter!(tNorm[1:5:end],θ2_root_analytic[1:5:end]/(2*π), c=:blue, ms=5, msw=0, label="Analytical")
+scatter!(tNorm[1:5:end],θ2_root_analytic[1:5:end]/(2π), c=:blue, ms=5, msw=0, label="Analytical")
 savefig("initialDispAndVelBeam_rot.svg") #hide
 
 # Angular velocity at mid-length

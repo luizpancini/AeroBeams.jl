@@ -1,12 +1,8 @@
-#
-# @with_kw mutable struct UnitsSystem 
+## UNITS SYSTEM COMPOSITE TYPE
+# ------------------------------------------------------------------------------
+# UnitsSystem composite type
+struct UnitsSystem
 
-#     UnitsSystem composite type
-
-#
-@with_kw mutable struct UnitsSystem
-
-    # Fields
     length::String
     force::String
     angle::String
@@ -16,6 +12,8 @@
 end
 
 
+## PUBLIC API
+# ------------------------------------------------------------------------------
 """
     create_UnitsSystem(; kwargs...)
 
@@ -28,29 +26,18 @@ Creates a system composed of length, force, angle, frequency and mass units (thi
 - `frequency::String`: frequency unit
 - `mass::String`: mass unit
 """
-function create_UnitsSystem(; length::String="m",force::String="N",angle::String="rad",frequency::String="rad/s",mass::String="kg")
-
-    # Initialize
-    self = UnitsSystem(length=length,force=force,angle=angle,frequency=frequency,mass=mass)
-
-    # Validate
-    validate_units_system(self)
-
-    return self
-
-end
-export create_UnitsSystem
-
-
-# Validates the units system
-function validate_units_system(units::UnitsSystem)
-
-    @unpack length,force,angle,frequency,mass = units
+function create_UnitsSystem(; 
+    length::String="m",
+    force::String="N",
+    angle::String="rad",
+    frequency::String="rad/s",
+    mass::String="kg"
+    )
 
     # Validate length 
     availableLengthUnits = ["m","cm","mm","ft","in"]
     if !(length in availableLengthUnits)
-        error("'length' must be one of $(available_lengths)")
+        error("'length' must be one of $(availableLengthUnits)")
     end 
 
     # Validate force 
@@ -77,4 +64,103 @@ function validate_units_system(units::UnitsSystem)
         error("'mass' must be one of $(availableMassUnits)")
     end
 
+    return UnitsSystem(
+        length,
+        force,
+        angle,
+        frequency,
+        mass
+        )
+
 end
+export create_UnitsSystem
+
+
+"""
+    feet2meters(x)
+
+Converts a length from feet to meters
+
+# Arguments
+- `x`: length in feet
+"""
+feet2meters(x) = x * 0.3048
+function feet2meters!(x)
+    x .*= 0.3048
+end
+export feet2meters, feet2meters!
+
+
+"""
+    pounds2kilograms(x)
+
+Converts a mass from pounds to kilograms
+
+# Arguments
+- `x`: mass in pounds
+"""
+pounds2kilograms(x) = x * 0.453592
+function pounds2kilograms!(x)
+    x .*= 0.453592
+end
+export pounds2kilograms, pounds2kilograms!
+
+
+"""
+    rads2Hz(x)
+
+Converts a frequency from radians per second to Hertz
+
+# Arguments
+- `x`: frequency in radians per second
+"""
+rads2Hz(x) = x / (2π)
+function rads2Hz!(x)
+    x ./= 2π
+end
+export rads2Hz, rads2Hz!
+
+
+"""
+    Hz2rads(x)
+
+Converts a frequency from Hertz to radians per second
+
+# Arguments
+- `x`: frequency in Hertz
+"""
+Hz2rads(x) = x * (2π)
+function Hz2rads!(x)
+    x .*= 2π
+end
+export Hz2rads, Hz2rads!
+
+
+"""
+    rpm2rads(x)
+
+Converts a frequency from revolutions per minute to radians per second
+
+# Arguments
+- `x`: frequency in revolutions per minute
+"""
+rpm2rads(x) = x * (2π/60)
+function rpm2rads!(x)
+    x .*= 2π/60
+end
+export rpm2rads, rpm2rads!
+
+
+"""
+    rads2rpm(x)
+
+Converts a frequency from radians per second to revolutions per minute
+
+# Arguments
+- `x`: frequency in radians per second
+"""
+rads2rpm(x) = x * (60/(2π))
+function rads2rpm!(x)
+    x .*= 60/(2π)
+end
+export rads2rpm, rads2rpm!

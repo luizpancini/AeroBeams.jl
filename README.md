@@ -16,7 +16,7 @@ pkg> add AeroBeams
 ```
 
 ## Features
-The software is a general-purpose aeroelastic solver for flexible aircraft structures that can be modeled as an assembly of anisotropic, initially curved and twisted beams undergoing arbitrarily large displacements and rotations. Multibody dynamics capabilities include only simple hinges.
+The software is a general-purpose aeroelastic solver for flexible aircraft structures that can be modeled as an assembly of anisotropic, initially curved and twisted beams undergoing arbitrarily large displacements and rotations. Multibody dynamics capabilities include only simple hinges, with possible hinge axis constraints (such as in flared folding wingtips).
 
 The assembly of beams can be subjected to time-dependent boundary conditions that can be specified either in a global or local frame of reference, including: 
 - Nodal displacements and rotations
@@ -50,6 +50,11 @@ A simple built-in post-processing tool allows the visualization of the results. 
 Purely structural problems (in the abscence of aerodynamic loads) can be analyzed as well, such as the "flying spaghetti" proposed by [[9]](#9):
 
 ![flying spaghetti](test/outputs/figures/flyingSpaghetti2D/flyingSpaghetti2D_deformation.gif)
+
+## Testing and reference data
+
+Run `julia --project=. test/runtests.jl` from the repository root to check the examples without their plotting sections. Reference data can be regenerated
+with `julia --project=. test/newTestDataGenerators/generateNewTestData.jl`.
 
 ## Limitations
 A few limitations of the theory to keep in mind when using this package:

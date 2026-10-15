@@ -14,7 +14,7 @@ pkg> add AeroBeams
 ```
 
 ## Features
-The software is a general-purpose aeroelastic solver for flexible aircraft structures that can be modeled as an assembly of anisotropic, initially curved and twisted beams undergoing arbitrarily large displacements and rotations. Multibody dynamics capabilities include only simple hinges.
+The software is a general-purpose aeroelastic solver for flexible aircraft structures that can be modeled as an assembly of anisotropic, initially curved and twisted beams undergoing arbitrarily large displacements and rotations. Multibody dynamics capabilities include only simple hinges, with possible hinge axis constraints (such as in flared folding wingtips).
 
 The assembly of beams can be subjected to time-dependent boundary conditions that can be specified either in a global or local frame of reference, including: 
 - Nodal displacements and rotations
@@ -45,7 +45,7 @@ A simple built-in post-processing tool allows the visualization of the results. 
 
 ![Pazy Wing Gust Response](assets/PazyWingOMCGust_deformation.gif)
 
-Purely structural problems (in the abscence of aerodynamic loads) can be analyzed as well, such as the "flying spaghetti"[^9]:
+Purely structural problems (in the absence of aerodynamic loads) can be analyzed as well, such as the "flying spaghetti"[^9]:
 
 ![flying spaghetti](assets/flyingSpaghetti2D_deformation.gif)
 
@@ -91,13 +91,15 @@ Pages = [
 The following examples are a useful starting point for those new to the package. They explain several of its functionalities.
 ```@contents
 Pages = [
-    "literate/conventionalHALEmodel.md",
+    "literate/cHALEmodel.md",
     "literate/OMCgustTests.md",
     "literate/typicalSectionFlutterAndDivergence.md",
     "literate/archUnderFollowerPressure.md",
     "literate/compositeCantileverMD.md",
     "literate/PazyWingTorsionTest.md",
     "literate/PazyWingPitchRange.md",
+    "literate/HealyBaselineFFWTfreeFlutterAoARangeURange.md",
+    "literate/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast.md",
     "literate/PazyWingFlutterPitchRange.md",
     "literate/sweptTipRotor.md",
     "literate/twoStoryFrame.md",
@@ -105,8 +107,8 @@ Pages = [
     "literate/flyingScissors.md",
     "literate/heliosTrim.md",
     "literate/BWBflutter.md",
-    "literate/conventionalHALECheckedPitchManeuver.md",
-    "literate/conventionalHALECheckedRollManeuver.md",
+    "literate/cHALECheckedPitchManeuver.md",
+    "literate/cHALECheckedRollManeuver.md",
 ]
 ```
 

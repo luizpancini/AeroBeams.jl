@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/sweptTipRotor.jl"
+EditURL = "../../../test/examples/eigenStructural/sweptTipRotor.jl"
 ```
 
 # Modal analysis of a rotating beam
@@ -10,20 +10,20 @@ This example illustrates how to set up a modal (eigen) analysis, using a swept-t
 *Geometry of the swept-tip rotor* by [Hodges, Shang and Cesnik](https://doi.org/10.2514/6.1995-1174)
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/sweptTipRotor.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/eigenStructural/sweptTipRotor.jl).
 
 ### Problem setup
-To set up the problem, we need to define the geometric and material properties of the beams, to later create them. We also define the number of elements for each beam, the number of vibration modes to extract and the ranges for the angular velocity and the tip angle. Notice that the beam is clamped at a position `r0` relative to the axis of rotation, which is input to the function [`create_Model`](@ref create_Model) through the argument `initialPosition`. Moreover, the model assembly assumes by default that all the beams given by the `beams` argument are connected in sequence (*e.g.*, the first node of `tipBeam` is the same as the last of `baseBeam`).
+To set up the problem, we need to define the geometric and material properties of the beams, to later create them. We also define the number of elements for each beam, the number of vibration modes to extract and the ranges for the angular velocity and the tip angle. Notice that the beam is clamped at a position `r0` relative to the axis of rotation, which is input to the function [`create_Model`](@ref create_Model) through the argument `firstNodePosition`. Moreover, the model assembly assumes by default that all the beams given by the `beams` argument are connected in sequence (*e.g.*, the first node of `tipBeam` is the same as the last of `baseBeam`).
 
 ````@example sweptTipRotor
 using AeroBeams
 
 # Geometric properties
-L1,L2 = 31.5,6.0
-b,H = 1,0.063
-A,Iy,Iz = b*H,b*H^3/12,H*b^3/12
+L1,L2 = 31.5, 6.0
+b,H = 1, 0.063
+A,Iy,Iz = b*H, b*H^3/12, H*b^3/12
 J = Iy + Iz
-Ksy,Ksz,Kt = 5/6,1/14.625,1/65.852
+Ksy,Ksz,Kt = 5/6, 1/14.625, 1/65.852
 r0 = [2.5; 0.0; 0.0]
 
 # Material properties (aluminum)
@@ -31,35 +31,41 @@ E = 1.06e7
 G = E/(2*(1+0.325))
 ρ = 2.51e-4
 
-# Seciontal stiffness and inertia matrices
+# Sectional stiffness and inertia matrices
 S = isotropic_stiffness_matrix(EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)
-I = inertia_matrix(ρA=ρ*A,ρIy=ρ*Iy,ρIz=ρ*Iz)
+I = inertia_matrix(ρ=ρ,A=A,Iy=Iy,Iz=Iz)
 
 # Discretization variables
-nElemBeam1 = 20
-nElemBeam2 = 10
+nElem1 = 20
+nElem2 = 10
 
 # Range of angular velocity [rad/s]
-ωRange = 2π/60*[0,500,750]
+ωRange = rpm2rads.([0,500,750])
 
-# Range of beam tip angles [rad]
-tipAngleRange = π/180*collect(0:2.5:45)
+# Range of tip beam angles [rad]
+tipAngleRange = deg2rad.(0:2.5:45)
 
-# Number of modes
+# Number of modes to track
 nModes = 8
 
+# Eigensolver method and minimum number of eigenvalues to be computed
+eigenmethod = :fulldecomp
+nev = 30
+
 # Beam frame
-baseBeam = create_Beam(name="baseBeam",length=L1,nElements=nElemBeam1,S=[S],I=[I])
-tipBeam = create_Beam(name="tipBeam",length=L2,nElements=nElemBeam2,S=[isotropic_stiffness_matrix(∞=1e12,EA=E*A,GAy=G*A*Ksy,GAz=G*A*Ksz,GJ=G*J*Kt,EIy=E*Iy,EIz=E*Iz)],I=[I],rotationParametrization="E321")
+baseBeam = create_Beam(name="baseBeam",length=L1,nElements=nElem1,S=[S],I=[I])
+tipBeam = create_Beam(name="tipBeam",length=L2,nElements=nElem2,S=[S],I=[I])
 
 # BCs
-clamp = create_BC(name="clamp",beam=baseBeam,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
+clamp = create_BC(name="clamp",beam=baseBeam,node=1,conditions=Dict(:u1A=>0,:u2A=>0,:u3A=>0,:p1A=>0,:p2A=>0,:p3A=>0))
 
 # Create model
-sweptTipRotor = create_Model(name="sweptTipRotor",beams=[baseBeam,tipBeam],BCs=[clamp],initialPosition=r0,units=create_UnitsSystem(length="in",force="lbf",frequency="Hz"))
+sweptTipRotor = create_Model(name="sweptTipRotor",beams=[baseBeam,tipBeam],BCs=[clamp],firstNodePosition=r0,units=create_UnitsSystem(length="in",force="lbf",frequency="Hz"))
 
 # Initialize outputs
-numFreqs = Matrix{Vector{Float64}}(undef,length(ωRange),length(tipAngleRange))
+problem = Array{EigenProblem}(undef,length(ωRange),length(tipAngleRange))
+eigensols = Array{EigenSolution}(undef,length(ωRange),length(tipAngleRange))
+freqs = Array{Matrix{Float64}}(undef,length(ωRange))
 nothing #hide
 ````
 
@@ -70,21 +76,21 @@ We now solve an eigenproblem at each combination of tip angle and angular veloci
 # Loop over sweep variables
 for (i,ω) in enumerate(ωRange)
     # Set angular velocity of basis A
-    sweptTipRotor.ω_A = [0; 0; ω]
+    update_ω_A!(sweptTipRotor,ω_A=[0; 0; ω])
     # Loop tip angles
     for (j,tipAngle) in enumerate(tipAngleRange)
-        # Update tipBeam angle with tip angle
-        tipBeam.p0[1] = -tipAngle
-        update_beam!(tipBeam)
-        # Update model
-        sweptTipRotor.beams = [baseBeam,tipBeam]
-        update_model!(sweptTipRotor)
+        # Update tipBeam orientation angle
+        update_beam_orientation!(sweptTipRotor; beam=tipBeam,p0=transform_to_WM([-tipAngle,0,0],from=:E321))
         # Create and solve eigenproblem
-        global problem = create_EigenProblem(model=sweptTipRotor,nModes=nModes)
-        solve!(problem)
-        # Get outputs
-        numFreqs[i,j] = problem.frequenciesOscillatory
+        problem[i,j] = create_EigenProblem(model=sweptTipRotor,eigenmethod=eigenmethod,nev=nev)
+        solve!(problem[i,j])
+        # Eigensolution
+        eigensols[i,j] = problem[i,j].eigensolution
     end
+    # Apply mode tracking
+    freqs[i],_ = mode_tracking(eigensols[i,:])
+    # Get frequencies of oscillatory modes in Hz
+    freqs[i],_ = filter_tracked_modes(rads2Hz.(freqs[i]); fmin=eps(), maxTracks=nModes)
 end
 nothing #hide
 ````
@@ -105,77 +111,62 @@ nothing #hide
 Now we plot the evolution of the modal frequencies with the tip angle for the range of angular velocities. The numerical results agree well with the experimental ones, and match those described by [Hodges, Shang and Cesnik](https://doi.org/10.2514/6.1995-1174) and [Yu and Blair](https://doi.org/10.1016/j.compstruct.2012.04.007).
 
 ````@example sweptTipRotor
-using Plots, ColorSchemes
 gr()
 ENV["GKSwstype"] = "100" #hide
-colors = get(colorschemes[:darkrainbow], LinRange(0, 1, length(ωRange)))
+colors = cgrad(:darkrainbow, length(ωRange), categorical=true)
+lw = 2
+ms = 5
+msw = 0
 
 # 1st bending mode
 plt1 = plot(xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", title="1st bending", legend=(0.15,0.4))
-plot!([NaN],[NaN], lc=:black, lw=2, label="AeroBeams")
-scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label="Epps & Chandra (1996)")
+plot!([NaN],[NaN], lc=:black, lw=lw, label="AeroBeams")
+scatter!([NaN],[NaN], mc=:black, ms=ms, msw=msw, label="Epps & Chandra (1996)")
 for (i,ω) in enumerate(ωRange)
     mode = 1
-    ωRPM = round(Int,ω/(2*π/60))
-    numFreqs1 = [numFreqs[i,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
-    plot!(tipAngleRange*180/π,numFreqs1, lc=colors[i], lw=2, label=false)
-    scatter!(expTipAngles,expFreqs1[i,:], mc=colors[i], ms=4, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=4, msw=0, label="\$\\omega\$ = $ωRPM rpm")
+    plot!(rad2deg.(tipAngleRange),freqs[i][mode,:], lc=colors[i], lw=lw, label=false)
+    scatter!(expTipAngles,expFreqs1[i,:], mc=colors[i], ms=ms, msw=msw, label=false)
+    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label="\$\\omega\$ = $(round(Int,rads2rpm(ω))) rpm")
 end
 savefig("sweptTipRotor_1B.svg") #hide
 nothing #hide
 
 # 2nd bending
 plt2 = plot(xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", title="2nd bending", legend=(0.15,0.4))
-plot!([NaN],[NaN], lc=:black, lw=2, label="AeroBeams")
-scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label="Epps & Chandra (1996)")
+plot!([NaN],[NaN], lc=:black, lw=lw, label="AeroBeams")
+scatter!([NaN],[NaN], mc=:black, ms=ms, msw=msw, label="Epps & Chandra (1996)")
 for (i,ω) in enumerate(ωRange)
     mode = i < 3 ? 2 : 3
-    ωRPM = round(Int,ω/(2*π/60))
-    numFreqs2 = [numFreqs[i,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
-    plot!(tipAngleRange*180/π,numFreqs2, lc=colors[i], lw=2, label=false)
-    scatter!(expTipAngles,expFreqs2[i,:], mc=colors[i], ms=4, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=4, msw=0, label="\$\\omega\$ = $ωRPM rpm")
+    plot!(rad2deg.(tipAngleRange),freqs[i][mode,:], lc=colors[i], lw=lw, label=false)
+    scatter!(expTipAngles,expFreqs2[i,:], mc=colors[i], ms=ms, msw=msw, label=false)
+    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label="\$\\omega\$ = $(round(Int,rads2rpm(ω))) rpm")
 end
 savefig("sweptTipRotor_2B.svg") #hide
 nothing #hide
 
 # 3rd bending mode
 plt3 = plot(xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", title="3rd bending", legend=:topright)
-plot!([NaN],[NaN], lc=:black, lw=2, label="AeroBeams")
-scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label="Epps & Chandra (1996)")
+plot!([NaN],[NaN], lc=:black, lw=lw, label="AeroBeams")
+scatter!([NaN],[NaN], mc=:black, ms=ms, msw=msw, label="Epps & Chandra (1996)")
 for (i,ω) in enumerate(ωRange)
     mode = 4
-    ωRPM = round(Int,ω/(2*π/60))
-    numFreqs3 = [numFreqs[i,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
-    plot!(tipAngleRange*180/π,numFreqs3, lc=colors[i], lw=2, label=false)
-    scatter!(expTipAngles,expFreqs3[i,:], mc=colors[i], ms=4, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=2, ms=4, msw=0, label="\$\\omega\$ = $ωRPM rpm")
+    plot!(rad2deg.(tipAngleRange),freqs[i][mode,:], lc=colors[i], lw=lw, label=false)
+    scatter!(expTipAngles,expFreqs3[i,:], mc=colors[i], ms=ms, msw=msw, label=false)
+    plot!([NaN], [NaN], lc=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label="\$\\omega\$ = $(round(Int,rads2rpm(ω))) rpm")
 end
 savefig("sweptTipRotor_3B.svg") #hide
 nothing #hide
 
 # Coupled bending-torsion modes at ω = 750 rpm
 plt4 = plot(xlabel="Tip sweep angle [deg]", ylabel="Frequency [Hz]", title="Coupled bending-torsion at \$\\omega\$ = 750 rpm", legend=(0.1,0.99))
-plot!([NaN],[NaN], lc=:black, lw=2, label="AeroBeams")
-scatter!([NaN],[NaN], mc=:black, ms=4, msw=0, label="Epps & Chandra (1996)")
+plot!([NaN],[NaN], lc=:black, lw=lw, label="AeroBeams")
+scatter!([NaN],[NaN], mc=:black, ms=ms, msw=msw, label="Epps & Chandra (1996)")
 modes = [5,6,7]
 modeLabels = ["1T/5B","5B/1T","4B/1T"]
-for (i,ω) in enumerate(ωRange)
-    ωRPM = round(Int,ω/(2π/60))
-    if i == 3
-        numFreqsCoupled = zeros(length(tipAngleRange))
-        for j in 1:size(numFreqs, 2)
-            mode = tipAngleRange[j]*180/π >= 20 ? 8 : 7
-            numFreqsCoupled[j] = numFreqs[end,j][mode]/(2π)
-        end
-    else
-        mode = modes[i]
-        numFreqsCoupled = [numFreqs[end,j][mode]/(2π) for j in 1:size(numFreqs, 2)]
-    end
-    plot!(tipAngleRange*180/π,numFreqsCoupled, c=colors[i], lw=2, label=false)
-    scatter!(expTipAngles,expFreqs4[i,:], c=colors[i], ms=4, msw=0, label=false)
-    plot!([NaN], [NaN], lc=colors[i], mc=colors[i], lw=2, ms=4, msw=0, label=modeLabels[i])
+for (i,m) in enumerate(modes)
+    plot!(rad2deg.(tipAngleRange),freqs[3][m,:], c=colors[i], lw=lw, label=false)
+    scatter!(expTipAngles,expFreqs4[i,:], c=colors[i], ms=ms, msw=msw, label=false)
+    plot!([NaN], [NaN], lc=colors[i], mc=colors[i], lw=lw, ms=ms, msw=msw, label=modeLabels[i])
 end
 savefig("sweptTipRotor_TB.svg") #hide
 nothing #hide

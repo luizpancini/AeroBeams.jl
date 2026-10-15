@@ -312,8 +312,8 @@ for (k,τ) in enumerate(τRange)
 
     # Animations
     if createAnimations
-        plot_dynamic_deformation(dynamicProblem[1,1,k],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,Δforward_11],[Δalt_min_11,Δalt_max_11]),followAssembly=true,save=saveFigures,savePath=string(relPath,"/heliosDarpaGustDurationRange_attached_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
-        plot_dynamic_deformation(dynamicProblem[2,1,k],refBasis="I",view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,Δforward_21],[Δalt_min_21,Δalt_max_21]),followAssembly=true,save=saveFigures,savePath=string(relPath,"/heliosDarpaGustDurationRange_ds_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
+        plot_dynamic_deformation(dynamicProblem[1,1,k],view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,Δforward_11],[Δalt_min_11,Δalt_max_11]),follow=:basisA,save=saveFigures,savePath=string(relPath,"/heliosDarpaGustDurationRange_attached_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
+        plot_dynamic_deformation(dynamicProblem[2,1,k],view=(60,15),plotDistLoads=false,plotFrequency=2,plotLimits=([-40,40],[-5,Δforward_21],[Δalt_min_21,Δalt_max_21]),follow=:basisA,save=saveFigures,savePath=string(relPath,"/heliosDarpaGustDurationRange_ds_elastic_P",round(P),"_tau",τstr,"_gamma",γstr,".gif"),displayProgress=true)
     end
 end
 

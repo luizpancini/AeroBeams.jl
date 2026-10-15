@@ -1,161 +1,58 @@
-# Aerodynamic problems
-
-@testset "Dynamic analysis of a harmonically pitching airfoil, using the dynamic stall model" begin
-    include("examples/pitchingAirfoilDSModelTest.jl")
-    # Self-comparison
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_cn.txt"))
-    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_cm.txt"))
-    ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "pitchingAirfoilDSModelTest", frameString*"_ct.txt"))
-    @test cn ≈ cn_ atol=SELFatol rtol=SELFrtol
-    @test cm ≈ cm_ atol=SELFatol rtol=SELFrtol
-    @test ct ≈ ct_ atol=SELFatol rtol=SELFrtol
-end
-
 @testset "Dynamic analysis of an airfoils with harmonic flap deflection profile" begin
-    include("examples/flapOscillation.jl")
-    # Self-comparison
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillation", "cn.txt"))
-    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillation", "cm.txt"))
-    @test cn ≈ cn_ atol=SELFatol rtol=SELFrtol
-    @test cm ≈ cm_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/aerodynamic/flapOscillation.jl")
+    @test matches_test_data(cn, "flapOscillation", "cn.txt")
+    @test matches_test_data(cm, "flapOscillation", "cm.txt")
 end
 
 @testset "Dynamic analysis of two airfoils with linked harmonic flap deflection profiles" begin
-    include("examples/flapOscillationLinked.jl")
-    # Self-comparison
-    cnMaster_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillationLinked", "cnMaster.txt"))
-    cmMaster_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillationLinked", "cmMaster.txt"))
-    cnSlave_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillationLinked", "cnSlave.txt"))
-    cmSlave_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "flapOscillationLinked", "cmSlave.txt"))
-    @test cnMaster ≈ cnMaster_ atol=SELFatol rtol=SELFrtol
-    @test cmMaster ≈ cmMaster_ atol=SELFatol rtol=SELFrtol
-    @test cnSlave ≈ cnSlave_ atol=SELFatol rtol=SELFrtol
-    @test cmSlave ≈ cmSlave_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/aerodynamic/flapOscillationLinked.jl")
+    @test matches_test_data(cnMaster, "flapOscillationLinked", "cnMaster.txt")
+    @test matches_test_data(cmMaster, "flapOscillationLinked", "cmMaster.txt")
+    @test matches_test_data(cnSlave, "flapOscillationLinked", "cnSlave.txt")
+    @test matches_test_data(cmSlave, "flapOscillationLinked", "cmSlave.txt")
 end
 
-## Reduce CI time
-# @testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
-#     include("examples/OMCgustTests.jl")
-#     # Self-comparison
-#     for (i,aeroSolver) in enumerate(aeroSolvers)
-#         for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-#             for (k,testCase) in enumerate(tests)
-#                 if typeof(aeroSolver) == QuasiSteady
-#                     aeroSolverName = "QS"
-#                 elseif typeof(aeroSolver) == Indicial
-#                     aeroSolverName = "Indicial"
-#                 elseif typeof(aeroSolver) == Inflow
-#                     aeroSolverName = "Inflow"
-#                 elseif typeof(aeroSolver) == BLi
-#                     aeroSolverName = "BLi"
-#                 elseif typeof(aeroSolver) == BLo
-#                     aeroSolverName = "BLo"
-#                 end
-#                 gustSolverName = gustLoadsSolver.indicialFunctionName
-#                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests", string("OMCgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol rtol=SELFrtol
-#             end
-#         end
-#     end
-# end
+!is_ci && @testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
+    include_example("examples/aerodynamic/OMCgustTests.jl")
+    @test matches_test_data(Δcl, "OMCgustTests", "dcl.txt")
+end
 
 @testset "One-minus-cosine gust response of an airfoil section at several pitch angles" begin
-    include("examples/OMCgustTests2.jl")
-    # Self-comparison
-    for (i,aeroSolver) in enumerate(aeroSolvers)
-        for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-            for (k,testCase) in enumerate(tests)
-                if typeof(aeroSolver) == QuasiSteady
-                    aeroSolverName = "QS"
-                elseif typeof(aeroSolver) == Indicial
-                    aeroSolverName = "Indicial"
-                elseif typeof(aeroSolver) == Inflow
-                    aeroSolverName = "Inflow"
-                elseif typeof(aeroSolver) == BLi
-                    aeroSolverName = "BLi"
-                elseif typeof(aeroSolver) == BLo
-                    aeroSolverName = "BLo"
-                end
-                gustSolverName = gustLoadsSolver.indicialFunctionName
-                Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "OMCgustTests2", string("OMCgustTests2_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-                @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol rtol=SELFrtol
-            end
-        end
-    end
+    include_example("examples/aerodynamic/OMCgustTests2.jl")
+    @test matches_test_data(Δcl, "OMCgustTests2", "dcl.txt")
 end
 
-## Reduce CI time
-# @testset "Sharp-edged gust response of an airfoil section at several pitch angles" begin
-#     include("examples/SEgustTests.jl")
-#     # Self-comparison
-#     for (i,aeroSolver) in enumerate(aeroSolvers)
-#         for (j,gustLoadsSolver) in enumerate(gustLoadsSolvers)
-#             for (k,testCase) in enumerate(1:3)
-#                 if typeof(aeroSolver) == QuasiSteady
-#                     aeroSolverName = "QS"
-#                 elseif typeof(aeroSolver) == Indicial
-#                     aeroSolverName = "Indicial"
-#                 elseif typeof(aeroSolver) == Inflow
-#                     aeroSolverName = "Inflow"
-#                 elseif typeof(aeroSolver) == BLi
-#                     aeroSolverName = "BLi"
-#                 elseif typeof(aeroSolver) == BLo
-#                     aeroSolverName = "BLo"
-#                 end
-#                 gustSolverName = gustLoadsSolver.indicialFunctionName
-#                 Δcl_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "SEgustTests", string("SEgustTests_",aeroSolverName,"_",gustSolverName,"_test",testCase,"/dcl",i,j,k,".txt")))
-#                 @test Δcl[i,j,k] ≈ Δcl_ atol=SELFatol rtol=SELFrtol
-#             end
-#         end
-#     end
-# end
+@testset "Dynamic analysis of a harmonically pitching airfoil, using the dynamic stall model" begin
+    include_example("examples/aerodynamic/pitchingAirfoilDSModelTest.jl")
+    @test matches_test_data(cn, "pitchingAirfoilDSModelTest", frameString*"_cn.txt")
+    @test matches_test_data(cm, "pitchingAirfoilDSModelTest", frameString*"_cm.txt")
+    @test matches_test_data(ct, "pitchingAirfoilDSModelTest", frameString*"_ct.txt")
+end
 
 @testset "Dynamic analysis of a harmonically plunging airfoil, using the dynamic stall model" begin
-    include("examples/plungingAirfoilDSModelTest.jl")
-    # Self-comparison
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoilDSModelTest", "cn.txt"))
-    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "plungingAirfoilDSModelTest", "cm.txt"))
-    @test cn ≈ cn_ atol=SELFatol rtol=SELFrtol
-    @test cm ≈ cm_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/aerodynamic/plungingAirfoilDSModelTest.jl")
+    @test matches_test_data(cn, "plungingAirfoilDSModelTest", "cn.txt")
+    @test matches_test_data(cm, "plungingAirfoilDSModelTest", "cm.txt")
+end
+
+!is_ci && @testset "Sharp-edged gust response of an airfoil section at several pitch angles" begin
+    include_example("examples/aerodynamic/SEgustTests.jl")
+    @test matches_test_data(Δcl, "SEgustTests", "dcl.txt")
 end
 
 @testset "Dynamic analysis of an airfoil section sinusoidally surging (facing a time-varying freestream)" begin
-    include("examples/timeVaryingFreestream.jl")
-    # Loop normalized airspeed amplitude
+    include_example("examples/aerodynamic/timeVaryingFreestream.jl")
+    @test matches_test_data(cn[end], "timeVaryingFreestream", "cn.txt")
+    @test matches_test_data(cm[end], "timeVaryingFreestream", "cm.txt")
+    # The relative wind accelerations match the analytical ones from the first time step on, without oscillations (the airspeed does not need to start smoothly)
     for i in eachindex(λᵤRange)
-        # Reference comparison
-        @test cn[i][end]/(2π*θ) ≈ cnCFD[i][2,end] atol=0.3
-        @test cm[i][end] ≈ cmCFD[i][2,end] atol=1e-2
-        # Analytical comparison
-        @test Vdot2[i][end] ≈ Vdot2Analytical[i][end] rtol=1e-2
-        @test Vdot3[i][end] ≈ Vdot3Analytical[i][end] rtol=1e-2
+        @test maximum(abs, Vdot2[i] - Vdot2Analytical[i]) < 1e-3 * maximum(abs, Vdot2Analytical[i])
+        @test maximum(abs, Vdot3[i] - Vdot3Analytical[i]) < 1e-3 * maximum(abs, Vdot3Analytical[i])
     end
-    # Self-comparison (for the last λᵤ)
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestream", "cn.txt"))
-    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestream", "cm.txt"))
-    @test cn[end] ≈ cn_ atol=SELFatol rtol=SELFrtol
-    @test cm[end] ≈ cm_ atol=SELFatol rtol=SELFrtol
 end
 
 @testset "Dynamic analysis of an airfoil section sinusoidally pitching and surging (facing a time-varying freestream)" begin
-    include("examples/timeVaryingFreestreamAndPitch.jl")
-    # Loop normalized airspeed amplitude
-    for i in eachindex(λᵤRange)
-        # index at 3/4 of the cycle
-        indexTqcycle = rangeLastCycle[i][round(Int,length(rangeLastCycle[i])*3/4)]
-        # Reference comparison
-        @test cn[i][end]/cn_qs(t[i][end]) ≈ cnCFD[i][2,end] atol=0.5
-        @test cm[i][end] ≈ cmCFD[i][2,end] atol=1e-2
-        # Analytical comparison
-        @test Vdot2[i][end] ≈ Vdot2Analytical[i][end] rtol=1e-2
-        @test Vdot3[i][end] ≈ Vdot3Analytical[i][end] rtol=1e-2
-        @test Ω1[i][end] ≈ Ω1Analytical(t[i][end]) rtol=1e-2
-    end
-    # Self-comparison (for the last λᵤ)
-    cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestreamAndPitch", "cn.txt"))
-    cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "timeVaryingFreestreamAndPitch", "cm.txt"))
-    @test cn[end] ≈ cn_ atol=SELFatol rtol=SELFrtol
-    @test cm[end] ≈ cm_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/aerodynamic/timeVaryingFreestreamAndPitch.jl")
+    @test matches_test_data(cn[end], "timeVaryingFreestreamAndPitch", "cn.txt")
+    @test matches_test_data(cm[end], "timeVaryingFreestreamAndPitch", "cm.txt")
 end
-GC.gc()
-sleep(1)

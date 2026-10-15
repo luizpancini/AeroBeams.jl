@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/compositeCantileverMD.jl"
+EditURL = "../../../test/examples/staticStructural/compositeCantileverMD.jl"
 ```
 
 # Static structural analysis of composite beams
@@ -14,52 +14,44 @@ This example illustrates how to set up a static structural analysis of composite
 *Laminate properties* by [Minguet and Dugundji](https://doi.org/10.2514/3.25255)
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/compositeCantileverMD.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/staticStructural/compositeCantileverMD.jl).
 
 ### Problem setup
 Let's begin by setting up the variables of our problem. We create three beams, each of a different composite laminate, clamp them ar the root, and apply the tip load. Notice that only beam 1 has a diagonal sectional stiffness matrix, whereas the others have coupling terms.
 
 ````@example compositeCantileverMD
-using AeroBeams, LinearAlgebra, DelimitedFiles
+using AeroBeams
 
-# Properties common to all beams
+# Properties common to all beams (length, in meters, and number of elements)
 L = 0.55
 nElem = 22
 
-# Rotation angles
+# Root rotation angles [rad]
 θRange = π/4*[0, 1]
 
-# Gravity
-g = 9.80665
+# Gravity [m/s²]
+g = standard_atmosphere(0).g
 
-# Tip load mass
+# Tip load mass [kg] and weight
 m = 0.5
-
-# Tip weight
 W = m*g
 
 # Beam 1
-stiffnessMatrix1 = diagm([3.7e6,2.6e5,2.9e5,0.183,0.707,276])
-beam1 = create_Beam(name="beam1",length=L,nElements=nElem,S=[stiffnessMatrix1],rotationParametrization="E321")
+beam1 = create_Beam(name="beam1",length=L,nElements=nElem,S=[isotropic_stiffness_matrix(EA=3.7e6,GAy=2.6e5,GAz=2.9e5,GJ=0.183,EIy=0.707,EIz=276)])
 
 # Beam 2
-stiffnessMatrix2 = diagm([4e6,2.6e5,5.5e5,0.368,0.522,298])
-stiffnessMatrix2[1,2] = stiffnessMatrix2[2,1] = -2.7e5
-stiffnessMatrix2[4,5] = stiffnessMatrix2[5,4] = -0.102
-beam2 = create_Beam(name="beam2",length=L,nElements=nElem,S=[stiffnessMatrix2],rotationParametrization="E321")
+beam2 = create_Beam(name="beam2",length=L,nElements=nElem,S=[anisotropic_stiffness_matrix(EA=4e6,GAy=2.6e5,GAz=5.5e5,GJ=0.368,EIy=0.522,EIz=298,c12=-2.7e5,c45=-0.102)])
 
 # Beam 3
-stiffnessMatrix3 = diagm([3.9e6,1.1e6,1.2e5,1.18,0.983,290])
-stiffnessMatrix3[1,4] = stiffnessMatrix3[4,1] = -522
-beam3 = create_Beam(name="beam3",length=L,nElements=nElem,S=[stiffnessMatrix3],rotationParametrization="E321")
+beam3 = create_Beam(name="beam3",length=L,nElements=nElem,S=[anisotropic_stiffness_matrix(EA=3.9e6,GAy=1.1e6,GAz=1.2e5,GJ=1.18,EIy=0.983,EIz=290,c14=-522)])
 
 # BCs
-clamp1 = create_BC(name="clamp1",beam=beam1,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-tipLoad1 = create_BC(name="tipLoad1",beam=beam1,node=nElem+1,types=["F3A"],values=[-W])
-clamp2 = create_BC(name="clamp2",beam=beam2,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-tipLoad2 = create_BC(name="tipLoad2",beam=beam2,node=nElem+1,types=["F3A"],values=[-W])
-clamp3 = create_BC(name="clamp3",beam=beam3,node=1,types=["u1A","u2A","u3A","p1A","p2A","p3A"],values=[0,0,0,0,0,0])
-tipLoad3 = create_BC(name="tipLoad3",beam=beam3,node=nElem+1,types=["F3A"],values=[-W])
+clamp1 = create_BC(name="clamp1",beam=beam1,node=1,conditions=Dict(:u1A=>0, :u2A=>0,:u3A=>0,:p1A=>0,:p2A=>0,:p3A=>0))
+tipLoad1 = create_BC(name="tipLoad1",beam=beam1,node=nElem+1,conditions=Dict(:F3A=>-W))
+clamp2 = create_BC(name="clamp2",beam=beam2,node=1,conditions=Dict(:u1A=>0, :u2A=>0,:u3A=>0,:p1A=>0,:p2A=>0,:p3A=>0))
+tipLoad2 = create_BC(name="tipLoad2",beam=beam2,node=nElem+1,conditions=Dict(:F3A=>-W))
+clamp3 = create_BC(name="clamp3",beam=beam3,node=1,conditions=Dict(:u1A=>0, :u2A=>0,:u3A=>0,:p1A=>0,:p2A=>0,:p3A=>0))
+tipLoad3 = create_BC(name="tipLoad3",beam=beam3,node=nElem+1,conditions=Dict(:F3A=>-W))
 
 # Models
 compositeCantilever1 = create_Model(name="compositeCantilever1",beams=[beam1],BCs=[clamp1,tipLoad1])
@@ -69,10 +61,10 @@ compositeCantilever3 = create_Model(name="compositeCantilever3",beams=[beam3],BC
 # Set system solver options
 σ0 = 0
 σstep = 0.1
-NR = create_NewtonRaphson(initialLoadFactor=σ0,maximumLoadFactorStep=σstep,minimumLoadFactorStep=σstep)
+NR = create_NLsolver(initLoadFac=σ0,maxLoadFacStep=σstep)
 
 # Initialize outputs: displacements at x1 = 500 mm
-σVector = Array{Vector{Float64}}(undef,3,2)
+σVec = Array{Vector{Float64}}(undef,3,2)
 u1_500mm = Array{Vector{Float64}}(undef,3,2)
 u2_500mm = Array{Vector{Float64}}(undef,3,2)
 u3_500mm = Array{Vector{Float64}}(undef,3,2)
@@ -86,30 +78,35 @@ We can sweep the range of root rotation angle, `θRange`, to find the solution a
 # Loop root angles
 for (j,θ) in enumerate(θRange)
     # Update beams' rotation
-    beam1.p0[3] = beam2.p0[3] = beam3.p0[3] = θ
-    update_beam!(beam1); update_model!(compositeCantilever1)
-    update_beam!(beam2); update_model!(compositeCantilever2)
-    update_beam!(beam3); update_model!(compositeCantilever3)
+    update_beam_orientation!(compositeCantilever1,beam=beam1,p0=transform_to_WM([0;0;θ];from=:E321))
+    update_beam_orientation!(compositeCantilever2,beam=beam2,p0=transform_to_WM([0;0;θ];from=:E321))
+    update_beam_orientation!(compositeCantilever3,beam=beam3,p0=transform_to_WM([0;0;θ];from=:E321))
     # Create and solve the problems
     problem1 = create_SteadyProblem(model=compositeCantilever1,systemSolver=NR)
-    problem2 = create_SteadyProblem(model=compositeCantilever2,systemSolver=NR)
-    problem3 = create_SteadyProblem(model=compositeCantilever3,systemSolver=NR)
     solve!(problem1)
+    problem2 = create_SteadyProblem(model=compositeCantilever2,systemSolver=NR)
     solve!(problem2)
+    problem3 = create_SteadyProblem(model=compositeCantilever3,systemSolver=NR)
     solve!(problem3)
     # Save outputs
-    σVector[1,j] = problem1.savedσ
-    σVector[2,j] = problem2.savedσ
-    σVector[3,j] = problem3.savedσ
-    u1_500mm[1,j] = [problem1.nodalStatesOverσ[i][nElem-1].u_n1[1] for i in 1:length(σVector[1,j])]
-    u1_500mm[2,j] = [problem2.nodalStatesOverσ[i][nElem-1].u_n1[1] for i in 1:length(σVector[2,j])]
-    u1_500mm[3,j] = [problem3.nodalStatesOverσ[i][nElem-1].u_n1[1] for i in 1:length(σVector[3,j])]
-    u2_500mm[1,j] = [problem1.nodalStatesOverσ[i][nElem-1].u_n1[2] for i in 1:length(σVector[1,j])]
-    u2_500mm[2,j] = [problem2.nodalStatesOverσ[i][nElem-1].u_n1[2] for i in 1:length(σVector[2,j])]
-    u2_500mm[3,j] = [problem3.nodalStatesOverσ[i][nElem-1].u_n1[2] for i in 1:length(σVector[3,j])]
-    u3_500mm[1,j] = [problem1.nodalStatesOverσ[i][nElem-1].u_n1[3] for i in 1:length(σVector[1,j])]
-    u3_500mm[2,j] = [problem2.nodalStatesOverσ[i][nElem-1].u_n1[3] for i in 1:length(σVector[2,j])]
-    u3_500mm[3,j] = [problem3.nodalStatesOverσ[i][nElem-1].u_n1[3] for i in 1:length(σVector[3,j])]
+    hist1 = problem1.loadstepHistory
+    hist2 = problem2.loadstepHistory
+    hist3 = problem3.loadstepHistory
+    stt1 = hist1.states
+    stt2 = hist2.states
+    stt3 = hist3.states
+    σVec[1,j] = hist1.σ
+    σVec[2,j] = hist2.σ
+    σVec[3,j] = hist3.σ
+    u1_500mm[1,j] = [stt1[i][nElem-1].nodal.u1[1] for i in 1:length(σVec[1,j])]
+    u1_500mm[2,j] = [stt2[i][nElem-1].nodal.u1[1] for i in 1:length(σVec[2,j])]
+    u1_500mm[3,j] = [stt3[i][nElem-1].nodal.u1[1] for i in 1:length(σVec[3,j])]
+    u2_500mm[1,j] = [stt1[i][nElem-1].nodal.u1[2] for i in 1:length(σVec[1,j])]
+    u2_500mm[2,j] = [stt2[i][nElem-1].nodal.u1[2] for i in 1:length(σVec[2,j])]
+    u2_500mm[3,j] = [stt3[i][nElem-1].nodal.u1[2] for i in 1:length(σVec[3,j])]
+    u3_500mm[1,j] = [stt1[i][nElem-1].nodal.u1[3] for i in 1:length(σVec[1,j])]
+    u3_500mm[2,j] = [stt2[i][nElem-1].nodal.u1[3] for i in 1:length(σVec[2,j])]
+    u3_500mm[3,j] = [stt3[i][nElem-1].nodal.u1[3] for i in 1:length(σVec[3,j])]
 end
 nothing #hide
 ````
@@ -143,7 +140,6 @@ nothing #hide
 Finally, we may plot the displacements at ``x_1 = 500`` mm for each beam in each configuration. The correlation with the experimental data is good, and matches the numerical results of [Minguet and Dugundji](https://doi.org/10.2514/3.25255) as well (not shown).
 
 ````@example compositeCantileverMD
-using Plots
 gr()
 ENV["GKSwstype"] = "100" #hide
 nothing #hide
@@ -165,7 +161,7 @@ for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
 for (x, c) in zip([-u1_500mm[1,1], u2_500mm[1,1], -u3_500mm[1,1]], colors)
-    plot!(x, σVector[1,1]*W/g*1e3, c=c, lw=lw, label=false)
+    plot!(x, σVec[1,1]*W/g*1e3, c=c, lw=lw, label=false)
 end
 for (x, y, c) in zip([u1_b1_th0_ref[1,:], u2_b1_th0_ref[1,:], u3_b1_th0_ref[1,:]], [u1_b1_th0_ref[2,:], u2_b1_th0_ref[2,:], u3_b1_th0_ref[2,:]], colors)
     scatter!(x, y, c=c, ms=ms, msw=msw, label=false)
@@ -181,7 +177,7 @@ for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
 for (x, c) in zip([-u1_500mm[1,2], u2_500mm[1,2], -u3_500mm[1,2]], colors)
-    plot!(x, σVector[1,2]*W/g*1e3, c=c, lw=lw, label=false)
+    plot!(x, σVec[1,2]*W/g*1e3, c=c, lw=lw, label=false)
 end
 for (x, y, c) in zip([u1_b1_th45_ref[1,:], u2_b1_th45_ref[1,:], u3_b1_th45_ref[1,:]], [u1_b1_th45_ref[2,:], u2_b1_th45_ref[2,:], u3_b1_th45_ref[2,:]], colors)
     scatter!(x, y, c=c, ms=ms, msw=msw, label=false)
@@ -197,7 +193,7 @@ for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
 for (x, c) in zip([-u1_500mm[2,1], u2_500mm[2,1], -u3_500mm[2,1]], colors)
-    plot!(x, σVector[2,1]*W/g*1e3, c=c, lw=lw, label=false)
+    plot!(x, σVec[2,1]*W/g*1e3, c=c, lw=lw, label=false)
 end
 for (x, y, c) in zip([u1_b2_th0_ref[1,:], u2_b2_th0_ref[1,:], u3_b2_th0_ref[1,:]], [u1_b2_th0_ref[2,:], u2_b2_th0_ref[2,:], u3_b2_th0_ref[2,:]], colors)
     scatter!(x, y, c=c, ms=ms, msw=msw, label=false)
@@ -213,7 +209,7 @@ for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
 for (x, c) in zip([-u1_500mm[2,2], u2_500mm[2,2], -u3_500mm[2,2]], colors)
-    plot!(x, σVector[2,2]*W/g*1e3, c=c, lw=lw, label=false)
+    plot!(x, σVec[2,2]*W/g*1e3, c=c, lw=lw, label=false)
 end
 for (x, y, c) in zip([u1_b2_th45_ref[1,:], u2_b2_th45_ref[1,:], u3_b2_th45_ref[1,:]], [u1_b2_th45_ref[2,:], u2_b2_th45_ref[2,:], u3_b2_th45_ref[2,:]], colors)
     scatter!(x, y, c=c, ms=ms, msw=msw, label=false)
@@ -229,7 +225,7 @@ for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
 for (x, c) in zip([-u1_500mm[3,1], u2_500mm[3,1], -u3_500mm[3,1]], colors)
-    plot!(x, σVector[3,1]*W/g*1e3, c=c, lw=lw, label=false)
+    plot!(x, σVec[3,1]*W/g*1e3, c=c, lw=lw, label=false)
 end
 for (x, y, c) in zip([u1_b3_th0_ref[1,:], u2_b3_th0_ref[1,:], u3_b3_th0_ref[1,:]], [u1_b3_th0_ref[2,:], u2_b3_th0_ref[2,:], u3_b3_th0_ref[2,:]], colors)
     scatter!(x, y, c=c, ms=ms, msw=msw, label=false)
@@ -245,7 +241,7 @@ for i=1:3
     plot!([NaN], [NaN], c=colors[i], m=colors[i], lw=lw, ms=ms, msw=msw, label=labels[i])
 end
 for (x, c) in zip([-u1_500mm[3,2], u2_500mm[3,2], -u3_500mm[3,2]], colors)
-    plot!(x, σVector[3,2]*W/g*1e3, c=c, lw=lw, label=false)
+    plot!(x, σVec[3,2]*W/g*1e3, c=c, lw=lw, label=false)
 end
 for (x, y, c) in zip([u1_b3_th45_ref[1,:], u2_b3_th45_ref[1,:], u3_b3_th45_ref[1,:]], [u1_b3_th45_ref[2,:], u2_b3_th45_ref[2,:], u3_b3_th45_ref[2,:]], colors)
     scatter!(x, y, c=c, ms=ms, msw=msw, label=false)

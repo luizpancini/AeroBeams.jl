@@ -182,7 +182,7 @@ display(plt_cma)
 savefig(plt_cma,string(absPath,"/heliosPitchManeuverDeltaSweepSingle_cmcurves_",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".pdf"))
 
 # Animation
-anim = plot_dynamic_deformations(dynamicProblem,refBasis="I",followAssembly=true,view=(60,15),fps=fps,plotFrequency=plotFrequency,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[0,500],[-200,50]),legendEntries=["\$ \\delta_f = $(round(Int,δ*180/π)) ^\\circ \$" for δ in ΔδRange],legendPos=(0.1,0.8),save=true,savePath=string(relPath,"/heliosPitchManeuverDeltaSweepSingle__",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".gif"),displayProgress=true)
+anim = plot_dynamic_deformations(dynamicProblem,follow=:basisA,view=(60,15),fps=fps,plotFrequency=plotFrequency,plotDistLoads=false,plotBCs=false,plotLimits=([-100,100],[0,500],[-200,50]),legendEntries=["\$ \\delta_f = $(round(Int,δ*180/π)) ^\\circ \$" for δ in ΔδRange],legendPos=(0.1,0.8),save=true,savePath=string(relPath,"/heliosPitchManeuverDeltaSweepSingle__",aeroSolverStr,"_P",round(P),"_delta",δistr,"_to_",δfstr,".gif"),displayProgress=true)
 display(anim)
 
 println("Finished heliosPitchManeuverDeltaSweepSingle.jl")

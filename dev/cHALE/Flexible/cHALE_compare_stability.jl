@@ -99,7 +99,7 @@ spring1 = create_Spring(elementsIDs=[1],nodesSides=[1],ku=μu*[1; 1; 1],kp=μp*[
 spring2 = create_Spring(elementsIDs=[nElemTailBoom],nodesSides=[2],ku=μu*[1; 1; 1],kp=μp*[1; 1; 1])
 
 # Undeformed jig-shape properties
-model,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=URange[1],nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,k2=k2,hasInducedDrag=hasInducedDrag)
+model,_ = create_cHALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=URange[1],nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,k2=k2,hasInducedDrag=hasInducedDrag)
 x1_0 = vcat([vcat(model.elements[e].r_n1[1],model.elements[e].r_n2[1]) for e in elemRangeRightWing]...)
 x3_0 = vcat([vcat(model.elements[e].r_n1[3],model.elements[e].r_n2[3]) for e in elemRangeRightWing]...)
 
@@ -107,7 +107,7 @@ x3_0 = vcat([vcat(model.elements[e].r_n1[3],model.elements[e].r_n2[3]) for e in 
 for (i,U) in enumerate(URange)
     println("Solving for U = $U m/s")
     # Model for trim problem
-    cHALEtrim,_,_,tailBoom,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
+    cHALEtrim,_,_,tailBoom,_ = create_cHALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=stabilizersAero,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
     # Set initial guess solution as previous known solution
     x0Trim = i == 1 ? zeros(0) : trimProblem[i-1].x
     # Create and trim problem
@@ -131,7 +131,7 @@ for (i,U) in enumerate(URange)
     x1_def[i] = x1_0 .+ u1_of_x1
     x3_def[i] = x3_0 .+ u3_of_x1
     # Model for trim problem with springs
-    cHALEtrimSpringed,_,_,tailBoomSpringed,_ = create_conventional_HALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
+    cHALEtrimSpringed,_,_,tailBoomSpringed,_ = create_cHALE(aeroSolver=aeroSolver,stiffnessFactor=λ,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElevIsTrimVariable=true,thrustIsTrimVariable=true,k2=k2,hasInducedDrag=hasInducedDrag)
     # Add springs
     add_springs_to_beam!(beam=tailBoomSpringed,springs=[spring1,spring2])
     # Update model
@@ -145,7 +145,7 @@ for (i,U) in enumerate(URange)
     trimδSpringed = trimProblemSpringed.x[end]
     println("Trim outputs ratios springed/nominal: AoA = $(trimAoASpringed/trimAoA[i]), T = $(trimThrustSpringed/trimThrust[i]), δ = $(trimδSpringed/trimδ[i])")
     # Model for eigen problem
-    cHALEeigen,_ = create_conventional_HALE(aeroSolver=aeroSolver,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElev=trimδSpringed,thrust=trimThrustSpringed,k2=k2,hasInducedDrag=hasInducedDrag)
+    cHALEeigen,_ = create_cHALE(aeroSolver=aeroSolver,altitude=h,airspeed=U,nElemWing=nElemWing,nElemTailBoom=nElemTailBoom,nElemHorzStabilizer=nElemHorzStabilizer,nElemVertStabilizer=nElemVertStabilizer,stabilizersAero=stabilizersAero,includeVS=includeVS,wingCd0=wingCd0,stabsCd0=stabsCd0,δElev=trimδSpringed,thrust=trimThrustSpringed,k2=k2,hasInducedDrag=hasInducedDrag)
     # Create and solve eigen problem
     eigenProblemAircraft[i] = create_EigenProblem(model=cHALEeigen,nModes=nModesAircraft,frequencyFilterLimits=[1e-1,Inf],refTrimProblem=trimProblemSpringed)
     solve_eigen!(eigenProblemAircraft[i])

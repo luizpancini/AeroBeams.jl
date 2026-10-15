@@ -1,28 +1,137 @@
+## GUST COMPOSITE TYPES
+# ------------------------------------------------------------------------------
 abstract type Gust end
 
-#
-# @with_kw mutable struct SharpEdgedGust <: Gust
+# SharpEdgedGust composite type
+@with_kw struct SharpEdgedGust{F} <: Gust
 
-#     SharpEdgedGust composite type
-
-#
-@with_kw mutable struct SharpEdgedGust <: Gust
-
-    # Primary (necessary for gust creation)
-    initialTime::Real
-    duration::Real
-    convectiveVelocity::Real
-    verticalVelocity::Real
-    p::Vector{<:Real}
+    # Definition fields (inputs for SharpEdgedGust creation)
+    initialTime::Float64
+    duration::Float64
+    convectiveVelocity::Float64
+    verticalVelocity::Float64
+    p::SVector{3,Float64}
     
-    # Secondary (fixed or outputs of gust creation)
-    isDefinedOverTime::Bool = true
-    UGustInertial::Function
-    finalTime::Real
+    # Deduced fields (from SharpEdgedGust inputs)
+    isDefinedOverTime::Bool
+    UGustInertial::F
+    finalTime::Float64
 
 end
 
+# OneMinusCosineGust composite type
+@with_kw struct OneMinusCosineGust{F} <: Gust
 
+    # Definition fields (inputs for OneMinusCosineGust creation)
+    initialTime::Float64
+    duration::Float64
+    convectiveVelocity::Float64
+    verticalVelocity::Float64
+    p::SVector{3,Float64}
+    
+    # Deduced fields (from OneMinusCosineGust inputs)
+    isDefinedOverTime::Bool
+    UGustInertial::F
+    finalTime::Float64
+
+end
+
+# Continuous1DGust composite type
+@with_kw struct Continuous1DGust{F,FU,FV,FW} <: Gust
+
+    # Definition fields (inputs for Continuous1DGust creation)
+    spectrum::Symbol
+    generationMethod::Symbol
+    initialTime::Float64
+    duration::Float64
+    generationDuration::Float64
+    components::Vector{Int}
+    L::Float64
+    ωmin::Float64
+    ωmax::Float64
+    Uref::Float64
+    convectiveVelocity::Float64
+    σ::Float64
+    p::SVector{3,Float64}
+    seed::Int
+    plotPSD::Bool
+    
+    # Deduced fields (from Continuous1DGust inputs)
+    isDefinedOverTime::Bool
+    UGustInertial::F
+    finalTime::Float64
+    U::FU
+    V::FV
+    W::FW
+
+end
+
+# DiscreteSpaceGust composite type
+@with_kw struct DiscreteSpaceGust{F} <: Gust
+
+    # Definition fields (inputs for DiscreteSpaceGust creation)
+    type::Symbol
+    gustLength::Float64
+    gustWidth::Float64
+    convectiveVelocity::Float64
+    verticalVelocity::Float64
+    c0::SVector{3,Float64}
+    p::SVector{3,Float64}
+    
+    # Deduced fields (from DiscreteSpaceGust inputs)
+    isDefinedOverTime::Bool
+    UGustInertial::F
+
+end
+
+# Continuous1DSpaceGust composite type
+@with_kw struct Continuous1DSpaceGust{F,FU,FV,FW} <: Gust
+
+    # Definition fields (inputs for Continuous1DSpaceGust creation)
+    spectrum::Symbol
+    gustLength::Float64
+    N::Int
+    L::Float64
+    σ::Float64
+    c0::SVector{3,Float64}
+    p::SVector{3,Float64}
+    seed::Int
+    
+    # Deduced fields (from Continuous1DSpaceGust inputs)
+    isDefinedOverTime::Bool
+    UGustInertial::F
+    U::FU
+    V::FV
+    W::FW
+
+end
+
+#  Continuous2DSpaceGust composite type
+@with_kw struct Continuous2DSpaceGust{F,FU,FV,FW} <: Gust
+
+    # Definition fields (inputs for Continuous2DSpaceGust creation)
+    spectrum::Symbol
+    gustLength::Float64
+    gustWidth::Float64
+    Nx::Int
+    Ny::Int
+    L::Float64
+    σ::Float64
+    c0::SVector{3,Float64}
+    p::SVector{3,Float64}
+    seed::Int
+    
+    # Deduced fields (from Continuous2DSpaceGust inputs)
+    isDefinedOverTime::Bool
+    UGustInertial::F
+    U::FU
+    V::FV
+    W::FW
+
+end
+
+## PUBLIC API
+# ------------------------------------------------------------------------------
 """
     create_SharpEdgedGust(; kwargs...)
 
@@ -33,52 +142,56 @@ Creates a sharp-edged gust
 - `duration::Real`: duration of the gust
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
 - `verticalVelocity::Real`: peak vertical velocity of the gust (in lift direction)
-- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `p::AbstractVector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
-function create_SharpEdgedGust(; initialTime::Real=0,duration::Real=Inf,convectiveVelocity::Real=0,verticalVelocity::Real,p::Vector{<:Real}=zeros(3))
+function create_SharpEdgedGust(; 
+    initialTime::Real=0,
+    duration::Real=Inf,
+    convectiveVelocity::Real=0,
+    verticalVelocity::Real,
+    p::AbstractVector{<:Real}=zeros(3)
+    )
 
     # Validate
-    @assert duration > 0
-    @assert initialTime >= 0
-    @assert size(p) == (3,)
+    @assert duration > 0 "gust duration must be positive"
+    @assert initialTime >= 0 "initial time must be non-negative"
+    @assert size(p) == (3,) "p must be a 3-element vector"
 
-    # Rotation tensor from the inertial basis to the gust basis
+    # Set correct types
+    initialTime = Float64(initialTime)
+    duration = Float64(duration)
+    convectiveVelocity = Float64(convectiveVelocity)
+    verticalVelocity = Float64(verticalVelocity)
+    p = SVector{3,Float64}(p)   
+
+    # Rotation tensor from the inertial basis to the gust basis and its transpose
     R = rotation_tensor_E321(p)
     RT = R'
 
     # Final time of the gust
     finalTime = initialTime + duration
+
+    # Flag for being defined over time
+    isDefinedOverTime = true
     
     # Set vector of gust velocity (in the inertial frame) function over time
-    UGustInertial = t::Real -> initialTime<t<finalTime ? RT*[0; convectiveVelocity; verticalVelocity] : zeros(3)
+    UGustInertial(t) = initialTime < t < finalTime ?
+                       (RT* @SVector [0, convectiveVelocity, verticalVelocity]) :
+                       z3   
 
-    return SharpEdgedGust(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
+    return SharpEdgedGust(
+        initialTime,
+        duration,
+        convectiveVelocity,
+        verticalVelocity,
+        p,
+        isDefinedOverTime,
+        UGustInertial,
+        finalTime
+        )
 
 end
 export create_SharpEdgedGust
-
-
-#
-# @with_kw mutable struct OneMinusCosineGust <: Gust
-
-#     OneMinusCosineGust composite type
-
-#
-@with_kw mutable struct OneMinusCosineGust <: Gust
-
-    # Primary (necessary for gust creation)
-    initialTime::Real
-    duration::Real
-    convectiveVelocity::Real
-    verticalVelocity::Real
-    p::Vector{<:Real}
-    
-    # Secondary (fixed or outputs of gust creation)
-    isDefinedOverTime::Bool = true
-    UGustInertial::Function
-    finalTime::Real
-
-end
 
 
 """
@@ -91,65 +204,56 @@ Creates a one-minus-cosine gust
 - `duration::Real`: duration of the gust
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
 - `verticalVelocity::Real`: peak vertical velocity of the gust (in lift direction)
-- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `p::AbstractVector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
-function create_OneMinusCosineGust(; initialTime::Real=0,duration::Real,convectiveVelocity::Real=0,verticalVelocity::Real,p::Vector{<:Real}=zeros(3))
+function create_OneMinusCosineGust(; 
+    initialTime::Real=0,
+    duration::Real,
+    convectiveVelocity::Real=0,
+    verticalVelocity::Real,
+    p::AbstractVector{<:Real}=zeros(3)
+    )
 
     # Validate
-    @assert duration > 0
-    @assert initialTime >= 0
-    @assert size(p) == (3,)
+    @assert duration > 0 "gust duration must be positive"
+    @assert initialTime >= 0 "initial time must be non-negative"
+    @assert size(p) == (3,) "p must be a 3-element vector"
 
-    # Rotation tensor from the inertial basis to the gust basis
+    # Set correct types
+    initialTime = Float64(initialTime)
+    duration = Float64(duration)
+    convectiveVelocity = Float64(convectiveVelocity)
+    verticalVelocity = Float64(verticalVelocity)
+    p = SVector{3,Float64}(p)
+
+    # Rotation tensor from the inertial basis to the gust basis and its transpose
     R = rotation_tensor_E321(p)
     RT = R'
 
     # Final time of the gust
     finalTime = initialTime + duration
+
+    # Flag for being defined over time
+    isDefinedOverTime = true
     
     # Set vector of gust velocity (in the inertial frame) function over time
-    UGustInertial = t::Real -> initialTime<t<finalTime ? RT*[0; convectiveVelocity; 1/2*verticalVelocity*(1-cos(2π*(t-initialTime)/duration))] : zeros(3)
+    UGustInertial(t) = initialTime < t < finalTime ? 
+                       (RT* @SVector [0, convectiveVelocity, 1/2*verticalVelocity*(1-cos(2π*(t-initialTime)/duration))]) : 
+                       z3       
 
-    return OneMinusCosineGust(initialTime=initialTime,duration=duration,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,p=p,finalTime=finalTime,UGustInertial=UGustInertial)
+    return OneMinusCosineGust(
+        initialTime,
+        duration,
+        convectiveVelocity,
+        verticalVelocity,
+        p,
+        isDefinedOverTime,
+        UGustInertial,
+        finalTime
+        )
 
 end
 export create_OneMinusCosineGust
-
-
-#
-# @with_kw mutable struct Continuous1DGust <: Gust
-
-#     Continuous1DGust composite type
-
-#
-@with_kw mutable struct Continuous1DGust <: Gust
-
-    # Primary (necessary for gust creation)
-    spectrum::String
-    generationMethod::String
-    initialTime::Real
-    duration::Real
-    generationDuration::Real
-    components::Vector{Int}
-    L::Real
-    ωmin::Real
-    ωmax::Real
-    Uref::Real
-    convectiveVelocity::Real
-    σ::Real
-    p::Vector{<:Real}
-    seed::Int
-    plotPSD::Bool
-    
-    # Secondary (fixed or outputs of gust creation)
-    isDefinedOverTime::Bool = true
-    UGustInertial::Function
-    finalTime::Real
-    U::Function
-    V::Function
-    W::Function
-
-end
 
 
 """
@@ -158,8 +262,8 @@ end
 Creates a continuous 1D gust
 
 # Keyword arguments
-- `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
-- `generationMethod::String`: method for generation of gust velocity ("sinusoids" or "whiteNoise")
+- `spectrum::Symbol`: spectrum of the PSD: von Kármán (:vK) or Dryden (:Dryden)
+- `generationMethod::Symbol`: method for generation of gust velocity (:sinusoids or :whiteNoise)
 - `initialTime::Real`: time when the gust begins
 - `duration::Real`: duration of the gust
 - `generationDuration::Real`: duration of the gust considered for its generation
@@ -170,24 +274,52 @@ Creates a continuous 1D gust
 - `Uref::Real`: reference airspeed
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
 - `σ::Real`: turbulence intensity (RMS) of gust velocity component
-- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `p::AbstractVector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 - `seed::Int`: seed for random numbers generation (reproducibility)
 - `plotPSD::Bool`: flag to plot the PSD
 """
-function create_Continuous1DGust(; spectrum::String="vK",generationMethod::String="sinusoids",initialTime::Real=0,duration::Real,generationDuration::Real=duration,components::Vector{Int}=[3],L::Real=762,ωmin::Real=0,ωmax::Real=200π,Uref::Real,convectiveVelocity::Real=0,σ::Real,p::Vector{<:Real}=zeros(3),seed::Int=123456,plotPSD::Bool=false)
+function create_Continuous1DGust(; 
+    spectrum::Symbol=:vK,
+    generationMethod::Symbol=:sinusoids,
+    initialTime::Real=0,
+    duration::Real,
+    generationDuration::Real=duration,
+    components::Vector{Int}=[3],
+    L::Real=762,
+    ωmin::Real=0,
+    ωmax::Real=200π,
+    Uref::Real,
+    convectiveVelocity::Real=0,
+    σ::Real,
+    p::AbstractVector{<:Real}=zeros(3),
+    seed::Int=123456,
+    plotPSD::Bool=false
+    )
 
     # Validate
-    @assert spectrum in ["vK","Dryden"]
-    @assert generationMethod in ["sinusoids","whiteNoise"]
-    @assert components in [[1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
-    @assert initialTime >= 0
-    @assert 0 < duration <= generationDuration
-    @assert L > 0
-    @assert 0 <= ωmin < ωmax
-    @assert Uref > 0
-    @assert σ > 0
-    @assert size(p) == (3,)
-    @assert seed > 0
+    @assert spectrum in [:vK,:Dryden] "spectrum must be either :vK or :Dryden"
+    @assert generationMethod in [:sinusoids,:whiteNoise] "generationMethod must be either :sinusoids or :whiteNoise"
+    @assert components in [[1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]] "components must be a subset of [1, 2, 3]"
+    @assert initialTime >= 0 "initialTime must be non-negative"
+    @assert 0 < duration <= generationDuration "duration must be positive and less than or equal to generationDuration"
+    @assert L > 0 "L must be positive"
+    @assert 0 <= ωmin < ωmax "ωmin must be non-negative and less than ωmax"
+    @assert Uref > 0 "Uref must be positive"
+    @assert σ > 0 "σ must be positive"
+    @assert size(p) == (3,) "p must be a 3-element vector"
+    @assert seed > 0 "seed must be positive"
+
+    # Set correct types
+    initialTime = Float64(initialTime)
+    duration = Float64(duration)
+    generationDuration = Float64(generationDuration)
+    L = Float64(L)
+    ωmin = Float64(ωmin)
+    ωmax = Float64(ωmax)
+    Uref = Float64(Uref)
+    convectiveVelocity = Float64(convectiveVelocity)
+    σ = Float64(σ)
+    p = SVector{3,Float64}(p)
 
     # Print warning
     if generationDuration > duration
@@ -198,7 +330,7 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
     Random.seed!(seed)
 
     # Get vertical velocity according to generation method
-    if generationMethod == "sinusoids"
+    if generationMethod == :sinusoids
         # Frequency resolution [rad/s]: this ensures a stable value on the RMS of the gust velocity profile
         dω = min(2π/generationDuration, (2π)^2/ωmax) 
         # Frequency vector [rad/s]
@@ -207,10 +339,10 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
         Ω = ω/Uref
         dΩ = dω/Uref
         # PSD [(m/s)^2/(rad/m)]
-        if spectrum == "vK"
+        if spectrum == :vK
             Φu = @. σ^2*2*L/π * 1 / ( 1+(1.339*L*Ω)^2 )^(5/6)
             Φv = Φw = @. σ^2*L/π * ( (1+8/3*(1.339*L*Ω)^2) / (1+(1.339*L*Ω)^2)^(11/6) )
-        elseif spectrum == "Dryden"
+        elseif spectrum == :Dryden
             Φu = @. σ^2*2*L/π * 1 / (1+(L*Ω)^2)^2
             Φv = Φw = @. σ^2*L/π * ( (1+3*(L*Ω)^2) / (1+(L*Ω)^2)^2 )
         end
@@ -222,9 +354,15 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
         ψv = 2π*rand(length(ω))
         ψw = 2π*rand(length(ω))
         # Gust velocity components as functions of time
-        U = 1 in components ? t -> sum( sqrt2dΩΦu .* cos.(ω*t.+ψu) ) : t -> 0
-        V = 2 in components ? t -> sum( sqrt2dΩΦv .* cos.(ω*t.+ψv) ) : t -> 0
-        W = 3 in components ? t -> sum( sqrt2dΩΦw .* cos.(ω*t.+ψw) ) : t -> 0
+        U = 1 in components ? 
+            t -> sum( sqrt2dΩΦu .* cos.(ω*t.+ψu) ) :
+            t -> 0
+        V = 2 in components ?
+            t -> sum( sqrt2dΩΦv .* cos.(ω*t.+ψv) ) :
+            t -> 0
+        W = 3 in components ?
+            t -> sum( sqrt2dΩΦw .* cos.(ω*t.+ψw) ) :
+            t -> 0
         # Plot PSD of normal component, if applicable
         if plotPSD
             Δt = π/ωmax
@@ -238,20 +376,26 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
             plot!(L*Ω,WPSD/(2π)/(σ^2*L/(π*Uref)),c=:blue,lw=2,label="Generated - \$\\Phi_w\$")
             display(plt)
         end
-    elseif generationMethod == "whiteNoise"
+    elseif generationMethod == :whiteNoise
         # Time vector 
         Δt = π/ωmax
         time = collect(0:Δt:generationDuration-Δt)
         # Gust velocity arrays and PSDs
         Uwn,Vwn,Wwn,f,Φu,Φv,Φw = stochastic_gust_velocity_from_white_noise(spectrum,time,Uref,L,σ)
         # Mapping functions
-        itpU = Interpolate(time, Uwn)
-        itpV = Interpolate(time, Vwn)
-        itpW = Interpolate(time, Wwn)
+        itpU = LinearInterpolations.Interpolate(time, Uwn)
+        itpV = LinearInterpolations.Interpolate(time, Vwn)
+        itpW = LinearInterpolations.Interpolate(time, Wwn)
         # Gust velocity components as functions of time
-        U = 1 in components ? t -> itpU(t) : t -> 0
-        V = 2 in components ? t -> itpV(t) .+ convectiveVelocity : t -> 0
-        W = 3 in components ? t -> itpW(t) : t -> 0
+        U = 1 in components ?
+            t -> itpU(t) :
+            t -> 0
+        V = 2 in components ?
+            t -> itpV(t) .+ convectiveVelocity :
+            t -> 0
+        W = 3 in components ?
+            t -> itpW(t) :
+            t -> 0
         # Plot PSD of normal gust velocity, if applicable
         if plotPSD
             f2,_,UPSD = get_FFT_and_PSD(time,Uwn)
@@ -267,44 +411,53 @@ function create_Continuous1DGust(; spectrum::String="vK",generationMethod::Strin
         end
     end
 
-    # Rotation tensor from the inertial basis to the gust basis
+    # Rotation tensor from the inertial basis to the gust basis and its transpose
     R = rotation_tensor_E321(p)
     RT = R'
 
     # Final time of the gust
     finalTime = initialTime + duration
 
-    # Set vector of gust velocity (in the inertial frame) function over time
-    UGustInertial = t::Real -> initialTime<t<finalTime ? RT*[U(t); V(t); W(t)] : zeros(3)
+    # Flag for being defined over time
+    isDefinedOverTime = true
 
-    return Continuous1DGust(spectrum=spectrum,generationMethod=generationMethod,initialTime=initialTime,duration=duration,generationDuration=generationDuration,components=components,L=L,ωmin=ωmin,ωmax=ωmax,Uref=Uref,convectiveVelocity=convectiveVelocity,σ=σ,p=p,seed=seed,plotPSD=plotPSD,finalTime=finalTime,UGustInertial=UGustInertial,U=U,V=V,W=W)
+    # Set vector of gust velocity (in the inertial frame) function over time
+    UGustInertial(t) = initialTime < t < finalTime ? 
+                       (RT * @SVector [U(t), V(t), W(t)]) :
+                       z3
+
+    # Set types
+    F = typeof(UGustInertial)
+    FU = typeof(U)
+    FV = typeof(V)
+    FW = typeof(W)
+
+    return Continuous1DGust{F,FU,FV,FW}(
+        spectrum,
+        generationMethod,
+        initialTime,
+        duration,
+        generationDuration,
+        components,
+        L,
+        ωmin,
+        ωmax,
+        Uref,
+        convectiveVelocity,
+        σ,
+        p,
+        seed,
+        plotPSD,
+        isDefinedOverTime,
+        UGustInertial,
+        finalTime,
+        U,
+        V,
+        W
+        )
 
 end
 export create_Continuous1DGust
-
-
-#
-# @with_kw mutable struct DiscreteSpaceGust <: Gust
-
-#     DiscreteSpaceGust composite type
-
-#
-@with_kw mutable struct DiscreteSpaceGust <: Gust
-
-    # Primary (necessary for gust creation)
-    type::String
-    gustLength::Real
-    gustWidth::Real
-    convectiveVelocity::Real
-    verticalVelocity::Real
-    c0::Vector{<:Real}
-    p::Vector{<:Real}
-    
-    # Secondary (fixed or outputs of gust creation)
-    isDefinedOverTime::Bool = false
-    UGustInertial::Function
-
-end
 
 
 """
@@ -313,86 +466,92 @@ end
 Creates a discrete space gust
 
 # Keyword arguments
-- `type::String`: type of gust
+- `type::Symbol`: type of gust
 - `gustLength::Real`: length of the gust (in longitudinal direction)
 - `gustWidth::Real`: width of the gust (in spanwise direction)
 - `convectiveVelocity::Real`: convective velocity of the gust (in longitudinal direction)
 - `verticalVelocity::Real`: peak vertical velocity of the gust (in lift direction)
-- `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
-- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `c0::AbstractVector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
+- `p::AbstractVector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 """
-function create_DiscreteSpaceGust(; type::String,gustLength::Real,gustWidth::Real,convectiveVelocity::Real=0,verticalVelocity::Real,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3))
+function create_DiscreteSpaceGust(; 
+    type::Symbol,
+    gustLength::Real,
+    gustWidth::Real,
+    convectiveVelocity::Real=0,
+    verticalVelocity::Real,
+    c0::AbstractVector{<:Real}=zeros(3),
+    p::AbstractVector{<:Real}=zeros(3)
+    )
 
     # Validate
-    @assert type in ["SharpEdged","OneMinusCosine","DARPA"]
-    @assert gustLength > 0
-    @assert gustWidth > 0
-    @assert size(c0) == (3,)
-    @assert size(p) == (3,)
+    @assert type in [:SharpEdged,:OneMinusCosine,:DARPA] "specify a valid gust type: :SharpEdged, :OneMinusCosine or :DARPA"
+    @assert gustLength > 0 "gust length must be positive"
+    @assert gustWidth > 0 "gust width must be positive"
+    @assert size(c0) == (3,) "c0 must be a 3-element vector"
+    @assert size(p) == (3,) "p must be a 3-element vector"
 
-    # Rotation tensor from the inertial basis to the gust basis
+    # Set correct types
+    gustLength = Float64(gustLength)
+    gustWidth = Float64(gustWidth)
+    convectiveVelocity = Float64(convectiveVelocity)
+    verticalVelocity = Float64(verticalVelocity)
+    c0 = SVector{3,Float64}(c0)
+    p = SVector{3,Float64}(p)
+
+    # Rotation tensor from the inertial basis to the gust basis and its transpose
     R = rotation_tensor_E321(p)
     RT = R'
 
     # Normalized width coordinate (ranges from -1/2 to 1/2 for -width/2 <= x[1] <= width/2)
-    w = x::AbstractVector{<:Real} -> (x[1]-c0[1])/gustWidth
+    w(x) = (x[1]-c0[1])/gustWidth
 
     # Normalized length coordinate (ranges from 0 to 1 for 0 <= x[2] <= length)
-    l = x::AbstractVector{<:Real} -> (x[2]-c0[2])/gustLength
+    l(x) = (x[2]-c0[2])/gustLength
 
     # Gust front longitudinal coordinate as a function of time
-    c(t::Real) = c0[2] + convectiveVelocity*t
+    c(t) = c0[2] + convectiveVelocity*t
 
-    # TF function for a position vector being inside the gust at a given time
-    isInside(x::AbstractVector{<:Real},t::Real) = -gustWidth/2 <= (x[1]-c0[1]) <= gustWidth/2 && 0 <= x[2]-c(t) <= gustLength
+    # Flag function for a position vector being inside the gust at a given time
+    isInside(x,t) = -gustWidth/2 <= (x[1]-c0[1]) <= gustWidth/2 && 0 <= x[2]-c(t) <= gustLength
 
     # Vector transformation from inertial to gust basis
-    I2g = x::AbstractVector{<:Real} -> RT * x
+    I2g(x) = RT * x
     
     # Set vertical velocity function according to gust type
-    if type == "SharpEdged"
-        W = x::AbstractVector{<:Real} -> verticalVelocity
-    elseif type == "OneMinusCosine"
-        W = x::AbstractVector{<:Real} -> 1/2*verticalVelocity*(1-cos(2π*l(I2g(x))))
-    elseif type == "DARPA"
-        W = x::AbstractVector{<:Real} -> -1/2*verticalVelocity*cos(2π*w(I2g(x)))*(1-cos(2π*l(I2g(x))))
+    W = if type == :SharpEdged
+        x -> verticalVelocity
+    elseif type == :OneMinusCosine
+        x -> 1/2*verticalVelocity*(1-cos(2π*l(x)))
+    elseif type == :DARPA
+        x -> 1/2*verticalVelocity*cos(2π*w(x))*(1-cos(2π*l(x)))
     end
 
-    # Set vector of gust velocity (in the inertial frame) as a function of position and time
-    UGustInertial(x::AbstractVector{<:Real},t::Real) = isInside(I2g(x),t) ? RT*[0; convectiveVelocity; W(x)] : zeros(3)
+    # Flag for being defined over time
+    isDefinedOverTime = false
 
-    return DiscreteSpaceGust(type=type,gustLength=gustLength,gustWidth=gustWidth,convectiveVelocity=convectiveVelocity,verticalVelocity=verticalVelocity,c0=c0,p=p,UGustInertial=UGustInertial)
+    # Set vector of gust velocity (in the inertial frame) as a function of position and time
+    UGustInertial(x,t) = begin
+        xg = I2g(x)
+        isInside(xg,t) ? 
+        (RT * @SVector [0.0, convectiveVelocity, W(xg)]) : 
+        z3
+    end
+
+    return DiscreteSpaceGust(
+        type,
+        gustLength,
+        gustWidth,
+        convectiveVelocity,
+        verticalVelocity,
+        c0,
+        p,
+        isDefinedOverTime,
+        UGustInertial,
+        )
 
 end
 export create_DiscreteSpaceGust
-
-
-#
-# @with_kw mutable struct Continuous1DSpaceGust <: Gust
-
-#     Continuous1DSpaceGust composite type
-
-#
-@with_kw mutable struct Continuous1DSpaceGust <: Gust
-
-    # Primary (necessary for gust creation)
-    spectrum::String
-    gustLength::Real
-    N::Int
-    L::Real
-    σ::Real
-    c0::Vector{<:Real}
-    p::Vector{<:Real}
-    seed::Int
-    
-    # Secondary (fixed or outputs of gust creation)
-    isDefinedOverTime::Bool = false
-    UGustInertial::Function
-    U::Function
-    V::Function
-    W::Function
-
-end
 
 
 """
@@ -401,48 +560,65 @@ end
 Creates a continuous 1D space gust
 
 # Keyword arguments
-- `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
+- `spectrum::Symbol`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
 - `gustLength::Real`: length of the gust (in longitudinal direction)
 - `N::Int`: number of nodes for length discretization
 - `L::Real`: turbulence length scale
 - `σ::Real`: turbulence intensity (RMS) of gust velocity components
-- `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
-- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `c0::AbstractVector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
+- `p::AbstractVector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 - `seed::Int`: seed for random numbers generation (reproducibility)
 - `plotPSD::Bool`: flag to plot the PSD
 """
-function create_Continuous1DSpaceGust(; spectrum::String,gustLength::Real,N::Int=1001,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int=123456,plotPSD::Bool=false)
+function create_Continuous1DSpaceGust(; 
+    spectrum::Symbol,
+    gustLength::Real,
+    N::Int=1001,
+    L::Real=762,
+    σ::Real=1,
+    c0::AbstractVector{<:Real}=zeros(3),
+    p::AbstractVector{<:Real}=zeros(3),
+    seed::Int=123456,
+    plotPSD::Bool=false
+    )
 
     # Validate
-    @assert spectrum in ["vK","Dryden"]
-    @assert gustLength > 0
-    @assert N > 0
-    @assert L > 0
-    @assert size(c0) == (3,)
-    @assert size(p) == (3,)
+    @assert spectrum in [:vK,:Dryden] "spectrum must be either :vK or :Dryden"
+    @assert gustLength > 0 "gustLength must be positive"
+    @assert N > 0 "N must be positive"
+    @assert L > 0 "L must be positive"
+    @assert size(c0) == (3,) "c0 must be a 3-element vector"
+    @assert size(p) == (3,) "p must be a 3-element vector"
+
+    # Set correct types
+    gustLength = Float64(gustLength)
+    L = Float64(L)
+    σ = Float64(σ)
+    c0 = SVector{3,Float64}(c0)
+    p = SVector{3,Float64}(p)
 
     # Rotation tensor from the inertial basis to the gust basis
     R = rotation_tensor_E321(p)
     RT = R'
 
-    # TF function for a position vector being inside the gust
-    isInside(x::AbstractVector{<:Real}) = 0 <= x[2]-c0[2] <= gustLength
+    # Flag function for a position vector being inside the gust
+    isInside(x) = 0 <= x-c0[2] <= gustLength
 
     # Vector transformation from inertial to gust basis
-    I2g = x::AbstractVector{<:Real} -> RT * x
+    I2g = x -> RT * x
 
     # Second (longitudinal) component of the above
-    I2g2 = x::AbstractVector{<:Real} -> I2g(x)[2]
+    I2g2 = x -> I2g(x)[2]
 
     # Non-dimensional spatial frequency vector
     LΩ = 2π*L/gustLength * LinRange(0,div(N-1,2),N)
 
     # 1D gust PSDs
-    if spectrum == "vK"
+    if spectrum == :vK
         Φu = @. σ^2*2*L/π * 1 / ( 1+(1.339*LΩ)^2 )^(5/6)
         Φv = @. σ^2*L/π * ( (1+8/3*(1.339*LΩ)^2) / (1+(1.339*LΩ)^2)^(11/6) )
         Φw = Φv
-    elseif spectrum == "Dryden"
+    elseif spectrum == :Dryden
         Φu = @. σ^2*2*L/π * 1 / (1+(LΩ)^2)^2
         Φv = @. σ^2*L/π * ( (1+3*(LΩ)^2) / (1+(LΩ)^2)^2 )
         Φw = Φv
@@ -457,14 +633,14 @@ function create_Continuous1DSpaceGust(; spectrum::String,gustLength::Real,N::Int
     wn = randn(N)
 
     # Gust velocity components in the spatial frequency domain
-    Un = fft(un) .* sqrt.(Φu)
-    Vn = fft(vn) .* sqrt.(Φv)
-    Wn = fft(wn) .* sqrt.(Φw)
+    Un = FFTW.fft(un) .* sqrt.(Φu)
+    Vn = FFTW.fft(vn) .* sqrt.(Φv)
+    Wn = FFTW.fft(wn) .* sqrt.(Φw)
 
     # Gust velocity components in the spatial domain (values at the nodes)
-    ug = real(ifft(Un))
-    vg = real(ifft(Vn))
-    wg = real(ifft(Wn))
+    ug = real(FFTW.ifft(Un))
+    vg = real(FFTW.ifft(Vn))
+    wg = real(FFTW.ifft(Wn))
 
     # Re-scale
     ug = ug*σ/rms(ug)
@@ -475,14 +651,14 @@ function create_Continuous1DSpaceGust(; spectrum::String,gustLength::Real,N::Int
     X = c0[2] .+ LinRange(0,gustLength,N)
 
     # Mapping functions
-    itpU = Interpolate(X, ug)
-    itpV = Interpolate(X, vg)
-    itpW = Interpolate(X, wg)
+    itpU = LinearInterpolations.Interpolate(X, ug)
+    itpV = LinearInterpolations.Interpolate(X, vg)
+    itpW = LinearInterpolations.Interpolate(X, wg)
 
     # Gust velocity components as functions of spatial coordinate
-    U = x::AbstractVector{<:Real} -> itpU(I2g2(x))
-    V = x::AbstractVector{<:Real} -> itpV(I2g2(x))
-    W = x::AbstractVector{<:Real} -> itpW(I2g2(x))
+    U = x -> itpU(I2g2(x))
+    V = x -> itpV(I2g2(x))
+    W = x -> itpW(I2g2(x))
 
     # Plot PSD, if applicable
     if plotPSD
@@ -496,43 +672,35 @@ function create_Continuous1DSpaceGust(; spectrum::String,gustLength::Real,N::Int
         display(plt)
     end
 
-    # Set vector of gust velocity (in the inertial frame) as a function of position
-    UGustInertial(x::AbstractVector{<:Real},t::Real) = isInside(I2g(x)) ? RT*[U(x); V(x); W(x)] : zeros(3)
+    # Flag for being defined over time
+    isDefinedOverTime = false
 
-    return Continuous1DSpaceGust(spectrum=spectrum,gustLength=gustLength,N=N,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
+    # Set vector of gust velocity (in the inertial frame) as a function of position
+    UGustInertial(x,t) = begin
+        xg2 = I2g2(x)
+        isInside(xg2) ?
+        (RT * @SVector [itpU(xg2), itpV(xg2), itpW(xg2)]) :
+        z3
+    end
+
+    return Continuous1DSpaceGust(
+        spectrum,
+        gustLength,
+        N,
+        L,
+        σ,
+        c0,
+        p,
+        seed,
+        isDefinedOverTime,
+        UGustInertial,
+        U,
+        V,
+        W
+        )
 
 end
 export create_Continuous1DSpaceGust
-
-
-#
-# @with_kw mutable struct Continuous2DSpaceGust <: Gust
-
-#     Continuous2DSpaceGust composite type
-
-#
-@with_kw mutable struct Continuous2DSpaceGust <: Gust
-
-    # Primary (necessary for gust creation)
-    spectrum::String
-    gustLength::Real
-    gustWidth::Real
-    Nx::Int
-    Ny::Int
-    L::Real
-    σ::Real
-    c0::Vector{<:Real}
-    p::Vector{<:Real}
-    seed::Int
-    
-    # Secondary (fixed or outputs of gust creation)
-    isDefinedOverTime::Bool = false
-    UGustInertial::Function
-    U::Function
-    V::Function
-    W::Function
-
-end
 
 
 """
@@ -541,47 +709,66 @@ end
 Creates a continuous 2D space gust
 
 # Keyword arguments
-- `spectrum::String`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
+- `spectrum::Symbol`: spectrum of the PSD: von Kármán ("vK") or Dryden ("Dryden")
 - `gustLength::Real`: length of the gust (in longitudinal direction)
 - `gustWidth::Real`: width of the gust (in lateral direction)
 - `Nx::Int`: number of nodes for length discretization
 - `Ny::Int`: number of nodes for width discretization
 - `L::Real`: turbulence length scale
 - `σ::Real`: turbulence intensity (RMS) of gust velocity component
-- `c0::Vector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
-- `p::Vector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
+- `c0::AbstractVector{<:Real}`: position vector of the front of the gust, resolved in the inertial basis
+- `p::AbstractVector{<:Real}`: Euler rotation parameters (3-2-1 sequence) from the inertial basis to the gust basis
 - `seed::Int`: seed for random numbers generation (reproducibility)
 """
-function create_Continuous2DSpaceGust(; spectrum::String,gustLength::Real,gustWidth::Real,Nx::Int=101,Ny::Int=101,L::Real=762,σ::Real=1,c0::Vector{<:Real}=zeros(3),p::Vector{<:Real}=zeros(3),seed::Int=123456)
+function create_Continuous2DSpaceGust(;
+    spectrum::Symbol,
+    gustLength::Real,
+    gustWidth::Real,
+    Nx::Int=101,
+    Ny::Int=101,
+    L::Real=762,
+    σ::Real=1,
+    c0::AbstractVector{<:Real}=zeros(3),
+    p::AbstractVector{<:Real}=zeros(3),
+    seed::Int=123456
+    )
 
     # Validate
-    @assert spectrum in ["vK","Dryden"]
-    @assert gustLength > 0
-    @assert gustWidth > 0
-    @assert Nx > 0
-    @assert Ny > 0
-    @assert L > 0
-    @assert size(c0) == (3,)
-    @assert size(p) == (3,)
+    @assert spectrum in [:vK,:Dryden] "spectrum must be either :vK or :Dryden"
+    @assert gustLength > 0 "gustLength must be positive"
+    @assert gustWidth > 0 "gustWidth must be positive"
+    @assert Nx > 0 "Nx must be positive"
+    @assert Ny > 0 "Ny must be positive"
+    @assert L > 0 "L must be positive"
+    @assert size(c0) == (3,) "c0 must be a 3-element vector"
+    @assert size(p) == (3,) "p must be a 3-element vector"
+
+    # Set correct types
+    gustLength = Float64(gustLength)
+    gustWidth = Float64(gustWidth)
+    L = Float64(L)
+    σ = Float64(σ)
+    c0 = SVector{3,Float64}(c0)
+    p = SVector{3,Float64}(p)
 
     # Rotation tensor from the inertial basis to the gust basis
     R = rotation_tensor_E321(p)
     RT = R'
 
-    # TF function for a position vector being inside the gust
-    isInside(x::AbstractVector{<:Real}) = -gustWidth/2 <= x[1]-c0[1] <= gustWidth/2 && 0 <= x[2]-c0[2] <= gustLength
+    # Flag function for a position vector being inside the gust
+    isInside(x) = -gustWidth/2 <= x[1]-c0[1] <= gustWidth/2 && 0 <= x[2]-c0[2] <= gustLength
 
     # Vector transformation from inertial to gust basis
-    I2g = x::AbstractVector{<:Real} -> RT * x
+    I2g = x -> RT * x
 
     # Longitudinal and lateral components of the above
-    I2g12 = x::AbstractVector{<:Real} -> I2g(x)[1:2]
+    I2g12 = x -> I2g(x)[1:2]
 
     # Constant
-    if spectrum == "vK"
-        a = 1.339
-    elseif spectrum == "Dryden"
-        a = 1
+    a = if spectrum == :vK
+        1.339
+    elseif spectrum == :Dryden
+        1
     end
 
     # Non-dimensional spatial frequency vectors
@@ -589,12 +776,12 @@ function create_Continuous2DSpaceGust(; spectrum::String,gustLength::Real,gustWi
     aLΩy = 2π*a*L/gustLength * LinRange(0,div(Ny-1,2),Ny)
 
     # 2D gust PSD matrices
-    if spectrum == "vK"
+    if spectrum == :vK
         # Uncorrelated PSDs (Etkin - Dynamics of Atmospheric Flight)
         Φuu = [(σ*a*L)^2/(6π)/(1+aLΩx[i]^2+aLΩy[j]^2)^(7/3) * (1+aLΩx[i]^2+11/3*aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
         Φvv = [(σ*a*L)^2/(6π)/(1+aLΩx[i]^2+aLΩy[j]^2)^(7/3) * (1+11/3*aLΩx[i]^2+aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
         Φww = [(σ*a*L)^2/(9π)/(1+aLΩx[i]^2+aLΩy[j]^2)^(7/3) * 4*(aLΩx[i]^2+aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
-    elseif spectrum == "Dryden"
+    elseif spectrum == :Dryden
         # Correlated PSDs (Van Steveren [PhD thesis] - Analysis of Aircraft Responses to Atmospheric Turbulence)
         Φuu = [π*σ^2/(1+aLΩx[i]^2+aLΩy[j]^2)^(5/2) * (1+aLΩx[i]^2+4*aLΩy[j]^2) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
         Φuv = [π*σ^2/(1+aLΩx[i]^2+aLΩy[j]^2)^(5/2) * (-3*aLΩx[i]*aLΩy[j]/L) for i in eachindex(aLΩx), j in eachindex(aLΩy)]
@@ -616,20 +803,20 @@ function create_Continuous2DSpaceGust(; spectrum::String,gustLength::Real,gustWi
     wn = randn(Nx,Ny)
 
     # Gust velocity components in the spatial frequency domain
-    if spectrum == "vK"
-        Un = sqrt.(Φuu) .* fft(un)
-        Vn = sqrt.(Φvv) .* fft(vn)
-        Wn = sqrt.(Φww) .* fft(wn)
-    elseif spectrum == "Dryden"        
-        Un = H11 * fft(un)
-        Vn = H21 * fft(un) + H22 * fft(vn)
-        Wn = H33 * fft(wn)
+    if spectrum == :vK
+        Un = sqrt.(Φuu) .* FFTW.fft(un)
+        Vn = sqrt.(Φvv) .* FFTW.fft(vn)
+        Wn = sqrt.(Φww) .* FFTW.fft(wn)
+    elseif spectrum == :Dryden        
+        Un = H11 * FFTW.fft(un)
+        Vn = H21 * FFTW.fft(un) + H22 * FFTW.fft(vn)
+        Wn = H33 * FFTW.fft(wn)
     end
 
     # Gust velocity components in the time domain
-    ug = real(ifft(Un))
-    vg = real(ifft(Vn))
-    wg = real(ifft(Wn))
+    ug = real(FFTW.ifft(Un))
+    vg = real(FFTW.ifft(Vn))
+    wg = real(FFTW.ifft(Wn))
 
     # Re-scale
     ug = ug*σ/rms(ug)
@@ -641,31 +828,76 @@ function create_Continuous2DSpaceGust(; spectrum::String,gustLength::Real,gustWi
     Y = c0[2] .+ LinRange(0,gustLength,Ny)
 
     # Mapping functions
-    itpU = Interpolate((X,Y), ug)
-    itpV = Interpolate((X,Y), vg)
-    itpW = Interpolate((X,Y), wg)
+    itpU = LinearInterpolations.Interpolate((X,Y), ug)
+    itpV = LinearInterpolations.Interpolate((X,Y), vg)
+    itpW = LinearInterpolations.Interpolate((X,Y), wg)
 
     # Gust velocity components as functions of spatial coordinate
-    U = x::AbstractVector{<:Real} -> itpU(I2g12(x))
-    V = x::AbstractVector{<:Real} -> itpV(I2g12(x))
-    W = x::AbstractVector{<:Real} -> itpW(I2g12(x))
+    U = x -> itpU(I2g12(x))
+    V = x -> itpV(I2g12(x))
+    W = x -> itpW(I2g12(x))
+
+    # Flag for being defined over time
+    isDefinedOverTime = false
 
     # Set vector of gust velocity (in the inertial frame) as a function of position
-    UGustInertial(x::AbstractVector{<:Real},t::Real) = isInside(I2g(x)) ? RT*[U(x); V(x); W(x)] : zeros(3)
+    UGustInertial(x,t) = begin
+        xg12 = I2g12(x)
+        isInside(xg12) ?
+        (RT * @SVector [itpU(xg12), itpV(xg12), itpW(xg12)]) :
+        z3
+    end
 
-    return Continuous2DSpaceGust(spectrum=spectrum,gustLength=gustLength,gustWidth=gustWidth,Nx=Nx,Ny=Ny,L=L,σ=σ,c0=c0,p=p,seed=seed,UGustInertial=UGustInertial,U=U,V=V,W=W)
+    return Continuous2DSpaceGust(
+        spectrum,
+        gustLength,
+        gustWidth,
+        Nx,
+        Ny,
+        L,
+        σ,
+        c0,
+        p,
+        seed,
+        isDefinedOverTime,
+        UGustInertial,
+        U,
+        V,
+        W
+        )
 
 end
 export create_Continuous2DSpaceGust
 
 
 # Computes a stochastic gust velocity array by coloring a white noise signal with the appropriate spectrum
-function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:Real},URef::Real,L::Real=762,σ::Real=1)
+""" 
+    stochastic_gust_velocity_from_white_noise(spectrum::Symbol, t::AbstractVector{<:Real}, URef::Real, L::Real, σ::Real)
 
-    @assert spectrum in ["vK"]
+Computes a stochastic gust velocity array by coloring a white noise signal with the appropriate spectrum.
+
+# Arguments
+- `spectrum::Symbol`: The spectrum type (currently only `:vK` is supported).
+- `t::AbstractVector{<:Real}`: Time vector (must be evenly spaced).
+- `URef::Real`: Reference velocity.
+- `L::Real=762`: Characteristic length scale (default: 762).
+- `σ::Real=1`: Standard deviation of the gust velocity (default: 1).
+
+# Returns
+- `U::Vector{Float64}`: Gust velocity component in the x-direction.
+- `V::Vector{Float64}`: Gust velocity component in the y-direction.
+- `W::Vector{Float64}`: Gust velocity component in the z-direction.
+- `f::Vector{Float64}`: Frequency vector.
+- `Φu::Vector{Float64}`: Power spectral density of the x-component.
+- `Φv::Vector{Float64}`: Power spectral density of the y-component.
+- `Φw::Vector{Float64}`: Power spectral density of the z-component.
+"""
+function stochastic_gust_velocity_from_white_noise(spectrum::Symbol,t::AbstractVector{<:Real},URef::Real,L::Real=762,σ::Real=1)
+
+    @assert spectrum in [:vK] "only :vK spectrum is implemented for white noise gust generation"
     @assert maximum(abs.(diff(diff(t)))) < 1e-6 "t must be an evenly spaced vector"
-    @assert L > 0
-    @assert σ >= 0
+    @assert L > 0 "L must be positive"
+    @assert σ >= 0 "σ must be non-negative"
 
     # Frequency vector
     # --------------------------------------------------------------------------
@@ -680,7 +912,7 @@ function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:
 
     # Transfer function and power spectra
     # --------------------------------------------------------------------------
-    if spectrum == "vK"
+    if spectrum == :vK
         a = 1.339
         T = a*L/URef
         C = σ * sqrt(T/(a*π))
@@ -697,9 +929,9 @@ function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:
     wn_v = randn(N)
     wn_w = randn(N)
     # FFT of white noise signals
-    wnFFT_u = fft(wn_u)
-    wnFFT_v = fft(wn_v)
-    wnFFT_w = fft(wn_w)
+    wnFFT_u = FFTW.fft(wn_u)
+    wnFFT_v = FFTW.fft(wn_v)
+    wnFFT_w = FFTW.fft(wn_w)
     # FFT of the gust velocity components ("color" white noise with the power spectra)
     UFFT = @. wnFFT_u * sqrt(Φu)
     VFFT = @. wnFFT_v * sqrt(Φv)
@@ -707,12 +939,14 @@ function stochastic_gust_velocity_from_white_noise(spectrum::String,t::Vector{<:
 
     # Gust velocity components in time domain (re-scale to have the exact input RMS)
     # --------------------------------------------------------------------------
-    U = real(ifft(UFFT))
-    V = real(ifft(VFFT))
-    W = real(ifft(WFFT))
+    U = real(FFTW.ifft(UFFT))
+    V = real(FFTW.ifft(VFFT))
+    W = real(FFTW.ifft(WFFT))
     U = U*σ/rms(U)
     V = V*σ/rms(V)
     W = W*σ/rms(W)
 
     return U,V,W,f,Φu,Φv,Φw
+
 end
+export stochastic_gust_velocity_from_white_noise

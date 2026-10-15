@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/examples/PazyWingTorsionTest.jl"
+EditURL = "../../../test/examples/staticStructural/PazyWingTorsionTest.jl"
 ```
 
 # Static structural analysis of the Pazy wing
@@ -9,16 +9,16 @@ This example illustrates how to set up a static structural analysis, using the T
 *Pazy wing coupled bending-torsion test* by [Avin et al.](https://doi.org/10.2514/1.J060621)
 
 !!! tip
-    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/PazyWingTorsionTest.jl).
+    The code for this example is available [here](https://github.com/luizpancini/AeroBeams.jl/blob/main/test/examples/staticStructural/PazyWingTorsionTest.jl).
 
 ### Problem setup
 Let's begin by setting the variables of our problem. In this example we will analyze the displacements and twist of the clamped wing caused by the attachment of a range of tip masses. Notice that we bring into scope some fixed geometrical and discretization properties of the wing's beam through the function [`geometrical_properties_Pazy`](@ref geometrical_properties_Pazy).
 
 ````@example PazyWingTorsionTest
-using AeroBeams, DelimitedFiles
+using AeroBeams
 
 # Fixed geometrical properties
-nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+nElem,L,chord,normSparPos,_ = geometrical_properties_Pazy()
 
 # Set tip mass range
 mRange = collect(0:0.1:3)
@@ -26,6 +26,7 @@ mRange = collect(0:0.1:3)
 # Initialize outputs
 tip_twist = Array{Float64}(undef,length(mRange))
 tip_OOP = Array{Float64}(undef,length(mRange))
+problem = Array{SteadyProblem}(undef,length(mRange))
 nothing #hide
 ````
 
@@ -38,14 +39,12 @@ for (i,m) in enumerate(mRange)
     # Create model with current tip mass 80 mm behind the trailing-edge
     PazyWingTorsionTest,_ = create_Pazy(tipMass=m,ηtipMass=[0;-(chord*(1-normSparPos)+0.08);0])
     # Create and solve problem
-    global problem = create_SteadyProblem(model=PazyWingTorsionTest)
-    solve!(problem)
+    problem[i] = create_SteadyProblem(model=PazyWingTorsionTest)
+    solve!(problem[i])
     # Get twist and OOP displacement at midchord
-    tip_p = problem.nodalStatesOverσ[end][nElem].p_n2
-    R,_ = rotation_tensor_WM(tip_p)
-    Δ = R*[0; 1; 0]
-    tip_twist[i] = asind(Δ[3])
-    tip_OOP[i] = problem.nodalStatesOverσ[end][nElem].u_n2[3] - chord*(1/2-normSparPos)*sind(tip_twist[i])
+    tipNodeFinalState = problem[i].loadstepHistory.states[end][nElem].nodal
+    tip_twist[i] = twist_angle(tipNodeFinalState.p2_b)
+    tip_OOP[i] = tipNodeFinalState.u2[3] - chord*(1/2-normSparPos)*sind(tip_twist[i])
 end
 nothing #hide
 ````
@@ -65,7 +64,6 @@ nothing #hide
 We can now plot the out-of-plane (OOP) tip displacement and tip twist as functions of the tip mass. The following "experimental" results were taken from Figure 17 of the paper by [Avin et al.](https://doi.org/10.2514/1.J060621). The correlation with the reference data is good.
 
 ````@example PazyWingTorsionTest
-using Plots
 gr()
 ENV["GKSwstype"] = "100" #hide
 

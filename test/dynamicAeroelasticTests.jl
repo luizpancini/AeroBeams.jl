@@ -1,157 +1,130 @@
-# Dynamic aeroelastic problems
-
 @testset "Dynamic analysis of the Blended-Wing-Body vehicle undergoing a checked pitch maneuver" begin
-    include("examples/BWBcheckedPitchManeuver.jl")
-    # Self-comparison
-    rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "rootAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "BWBcheckedPitchManeuver", "Deltau3.txt"))
-    @test rootAoA ≈ rootAoA_ atol=SELFatol rtol=SELFrtol
-    @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/dynamicAeroelastic/BWBcheckedPitchManeuver.jl")
+    @test matches_test_data(rootAoA, "BWBcheckedPitchManeuver", "rootAoA.txt")
+    @test matches_test_data(Δu3, "BWBcheckedPitchManeuver", "Deltau3.txt")
 end
 
-## Reduce CI time
-# @testset "Dynamic analysis of the conventional HALE aircraft undergoing a checked pitch maneuver" begin
-#     include("examples/conventionalHALECheckedPitchManeuver.jl")
-#     # Self-comparison
-#     wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "wingAoA.txt"))
-#     Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedPitchManeuver", "Deltau3.txt"))
-#     @test wingAoA ≈ wingAoA_ atol=SELFatol rtol=SELFrtol
-#     @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
-# end
+!is_ci && @testset "Dynamic analysis of the conventional HALE aircraft undergoing a checked pitch maneuver" begin
+    include_example("examples/dynamicAeroelastic/cHALECheckedPitchManeuver.jl")
+    @test matches_test_data(wingAoA, "cHALECheckedPitchManeuver", "wingAoA.txt")
+    @test matches_test_data(Δu3, "cHALECheckedPitchManeuver", "Deltau3.txt")
+end
 
 @testset "Dynamic analysis of the conventional HALE aircraft undergoing a coordinated turn maneuver" begin
-    include("examples/conventionalHALECheckedRollManeuver.jl")
-    # Self-comparison
-    wingAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "wingAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "conventionalHALECheckedRollManeuver", "Deltau3.txt"))
-    @test wingAoA ≈ wingAoA_ atol=SELFatol rtol=SELFrtol
-    @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/dynamicAeroelastic/cHALECheckedRollManeuver.jl")
+    @test matches_test_data(wingAoA, "cHALECheckedRollManeuver", "wingAoA.txt")
+    @test matches_test_data(Δu3, "cHALECheckedRollManeuver", "Deltau3.txt")
 end
 
-## Reduce CI time
-# @testset "Dynamic analysis of the baseline Healy FFWT wing under a series of one-minus-cosine gusts" begin
-#     include("examples/HealyBaselineFFWTOMCGustFloating.jl")
-#     # Self-comparison
-#     for (i,ω) in enumerate(ωRange)
-#         M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("M2root_omega",ω,".txt")))
-#         ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating", string("fold_omega",ω,".txt")))
-#         @test M2root[i] ≈ M2root_ atol=SELFatol rtol=SELFrtol
-#         @test ϕ[i] ≈ ϕ_ atol=SELFatol rtol=SELFrtol
-#     end
-# end
+!is_ci && @testset "Dynamic analysis of the baseline Healy FFWT wing under a series of one-minus-cosine gusts" begin
+    include_example("examples/dynamicAeroelastic/HealyBaselineFFWTOMCGustFloating.jl")
+    @test matches_test_data(M2root, "HealyBaselineFFWTOMCGustFloating", "M2root.txt")
+    @test matches_test_data(ϕ, "HealyBaselineFFWTOMCGustFloating", "fold.txt")
+end
 
 @testset "Dynamic analysis of the baseline Healy FFWT wing for a specific one-minus-cosine gust" begin
-    include("examples/HealyBaselineFFWTOMCGustFloating2.jl")
-    # Self-comparison
-    M2root_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating2", "M2root.txt"))
-    ϕ_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "HealyBaselineFFWTOMCGustFloating2", "fold.txt"))
-    @test M2root ≈ M2root_ atol=SELFatol rtol=SELFrtol
-    @test ϕ ≈ ϕ_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/dynamicAeroelastic/HealyBaselineFFWTOMCGustFloating2.jl")
+    @test matches_test_data(M2root, "HealyBaselineFFWTOMCGustFloating2", "M2root.txt")
+    @test matches_test_data(ϕ, "HealyBaselineFFWTOMCGustFloating2", "fold.txt")
 end
 
 @testset "Dynamic analysis of the Helios flying-wing undergoing a checked pitch maneuver" begin
-    include("examples/heliosCheckedPitchManeuver.jl")
-    # Self-comparison
-    rootAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosCheckedPitchManeuver", "rootAoA.txt"))
-    Δu3_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "heliosCheckedPitchManeuver", "Deltau3.txt"))
-    @test rootAoA ≈ rootAoA_ atol=SELFatol rtol=SELFrtol
-    @test Δu3 ≈ Δu3_ atol=SELFatol rtol=SELFrtol
+    include_example("examples/dynamicAeroelastic/heliosCheckedPitchManeuver.jl")
+    @test matches_test_data(rootAoA, "heliosCheckedPitchManeuver", "rootAoA.txt")
+    @test matches_test_data(Δu3, "heliosCheckedPitchManeuver", "Deltau3.txt")
 end
-GC.gc()
-sleep(1)
 
-## Reduce CI time
-# @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin
-#     include("examples/PazyWingContinuous1DGust.jl")
-#     # Self-comparison
-#     tipAoA_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipAoA.txt")))
-#     tipOOP_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tipOOP.txt")))
-#     tqSpan_cn_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cn.txt")))
-#     tqSpan_cm_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_cm.txt")))
-#     tqSpan_ct_ = vec(readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DGust", "tqSpan_ct.txt")))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
-# end
+!is_ci && @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over time" begin
+    include_example("examples/dynamicAeroelastic/PazyWingContinuous1DGust.jl")
+    @test matches_test_data(tipAoA, "PazyWingContinuous1DGust", "tipAoA.txt")
+    @test matches_test_data(tipOOP, "PazyWingContinuous1DGust", "tipOOP.txt")
+    @test matches_test_data(tqSpan_cn, "PazyWingContinuous1DGust", "tqSpan_cn.txt")
+    @test matches_test_data(tqSpan_cm, "PazyWingContinuous1DGust", "tqSpan_cm.txt")
+    @test matches_test_data(tqSpan_ct, "PazyWingContinuous1DGust", "tqSpan_ct.txt")
+end
 
-## Reduce CI time
-# @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over space" begin
-#     include("examples/PazyWingContinuous1DSpaceGust.jl")
-#     # Self-comparison
-#     tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tipAoA.txt"))
-#     tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tipOOP.txt"))
-#     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cn.txt"))
-#     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_cm.txt"))
-#     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous1DSpaceGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
-# end
+!is_ci && @testset "Dynamic analysis of the Pazy wing encountering a continuous, 1-dimensional gust defined over space" begin
+    include_example("examples/dynamicAeroelastic/PazyWingContinuous1DSpaceGust.jl")
+    @test matches_test_data(tipAoA, "PazyWingContinuous1DSpaceGust", "tipAoA.txt")
+    @test matches_test_data(tipOOP, "PazyWingContinuous1DSpaceGust", "tipOOP.txt")
+    @test matches_test_data(tqSpan_cn, "PazyWingContinuous1DSpaceGust", "tqSpan_cn.txt")
+    @test matches_test_data(tqSpan_cm, "PazyWingContinuous1DSpaceGust", "tqSpan_cm.txt")
+    @test matches_test_data(tqSpan_ct, "PazyWingContinuous1DSpaceGust", "tqSpan_ct.txt")
+end
 
-## Reduce CI time
-# @testset "Dynamic analysis of the Pazy wing encountering a continuous, 2-dimensional gust" begin
-#     include("examples/PazyWingContinuous2DSpaceGust.jl")
-#     # Self-comparison
-#     tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tipAoA.txt"))
-#     tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tipOOP.txt"))
-#     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cn.txt"))
-#     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_cm.txt"))
-#     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingContinuous2DSpaceGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
-# end
+!is_ci && @testset "Dynamic analysis of the Pazy wing encountering a continuous, 2-dimensional gust" begin
+    include_example("examples/dynamicAeroelastic/PazyWingContinuous2DSpaceGust.jl")
+    @test matches_test_data(tipAoA, "PazyWingContinuous2DSpaceGust", "tipAoA.txt")
+    @test matches_test_data(tipOOP, "PazyWingContinuous2DSpaceGust", "tipOOP.txt")
+    @test matches_test_data(tqSpan_cn, "PazyWingContinuous2DSpaceGust", "tqSpan_cn.txt")
+    @test matches_test_data(tqSpan_cm, "PazyWingContinuous2DSpaceGust", "tqSpan_cm.txt")
+    @test matches_test_data(tqSpan_ct, "PazyWingContinuous2DSpaceGust", "tqSpan_ct.txt")
+end
 
-## Reduce CI time
-# @testset "Dynamic analysis of the Pazy wing encountering a DARPA gust" begin
-#     include("examples/PazyWingDARPAGust.jl")
-#     # Self-comparison
-#     tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tipAoA.txt"))
-#     tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tipOOP.txt"))
-#     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tqSpan_cn.txt"))
-#     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tqSpan_cm.txt"))
-#     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingDARPAGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
-# end
+!is_ci && @testset "Dynamic analysis of the Pazy wing encountering a DARPA gust" begin
+    include_example("examples/dynamicAeroelastic/PazyWingDARPAGust.jl")
+    @test matches_test_data(tipAoA, "PazyWingDARPAGust", "tipAoA.txt")
+    @test matches_test_data(tipOOP, "PazyWingDARPAGust", "tipOOP.txt")
+    @test matches_test_data(tqSpan_cn, "PazyWingDARPAGust", "tqSpan_cn.txt")
+    @test matches_test_data(tqSpan_cm, "PazyWingDARPAGust", "tqSpan_cm.txt")
+    @test matches_test_data(tqSpan_ct, "PazyWingDARPAGust", "tqSpan_ct.txt")
+end
 
-## Reduce CI time
-# @testset "Dynamic analysis of the Pazy wing encountering a one-minus-cosine gust" begin
-#     include("examples/PazyWingOMCGust.jl")
-#     # Self-comparison
-#     tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tipAoA.txt"))
-#     tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tipOOP.txt"))
-#     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tqSpan_cn.txt"))
-#     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tqSpan_cm.txt"))
-#     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingOMCGust", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
-# end
+!is_ci && @testset "Dynamic analysis of the Pazy wing encountering a one-minus-cosine gust" begin
+    include_example("examples/dynamicAeroelastic/PazyWingOMCGust.jl")
+    @test matches_test_data(tipAoA, "PazyWingOMCGust", "tipAoA.txt")
+    @test matches_test_data(tipOOP, "PazyWingOMCGust", "tipOOP.txt")
+    @test matches_test_data(tqSpan_cn, "PazyWingOMCGust", "tqSpan_cn.txt")
+    @test matches_test_data(tqSpan_cm, "PazyWingOMCGust", "tqSpan_cm.txt")
+    @test matches_test_data(tqSpan_ct, "PazyWingOMCGust", "tqSpan_ct.txt")
+end
 
-## Reduce CI time
-# @testset "Dynamic analysis of the Pazy wing with a tip impulse force" begin
-#     include("examples/PazyWingTipImpulse.jl")
-#     # Self-comparison
-#     tipAoA_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tipAoA.txt"))
-#     tipOOP_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tipOOP.txt"))
-#     tqSpan_cn_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tqSpan_cn.txt"))
-#     tqSpan_cm_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tqSpan_cm.txt"))
-#     tqSpan_ct_ = readdlm(joinpath(@__DIR__, "newTestDataGenerators", "PazyWingTipImpulse", "tqSpan_ct.txt"))
-#     @test tipAoA[end] ≈ tipAoA_[end] atol=SELFatol rtol=SELFrtol
-#     @test tipOOP[end] ≈ tipOOP_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cn[end] ≈ tqSpan_cn_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_cm[end] ≈ tqSpan_cm_[end] atol=SELFatol rtol=SELFrtol
-#     @test tqSpan_ct[end] ≈ tqSpan_ct_[end] atol=SELFatol rtol=SELFrtol
-# end
+# Reduce CI time
+!is_ci && @testset "Dynamic analysis of the Pazy wing with a tip impulse force" begin
+    include_example("examples/dynamicAeroelastic/PazyWingTipImpulse.jl")
+    @test matches_test_data(tipAoA, "PazyWingTipImpulse", "tipAoA.txt")
+    @test matches_test_data(tipOOP, "PazyWingTipImpulse", "tipOOP.txt")
+    @test matches_test_data(tqSpan_cn, "PazyWingTipImpulse", "tqSpan_cn.txt")
+    @test matches_test_data(tqSpan_cm, "PazyWingTipImpulse", "tqSpan_cm.txt")
+    @test matches_test_data(tqSpan_ct, "PazyWingTipImpulse", "tqSpan_ct.txt")
+end
+
+!is_ci && @testset "Dynamic analysis of the baseline Healy locked FFWT wing under a series of one-minus-cosine gusts" begin
+    include_example("examples/dynamicAeroelastic/HealyBaselineFFWTlockedOMCGustFloating.jl")
+    @test matches_test_data(M2root, "HealyBaselineFFWTlockedOMCGustFloating", "M2root.txt")
+end
+
+!is_ci && @testset "Dynamic analysis of the baseline Healy free and locked FFWT wings under one-minus-cosine gusts" begin
+    include_example("examples/dynamicAeroelastic/HealyBaselineFFWTlockedVfreeOMCGustFloating.jl")
+    @test matches_test_data(ΔM2peaks, "HealyBaselineFFWTlockedVfreeOMCGustFloating", "dM2peaks.txt")
+end
+
+!is_ci && @testset "Dynamic analysis of the Healy sideslip FFWT wing under a one-minus-cosine gust" begin
+    include_example("examples/dynamicAeroelastic/HealySideslipFFWTOMCGustFloating.jl")
+    @test matches_test_data(tipOOP, "HealySideslipFFWTOMCGustFloating", "tipOOP.txt")
+    @test matches_test_data(M2_root, "HealySideslipFFWTOMCGustFloating", "M2_root.txt")
+    @test matches_test_data(root_αₑ, "HealySideslipFFWTOMCGustFloating", "root_alphae.txt")
+    @test matches_test_data(root_cn, "HealySideslipFFWTOMCGustFloating", "root_cn.txt")
+end
+
+!is_ci && @testset "Dynamic analysis of the Pazy FFWT wing under a one-minus-cosine gust" begin
+    include_example("examples/dynamicAeroelastic/PazyFFWTOMCGustFloating.jl")
+    @test matches_test_data(ϕ, "PazyFFWTOMCGustFloating", "fold.txt")
+    @test matches_test_data(tipOOP, "PazyFFWTOMCGustFloating", "tipOOP.txt")
+    @test matches_test_data(M2_root, "PazyFFWTOMCGustFloating", "M2_root.txt")
+    @test matches_test_data(tqSpan_cn, "PazyFFWTOMCGustFloating", "tqSpan_cn.txt")
+end
+
+!is_ci && @testset "Dynamic analysis of a rotating wing using the dynamic stall model" begin
+    include_example("examples/dynamicAeroelastic/rotorDStest.jl")
+    @test matches_test_data(cl, "rotorDStest", "cl.txt")
+    @test matches_test_data(cm, "rotorDStest", "cm.txt")
+    @test matches_test_data(cdrag, "rotorDStest", "cdrag.txt")
+end
+
+@testset "Dynamic analysis of a pitching wing with dynamic stall models" begin
+    include_example("examples/dynamicAeroelastic/wingDStest.jl")
+    @test matches_test_data(cl, "wingDStest", "cl.txt")
+    @test matches_test_data(cm, "wingDStest", "cm.txt")
+    @test matches_test_data(cdrag, "wingDStest", "cdrag.txt")
+end

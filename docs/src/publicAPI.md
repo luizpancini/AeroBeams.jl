@@ -26,10 +26,13 @@ IndicialGust
 
 ### Creating an airfoil
 ```@docs
+create_FlapParameters
 create_Airfoil
-create_flapped_Airfoil
-update_Airfoil_params!
+update_all_airfoil_parameters!
+modified_database
 ```
+
+The following airfoils are predefined: `FlatPlate`, `NACA0002`, `NACA0012`, `NACA0015`, `NACA0018`, `NACA23012A`, `VERTOL23010`, `HeliosWingAirfoil`, `HeliosPodAirfoil`, `BWBAirfoil` and `cHALEairfoil`. Use `deepcopy` to get an independent copy before modifying one of them.
 
 ### Creating an aerodynamic surface
 ```@docs
@@ -39,23 +42,30 @@ create_AeroSurface
 ### Creating an atmosphere
 ```@docs
 standard_atmosphere
+air_properties_from_pressure_and_temperature
 ```
 
 ### Creating boundary conditions
 ```@docs
 create_BC
+reset_BC_beam!
 ```
 
 ### Creating a beam
 ```@docs
 create_Beam
-update_beam!
-add_point_inertias_to_beam!
-add_loads_to_beam!
-add_initial_displacements_and_velocities_to_beam!
-add_springs_to_beam!
+update_beam_orientation!
+add_distributed_loads_to_beam!
+add_initial_conditions_to_beam!
+add_point_inertia_to_beam!
+add_spring_to_beam!
 add_spring_to_beams!
+add_surface_to_beam!
+remove_all_loads_from_beams!
+remove_all_initial_conditions_from_beams!
 remove_all_springs_from_beams!
+remove_all_point_inertias_from_beams!
+remove_surface_from_beams!
 ```
 
 ### Creating a gust
@@ -66,6 +76,8 @@ create_Continuous1DGust
 create_DiscreteSpaceGust
 create_Continuous1DSpaceGust
 create_Continuous2DSpaceGust
+stochastic_gust_velocity_from_white_noise
+remove_gust!
 ```
 
 ### Creating a link
@@ -77,13 +89,21 @@ create_FlapLink
 ### Creating a model
 ```@docs
 create_Model
-update_model!
-set_motion_basis_A!
+add_BCs_to_model!
+update_model_BCs!
+update_model_links!
+update_model_hinge_axis_constraints!
+update_initial_rotation_of_basis_A!
+update_u_A!
+update_v_A!
+update_vdot_A!
+update_ω_A!
+update_ωdot_A!
 ```
 
 ### Creating a point inertia
 ```@docs
-PointInertia
+create_PointInertia
 ```
 
 ### Creating a hinge axis constraint
@@ -93,7 +113,6 @@ create_HingeAxisConstraint
 
 ### Creating and solving a problem
 ```@docs
-InitialVelocitiesUpdateOptions
 create_SteadyProblem
 create_TrimProblem
 create_EigenProblem
@@ -108,11 +127,10 @@ geometrical_properties_Pazy
 tip_loss_function_Pazy
 typical_section_data
 create_Pazy
-create_PazyFFWT
 create_SMW
 create_TDWing
 create_Helios
-create_conventional_HALE
+create_cHALE
 create_BWB
 create_HealyBaselineFFWT
 create_HealySideslipFFWT
@@ -127,29 +145,45 @@ create_Spring
 
 ### Creating a system solver
 ```@docs
+create_LinearSolver
 create_NewtonRaphson
+create_NLsolver
+create_ArclengthSolver
+create_TrimSolver
 ```
 
 ### Creating a units system
 ```@docs
 create_UnitsSystem
+feet2meters
+pounds2kilograms
+rads2Hz
+Hz2rads
+rpm2rads
+rads2rpm
 ```
 
 ### Utilities
 ```@docs
+round_off
 round_off!
+AeroBeams.average
 rms
 tilde
 axial
 gauss_legendre
 isotropic_stiffness_matrix
+anisotropic_stiffness_matrix
 inertia_matrix
 rotation_tensor_E321
 rotation_tensor_E213
 rotation_tensor_E231
 rotation_tensor_E313
+rotation_tensor_quaternion
+transform_to_WM
 rotation_tensor_WM
 scaled_rotation_parameters
+twist_angle
 rotation_angle
 rotation_angle_limited
 rotation_parameters_WM
@@ -160,24 +194,25 @@ WM_to_yrp
 yrp_to_WM
 rotation_between_WM
 mode_tracking
-mode_tracking_hungarian
-find_non_oscillatory_instability
+filter_tracked_modes
+find_flutter
+find_divergence
+blockdiag_dense
 moving_average
 get_FFT_and_PSD
 local_extrema
-Newton_solver
 backward_extrapolation
 count_of_exceedance
 frequency_of_exceedance
 gcd_floats_approx
 spectrogram
-fix_nans
 NASA_frames_loader
 GU_frames_loader
 ```
 
 ### Visualizing the results
 ```@docs
+get_undeformed_airfoil_coords
 plot_undeformed_assembly
 plot_steady_deformation
 plot_steady_deformations
