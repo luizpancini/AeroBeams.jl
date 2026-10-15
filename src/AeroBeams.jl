@@ -65,7 +65,7 @@ export cross, Diagonal, diagm, dot, I, norm, tr
 export interpolate, Interpolate
 
 # Plots exports
-export @animate, @layout, annotate!, font, gif, gr, heatmap, plot, plot!, plot_color, savefig, scatter, scatter!, Shape, surface, surface!, text, xlabel!, ylabel!
+export @animate, @layout, annotate!, font, gif, gr, heatmap, plot, plot!, plot_color, quiver, quiver!, savefig, scatter, scatter!, Shape, surface, surface!, text, xlabel!, ylabel!
 
 # PrettyTables exports
 export pretty_table
