@@ -998,16 +998,16 @@ function get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsI
         v_A    = t -> ForwardDiff.derivative(u_A, t)
         vdot_A = t -> ForwardDiff.derivative(v_A, t)
     elseif vAIsInput
-        u_A    = t -> QuadGK.quadgk(v_A, 0, t)[1]
+        u_A    = IntegratedMotion(v_A)
         vdot_A = t -> ForwardDiff.derivative(v_A, t)
     elseif vdotAIsInput
-        v_A = t -> QuadGK.quadgk(vdot_A, 0, t)[1]
-        u_A = t -> QuadGK.quadgk(v_A, 0, t)[1]
+        v_A = IntegratedMotion(vdot_A)
+        u_A = IntegratedMotion(v_A)
     end
     if ωAIsInput
         ωdot_A = t -> ForwardDiff.derivative(ω_A, t)
     elseif ωdotAIsInput
-        ω_A = t -> QuadGK.quadgk(ωdot_A, 0, t)[1]
+        ω_A = IntegratedMotion(ωdot_A)
     end
 
     # Set kinematics object for basis A
@@ -1016,6 +1016,13 @@ function get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsI
     return kinematicsBasisA
 
 end
+
+
+# Motion variable obtained by integrating a given rate from time zero (callable as a function of time)
+struct IntegratedMotion{F<:Function} <: Function
+    rate::F
+end
+(f::IntegratedMotion)(t) = QuadGK.quadgk(f.rate, 0, t)[1]
 
 
 # Sets the motion variables of basis A as functions of time

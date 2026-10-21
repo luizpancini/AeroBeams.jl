@@ -1286,15 +1286,33 @@ function precompute_motion_basis_A!(problem)
     resize!(ωdot_AVec, sizeOfTime)
 
     # Set vectors over time
-    u_AVec .= eval_motion.(u_A,timeVector)
-    v_AVec .= eval_motion.(v_A,timeVector)
-    ω_AVec .= eval_motion.(ω_A,timeVector)
-    vdot_AVec .= eval_motion.(vdot_A,timeVector)
-    ωdot_AVec .= eval_motion.(ωdot_A,timeVector)
+    eval_motion_history!(u_AVec, u_A, timeVector)
+    eval_motion_history!(v_AVec, v_A, timeVector)
+    eval_motion_history!(ω_AVec, ω_A, timeVector)
+    eval_motion_history!(vdot_AVec, vdot_A, timeVector)
+    eval_motion_history!(ωdot_AVec, ωdot_A, timeVector)
 
     # Reset rotation tensor to initial value
     R_A .= R_A0
 
+end
+
+
+# Evaluates a motion function over the time vector
+function eval_motion_history!(vec, f::Function, timeVector)
+    for i in eachindex(timeVector)
+        vec[i] = eval_motion(f, timeVector[i])
+    end
+    return
+end
+
+# Evaluates a motion obtained by integration of a rate over the time vector, integrating incrementally over each time step (instead of from time zero at every step)
+function eval_motion_history!(vec, f::IntegratedMotion, timeVector)
+    vec[1] = eval_motion(f, timeVector[1])
+    for i in 2:length(timeVector)
+        vec[i] = vec[i-1] + QuadGK.quadgk(f.rate, timeVector[i-1], timeVector[i])[1]
+    end
+    return
 end
 
 
