@@ -811,7 +811,7 @@ Returns the wing model and geometrical properties
 - `airspeed::Union{Real,<:Function}`: airspeed
 - `smallAngles::Bool`: flag for small angles approximation
 - `tipLossType::String`: tip loss function type
-- `tipLossFunctionIsAirspeedDependent::Bool`: flag for tip loss function being airspeed dependent
+- `tipLossFunctionIsAirspeedDependent::Bool`: flag to update the tip loss function with the instantaneous airspeed along the problem
 - `tipMasses::Vector{<:Real}`: masses of point inertias added to the tip of the wing
 - `ηtipMasses::Vector{<:Real}`: position vectors of the tip masses relative to the tip of the spar, resolved in the local basis
 - `tipMassesInertias::Vector{<:Matrix{<:Real}}`: mass moment of inertia matrices of the tip masses
@@ -903,10 +903,8 @@ function create_Pazy(;
     # Update airfoil parameters
     update_all_airfoil_parameters!(airfoil,airspeed(0)/atmosphere.a)
 
-    # Tip loss function
-    tipLossFunction = tipLossFunctionIsAirspeedDependent ? 
-        U -> tip_loss_function_Pazy(tipLossType,pitchAngle,U,sweepAngle) : 
-        tip_loss_function_Pazy(tipLossType,pitchAngle,airspeed(0),sweepAngle)
+    # Tip loss function, as a function of the airspeed
+    tipLossFunction = U -> tip_loss_function_Pazy(tipLossType,pitchAngle,U,sweepAngle)
 
     # Fixed geometrical and discretization properties
     if useSweptData
@@ -965,7 +963,8 @@ function create_Pazy(;
         updateAirfoilParameters=updateAirfoilParameters,
         Λ=sweepAngle,
         smallAngles=smallAngles,
-        tipLossFunctionIsAirspeedDependent=tipLossFunctionIsAirspeedDependent
+        tipLossFunctionIsAirspeedDependent=hasTipCorrection,
+        updateTipLossWithAirspeed=tipLossFunctionIsAirspeedDependent
         )
 
     # Wing beam

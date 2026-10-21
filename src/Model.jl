@@ -5,8 +5,6 @@
 # - `u_A`: current displacement of basis A relative to basis I
 # - `v_A`: current velocity of basis A relative to basis I
 # - `ω_A`: current angular velocity of basis A relative to basis I
-# - `vdot_A`: current acceleration of basis A relative to basis I
-# - `ωdot_A`: current angular acceleration of basis A relative to basis I
 # - `R_A`: current rotation tensor from basis I to basis A
 # - `R_AT`: current rotation tensor from basis A to basis I
 #
@@ -15,18 +13,14 @@ struct KinematicsBasisAState
     u_A::MVector{3,Float64}
     v_A::MVector{3,Float64}
     ω_A::MVector{3,Float64}
-    vdot_A::MVector{3,Float64}
-    ωdot_A::MVector{3,Float64}
     R_A::MMatrix{3,3,Float64,9}
     R_AT::MMatrix{3,3,Float64,9}
 
 end
-KinematicsBasisAState(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A) = KinematicsBasisAState(
+KinematicsBasisAState(p_A0,u_A,v_A,ω_A) = KinematicsBasisAState(
     MVector{3,Float64}(u_A(0)),
     MVector{3,Float64}(v_A(0)),
     MVector{3,Float64}(ω_A(0)),
-    MVector{3,Float64}(vdot_A(0)),
-    MVector{3,Float64}(ωdot_A(0)),
     MMatrix{3,3,Float64,9}(rotation_tensor_WM(p_A0)),
     MMatrix{3,3,Float64,9}(rotation_tensor_WM(p_A0)'),
 )
@@ -38,13 +32,9 @@ KinematicsBasisAState(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A) = KinematicsBasisAState(
 # - `u_A`: displacement of basis A relative to basis I
 # - `v_A`: velocity of basis A relative to basis I
 # - `ω_A`: angular velocity of basis A relative to basis I
-# - `vdot_A`: acceleration of basis A relative to basis I
-# - `ωdot_A`: angular acceleration of basis A relative to basis I
 # - `u_AVec`: time vector of displacement of basis A relative to basis I
 # - `v_AVec`: time vector of velocity of basis A relative to basis I
 # - `ω_AVec`: time vector of angular velocity of basis A relative to basis I
-# - `vdot_AVec`: time vector of acceleration of basis A relative to basis I
-# - `ωdot_AVec`: time vector of angular acceleration of basis A relative to basis I
 # - `R_AVec`: time vector of rotation tensor from basis I to basis A
 # - `state`: state of the kinematics of basis A
 #
@@ -54,25 +44,21 @@ mutable struct KinematicsBasisA
     u_A::Function
     v_A::Function
     ω_A::Function
-    vdot_A::Function
-    ωdot_A::Function
 
     u_AVec::Vector{SVector{3,Float64}}
     v_AVec::Vector{SVector{3,Float64}}
     ω_AVec::Vector{SVector{3,Float64}}
-    vdot_AVec::Vector{SVector{3,Float64}}
-    ωdot_AVec::Vector{SVector{3,Float64}}
     R_AVec::Vector{SMatrix{3,3,Float64,9}}
 
     state::KinematicsBasisAState
 
 end
-KinematicsBasisA(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A) = 
+KinematicsBasisA(p_A0,u_A,v_A,ω_A) = 
     KinematicsBasisA(
-        SVector{3,Float64}(p_A0), u_A, v_A, ω_A, vdot_A, ωdot_A,
+        SVector{3,Float64}(p_A0), u_A, v_A, ω_A,
         [SVector{3,Float64}(u_A(0))], [SVector{3,Float64}(v_A(0))], [SVector{3,Float64}(ω_A(0))],
-        [SVector{3,Float64}(vdot_A(0))], [SVector{3,Float64}(ωdot_A(0))], [SMatrix{3,3,Float64,9}(rotation_tensor_WM(p_A0))],
-        KinematicsBasisAState(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A),
+        [SMatrix{3,3,Float64,9}(rotation_tensor_WM(p_A0))],
+        KinematicsBasisAState(p_A0,u_A,v_A,ω_A),
     )
 
 
@@ -222,8 +208,6 @@ Creates a model
 - `u_A::Union{Nothing,AbstractVector{<:Real},<:Function}`: displacement of basis A relative to basis I
 - `v_A::Union{Nothing,AbstractVector{<:Real},<:Function}`: velocity of basis A relative to basis I
 - `ω_A::Union{Nothing,AbstractVector{<:Real},<:Function}`: angular velocity of basis A relative to basis I
-- `vdot_A::Union{Nothing,AbstractVector{<:Real},<:Function}`: acceleration of basis A relative to basis I
-- `ωdot_A::Union{Nothing,AbstractVector{<:Real},<:Function}`: angular acceleration of basis A relative to basis I
 - `trimLoadsLinks::Vector{TrimLoadsLink}`: links between trim loads
 - `flapLinks::Vector{FlapLink}`: links between flapped surfaces
 - `hingeAxisConstraints::Vector{<:HingeAxisConstraint}`: hinge axis constraints
@@ -242,8 +226,6 @@ function create_Model(;
     u_A::Union{Nothing,AbstractVector{<:Real},<:Function}=nothing,
     v_A::Union{Nothing,AbstractVector{<:Real},<:Function}=nothing,
     ω_A::Union{Nothing,AbstractVector{<:Real},<:Function}=nothing,
-    vdot_A::Union{Nothing,AbstractVector{<:Real},<:Function}=nothing,
-    ωdot_A::Union{Nothing,AbstractVector{<:Real},<:Function}=nothing,
     trimLoadsLinks::Vector{TrimLoadsLink}=Vector{TrimLoadsLink}(),
     flapLinks::Vector{FlapLink}=Vector{FlapLink}(),
     hingeAxisConstraints::Vector{<:HingeAxisConstraint}=HingeAxisConstraint[],
@@ -252,10 +234,10 @@ function create_Model(;
     )
 
     # Validate inputs
-    firstNodePosition,gravityVector,connections,p_A0,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput = validate_model(beams,firstNodePosition,gravityVector,connections,p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A)
+    firstNodePosition,gravityVector,connections,p_A0,uAIsInput,vAIsInput = validate_model(beams,firstNodePosition,gravityVector,connections,p_A0,u_A,v_A,ω_A)
 
     # Compute motion of basis A and set kinematics object
-    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput)
+    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,uAIsInput,vAIsInput)
 
     # Get assembly data and update BCs
     assemblyData,BCs = get_model_assembly_data!(beams,connections,firstNodePosition,trimLoadsLinks,flapLinks,hingeAxisConstraints,BCs,gust)
@@ -303,10 +285,10 @@ function update_initial_rotation_of_basis_A!(model::Model; p_A0::AbstractVector{
     p_A0 = SVector{3,Float64}(p_A0)
 
     # Unpack kinematics of basis A
-    @unpack u_A,v_A,ω_A,vdot_A,ωdot_A = model.kinematicsBasisA
+    @unpack u_A,v_A,ω_A = model.kinematicsBasisA
 
     # Get new kinematics of basis A
-    kinematicsBasisA = KinematicsBasisA(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A)
+    kinematicsBasisA = KinematicsBasisA(p_A0,u_A,v_A,ω_A)
 
     # Update initial states
     initialState = update_initial_states!(model.beams,model.assemblyData.elements,model.assemblyData.specialNodes,kinematicsBasisA,model.atmosphere)
@@ -341,17 +323,14 @@ function update_u_A!(model::Model; u_A::Union{AbstractVector{<:Real},<:Function}
     end
 
     # Unpack unmodified kinematics of basis A
-    @unpack p_A0,v_A,ω_A,vdot_A,ωdot_A = model.kinematicsBasisA
+    @unpack p_A0,v_A,ω_A = model.kinematicsBasisA
 
     # Set flags
     uAIsInput = true
     vAIsInput = false
-    ωAIsInput = true
-    vdotAIsInput = false
-    ωdotAIsInput = false
 
     # Get new kinematics of basis A
-    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput)
+    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,uAIsInput,vAIsInput)
 
     # Update initial states
     initialState = update_initial_states!(model.beams,model.assemblyData.elements,model.assemblyData.specialNodes,kinematicsBasisA,model.atmosphere)
@@ -367,7 +346,7 @@ export update_u_A!
 """
     update_v_A!(model; v_A)
 
-Updates the velocity of basis A (and related kinematics) in the model.
+Updates the velocity of basis A (and related kinematics) in the model. It also refreshes the reference airspeed (the norm of the velocity of basis A at time zero) at which airspeed-dependent tip loss functions that are not updated along the problem are evaluated.
 
 # Arguments
 - `model::Model`: reference model
@@ -386,17 +365,14 @@ function update_v_A!(model::Model; v_A::Union{AbstractVector{<:Real},<:Function}
     end
 
     # Unpack unmodified kinematics of basis A
-    @unpack p_A0,u_A,ω_A,vdot_A,ωdot_A = model.kinematicsBasisA
+    @unpack p_A0,u_A,ω_A = model.kinematicsBasisA
 
     # Set flags
     uAIsInput = false
     vAIsInput = true
-    ωAIsInput = true
-    vdotAIsInput = false
-    ωdotAIsInput = false
 
     # Get new kinematics of basis A
-    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput)
+    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,uAIsInput,vAIsInput)
 
     # Update initial states
     initialState = update_initial_states!(model.beams,model.assemblyData.elements,model.assemblyData.specialNodes,kinematicsBasisA,model.atmosphere)
@@ -407,51 +383,6 @@ function update_v_A!(model::Model; v_A::Union{AbstractVector{<:Real},<:Function}
 
 end
 export update_v_A!
-
-
-"""
-    update_vdot_A!(model; vdot_A)
-
-Updates the acceleration of basis A (and related kinematics) in the model.
-
-# Arguments
-- `model::Model`: reference model
-
-# Keyword Arguments
-- `vdot_A::Union{AbstractVector{<:Real},<:Function}`: acceleration of basis A
-"""
-function update_vdot_A!(model::Model; vdot_A::Union{AbstractVector{<:Real},<:Function})
-
-    # Validate input
-    if vdot_A isa AbstractVector{<:Real}
-        @assert length(vdot_A) == 3 "vdot_A must be a 3-element vector"
-    elseif vdot_A isa Function
-        @assert applicable(vdot_A, 0) "function for vdot_A must be callable with one argument (t)"
-        @assert length(vdot_A(0)) == 3 "vdot_A must be a function that returns a 3-element vector"
-    end
-
-    # Unpack unmodified kinematics of basis A
-    @unpack p_A0,u_A,v_A,ω_A,ωdot_A = model.kinematicsBasisA
-
-    # Set flags
-    uAIsInput = false
-    vAIsInput = false
-    ωAIsInput = true
-    vdotAIsInput = true
-    ωdotAIsInput = false
-
-    # Get new kinematics of basis A
-    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput)
-
-    # Update initial states
-    initialState = update_initial_states!(model.beams,model.assemblyData.elements,model.assemblyData.specialNodes,kinematicsBasisA,model.atmosphere)
-
-    # Set on model
-    setfield!(model, :kinematicsBasisA, kinematicsBasisA)
-    setfield!(model, :initialState, initialState)
-
-end
-export update_vdot_A!
 
 
 """
@@ -476,17 +407,14 @@ function update_ω_A!(model::Model; ω_A::Union{AbstractVector{<:Real},<:Functio
     end
 
     # Unpack unmodified kinematics of basis A
-    @unpack p_A0,u_A,v_A,vdot_A,ωdot_A = model.kinematicsBasisA
+    @unpack p_A0,u_A,v_A = model.kinematicsBasisA
 
     # Set flags
     uAIsInput = true
     vAIsInput = false
-    ωAIsInput = true
-    vdotAIsInput = false
-    ωdotAIsInput = false
 
     # Get new kinematics of basis A
-    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput)
+    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,uAIsInput,vAIsInput)
 
     # Update initial states
     initialState = update_initial_states!(model.beams,model.assemblyData.elements,model.assemblyData.specialNodes,kinematicsBasisA,model.atmosphere)
@@ -497,51 +425,6 @@ function update_ω_A!(model::Model; ω_A::Union{AbstractVector{<:Real},<:Functio
 
 end
 export update_ω_A!
-
-
-"""
-    update_ωdot_A!(model; ωdot_A)
-
-Updates the angular acceleration of basis A (and related kinematics) in the model.
-
-# Arguments
-- `model::Model`: reference model
-
-# Keyword Arguments
-- `ωdot_A::Union{AbstractVector{<:Real},<:Function}`: angular acceleration of basis A
-"""
-function update_ωdot_A!(model::Model; ωdot_A::Union{AbstractVector{<:Real},<:Function})
-
-    # Validate input
-    if ωdot_A isa AbstractVector{<:Real}
-        @assert length(ωdot_A) == 3 "ωdot_A must be a 3-element vector"
-    elseif ωdot_A isa Function
-        @assert applicable(ωdot_A, 0) "ωdot_A must be a function that can be called with a single argument (t)"
-        @assert length(ωdot_A(0)) == 3 "ωdot_A must be a function that returns a 3-element vector"
-    end
-
-    # Unpack unmodified kinematics of basis A
-    @unpack p_A0,u_A,v_A,ω_A,vdot_A = model.kinematicsBasisA
-
-    # Set flags
-    uAIsInput = true
-    vAIsInput = false
-    ωAIsInput = false
-    vdotAIsInput = false
-    ωdotAIsInput = true
-
-    # Get new kinematics of basis A
-    kinematicsBasisA = get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput)
-
-    # Update initial states
-    initialState = update_initial_states!(model.beams,model.assemblyData.elements,model.assemblyData.specialNodes,kinematicsBasisA,model.atmosphere)
-
-    # Set on model
-    setfield!(model, :kinematicsBasisA, kinematicsBasisA)
-    setfield!(model, :initialState, initialState)
-
-end
-export update_ωdot_A!
 
 
 """
@@ -909,7 +792,7 @@ export remove_gust!
 ## PRIVATE API
 # ------------------------------------------------------------------------------
 # Validates the inputs to the model and sets correct types
-function validate_model(beams,firstNodePosition,gravityVector,connections,p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A)
+function validate_model(beams,firstNodePosition,gravityVector,connections,p_A0,u_A,v_A,ω_A)
 
     # Validate beams
     @assert !isempty(beams) "model cannot be empty of beams"
@@ -926,9 +809,9 @@ function validate_model(beams,firstNodePosition,gravityVector,connections,p_A0,u
     validate_connections(beams,connections)
 
     # Valide motion of basis A
-    p_A0,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput = validate_motion_of_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A)
+    p_A0,uAIsInput,vAIsInput = validate_motion_of_basis_A(p_A0,u_A,v_A,ω_A)
 
-    return firstNodePosition,gravityVector,connections,p_A0,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput
+    return firstNodePosition,gravityVector,connections,p_A0,uAIsInput,vAIsInput
 
 end
 
@@ -953,65 +836,49 @@ function validate_connections(beams,connections)
 
 end
 
-# Validates the motion of basis A, sets correct types, and gets flags for which motion variables are inputs
-function validate_motion_of_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A)
+# Validates the motion of basis A, sets correct types, and gets flags for which translational motion variables are inputs
+function validate_motion_of_basis_A(p_A0,u_A,v_A,ω_A)
 
     # Validate initial rotation of basis A
     @assert length(p_A0) == 3 "p_A0 must have length 3"
     p_A0 = SVector{3,Float64}(p_A0)
 
     # Validate motion functions
-    for x in [u_A,v_A,ω_A,vdot_A,ωdot_A]
+    for x in [u_A,v_A,ω_A]
         if !isnothing(x)
             @assert (x isa Function && applicable(x, 0) && length(x(0)) == 3) || (x isa AbstractVector{<:Real} && length(x) == 3) "motion variables must be either a 3-element vector or a function of one argument (t) that returns a 3-element vector"
         end
     end
 
     # Set flags for motion of basis A being inputs
-    uAIsInput    = !isnothing(u_A)
-    vAIsInput    = !isnothing(v_A)
-    ωAIsInput    = !isnothing(ω_A)
-    vdotAIsInput = !isnothing(vdot_A)
-    ωdotAIsInput = !isnothing(ωdot_A)
+    uAIsInput = !isnothing(u_A)
+    vAIsInput = !isnothing(v_A)
 
-    # Check that only one of u_A, v_A, vdot_A is specified and that only one of ω_A, ωdot_A is specified
-    @assert count([uAIsInput, vAIsInput, vdotAIsInput]) ≤ 1 "Specify only one of u_A, v_A, vdot_A"
-    @assert count([ωAIsInput, ωdotAIsInput]) ≤ 1 "Specify only one of ω_A, ωdot_A"
+    # Check that only one of u_A, v_A is specified
+    @assert !(uAIsInput && vAIsInput) "Specify only one of u_A, v_A"
 
-    return p_A0,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput
+    return p_A0,uAIsInput,vAIsInput
 
 end
 
 
 # Computes the motion variables of basis A
-function get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A,uAIsInput,vAIsInput,ωAIsInput,vdotAIsInput,ωdotAIsInput)
+function get_kinematics_basis_A(p_A0,u_A,v_A,ω_A,uAIsInput,vAIsInput)
 
     # Set as functions of time
-    u_A    = set_as_time_function(u_A)
-    v_A    = set_as_time_function(v_A)
-    ω_A    = set_as_time_function(ω_A)
-    vdot_A = set_as_time_function(vdot_A)
-    ωdot_A = set_as_time_function(ωdot_A)
+    u_A = set_as_time_function(u_A)
+    v_A = set_as_time_function(v_A)
+    ω_A = set_as_time_function(ω_A)
 
-    # Compute missing motion variables from given ones as functions of time
+    # Compute missing translational motion variable from the given one as a function of time
     if uAIsInput
-        v_A    = t -> ForwardDiff.derivative(u_A, t)
-        vdot_A = t -> ForwardDiff.derivative(v_A, t)
+        v_A = t -> ForwardDiff.derivative(u_A, t)
     elseif vAIsInput
-        u_A    = IntegratedMotion(v_A)
-        vdot_A = t -> ForwardDiff.derivative(v_A, t)
-    elseif vdotAIsInput
-        v_A = IntegratedMotion(vdot_A)
         u_A = IntegratedMotion(v_A)
-    end
-    if ωAIsInput
-        ωdot_A = t -> ForwardDiff.derivative(ω_A, t)
-    elseif ωdotAIsInput
-        ω_A = IntegratedMotion(ωdot_A)
     end
 
     # Set kinematics object for basis A
-    kinematicsBasisA = KinematicsBasisA(p_A0,u_A,v_A,ω_A,vdot_A,ωdot_A)
+    kinematicsBasisA = KinematicsBasisA(p_A0,u_A,v_A,ω_A)
 
     return kinematicsBasisA
 
@@ -2081,17 +1948,13 @@ function update_initial_states!(beams,elements,specialNodes,kinematicsBasisA,atm
         @unpack udot,pdot,Vdot,Ωdot = element.state.rates
         @unpack u1,u2,p1,p2,u1_b,u2_b,p1_b,p2_b,F1,F2,M1,M2,θ = element.state.nodal
         @unpack R,HT,RR0,RR0T = element.stateCache.rotationMatrices
-        @unpack v,ω,vdot,ωdot = element.stateCache.kinematicsBasisb
-        @unpack v_A,ω_A,vdot_A,ωdot_A,R_A,R_AT = kinematicsBasisA.state
+        @unpack v,ω = element.stateCache.kinematicsBasisb
+        @unpack v_A,ω_A,R_A,R_AT = kinematicsBasisA.state
         @unpack u0_of_x1,p0_of_x1,udot0_of_x1,pdot0_of_x1,uprime0_of_x1,pprime0_of_x1 = beams[parentBeamID].initialConditions
 
         # Generalized velocities of basis b at element's midpoint, resolved in basis A
         v .= R_AT * (v_A + cross(ω_A,R_A*r))
         ω .= R_AT * ω_A
-
-        # Generalized accelerations of basis b at element's midpoint, resolved in basis A
-        vdot .= R_AT * (vdot_A + cross(ωdot_A,R_A*r) + cross(ω_A,cross(ω_A,R_A*r)) - cross(ω_A,R_A*v_A))
-        ωdot .= R_AT * ωdot_A
 
         # Generalized displacements, resolved in basis A
         u .= R0 * u0_of_x1(x1)
@@ -2161,8 +2024,11 @@ function update_initial_states!(beams,elements,specialNodes,kinematicsBasisA,atm
         M1 .= M - (Δℓ/2 * M_prime)
         M2 .= M + (Δℓ/2 * M_prime)
 
+        # Tip loss factor at the reference airspeed
+        update_tip_loss_factor!(kinematicsBasisA,element; initialize=true)
+
         # Aerodynamic states
-        χ .= initial_aero_states!(atmosphere,kinematicsBasisA,element,χ,V,Ω,Vdot,Ωdot)
+        χ .= initial_aero_states!(atmosphere,element,χ,V,Ω,Vdot,Ωdot)
 
     end
 

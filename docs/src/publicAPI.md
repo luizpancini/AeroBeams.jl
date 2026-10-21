@@ -96,9 +96,7 @@ update_model_hinge_axis_constraints!
 update_initial_rotation_of_basis_A!
 update_u_A!
 update_v_A!
-update_vdot_A!
 update_ω_A!
-update_ωdot_A!
 ```
 
 ### Creating a point inertia

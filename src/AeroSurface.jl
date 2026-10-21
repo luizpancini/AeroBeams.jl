@@ -57,7 +57,8 @@ end
 # AeroSurface tip loss composite type
 # Fields:
 # - `hasTipCorrection`: flag indicating if tip correction is applied
-# - `tipLossFunctionIsAirspeedDependent`: flag indicating if the tip loss function depends on airspeed
+# - `tipLossFunctionIsAirspeedDependent`: flag indicating if the tip loss function depends on airspeed (i.e., it is called as `tipLossFunction(U)(s)`)
+# - `updateTipLossWithAirspeed`: flag indicating if the tip loss is updated with the instantaneous airspeed (otherwise, an airspeed-dependent tip loss is evaluated at the reference airspeed of the model, which is the one at time zero)
 # - `tipLossFunction`: tip loss function (if any)
 # - `tipLossDecayFactor`: decay factor for the tip loss function
 #
@@ -65,6 +66,7 @@ struct AeroSurfaceTipLoss
 
     hasTipCorrection::Bool
     tipLossFunctionIsAirspeedDependent::Bool
+    updateTipLossWithAirspeed::Bool
     tipLossFunction::Union{Nothing,<:Function}
     tipLossDecayFactor::Float64
 
@@ -273,7 +275,8 @@ Aerodynamic surface constructor
 - `δ::Union{Nothing,<:Function,Real}`: trailing-edge deflection [rad]
 - `updateAirfoilParameters::Bool`: flag to update airfoil parameters with local airspeed
 - `hasTipCorrection::Bool`: flag to employ a tip correction on 2D aerodynamic coefficients
-- `tipLossFunctionIsAirspeedDependent::Bool`: flag for tip loss function being airspeed dependent
+- `tipLossFunctionIsAirspeedDependent::Bool`: flag for tip loss function being airspeed dependent (it is then input as a function of the airspeed that returns the function of the normalized arclength)
+- `updateTipLossWithAirspeed::Bool`: flag to update an airspeed-dependent tip loss with the instantaneous airspeed of the problem (otherwise, it is evaluated at the reference airspeed of the model, which is the one of basis A at time zero and is refreshed when the airspeed is updated in the model, as with [`update_v_A!`](@ref update_v_A!)). Defaults to `tipLossFunctionIsAirspeedDependent`
 - `tipLossFunction::Union{Nothing,<:Function}`: corresponding tip loss function
 - `tipLossDecayFactor::Real`: corresponding tip loss factor
 - `smallAngles::Bool`: flag to employ small angles approximation on the calculation of the angle of attack
@@ -296,6 +299,7 @@ function create_AeroSurface(;
     δ::Union{Nothing,<:Function,Real}=nothing,updateAirfoilParameters::Bool=true,
     hasTipCorrection::Bool=false,
     tipLossFunctionIsAirspeedDependent::Bool=false,
+    updateTipLossWithAirspeed::Bool=tipLossFunctionIsAirspeedDependent,
     tipLossFunction::Union{Nothing,<:Function}=nothing,tipLossDecayFactor::Real=Inf,
     smallAngles::Bool=false,
     hasInducedDrag::Bool=false,
@@ -303,7 +307,7 @@ function create_AeroSurface(;
     )
 
     # Validate and set correct types of inputs
-    c,Λ,φ,normSparPos,normFlapSpan,normFlapPos,tipLossDecayFactor,gustSolver = validate_aero_surface(c,Λ,φ,normSparPos,normFlapSpan,normFlapPos,tipLossFunctionIsAirspeedDependent,hasTipCorrection,tipLossFunction,δ,δIsTrimVariable,tipLossDecayFactor,ppSolver,gustSolver)
+    c,Λ,φ,normSparPos,normFlapSpan,normFlapPos,tipLossDecayFactor,gustSolver = validate_aero_surface(c,Λ,φ,normSparPos,normFlapSpan,normFlapPos,tipLossFunctionIsAirspeedDependent,updateTipLossWithAirspeed,hasTipCorrection,tipLossFunction,δ,δIsTrimVariable,tipLossDecayFactor,ppSolver,gustSolver)
 
     # Get types
     S1 = typeof(ppSolver)
@@ -317,7 +321,7 @@ function create_AeroSurface(;
     geometry = aero_surface_geometry(airfoil,c,Λ,φ,normSparPos,normFlapPos,normFlapSpan,updateAirfoilParameters,smallAngles,hasInducedDrag,hasSymmetricCounterpart,ppSolver)
 
     # Set tip loss correction data
-    tipLoss = AeroSurfaceTipLoss(hasTipCorrection,tipLossFunctionIsAirspeedDependent,tipLossFunction,tipLossDecayFactor)
+    tipLoss = AeroSurfaceTipLoss(hasTipCorrection,tipLossFunctionIsAirspeedDependent,updateTipLossWithAirspeed,tipLossFunction,tipLossDecayFactor)
 
     # Set state ranges
     stateRanges = aero_surface_state_ranges(ppSolver,flapSolver,gustSolver)
@@ -340,7 +344,7 @@ export create_AeroSurface
 ## PRIVATE API
 # ------------------------------------------------------------------------------
 # Validate the inputs for creating an aerodynamic surface
-function validate_aero_surface(c,Λ,φ,normSparPos,normFlapSpan,normFlapPos,tipLossFunctionIsAirspeedDependent,hasTipCorrection,tipLossFunction,δ,δIsTrimVariable,tipLossDecayFactor,ppSolver,gustSolver)
+function validate_aero_surface(c,Λ,φ,normSparPos,normFlapSpan,normFlapPos,tipLossFunctionIsAirspeedDependent,updateTipLossWithAirspeed,hasTipCorrection,tipLossFunction,δ,δIsTrimVariable,tipLossDecayFactor,ppSolver,gustSolver)
 
     # Validate and set correct types of inputs
     if c isa Real
@@ -375,6 +379,9 @@ function validate_aero_surface(c,Λ,φ,normSparPos,normFlapSpan,normFlapPos,tipL
     if tipLossFunctionIsAirspeedDependent
         @assert hasTipCorrection "tip loss function cannot be airspeed dependent if tip correction is disabled"
         @assert !isnothing(tipLossFunction) "tip loss function must be set if tip loss function is airspeed dependent"
+    end
+    if updateTipLossWithAirspeed
+        @assert tipLossFunctionIsAirspeedDependent "tip loss cannot be updated with airspeed if the tip loss function is not airspeed dependent"
     end
     if !isnothing(δ)
         @assert !δIsTrimVariable "flap deflection cannot be a trim variable and an input"

@@ -1254,7 +1254,7 @@ function precompute_motion_basis_A!(problem)
     problem isa DynamicProblem || return
 
     @unpack timeVector,sizeOfTime = problem.time
-    @unpack u_A,v_A,ω_A,vdot_A,ωdot_A,u_AVec,v_AVec,ω_AVec,vdot_AVec,ωdot_AVec,R_AVec = problem.model.kinematicsBasisA
+    @unpack u_A,v_A,ω_A,u_AVec,v_AVec,ω_AVec,R_AVec = problem.model.kinematicsBasisA
     @unpack R_A = problem.model.kinematicsBasisA.state
 
     # Save initial rotation tensor
@@ -1282,15 +1282,11 @@ function precompute_motion_basis_A!(problem)
     resize!(u_AVec, sizeOfTime)
     resize!(v_AVec, sizeOfTime)
     resize!(ω_AVec, sizeOfTime)
-    resize!(vdot_AVec, sizeOfTime)
-    resize!(ωdot_AVec, sizeOfTime)
 
     # Set vectors over time
     eval_motion_history!(u_AVec, u_A, timeVector)
     eval_motion_history!(v_AVec, v_A, timeVector)
     eval_motion_history!(ω_AVec, ω_A, timeVector)
-    eval_motion_history!(vdot_AVec, vdot_A, timeVector)
-    eval_motion_history!(ωdot_AVec, ωdot_A, timeVector)
 
     # Reset rotation tensor to initial value
     R_A .= R_A0
@@ -2520,7 +2516,7 @@ end
 # Updates the motion of basis A at the specified time instance and time step
 function update_motion_basis_A!(problem; timeNow=problem.time.state.timeNow, Δt=problem.time.state.Δt)
 
-    @unpack u_A,v_A,ω_A,vdot_A,ωdot_A = problem.model.kinematicsBasisA
+    @unpack u_A,v_A,ω_A = problem.model.kinematicsBasisA
     @unpack R_A,R_AT = problem.model.kinematicsBasisA.state
 
     # Time step factor
@@ -2537,8 +2533,6 @@ function update_motion_basis_A!(problem; timeNow=problem.time.state.timeNow, Δt
     problem.model.kinematicsBasisA.state.u_A .= MVector{3,Float64}(u_A(timeNow))
     problem.model.kinematicsBasisA.state.v_A .= MVector{3,Float64}(v_A(timeNow))
     problem.model.kinematicsBasisA.state.ω_A .= MVector{3,Float64}(ω_A(timeNow))
-    problem.model.kinematicsBasisA.state.vdot_A .= MVector{3,Float64}(vdot_A(timeNow))
-    problem.model.kinematicsBasisA.state.ωdot_A .= MVector{3,Float64}(ωdot_A(timeNow))
 
 end
 
@@ -2546,15 +2540,13 @@ end
 # Updates the motion of basis A at the current time index, using pre-computed arrays
 function update_motion_basis_A!(problem,timeIndex)
 
-    @unpack u_AVec,v_AVec,ω_AVec,vdot_AVec,ωdot_AVec,R_AVec = problem.model.kinematicsBasisA
-    @unpack u_A,v_A,ω_A,vdot_A,ωdot_A,R_A,R_AT = problem.model.kinematicsBasisA.state
+    @unpack u_AVec,v_AVec,ω_AVec,R_AVec = problem.model.kinematicsBasisA
+    @unpack u_A,v_A,ω_A,R_A,R_AT = problem.model.kinematicsBasisA.state
 
     # Set current values
     u_A .= u_AVec[timeIndex]
     v_A .= v_AVec[timeIndex]
     ω_A .= ω_AVec[timeIndex]
-    vdot_A .= vdot_AVec[timeIndex]
-    ωdot_A .= ωdot_AVec[timeIndex]
     R_A .= R_AVec[timeIndex]
     R_AT .= R_A'
 

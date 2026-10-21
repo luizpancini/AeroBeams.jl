@@ -212,17 +212,23 @@ function update_inertial_parameters!(element,aeroStateCache)
 end
 
 
-# Updates the tip loss factor over the element with the current reference airspeed
-function update_tip_loss_factor!(kinematicsBasisA,element)
+# Updates the tip loss factor over the element with the airspeed of basis A. It is the instantaneous airspeed if the tip loss is updated with airspeed, or the reference one (that at time zero) when initializing, which also covers tip loss functions that are not updated with the airspeed
+function update_tip_loss_factor!(kinematicsBasisA,element; initialize=false)
 
-    # Skip if the tip loss function is not airspeed dependent
-    !(element.aero.surface.tipLoss.tipLossFunctionIsAirspeedDependent) && return
+    # Skip if the element has no aerodynamic surface
+    isnothing(element.aero.surface) && return
 
-    @unpack v_A = kinematicsBasisA.state
+    @unpack tipLossFunctionIsAirspeedDependent,updateTipLossWithAirspeed = element.aero.surface.tipLoss
+
+    # Skip if the tip loss function is not airspeed dependent or if it is not to be updated
+    (!tipLossFunctionIsAirspeedDependent || !(updateTipLossWithAirspeed || initialize)) && return
+
     @unpack ϖ = element.aero.loadsDistribution
 
     # Reference airspeed
-    Uref = norm(v_A)
+    Uref = initialize ? 
+           norm(kinematicsBasisA.v_A(0)) : 
+           norm(kinematicsBasisA.state.v_A)
 
     # Tip loss factor at element's midpoint value
     ϖMid = ϖ(Uref,0.5)
@@ -2159,7 +2165,7 @@ end
 
 
 # Updates the initial aerodynamic states assuming their rates are zero
-function initial_aero_states!(atmosphere,kinematicsBasisA,element,χ,V,Ω,Vdot,Ωdot)
+function initial_aero_states!(atmosphere,element,χ,V,Ω,Vdot,Ωdot)
 
     # Skip if there are no aerodynamic surface or states
     (isnothing(element.aero.surface) || isempty(χ)) && return χ
@@ -2193,9 +2199,6 @@ function initial_aero_states!(atmosphere,kinematicsBasisA,element,χ,V,Ω,Vdot,�
 
         # Update inertial parameters
         update_inertial_parameters!(element,stateCache)
-
-        # Update tip loss factor, if applicable
-        update_tip_loss_factor!(kinematicsBasisA,element)
 
         # Effective (unsteady) angle of attack
         effective_angle_of_attack!(element,stateCache,χ,δ)

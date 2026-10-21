@@ -1125,7 +1125,19 @@ function build_varpi_from_tlf(tipLossFunction::T, s) where T
     return (U,ζ) -> tipLossFunction(s(ζ))
 end
 function build_varpi_from_tlf_airspeed(tipLossFunction::T, s) where T
-    return (U,ζ) -> tipLossFunction(U)(s(ζ))
+    # The tip loss function at the last airspeed is cached, because it is expensive to build and the airspeed is the same over many calls
+    f0 = tipLossFunction(0.0)
+    cache = Ref((0.0, f0))
+    return (U,ζ) -> begin
+        Ulast,f = cache[]
+        if U != Ulast
+            fNew = tipLossFunction(U)
+            fNew isa typeof(f0) || return fNew(s(ζ))
+            cache[] = (U, fNew)
+            f = fNew
+        end
+        f(s(ζ))
+    end
 end
 
 

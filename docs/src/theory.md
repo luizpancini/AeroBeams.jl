@@ -6,7 +6,7 @@ The theory for the structural part of the code was developed by Hodges[^1], and 
 
 ### Geometry and kinematics
 
-The figure below illustrates the kinematics of the deformation of the beam. The primary basis (frame or reference) for the development of the theory is basis ``\mathcal{A}``, because the equations of motion are written in terms of tensors resolved in it (it can be thought of as a global, or body-attached basis). Its motion in an inertial, fixed basis ``\mathcal{I}^{\circ}`` is supposed to be known at all times. In AeroBeams, the user may input the motion of basis ``\mathcal{A}`` relative to ``\mathcal{I}^{\circ}`` through the vectorial displacement, initial rotation, velocities and/or accelerations (`u_A`,`p_A0`,`v_A`,`ω_A`,`vdot_A` and `ωdot_A` arguments) of that basis to the model with the function [`create_Model`](@ref create_Model).
+The figure below illustrates the kinematics of the deformation of the beam. The primary basis (frame or reference) for the development of the theory is basis ``\mathcal{A}``, because the equations of motion are written in terms of tensors resolved in it (it can be thought of as a global, or body-attached basis). Its motion in an inertial, fixed basis ``\mathcal{I}^{\circ}`` is supposed to be known at all times. In AeroBeams, the user may input the motion of basis ``\mathcal{A}`` relative to ``\mathcal{I}^{\circ}`` through the vectorial displacement, initial rotation and velocities (`u_A`,`p_A0`,`v_A` and `ω_A` arguments) of that basis to the model with the function [`create_Model`](@ref create_Model).
 
 ![](assets/kinematics.svg)
 *Kinematics of beam deformation*

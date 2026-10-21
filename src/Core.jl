@@ -241,25 +241,6 @@ function element_velocities_basis_b!(model,element,σ)
 
 end
 
-# Computes the generalized accelerations of basis b at the element's midpoint, resolved in basis A
-function element_accelerations_basis_b!(model,element,σ)
-
-    @unpack v_A,ω_A,vdot_A,ωdot_A,R_A,R_AT = model.kinematicsBasisA.state
-    @unpack r = element.assemblyData
-    @unpack vdot,ωdot = element.stateCache.kinematicsBasisb
-
-    # Translational acceleration
-    vdot .= σ * SVector(R_AT * (vdot_A + 
-                        cross(ωdot_A, R_A*r) + 
-                        cross(ω_A, cross(ω_A, R_A*r)) - 
-                        cross(ω_A, R_A*v_A)
-                        ))
-
-    # Angular acceleration
-    ωdot .= σ * SVector(R_AT * ωdot_A)
-
-end
-
 # Sets the midpoint states (generalized displacements, forces, strains, velocities and aerodynamic) of the element
 function element_states!(model,element,x)
 
@@ -2254,12 +2235,9 @@ function update_states!(model,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
     # Loop over elements
     foreach_element(elementGroups) do element
 
-        ## Generalized velocities and accelerations of basis b at element's midpoint, resolved in basis A
+        ## Generalized velocities of basis b at element's midpoint, resolved in basis A
         # ----------------------------------------------------------------------
-        # Velocities
         element_velocities_basis_b!(model,element,σ)
-        # Accelerations
-        element_accelerations_basis_b!(model,element,σ)
 
         ## States and states' rates
         # ----------------------------------------------------------------------

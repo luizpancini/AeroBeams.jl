@@ -633,19 +633,15 @@ EquivStatesRates{N}() where {N} = EquivStatesRates{N}(
 # Fields
 # - `v`: element's b basis linear velocity vector
 # - `ω`: element's b basis angular velocity vector
-# - `vdot`: element's b basis linear acceleration vector
-# - `ωdot`: element's b basis angular acceleration vector
 #
 struct KinematicsBasisb
 
     v::MVector{3,Float64}
     ω::MVector{3,Float64}
-    vdot::MVector{3,Float64}
-    ωdot::MVector{3,Float64}
 
 end
 KinematicsBasisb() = KinematicsBasisb(
-    ntuple(_ -> zeros(MVector{3,Float64}), 4)...,
+    ntuple(_ -> zeros(MVector{3,Float64}), 2)...,
 )
 
 
@@ -1175,7 +1171,7 @@ Base.copy(x::ElementState{N}) where {N} = copy_fields(x)
 # Element state cache composite type
 # Fields
 # - `equivStatesRates`: equivalent states' rates at begin of time step
-# - `kinematicsBasisb`: velocities and accelerations of basis b
+# - `kinematicsBasisb`: velocities of basis b
 # - `rotationMatrices`: rotation matrices
 # - `loadsResultants`: total loads resultants
 # - `structuralLoadsResultants`: structural loads resultants
