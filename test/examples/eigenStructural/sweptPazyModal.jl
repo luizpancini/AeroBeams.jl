@@ -1,7 +1,7 @@
 using AeroBeams
 
 # Sweep angle range [rad]
-ΛRange = deg2rad.(0:5:30)
+ΛRange = deg2rad.(0:10:30)
 
 # Flag for ad hoc sectional stiffness corrections with sweep angle
 sweepStructuralCorrections = true
@@ -48,7 +48,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot 10 deg swept mode shapes
-i2plot = 3
+i2plot = 2
 plt_swept_modeShapes = plot_mode_shapes(problem[i2plot],nModes=nModes,scale=0.2,view=(30,30),legendPos=(-0.25,0.99),save=true,savePath=string(relPath,"/PazySweepAngleRangeModal_modeShapes.pdf"))
 display(plt_swept_modeShapes)
 

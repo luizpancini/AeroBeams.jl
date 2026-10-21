@@ -26,7 +26,7 @@ tipMass = 0.0
 ηtipMass = [0; -chord*(1-normSparPos)-0.0; 0]
 
 # Initialize model
-PazyWingFlutterAndDivergence,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,gravityVector=[0,0,-g],tipMass=tipMass,ηtipMass=ηtipMass)
+PazyWingFlutterAndDivergence,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,gravityVector=[0,0,-g],tipMasses=[tipMass],ηtipMasses=[ηtipMass],tipMassesInertias=[zeros(3,3)])
 
 # Number of modes to track
 nModes = 5

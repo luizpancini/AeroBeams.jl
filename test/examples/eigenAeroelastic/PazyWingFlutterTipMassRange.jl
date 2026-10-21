@@ -44,7 +44,7 @@ for (i,c) in enumerate(configurations)
         # Display progress
         println("Solving for configuration $c, U = $U m/s")
         # Model
-        PazyWingFlutterTipMassRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,airspeed=U,tipMass=tipMassRange[i],ηtipMass=[0,tipMassPosRange[i],0])
+        PazyWingFlutterTipMassRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,airspeed=U,tipMasses=[tipMassRange[i]],ηtipMasses=[[0,tipMassPosRange[i],0]],tipMassesInertias=[zeros(3,3)])
         # Create and solve problem
         problem = create_EigenProblem(model=PazyWingFlutterTipMassRange,eigenmethod=eigenmethod,nev=nev,x0=x0)
         solve!(problem)

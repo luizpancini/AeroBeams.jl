@@ -57,7 +57,7 @@ for (i,θ) in enumerate(θRange)
         ## Display progress #src
         println("Solving for θ = $(round(rad2deg(θ))) deg, U = $U m/s") #src
         ## Update model
-        PazyWingPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],tipMass=tipMass,ηtipMass=ηtipMass,smallAngles=smallAngles)
+        PazyWingPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],tipMasses=[tipMass],ηtipMasses=[ηtipMass],tipMassesInertias=[zeros(3,3)],smallAngles=smallAngles)
         ## Create and solve problem
         problem[i,j] = create_SteadyProblem(model=PazyWingPitchRange,x0=x0)
         solve!(problem[i,j])

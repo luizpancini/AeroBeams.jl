@@ -41,7 +41,7 @@ for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U=$U m/s")
     # Update model
-    model,_ = create_Pazy(hinged=true,hingeNode=hingeNode,flareAngle=Λ,airspeed=U,pitchAngle=θ,flightDirection=[-sin(β),cos(β),0],tipMass=tipMass,ηtipMass=ηtipMass)
+    model,_ = create_Pazy(hinged=true,hingeNode=hingeNode,flareAngle=Λ,airspeed=U,pitchAngle=θ,flightDirection=[-sin(β),cos(β),0],tipMasses=[tipMass],ηtipMasses=[ηtipMass],tipMassesInertias=[zeros(3,3)])
     # Create and solve problem
     problem = create_EigenProblem(model=model,systemSolver=systemSolver,x0=x0,eigenmethod=eigenmethod,nev=nev)
     solve!(problem)
