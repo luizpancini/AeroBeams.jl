@@ -6,7 +6,7 @@
 function aero_core!(f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,A,B,model,element,aeroStateCache,p,V,Ω,χ,δ,Vdot,Ωdot,timeNow,Δt,isDynamicProblem)
 
     # Unpack and set flags
-    @unpack atmosphere = model
+    @unpack atmosphere,kinematicsBasisA = model
 
     # Steady aerodynamic kinematics
     α = aero_steady_kinematics!(element,aeroStateCache,V,Ω)
@@ -30,7 +30,7 @@ function aero_core!(f1χ,f2χ,m1χ,m2χ,Ac,Ai,An,Af,Ag,A,B,model,element,aeroSta
     update_inertial_parameters!(element,aeroStateCache)
 
     # Update tip loss factor, if applicable
-    isDynamicProblem && update_tip_loss_factor!(model,element)
+    update_tip_loss_factor!(kinematicsBasisA,element)
 
     # Get local gust velocity, if applicable
     isDynamicProblem && local_gust_velocity!(timeNow,model,element,aeroStateCache,p)
@@ -213,12 +213,12 @@ end
 
 
 # Updates the tip loss factor over the element with the current reference airspeed
-function update_tip_loss_factor!(model,element)
+function update_tip_loss_factor!(kinematicsBasisA,element)
 
     # Skip if the tip loss function is not airspeed dependent
     !(element.aero.surface.tipLoss.tipLossFunctionIsAirspeedDependent) && return
 
-    @unpack v_A = model.kinematicsBasisA.state
+    @unpack v_A = kinematicsBasisA.state
     @unpack ϖ = element.aero.loadsDistribution
 
     # Reference airspeed
@@ -2159,7 +2159,7 @@ end
 
 
 # Updates the initial aerodynamic states assuming their rates are zero
-function initial_aero_states!(atmosphere,element,χ,V,Ω,Vdot,Ωdot)
+function initial_aero_states!(atmosphere,kinematicsBasisA,element,χ,V,Ω,Vdot,Ωdot)
 
     # Skip if there are no aerodynamic surface or states
     (isnothing(element.aero.surface) || isempty(χ)) && return χ
@@ -2193,6 +2193,9 @@ function initial_aero_states!(atmosphere,element,χ,V,Ω,Vdot,Ωdot)
 
         # Update inertial parameters
         update_inertial_parameters!(element,stateCache)
+
+        # Update tip loss factor, if applicable
+        update_tip_loss_factor!(kinematicsBasisA,element)
 
         # Effective (unsteady) angle of attack
         effective_angle_of_attack!(element,stateCache,χ,δ)

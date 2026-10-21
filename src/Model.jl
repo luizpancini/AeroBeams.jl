@@ -2162,7 +2162,7 @@ function update_initial_states!(beams,elements,specialNodes,kinematicsBasisA,atm
         M2 .= M + (Δℓ/2 * M_prime)
 
         # Aerodynamic states
-        χ .= initial_aero_states!(atmosphere,element,χ,V,Ω,Vdot,Ωdot)
+        χ .= initial_aero_states!(atmosphere,kinematicsBasisA,element,χ,V,Ω,Vdot,Ωdot)
 
     end
 
