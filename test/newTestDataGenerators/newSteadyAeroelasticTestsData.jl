@@ -26,6 +26,16 @@ include("../examples/steadyAeroelastic/HealySideslipFFWTsteadyTwistRangeAoARange
 mkpath(string(pwd(),"/test/newTestDataGenerators/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast"))
 writedlm("test/newTestDataGenerators/HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast/phiHinge.txt", test_data_matrix(ϕHinge))
 
+# Steady analysis of the flat-plate wing with a coasting FFWT
+include("../examples/steadyAeroelastic/FlatPlateFFWTsteadyCoast.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/FlatPlateFFWTsteadyCoast"))
+writedlm("test/newTestDataGenerators/FlatPlateFFWTsteadyCoast/phiHinge.txt", test_data_matrix(ϕHinge))
+
+# Steady analysis of the flat-plate left wing with a coasting FFWT
+include("../examples/steadyAeroelastic/FlatPlateFFWTsteadyCoastLeft.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/FlatPlateFFWTsteadyCoastLeft"))
+writedlm("test/newTestDataGenerators/FlatPlateFFWTsteadyCoastLeft/phiHinge.txt", test_data_matrix(ϕHinge))
+
 # Steady analysis of the Pazy wing with a coasting FFWT
 include("../examples/steadyAeroelastic/PazyFFWTsteadyCoast.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/PazyFFWTsteadyCoast"))

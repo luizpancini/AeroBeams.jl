@@ -26,6 +26,16 @@ end
     @test matches_test_data(ϕHinge, "HealySideslipFFWTsteadyTwistRangeAoARangeSideslipRangeCoast", "phiHinge.txt")
 end
 
+@testset "Steady analysis of the flat-plate wing with a coasting FFWT" begin
+    include_example("examples/steadyAeroelastic/FlatPlateFFWTsteadyCoast.jl")
+    @test matches_test_data(ϕHinge, "FlatPlateFFWTsteadyCoast", "phiHinge.txt")
+end
+
+@testset "Steady analysis of the flat-plate left wing with a coasting FFWT" begin
+    include_example("examples/steadyAeroelastic/FlatPlateFFWTsteadyCoastLeft.jl")
+    @test matches_test_data(ϕHinge, "FlatPlateFFWTsteadyCoastLeft", "phiHinge.txt")
+end
+
 !is_ci && @testset "Steady analysis of the Pazy wing with a coasting FFWT" begin
     include_example("examples/steadyAeroelastic/PazyFFWTsteadyCoast.jl")
     @test matches_test_data(ϕHinge, "PazyFFWTsteadyCoast", "phiHinge.txt")
