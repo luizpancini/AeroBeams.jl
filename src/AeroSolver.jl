@@ -235,6 +235,8 @@ export Inflow
 
     Incompressible modified Beddoes-Leishman AeroSolver composite type
 
+The transition between the upstroke and downstroke phases is smoothed over the non-dimensional pitch rate `qTransition` (a hard switch is recovered with `qTransition=0`).
+
 """
 struct BLi{Nc,Ni}
 
@@ -250,16 +252,19 @@ struct BLi{Nc,Ni}
     bC::SVector{Nc,Float64}
     AI::SVector{Ni,Float64}
     bI::SVector{Ni,Float64}
+    qTransition::Float64
 
     function BLi(;
         circulatoryIndicialFunction::Symbol=:Beddoes,
         inertialIndicialFunction::Symbol=:Leishman,
-        incompressibleInertialLoads::Bool=true
+        incompressibleInertialLoads::Bool=true,
+        qTransition::Real=1e-3
         )
 
         # Validate
         @assert circulatoryIndicialFunction in [:Beddoes,:Wagner,:Jose] "circulatoryIndicialFunction must be one of: `:Beddoes`, `:Wagner`, `:Jose`"
         @assert inertialIndicialFunction in [:Leishman] "inertialIndicialFunction must be one of: `:Leishman`"
+        @assert qTransition >= 0 "qTransition must be non-negative"
 
         # Name of the aero solver
         name = "BLi"
@@ -294,7 +299,8 @@ struct BLi{Nc,Ni}
             AC,
             bC,
             AI,
-            bI
+            bI,
+            qTransition
         )
 
     end
@@ -306,6 +312,8 @@ export BLi
 """
 
     Original Beddoes-Leishman AeroSolver composite type
+
+The transition between the upstroke and downstroke phases is smoothed over the non-dimensional pitch rate `qTransition` (a hard switch is recovered with `qTransition=0`).
 
 """
 struct BLo{Nc,Ni}
@@ -322,16 +330,19 @@ struct BLo{Nc,Ni}
     bC::SVector{Nc,Float64}
     AI::SVector{Ni,Float64}
     bI::SVector{Ni,Float64}
+    qTransition::Float64
 
     function BLo(;
         circulatoryIndicialFunction::Symbol=:Beddoes,
         inertialIndicialFunction::Symbol=:Leishman,
-        incompressibleInertialLoads::Bool=false
+        incompressibleInertialLoads::Bool=false,
+        qTransition::Real=1e-3
         )
 
         # Validate
         @assert circulatoryIndicialFunction in [:Beddoes,:Wagner,:Jose] "circulatoryIndicialFunction must be one of: `:Beddoes`, `:Wagner`, `:Jose`"
         @assert inertialIndicialFunction in [:Leishman] "inertialIndicialFunction must be one of: `:Leishman`"
+        @assert qTransition >= 0 "qTransition must be non-negative"
 
         # Name of the aero solver
         name = "BLo"
@@ -366,7 +377,8 @@ struct BLo{Nc,Ni}
             AC,
             bC,
             AI,
-            bI
+            bI,
+            qTransition
         )
 
     end
