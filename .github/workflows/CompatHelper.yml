@@ -1,7 +1,8 @@
 name: CompatHelper
 on:
-  schedule:
-    - cron: 0 0 * * *
+  # schedule disabled: it was opening a new branch/PR every day
+  # schedule:
+  #   - cron: 0 0 * * *
   workflow_dispatch:
 permissions:
   contents: write
