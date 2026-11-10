@@ -605,16 +605,19 @@ StatesRatesNaN(element,n::Float64) = StatesRates{length(element.state.rates.χdo
 Base.copy(x::StatesRates{N}) where {N} = copy_fields(x)
 
 
-# EquivStatesRates composite type
+# EquivStatesRates composite type (the rates of the states during the time step are ẋ = c x - ẋEquiv)
 # Fields
+# - `c`: coefficient of the states in their rates, set by the time integration method at begin of time step
 # - `udotEquiv`: equivalent displacements time derivative at begin of time step
 # - `pdotEquiv`: equivalent rotation parameters time derivative at begin of time step
 # - `VdotEquiv`: equivalent sectional velocities time derivative at begin of time step
 # - `ΩdotEquiv`: equivalent sectional angular velocities time derivative at begin of time step
 # - `χdotEquiv`: equivalent aerodynamic states time derivative at begin of time step
 #
-struct EquivStatesRates{N}
-    
+mutable struct EquivStatesRates{N}
+
+    c::Float64
+
     udotEquiv::MVector{3,Float64}
     pdotEquiv::MVector{3,Float64}
     VdotEquiv::MVector{3,Float64}
@@ -624,6 +627,7 @@ struct EquivStatesRates{N}
 
 end
 EquivStatesRates{N}() where {N} = EquivStatesRates{N}(
+    0.0,
     ntuple(_ -> zeros(MVector{3,Float64}), 4)...,
     zeros(MVector{N,Float64}),
 )

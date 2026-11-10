@@ -19,11 +19,12 @@ function f!(problem)
     @unpack beams,hingeAxisConstraints = model
     @unpack elementGroups,specialNodes = model.assemblyData
     timeIndex = time_index(problem)
+    stepFraction = step_fraction(problem)
     timeNow = time_now(problem)
     Δt = time_step(problem)
     isDynamicProblem = problem isa DynamicProblem
 
-    residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+    residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
     return residual
 
@@ -76,12 +77,13 @@ function fj!(problem)
     skipJacobianUpdate = get_skipJacobianUpdate(problem.systemSolver)
     skipAeroJacobianUpdate = get_skipAeroJacobianUpdate(problem.systemSolver)
     timeIndex = time_index(problem)
+    stepFraction = step_fraction(problem)
     timeNow = time_now(problem)
     Δt = time_step(problem)
     isDynamicProblem = problem isa DynamicProblem
 
     # Set residual vector
-    residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+    residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
     # Set Jacobian matrix, if applicable
     skipJacobianUpdate || jacobian!(jacobian,model,elementGroups,specialNodes,hingeAxisConstraints,x,σ,skipAeroJacobianUpdate,timeNow,Δt,isDynamicProblem)
@@ -91,16 +93,16 @@ function fj!(problem)
 end
 
 # Updates the residual vector of the system of equations
-function residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+function residual!(residual,model,beams,elementGroups,specialNodes,hingeAxisConstraints,x,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
     # Set flap deflections and their rates
     for beam in beams
-        flap_deflection!(beam,x,timeIndex)
+        flap_deflection!(beam,x,timeIndex,stepFraction)
     end
 
     # Set contributions from the elements
     foreach_element(elementGroups) do element
-        element_residual!(residual,model,element,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+        element_residual!(residual,model,element,x,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
     end
 
     # Update states of all special nodes first (necessary for convergence with doubly-attached springs)
@@ -143,8 +145,8 @@ function jacobian!(jacobian,model,elementGroups,specialNodes,hingeAxisConstraint
 
 end
 
-# Updates the flap deflections of beam surfaces and their rates
-function flap_deflection!(beam,x,timeIndex)
+# Updates the flap deflections of beam surfaces and their rates, at the fraction stepFraction of the time step that ends at timeIndex
+function flap_deflection!(beam,x,timeIndex,stepFraction)
 
     # Unpack surface
     @unpack surface = beam.attachments
@@ -159,9 +161,9 @@ function flap_deflection!(beam,x,timeIndex)
         δdot = δddot = 0.0
     else
         @unpack δVec,δdotVec,δddotVec = surface.assemblyData
-        δ = δVec[timeIndex]
-        δdot = δdotVec[timeIndex]
-        δddot = δddotVec[timeIndex]
+        δ = value_at_time(δVec,timeIndex,stepFraction)
+        δdot = value_at_time(δdotVec,timeIndex,stepFraction)
+        δddot = value_at_time(δddotVec,timeIndex,stepFraction)
     end
     
     # Update surface state
@@ -172,7 +174,7 @@ function flap_deflection!(beam,x,timeIndex)
 end
 
 # Computes the contributions from the current element to the residual array
-function element_residual!(residual,model,element,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+function element_residual!(residual,model,element,x,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
     @unpack invForceScaling = model.assemblyData
     @unpack Δℓ,R0,R0T,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat = element.geometry
@@ -198,7 +200,7 @@ function element_residual!(residual,model,element,x,σ,timeIndex,timeNow,Δt,isD
     element_rotation_variables!(element,isDynamicProblem)
     
     # Distributed loads
-    element_distributed_loads!(model,element,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+    element_distributed_loads!(model,element,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
     # Static terms
     element_static_residual!(F_u1,F_u2,F_p1,F_p2,F_F1,F_F2,F_M1,F_M2,Δℓ,R0,u,p,F,M,γ,κ,RR0,HTinv,f1,f2,m1,m2)
@@ -275,21 +277,21 @@ function element_states!(model,element,x)
 
 end
 
-# Sets the states' rates of the element
+# Sets the states' rates of the element, ẋ = c x - ẋEquiv, where the coefficient c and the equivalent rates ẋEquiv are set by the time integration method at the begin of the time step
 function element_states_rates!(element,Δt)
 
     @unpack I11,I12,I21,I22 = element.sectional
     @unpack u,p,V,Ω,χ = element.state.midpoint
     @unpack udot,pdot,Vdot,Ωdot,Pdot,Hdot,χdot = element.state.rates
-    @unpack udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv = element.stateCache.equivStatesRates
+    @unpack c,udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv = element.stateCache.equivStatesRates
     
     # Set rates for finite time step
     if isfinite(Δt)
-        udot .= 2/Δt * u - udotEquiv
-        pdot .= 2/Δt * p - pdotEquiv
-        Vdot .= 2/Δt * V - VdotEquiv
-        Ωdot .= 2/Δt * Ω - ΩdotEquiv
-        χdot .= 2/Δt * χ - χdotEquiv
+        udot .= c * u - udotEquiv
+        pdot .= c * p - pdotEquiv
+        Vdot .= c * V - VdotEquiv
+        Ωdot .= c * Ω - ΩdotEquiv
+        χdot .= c * χ - χdotEquiv
         Pdot .= I11 * Vdot + I12 * Ωdot
         Hdot .= I21 * Vdot + I22 * Ωdot
     end
@@ -321,7 +323,7 @@ function element_rotation_variables!(element,isDynamicProblem)
 end
 
 # Computes the nodal resultants from distributed loads on the current element, resolved in basis A
-function element_distributed_loads!(model,element,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+function element_distributed_loads!(model,element,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
     @unpack f1,f2,m1,m2 = element.stateCache.loadsResultants
     @unpack f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,f_g,m_g = element.stateCache.structuralLoadsResultants
@@ -332,7 +334,7 @@ function element_distributed_loads!(model,element,σ,timeIndex,timeNow,Δt,isDyn
     gravitational_loads!(f_g,m_g,model,element,σ)
 
     # Externally applied distributed loads
-    distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,element,σ,timeIndex)
+    distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,element,σ,timeIndex,stepFraction)
 
     # Aerodynamic loads (and state arrays)
     if !isnothing(element.aero.surface)
@@ -364,8 +366,8 @@ function gravitational_loads!(f_g,m_g,model,element,σ)
 
 end
 
-# Computes the nodal resultants from the externally applied distributed loads on the current element, all resolved in basis A
-function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,element,σ,timeIndex)
+# Computes the nodal resultants from the externally applied distributed loads on the current element, all resolved in basis A, at the fraction stepFraction of the time step that ends at timeIndex
+function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1_A,mf2_A,ff1_b,ff2_b,mf1_b,mf2_b,element,σ,timeIndex,stepFraction)
 
     @unpack f_A,m_A,f_b,m_b,ff_A,mf_A,ff_b,mf_b,has_f_A,has_m_A,has_f_b,has_m_b,has_ff_A,has_mf_A,has_ff_b,has_mf_b = element.distLoads
     @unpack R0 = element.geometry
@@ -378,26 +380,26 @@ function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1
     # --------------------------------------------------------------------------
     # Add dead forces initially resolved in basis A
     if has_f_A
-        f1_ext .+= σ * f_A[1,:,timeIndex]
-        f2_ext .+= σ * f_A[2,:,timeIndex]
+        f1_ext .+= σ * value_at_time(f_A,1,timeIndex,stepFraction)
+        f2_ext .+= σ * value_at_time(f_A,2,timeIndex,stepFraction)
     end
 
     # Add dead moments initially resolved in basis A
     if has_m_A
-        m1_ext .+= σ * m_A[1,:,timeIndex]
-        m2_ext .+= σ * m_A[2,:,timeIndex]
+        m1_ext .+= σ * value_at_time(m_A,1,timeIndex,stepFraction)
+        m2_ext .+= σ * value_at_time(m_A,2,timeIndex,stepFraction)
     end
 
     # Add dead forces initially resolved in basis b
     if has_f_b
-        f1_ext .+= R0 * σ * f_b[1,:,timeIndex]
-        f2_ext .+= R0 * σ * f_b[2,:,timeIndex]
+        f1_ext .+= R0 * σ * value_at_time(f_b,1,timeIndex,stepFraction)
+        f2_ext .+= R0 * σ * value_at_time(f_b,2,timeIndex,stepFraction)
     end
 
     # Add dead moments initially resolved in basis b
     if has_m_b
-        m1_ext .+= R0 * σ * m_b[1,:,timeIndex]
-        m2_ext .+= R0 * σ * m_b[2,:,timeIndex]
+        m1_ext .+= R0 * σ * value_at_time(m_b,1,timeIndex,stepFraction)
+        m2_ext .+= R0 * σ * value_at_time(m_b,2,timeIndex,stepFraction)
     end
 
     ## Follower loads
@@ -405,8 +407,8 @@ function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1
     # Set and add follower forces initially resolved in basis A
     if has_ff_A
         # Set values
-        @views ff1_A .= σ * ff_A[1,:,timeIndex]
-        @views ff2_A .= σ * ff_A[2,:,timeIndex]
+        @views ff1_A .= σ * value_at_time(ff_A,1,timeIndex,stepFraction)
+        @views ff2_A .= σ * value_at_time(ff_A,2,timeIndex,stepFraction)
         # Add
         f1_ext .+= R * ff1_A
         f2_ext .+= R * ff2_A
@@ -415,8 +417,8 @@ function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1
     # Set and add follower moments initially resolved in basis A
     if has_mf_A
         # Set values
-        @views mf1_A .= σ * mf_A[1,:,timeIndex]
-        @views mf2_A .= σ * mf_A[2,:,timeIndex]
+        @views mf1_A .= σ * value_at_time(mf_A,1,timeIndex,stepFraction)
+        @views mf2_A .= σ * value_at_time(mf_A,2,timeIndex,stepFraction)
         # Add
         m1_ext .+= R * mf1_A
         m2_ext .+= R * mf2_A
@@ -425,8 +427,8 @@ function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1
     # Set and add follower forces initially resolved in basis b
     if has_ff_b
         # Set values
-        @views ff1_b .= σ * ff_b[1,:,timeIndex]
-        @views ff2_b .= σ * ff_b[2,:,timeIndex]
+        @views ff1_b .= σ * value_at_time(ff_b,1,timeIndex,stepFraction)
+        @views ff2_b .= σ * value_at_time(ff_b,2,timeIndex,stepFraction)
         # Add
         f1_ext .+= RR0 * ff1_b
         f2_ext .+= RR0 * ff2_b
@@ -435,8 +437,8 @@ function distributed_external_loads!(f1_ext,f2_ext,m1_ext,m2_ext,ff1_A,ff2_A,mf1
     # Set and add follower moments initially resolved in basis b
     if has_mf_b
         # Set values
-        @views mf1_b .= σ * mf_b[1,:,timeIndex]
-        @views mf2_b .= σ * mf_b[2,:,timeIndex]
+        @views mf1_b .= σ * value_at_time(mf_b,1,timeIndex,stepFraction)
+        @views mf2_b .= σ * value_at_time(mf_b,2,timeIndex,stepFraction)
         # Add
         m1_ext .+= RR0 * mf1_b
         m2_ext .+= RR0 * mf2_b
@@ -687,7 +689,7 @@ function element_jacobian!(jacobian,model,element,timeNow,Δt,isDynamicProblem,s
     @unpack F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,F_χ_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot = element.stateCache.jacobians
 
     # Derivatives of the rotation variables w.r.t. the rotation parameters
-    element_rotation_derivatives!(element,Δt,isDynamicProblem)
+    element_rotation_derivatives!(element,isDynamicProblem)
 
     # Convert to static matrices for performance
     RR0 = SMatrix(RR0)
@@ -708,7 +710,7 @@ function element_jacobian!(jacobian,model,element,timeNow,Δt,isDynamicProblem,s
     element_steady_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,Δℓ,I11,I12,I21,I22,R0,R0T,ω,V,P,H,RR0,R_p1,R_p2,R_p3,RT_p1,RT_p2,RT_p3,f1χ_V,f2χ_V,f1χ_Ω,f2χ_Ω,m1χ_V,m2χ_V,m1χ_Ω,m2χ_Ω,f1χ_χ,f2χ_χ,m1χ_χ,m2χ_χ,f1χ_δ,f2χ_δ,m1χ_δ,m2χ_δ)
 
     # Transient dynamic terms
-    isDynamicProblem && element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_V_u,F_Ω_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,Δt,Δℓ,I11,I12,I21,I22,R0,R0T,P,H,pdot,Pdot,Hdot,RR0,RdotR0,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,Rdot_p1,Rdot_p2,Rdot_p3)
+    isDynamicProblem && element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_V_u,F_Ω_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,element.stateCache.equivStatesRates.c,Δℓ,I11,I12,I21,I22,R0,R0T,P,H,pdot,Pdot,Hdot,RR0,RdotR0,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,Rdot_p1,Rdot_p2,Rdot_p3)
 
     # Insert element resultants into the Jacobian matrix
     insert_element_jacobians!(jacobian,F_u1_p,F_u2_p,F_u1_F,F_u2_F,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_u1_χ,F_u2_χ,F_u1_δ,F_u2_δ,F_p1_p,F_p2_p,F_p1_F,F_p2_F,F_p1_M,F_p2_M,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_p1_χ,F_p2_χ,F_p1_δ,F_p2_δ,F_F1_u,F_F2_u,F_F1_p,F_F2_p,F_F1_F,F_F2_F,F_F1_M,F_F2_M,F_M1_p,F_M2_p,F_M1_F,F_M2_F,F_M1_M,F_M2_M,F_V_u,F_V_p,F_V_V,F_Ω_p,F_Ω_Ω,F_χ_p,F_χ_V,F_χ_Ω,F_χ_χ,forceScaling,invForceScaling,hingedNode1Mat,notHingedNode1Mat,notHingedNode2Mat,jacobianMaps)
@@ -753,10 +755,11 @@ function element_jacobian!(jacobian,model,element,timeNow,Δt,isDynamicProblem,s
 end
 
 # Computes the derivatives of the rotation variables w.r.t. the extended rotation parameters (required by the Jacobian and inertia matrices only)
-function element_rotation_derivatives!(element,Δt,isDynamicProblem)
+function element_rotation_derivatives!(element,isDynamicProblem)
 
     @unpack p = element.state.midpoint
     @unpack pdot = element.state.rates
+    @unpack c = element.stateCache.equivStatesRates
     @unpack R,HT,R_p1,R_p2,R_p3,RT_p1,RT_p2,RT_p3,HT_p1,HT_p2,HT_p3,HTinv_p1,HTinv_p2,HTinv_p3,Rdot_p1,Rdot_p2,Rdot_p3 = element.stateCache.rotationMatrices
 
     # Derivatives of the rotation tensor and the tangent operator tensors w.r.t. extended rotation parameters
@@ -768,7 +771,7 @@ function element_rotation_derivatives!(element,Δt,isDynamicProblem)
     RT_p3 .= R_p3'
 
     # Derivatives of the time derivative of rotation tensor for dynamic analyses
-    isDynamicProblem && ∂Rdot_∂p!(Rdot_p1,Rdot_p2,Rdot_p3,R,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,pdot,Δt)
+    isDynamicProblem && ∂Rdot_∂p!(Rdot_p1,Rdot_p2,Rdot_p3,R,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,pdot,c)
 
 end
 
@@ -1224,11 +1227,11 @@ function element_steady_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F
 
 end
 
-# Computes transient dynamic contributions to the Jacobian matrix from the current element
-function element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_V_u,F_Ω_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,Δt,Δℓ,I11,I12,I21,I22,R0,R0T,P,H,pdot,Pdot,Hdot,RR0,RdotR0,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,Rdot_p1,Rdot_p2,Rdot_p3)
+# Computes transient dynamic contributions to the Jacobian matrix from the current element (c is the coefficient of the states in their rates, i.e., the derivative of the rates w.r.t. the states, set by the time integration method)
+function element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_Ω,F_p1_p,F_p2_p,F_p1_V,F_p2_V,F_p1_Ω,F_p2_Ω,F_V_u,F_Ω_p,F_χ_V,F_χ_Ω,F_χ_χ,F_χ_Vdot,F_χ_Ωdot,f1χ_Vdot,f2χ_Vdot,f1χ_Ωdot,f2χ_Ωdot,m1χ_Vdot,m2χ_Vdot,m1χ_Ωdot,m2χ_Ωdot,c,Δℓ,I11,I12,I21,I22,R0,R0T,P,H,pdot,Pdot,Hdot,RR0,RdotR0,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,Rdot_p1,Rdot_p2,Rdot_p3)
 
     # Repeatedly used variables
-    RdotR0_plus_2oΔtRR0 = SMatrix(RdotR0 + 2/Δt*RR0)
+    RdotR0_plus_cRR0 = SMatrix(RdotR0 + c*RR0)
     
     # --- F_u --- #
     # F_u_p
@@ -1237,13 +1240,13 @@ function element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_�
     F_u1_p .+= tmp
     F_u2_p .+= tmp
     # F_u_V
-    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I11
-    F_u1_V .+= tmp - f1χ_Vdot * 2/Δt
-    F_u2_V .+= tmp - f2χ_Vdot * 2/Δt
+    tmp = Δℓ/2 * RdotR0_plus_cRR0 * I11
+    F_u1_V .+= tmp - f1χ_Vdot * c
+    F_u2_V .+= tmp - f2χ_Vdot * c
     # F_u_Ω
-    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I12
-    F_u1_Ω .+= tmp - f1χ_Ωdot * 2/Δt
-    F_u2_Ω .+= tmp - f2χ_Ωdot * 2/Δt
+    tmp = Δℓ/2 * RdotR0_plus_cRR0 * I12
+    F_u1_Ω .+= tmp - f1χ_Ωdot * c
+    F_u2_Ω .+= tmp - f2χ_Ωdot * c
 
     # --- F_p --- #
     # F_p_p
@@ -1252,30 +1255,30 @@ function element_transient_jacobians!(F_u1_p,F_u2_p,F_u1_V,F_u2_V,F_u1_Ω,F_u2_�
     F_p1_p .+= tmp
     F_p2_p .+= tmp
     # F_p_V
-    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I21
-    F_p1_V .+= tmp - m1χ_Vdot * 2/Δt
-    F_p2_V .+= tmp - m2χ_Vdot * 2/Δt
+    tmp = Δℓ/2 * RdotR0_plus_cRR0 * I21
+    F_p1_V .+= tmp - m1χ_Vdot * c
+    F_p2_V .+= tmp - m2χ_Vdot * c
     # F_p_Ω
-    tmp = Δℓ/2 * RdotR0_plus_2oΔtRR0 * I22
-    F_p1_Ω .+= tmp - m1χ_Ωdot * 2/Δt
-    F_p2_Ω .+= tmp - m2χ_Ωdot * 2/Δt
+    tmp = Δℓ/2 * RdotR0_plus_cRR0 * I22
+    F_p1_Ω .+= tmp - m1χ_Ωdot * c
+    F_p2_Ω .+= tmp - m2χ_Ωdot * c
     
     # --- F_V --- #
     # F_V_u
-    F_V_u .+= - 2/Δt * I3
+    F_V_u .+= - c * I3
 
     # --- F_Ω --- #
     # F_Ω_p
-    F_Ω_p .+= -R0T * (mul3(HT_p1,HT_p2,HT_p3,pdot) + 2/Δt*HT)
+    F_Ω_p .+= -R0T * (mul3(HT_p1,HT_p2,HT_p3,pdot) + c*HT)
 
     # --- F_χ --- #
     # F_χ_V
-    F_χ_V .+= F_χ_Vdot * 2/Δt
+    F_χ_V .+= F_χ_Vdot * c
     # F_χ_Ω
-    F_χ_Ω .+= F_χ_Ωdot * 2/Δt
+    F_χ_Ω .+= F_χ_Ωdot * c
     # F_χ_χ
     @inbounds for i in diagind(F_χ_χ)
-        F_χ_χ[i] += 2/Δt
+        F_χ_χ[i] += c
     end
 
 end
@@ -1377,7 +1380,7 @@ function element_inertia!(inertia,model,element,timeNow,Δt,isDynamicProblem)
     @unpack F_u1_pdot,F_u2_pdot,F_u1_Vdot,F_u2_Vdot,F_u1_Ωdot,F_u2_Ωdot,F_p1_pdot,F_p2_pdot,F_p1_Vdot,F_p2_Vdot,F_p1_Ωdot,F_p2_Ωdot,F_V_udot,F_Ω_pdot,F_χ_Vdot,F_χ_Ωdot,F_χ_χdot = element.stateCache.jacobians
 
     # Derivatives of the rotation variables w.r.t. the rotation parameters (time derivative of rotation tensor not required)
-    element_rotation_derivatives!(element,Δt,false)
+    element_rotation_derivatives!(element,false)
 
     # Compute aerodynamic contributions
     aero_derivatives_states_rates!(model,element,timeNow,Δt,isDynamicProblem)
@@ -2221,13 +2224,14 @@ function update_states!(problem)
     @unpack model = problem
     timeNow = time_now(problem)
     timeIndex = time_index(problem)
+    stepFraction = step_fraction(problem)
     Δt = time_step(problem)
     isDynamicProblem = problem isa DynamicProblem
 
-    update_states!(model,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+    update_states!(model,x,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
 end
-function update_states!(model,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+function update_states!(model,x,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
     @unpack hingeAxisConstraints = model
     @unpack elementGroups,specialNodes = model.assemblyData
@@ -2252,7 +2256,7 @@ function update_states!(model,x,σ,timeIndex,timeNow,Δt,isDynamicProblem)
         
         ## Distributed loads
         # ----------------------------------------------------------------------
-        element_distributed_loads!(model,element,σ,timeIndex,timeNow,Δt,isDynamicProblem)
+        element_distributed_loads!(model,element,σ,timeIndex,stepFraction,timeNow,Δt,isDynamicProblem)
 
         ## Update nodal states of the element
         # ----------------------------------------------------------------------

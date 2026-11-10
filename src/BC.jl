@@ -538,6 +538,22 @@ function update_BC_state!(bc,timeIndex::Int)
 end
 
 
+# Updates the boundary conditions' state at the fraction stepFraction of the time step that ends at the time index (linearly interpolated within the time step)
+function update_BC_state!(bc,timeIndex::Int,stepFraction::Float64)
+
+    stepFraction == 1 && return update_BC_state!(bc,timeIndex)
+
+    bc.state.displacementsOnA .= value_at_time(bc.history.displacementsOnA,timeIndex,stepFraction)
+    bc.state.deadLoadsOnA .= value_at_time(bc.history.deadLoadsOnA,timeIndex,stepFraction)
+    bc.state.followerLoadsOnA .= value_at_time(bc.history.followerLoadsOnA,timeIndex,stepFraction)
+    bc.state.displacementsOnb .= value_at_time(bc.history.displacementsOnb,timeIndex,stepFraction)
+    bc.state.deadLoadsOnb .= value_at_time(bc.history.deadLoadsOnb,timeIndex,stepFraction)
+    bc.state.followerLoadsOnb .= value_at_time(bc.history.followerLoadsOnb,timeIndex,stepFraction)
+    bc.state.currentValue .= value_at_time(bc.history.currentValue,timeIndex,stepFraction)
+
+end
+
+
 # Updates the boundary conditions' state at the current time instance
 function update_BC_state!(bc,timeNow::Float64)
 

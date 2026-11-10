@@ -475,8 +475,8 @@ function ∂R_∂p_and_∂HT_∂p_and_∂HTinv_∂p!(R_p1,R_p2,R_p3,HT_p1,HT_p2,
 end
 R_HT_HTinv_stacked(p) = vcat(vec(rotation_tensor_WM(p)), vec(HT_WM(p)), vec(HTinv_WM(p)))
 
-# Computes the derivative of the time derivative of the rotation tensor with respect to the extended rotation parameters, from Rdot = R*tilde(HT*pdot) with pdot = 2/Δt*p - const
-function ∂Rdot_∂p!(Rdot_p1,Rdot_p2,Rdot_p3,R,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,pdot,Δt)
+# Computes the derivative of the time derivative of the rotation tensor with respect to the extended rotation parameters, from Rdot = R*tilde(HT*pdot) with pdot = c*p - const (c is the coefficient of the states in their rates, set by the time integration method)
+function ∂Rdot_∂p!(Rdot_p1,Rdot_p2,Rdot_p3,R,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,HT_p3,pdot,c)
 
     # Static versions for performance
     R = SMatrix{3,3}(R)
@@ -493,9 +493,9 @@ function ∂Rdot_∂p!(Rdot_p1,Rdot_p2,Rdot_p3,R,HT,R_p1,R_p2,R_p3,HT_p1,HT_p2,H
     ω = HT * pdot
 
     # Derivatives w.r.t. each extended rotation parameter
-    Rdot_p1 .= R_p1*tilde(ω) + R*tilde(HT_p1*pdot + 2/Δt*HT[:,1])
-    Rdot_p2 .= R_p2*tilde(ω) + R*tilde(HT_p2*pdot + 2/Δt*HT[:,2])
-    Rdot_p3 .= R_p3*tilde(ω) + R*tilde(HT_p3*pdot + 2/Δt*HT[:,3])
+    Rdot_p1 .= R_p1*tilde(ω) + R*tilde(HT_p1*pdot + c*HT[:,1])
+    Rdot_p2 .= R_p2*tilde(ω) + R*tilde(HT_p2*pdot + c*HT[:,2])
+    Rdot_p3 .= R_p3*tilde(ω) + R*tilde(HT_p3*pdot + c*HT[:,3])
 
 end
 

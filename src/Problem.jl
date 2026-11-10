@@ -166,19 +166,21 @@ SolutionHistory() = SolutionHistory(
 
 # TimeState composite type
 # Fields
-# - `timeNow`: current time
-# - `timeIndex`: current time index
+# - `timeNow`: current time (at which the equations are solved)
+# - `timeIndex`: current time index (of the end of the current time step)
 # - `Δt`: current time step
+# - `stepFraction`: fraction of the current time step at which the equations are solved (1, except for the generalized-α method)
 #
 mutable struct TimeState
 
     timeNow::Float64
     timeIndex::Int
     Δt::Float64
+    stepFraction::Float64
 
 end
 TimeState(timeVector) = TimeState(
-    timeVector[1], 1, timeVector[2]-timeVector[1]
+    timeVector[1], 1, timeVector[2]-timeVector[1], 1.0
 )
 
 
@@ -286,6 +288,7 @@ export EigenProblem
 # Fields
 # - `model`: model
 # - `systemSolver`: system solver
+# - `integrationMethod`: time integration method
 # - `skipInitialStatesUpdate`: flag to skip update of initial states
 # - `trackingTimeSteps`: flag to track time step solutions
 # - `trackingFrequency`: frequency of time steps in which to track solution
@@ -300,6 +303,7 @@ export EigenProblem
     # Definition fields (inputs to DynamicProblem creation)
     model::Model
     systemSolver::SystemSolver
+    integrationMethod::IntegrationMethod
     skipInitialStatesUpdate::Bool
     trackingTimeSteps::Bool
     trackingFrequency::Int
@@ -495,6 +499,7 @@ Dynamic problem constructor. Unless `skipInitialStatesUpdate` is set, the initia
 # Keyword arguments
 - `model::Model`: model
 - `systemSolver::SystemSolver`: system solver
+- `integrationMethod::Union{Symbol,IntegrationMethod}`: time integration method, either `:newmark` (trapezoidal rule), `:bdf2` or `:gen_alpha` (with their default parameters), or one created with [`Newmark`](@ref Newmark), [`BDF2`](@ref BDF2) or [`GeneralizedAlpha`](@ref GeneralizedAlpha), to set its parameters (default: `:newmark`).
 - `skipInitialStatesUpdate::Bool`: flag to skip update of initial states
 - `trackingTimeSteps::Bool`: flag to track time step solutions
 - `trackingFrequency::Int`: frequency of time steps in which to track solution
@@ -510,6 +515,7 @@ Dynamic problem constructor. Unless `skipInitialStatesUpdate` is set, the initia
 function create_DynamicProblem(; 
     model::Model,
     systemSolver::SystemSolver=create_NLsolver(),
+    integrationMethod::Union{Symbol,IntegrationMethod}=:newmark,
     trackingTimeSteps::Bool=true,
     trackingFrequency::Int=1,
     displayProgress::Bool=true,
@@ -525,6 +531,9 @@ function create_DynamicProblem(;
 
     # Validate inputs
     validate_dynamic_problem_inputs(systemSolver,trackingFrequency,displayFrequency,displayProgress,x0,skipInitialStatesUpdate)
+
+    # Set integration method
+    integrationMethod = integration_method(integrationMethod)
 
     # Reset model state, if applicable
     if isempty(x0)
@@ -556,6 +565,7 @@ function create_DynamicProblem(;
     return DynamicProblem(
         model,
         systemSolver,
+        integrationMethod,
         skipInitialStatesUpdate,
         trackingTimeSteps,
         trackingFrequency,
@@ -592,6 +602,9 @@ function solve!(problem::Problem)
 
     # Precompute prescribed flap deflection values
     precompute_flap_deflection!(problem)
+
+    # Reset time state to the initial time, for dynamic problems (which may have been previously solved)
+    problem isa DynamicProblem && reset_time_state!(problem)
 
     # Update motion of basis A
     update_motion_basis_A!(problem,1)
@@ -631,7 +644,7 @@ function solve_eigen!(problem::EigenProblem)
     if !isnothing(problem.refTrimProblem)
         f!(problem)
         foreach_element(problem.model.assemblyData.elementGroups) do element
-            element_rotation_derivatives!(element,0.0,false)
+            element_rotation_derivatives!(element,false)
         end
     end
        
@@ -829,7 +842,7 @@ end
 function initialize_system_arrays_from_refDynamicProblem(refDynamicProblem,nEqs,nStates)
 
     # Sizes from reference dynamic problem
-    nEqsDynamicProblem,nStatesDynamicProblem = size(refDynamicProblem.jacobian)
+    nEqsDynamicProblem,nStatesDynamicProblem = size(refDynamicProblem.systemArrays.jacobian)
 
     # Validate
     @assert nEqs == nEqsDynamicProblem "number of equations of the current model is different from that of the reference dynamic problem"
@@ -1042,9 +1055,9 @@ end
 function update_initial_states_from_x0!(model,time,systemSolver,x0)
 
     @unpack σ = systemSolver.loadStepState
-    @unpack timeIndex,timeNow = time.state
+    @unpack timeIndex,stepFraction,timeNow = time.state
 
-    update_states!(model,x0,σ,timeIndex,timeNow,Inf,true)
+    update_states!(model,x0,σ,timeIndex,stepFraction,timeNow,Inf,true)
 
 end
 
@@ -1918,9 +1931,11 @@ function initial_static_problem(problem)
     timeCopy = Time(problem.time.timeVector)
     timeCopy.state.Δt = Inf
 
+    # The static problem is not marched in time, so the integration method is not used
     return DynamicProblem(
         model=modelCopy,
         systemSolver=systemSolverCopy,
+        integrationMethod=Newmark(),
         skipInitialStatesUpdate=true,
         trackingTimeSteps=false,
         trackingFrequency=1,
@@ -2130,9 +2145,11 @@ function initial_rates_startup!(problem)
     xHistory = Vector{Vector{Float64}}(undef,nSteps+1)
     xHistory[1] = copy(x)
 
-    # Solve the steps
+    # Solve the steps, in which the rates have the form of the trapezoidal rule (Newmark's method with γ = 1/2)
     converged = true
     timeOriginal = problem.time
+    integrationMethodOriginal = problem.integrationMethod
+    setfield!(problem, :integrationMethod, Newmark())
     try
         for step in 1:nSteps
             # Time variables of the step: the trapezoidal rule's rates, 2/Δt*states - equivalent rates, are those of backward Euler (Δt = 2h) or BDF2 (Δt = 4h/3) with the appropriate equivalent rates
@@ -2155,8 +2172,9 @@ function initial_rates_startup!(problem)
             xHistory[step+1] = copy(x)
         end
     finally
-        # Reset original time variables, motion of basis A and BCs
+        # Reset original time variables, integration method, motion of basis A and BCs
         setfield!(problem, :time, timeOriginal)
+        setfield!(problem, :integrationMethod, integrationMethodOriginal)
         update_motion_basis_A!(problem,1)
         update_BCs_state!(problem,1)
     end
@@ -2169,7 +2187,7 @@ function initial_rates_startup!(problem)
         @warn "The first steps used to get the initial rates did not converge - the initial rates may be inconsistent"
         x .= xStart
         set_elements_rates!(elements,ratesStart)
-        update_states!(model,x,1.0,1,t0,Inf,true)
+        update_states!(model,x,1.0,1,1.0,t0,Inf,true)
         return
     end
 
@@ -2179,7 +2197,7 @@ function initial_rates_startup!(problem)
     set_elements_rates_from_derivative!(elements,xdot)
 
     # Update the states of the elements, hinge axis constraints and special nodes, at the initial time
-    update_states!(model,x,σ,1,t0,Inf,true)
+    update_states!(model,x,σ,1,1.0,t0,Inf,true)
 
 end
 
@@ -2284,37 +2302,6 @@ function set_momenta_rates!(element)
 
     Pdot .= I11 * Vdot + I12 * Ωdot
     Hdot .= I21 * Vdot + I22 * Ωdot
-
-end
-
-
-# Updates the equivalent states' rates at the begin of the current time step 
-function update_equivalent_states_rates!(problem)
-
-    @unpack Δt = problem.time.state
-    @unpack elementGroups = problem.model.assemblyData
-
-    # Loop over elements and update equivalent states' rates
-    foreach_element(elementGroups) do element
-        update_element_equivalent_states_rates!(element,Δt)
-    end
-
-end
-
-
-# Functional unit of update_equivalent_states_rates!
-function update_element_equivalent_states_rates!(element,Δt)
-
-    @unpack u,p,V,Ω,χ = element.state.midpoint
-    @unpack udot,pdot,Vdot,Ωdot,χdot = element.state.rates
-    @unpack udotEquiv,pdotEquiv,VdotEquiv,ΩdotEquiv,χdotEquiv = element.stateCache.equivStatesRates
-
-    # Set equivalent rates
-    udotEquiv .= udot + 2/Δt * u
-    pdotEquiv .= pdot + 2/Δt * p
-    VdotEquiv .= Vdot + 2/Δt * V
-    ΩdotEquiv .= Ωdot + 2/Δt * Ω
-    χdotEquiv .= χdot + 2/Δt * χ
 
 end
 
@@ -2465,8 +2452,11 @@ end
 # Marches the dynamic problem in time
 function time_march!(problem)
 
-    @unpack trackingTimeSteps,trackingFrequency,displayProgress,displayFrequency = problem
+    @unpack trackingTimeSteps,trackingFrequency,displayProgress,displayFrequency,integrationMethod = problem
     @unpack sizeOfTime = problem.time
+
+    # Reset the history of the integration method
+    reset_integration_method!(integrationMethod,length(problem.systemArrays.x))
 
     # Advance time
     for timeIndex = 2:sizeOfTime
@@ -2480,6 +2470,8 @@ function time_march!(problem)
         update_equivalent_states_rates!(problem)
         # Update DS models complementary variables of previous time step, if applicable
         update_BL_complementary_variables!(problem)
+        # Begin the time step (data at its begin needed by the integration method), if applicable
+        begin_time_step!(problem,integrationMethod)
         # Solve the system at the current time step
         solve_time_step!(problem)
         # Stop if unconverged
@@ -2487,6 +2479,8 @@ function time_march!(problem)
             println("Unconverged solution, stopping...")
             break
         end
+        # Complete the time step (states and rates at its end), if applicable
+        complete_time_step!(problem,integrationMethod)
         # Save time step data, if applicable    
         if trackingTimeSteps && iszero(rem(timeIndex-1,trackingFrequency))
             save_time_step_data!(problem)           
@@ -2501,14 +2495,32 @@ function time_march!(problem)
 end
 
 
-# Updates the current time state
+# Updates the current time state, with the time at which the equations are solved (at a fraction of the time step set by the integration method)
 function update_time_state!(problem,timeIndex)
 
     @unpack timeVector = problem.time
 
-    setfield!(problem.time.state, :timeNow, timeVector[timeIndex])
+    Δt = timeVector[timeIndex] - timeVector[timeIndex-1]
+    stepFraction = evaluation_step_fraction(problem.integrationMethod)
+    timeNow = stepFraction == 1 ? timeVector[timeIndex] : timeVector[timeIndex-1] + stepFraction*Δt
+
+    setfield!(problem.time.state, :timeNow, timeNow)
     setfield!(problem.time.state, :timeIndex, timeIndex)
-    setfield!(problem.time.state, :Δt, timeVector[timeIndex] - timeVector[timeIndex-1])
+    setfield!(problem.time.state, :Δt, Δt)
+    setfield!(problem.time.state, :stepFraction, stepFraction)
+
+end
+
+
+# Resets the current time state to the initial time
+function reset_time_state!(problem)
+
+    @unpack timeVector = problem.time
+
+    setfield!(problem.time.state, :timeNow, timeVector[1])
+    setfield!(problem.time.state, :timeIndex, 1)
+    setfield!(problem.time.state, :Δt, timeVector[2] - timeVector[1])
+    setfield!(problem.time.state, :stepFraction, 1.0)
 
 end
 
@@ -2537,27 +2549,37 @@ function update_motion_basis_A!(problem; timeNow=problem.time.state.timeNow, Δt
 end
 
 
-# Updates the motion of basis A at the current time index, using pre-computed arrays
+# Updates the motion of basis A at the current time index, using pre-computed arrays, at the fraction of the time step at which the equations are solved
 function update_motion_basis_A!(problem,timeIndex)
 
     @unpack u_AVec,v_AVec,ω_AVec,R_AVec = problem.model.kinematicsBasisA
     @unpack u_A,v_A,ω_A,R_A,R_AT = problem.model.kinematicsBasisA.state
+    stepFraction = step_fraction(problem)
 
-    # Set current values
-    u_A .= u_AVec[timeIndex]
-    v_A .= v_AVec[timeIndex]
-    ω_A .= ω_AVec[timeIndex]
-    R_A .= R_AVec[timeIndex]
+    # Set current values (linearly interpolated within the time step)
+    u_A .= value_at_time(u_AVec,timeIndex,stepFraction)
+    v_A .= value_at_time(v_AVec,timeIndex,stepFraction)
+    ω_A .= value_at_time(ω_AVec,timeIndex,stepFraction)
+    if stepFraction == 1
+        R_A .= R_AVec[timeIndex]
+    else
+        # Rotation tensor from basis I to basis A, updated from the begin of the time step as in precompute_motion_basis_A!
+        α = 2 / time_step(problem)
+        Ω = tilde(ω_A)
+        R_A .= (α*I3 - Ω) \ ((α*I3 + Ω) * R_AVec[timeIndex-1])
+    end
     R_AT .= R_A'
 
 end
 
 
-# Updates the boundary conditions at the current time index
+# Updates the boundary conditions at the current time index, at the fraction of the time step at which the equations are solved
 function update_BCs_state!(problem,timeIndex)
 
+    stepFraction = step_fraction(problem)
+
     for BC in problem.model.BCs
-        update_BC_state!(BC,timeIndex)
+        update_BC_state!(BC,timeIndex,stepFraction)
     end
 
 end
@@ -2753,6 +2775,18 @@ end
 @inline time_vector(problem::DynamicProblem) = problem.time.timeVector
 @inline time_vector(problem) = [0.0]
 
-# Returns the time step of the problem
-@inline time_step(problem::DynamicProblem) = problem.time.state.Δt
+# Returns the fraction of the current time step at which the equations are solved
+@inline step_fraction(problem::DynamicProblem) = problem.time.state.stepFraction
+@inline step_fraction(problem) = 1.0
+
+# Returns the time step of the problem, from the begin of the current time step to the time at which the equations are solved
+@inline time_step(problem::DynamicProblem) = problem.time.state.stepFraction * problem.time.state.Δt
 @inline time_step(problem) = Inf
+
+# Returns the value of a history over the time vector at the fraction stepFraction of the time step that ends at timeIndex (linearly interpolated between the ends of the time step, if within it). For the histories of distributed loads, the values are those of the given node
+@inline value_at_time(history,timeIndex,stepFraction) = stepFraction == 1 ? 
+    history[timeIndex] : 
+    (1-stepFraction)*history[timeIndex-1] + stepFraction*history[timeIndex]
+@inline value_at_time(history::AbstractArray{<:Real,3},node,timeIndex,stepFraction) = stepFraction == 1 ? 
+    history[node,:,timeIndex] : 
+    (1-stepFraction)*history[node,:,timeIndex-1] + stepFraction*history[node,:,timeIndex]
