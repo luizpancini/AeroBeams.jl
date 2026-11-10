@@ -13,7 +13,7 @@
 using AeroBeams
 
 ## Pitch angle range [rad]
-θRange = unique([vcat(0:0.25:1)...,vcat(1:0.5:7)...])
+θRange = unique([vcat(0:0.5:1)...,vcat(1:1:7)...])
 
 ## Airspeed range [m/s]
 URange = vcat(1e-3,1:1:120)
@@ -33,29 +33,24 @@ tipLossType = "Exponential"
 ## Flag for upright position
 upright = true
 
-## Gravity
-g = 0
-
-## Flag for small angles approximation
-smallAngles = true
+## Mesh: :nominal or :refined
+mesh = :refined
 
 ## Fixed geometrical and discretization properties
-nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+nElem,L,chord,normSparPos,_ = geometrical_properties_Pazy(; mesh=mesh)
 
 ## Number of modes to track
 nModes = 5
 
 ## Eigensolver method and minimum number of eigenvalues to be computed
 eigenmethod = :krylovkit
-nev = 90
+nev = mesh == :nominal ? 45 : 65
 
 ## Initialize outputs
 eigensols = Array{EigenSolution}(undef,length(θRange),length(URange))
 tip_OOP = Array{Float64}(undef,length(θRange),length(URange))
 freqsOsc = Array{Matrix{Float64}}(undef,length(θRange))
 dampsOsc = Array{Matrix{Float64}}(undef,length(θRange))
-freqsNonOsc = Array{Matrix{Float64}}(undef,length(θRange))
-dampsNonOsc = Array{Matrix{Float64}}(undef,length(θRange))
 flutterOnsetSpeeds = Array{Vector{Float64}}(undef,length(θRange))
 flutterOnsetFreqs = Array{Vector{Float64}}(undef,length(θRange))
 flutterOnsetModes = Array{Vector{Int}}(undef,length(θRange))
@@ -77,7 +72,7 @@ for (i,θ) in enumerate(θRange)
         ## Display progress #src
         println("Solving for θ = $(round(θ, digits=2)) deg, U = $U m/s") #src
         ## Model
-        PazyWingFlutterPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,upright=upright,pitchAngle=deg2rad(θ),airspeed=U,gravityVector=[0,0,-g],smallAngles=smallAngles)
+        PazyWingFlutterPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,upright=upright,pitchAngle=deg2rad(θ),airspeed=U,mesh=mesh)
         ## Create and solve problem
         problem = create_EigenProblem(model=PazyWingFlutterPitchRange,eigenmethod=eigenmethod,nev=nev,x0=x0)
         solve!(problem)
@@ -93,9 +88,8 @@ for (i,θ) in enumerate(θRange)
     ## Apply mode tracking
     freqs,damps,_ = mode_tracking(eigensols[i,:])
     rads2Hz!(freqs)
-    ## Get frequencies and dampings of oscillatory and non-oscillatory modes
-    freqsOsc[i],dampsOsc[i],_ = filter_tracked_modes(freqs,damps; fmin=1e-1, fmax=150, maxTracks=nModes)
-    freqsNonOsc[i],dampsNonOsc[i],_ = filter_tracked_modes(freqs,damps; fmin=0, fmax=0)
+    ## Get frequencies and dampings of oscillatory modes
+    freqsOsc[i],dampsOsc[i],_ = filter_tracked_modes(freqs,damps; fmin=1e-1, maxTracks=nModes)
     ## Flutter onset and offset speeds, frequencies and tip OOP displacements
     flutterOnsetSpeeds[i],flutterOnsetFreqs[i],flutterOnsetModes[i],flutterOnsetDisp[i],flutterOffsetSpeeds[i],flutterOffsetFreqs[i],flutterOffsetModes[i],flutterOffsetDisp[i] = find_flutter(URange,freqsOsc[i],dampsOsc[i],tip_OOP[i,:])
 end

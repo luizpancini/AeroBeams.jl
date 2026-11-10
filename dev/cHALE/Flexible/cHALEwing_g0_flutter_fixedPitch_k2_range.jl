@@ -129,14 +129,6 @@ flutterOnsetInds = [searchsortedfirst.(Ref(URange), U) for U in flutterOnsetSpee
 flutterOffsetInds = [searchsortedfirst.(Ref(URange), U) for U in flutterOffsetSpeeds]
 
 ## Plots and saves
-# Save flutter data
-flutterOnsetSpeedWingg0 = flutterOnsetSpeeds
-flutterOnsetFreqWingg0 = flutterOnsetFreqs
-flutterOnsetTipOOPWingg0 = flutterOnsetTipDisp
-@save absPathData*string("wing_g0_lambda",λ,"_flutterSpeed.jld2") flutterOnsetSpeedWingg0
-@save absPathData*string("wing_g0_lambda",λ,"_flutterFreq.jld2") flutterOnsetFreqWingg0
-@save absPathData*string("wing_g0_lambda",λ,"_flutterOOP.jld2") flutterOnsetTipOOPWingg0
-
 # Set paths
 relPath = "/dev/cHALE/Flexible/outputs/figures/cHALEwing_g0_flutter_fixedPitch_k2_range"
 absPath = string(pwd(),relPath)
@@ -144,6 +136,14 @@ mkpath(absPath)
 relPathData = "/dev/cHALE/Flexible/outputs/data/cHALEwing_g0_flutter_fixedPitch_k2_range/"
 absPathData = string(pwd(),relPathData)
 mkpath(absPathData)
+
+# Save flutter data
+flutterOnsetSpeedWingg0 = flutterOnsetSpeeds
+flutterOnsetFreqWingg0 = flutterOnsetFreqs
+flutterOnsetTipOOPWingg0 = flutterOnsetTipDisp
+@save absPathData*string("wing_g0_lambda",λ,"_flutterSpeed.jld2") flutterOnsetSpeedWingg0
+@save absPathData*string("wing_g0_lambda",λ,"_flutterFreq.jld2") flutterOnsetFreqWingg0
+@save absPathData*string("wing_g0_lambda",λ,"_flutterOOP.jld2") flutterOnsetTipOOPWingg0
 
 # Plot configurations
 colors = palette([:royalblue, :blueviolet, :deeppink, :darkorange, :gold])

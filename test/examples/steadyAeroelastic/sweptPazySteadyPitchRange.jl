@@ -7,10 +7,7 @@ using AeroBeams
 URange = vcat(1e-3,1:1:100)
 
 # Sweep angle [rad]
-Λ = deg2rad(30)
-
-# Flag for ad hoc corrections on sectional stiffness matrix
-sweepStructuralCorrections = true
+Λ = deg2rad(20)
 
 # Flag for tip correction
 hasTipCorrection = true
@@ -54,7 +51,7 @@ x3_def = Array{Vector{Float64}}(undef,length(θRange),length(URange))
 # Sweep pitch angle
 for (i,θ) in enumerate(θRange)
     # Model
-    model,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,sweepAngle=Λ,pitchAngle=θ,gravityVector=[0,0,-g],hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,sweepStructuralCorrections=sweepStructuralCorrections)
+    model,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,sweepAngle=Λ,pitchAngle=θ,gravityVector=[0,0,-g],hasTipCorrection=hasTipCorrection,tipLossType=tipLossType)
     # Initialize guess solution
     x0 = zeros(0)
     # Sweep airspeed
@@ -89,7 +86,7 @@ for (i,θ) in enumerate(θRange)
 end
 
 # Load reference data (from AePW4 meetings)
-dispΛ30θ5U60_Nastran = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/dispLambda30AoA5U60_Nastran.txt")
+dispΛ20θ7U70_Sharpy = readdlm(pkgdir(AeroBeams)*"/test/referenceData/sweptPazy/dispLambda20AoA7U70_Sharpy.txt")
 
 ## Plots
 # Set paths
@@ -116,7 +113,7 @@ x = upright ? x3_def[3,60] : x1_def[3,60]
 y = upright ? -x1_def[3,60] : x3_def[3,60]
 plt_defPos = plot(xlabel="\$x_1\$ [m]", ylabel="\$x_3\$ [m]", xlims=[0,0.5], tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs)
 plot!(x, y, c=:black, lw=lw, ls=:solid, label="AeroBeams")
-scatter!(dispΛ30θ5U60_Nastran[1,:],dispΛ30θ5U60_Nastran[2,:], c=:black, ms=ms, msw=msw, label="Technion (Nastran)")
+scatter!(dispΛ20θ7U70_Sharpy[1,:],dispΛ20θ7U70_Sharpy[2,:], c=:black, ms=ms, msw=msw, label="Sharpy")
 display(plt_defPos)
 savefig(string(absPath,"/sweptPazySteadyPitchRange_defPos.pdf"))
 

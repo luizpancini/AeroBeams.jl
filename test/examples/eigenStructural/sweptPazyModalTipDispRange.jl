@@ -1,13 +1,10 @@
 using AeroBeams
 
 # Sweep angle range [rad]
-ΛRange = deg2rad.([0,10,20,30])
+ΛRange = deg2rad.([0,10,20])
 
 # Tip load [N]
 F3TipRange = vcat(0:1:35)
-
-# Flag for ad hoc sectional stiffness corrections with sweep angle
-sweepStructuralCorrections = true
 
 # Gravity
 g = 0
@@ -39,7 +36,7 @@ for (i,Λ) in enumerate(ΛRange)
         # Tip force BC
         tipForce = create_BC(name="tipForce",beam=dummyBeam,node=nElem+1,conditions=Dict(:F3b=>F3))
         # Model
-        sweptPazyModalTipDispRange,_ = create_Pazy(sweepAngle=Λ,upright=false,gravityVector=[0,0,-g],sweepStructuralCorrections=sweepStructuralCorrections,additionalBCs=[tipForce])
+        sweptPazyModalTipDispRange,_ = create_Pazy(sweepAngle=Λ,upright=false,gravityVector=[0,0,-g],additionalBCs=[tipForce])
         # Create and solve problem
         problem = create_EigenProblem(model=sweptPazyModalTipDispRange,eigenmethod=eigenmethod,nev=nev,x0=x0)
         solve!(problem)

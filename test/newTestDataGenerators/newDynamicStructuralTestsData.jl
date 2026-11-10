@@ -186,6 +186,12 @@ writedlm("test/newTestDataGenerators/tipSineLoadedCantilever/u3_tip.txt", test_d
 writedlm("test/newTestDataGenerators/tipSineLoadedCantilever/F3_root.txt", test_data_matrix(F3_root))
 writedlm("test/newTestDataGenerators/tipSineLoadedCantilever/M2_root.txt", test_data_matrix(M2_root))
 
+# Dynamic analysis of a cantilever with tip sinusoidal force, with different time integration methods
+include("../examples/dynamicStructural/tipSineLoadedCantileverIntegrationMethods.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/tipSineLoadedCantileverIntegrationMethods"))
+writedlm("test/newTestDataGenerators/tipSineLoadedCantileverIntegrationMethods/u3_tip.txt", test_data_matrix(u3_tip))
+writedlm("test/newTestDataGenerators/tipSineLoadedCantileverIntegrationMethods/M2_root.txt", test_data_matrix(M2_root))
+
 # Dynamic analysis of a slanted double pendulum released from rest
 include("../examples/dynamicStructural/ChengSlantedDoublePendulum.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/ChengSlantedDoublePendulum"))

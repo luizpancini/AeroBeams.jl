@@ -7,3 +7,5 @@
 /gr-temp
 /.vscode/dev
 /.vscode
+/dev/**/*.gif
+/dev/**/*.jld2

@@ -29,410 +29,385 @@ end
 
 ## PRIVATE API
 # ------------------------------------------------------------------------------
-# Returns the sectional stiffness matrices of the Pazy wing (https://github.com/UM-A2SRL/AePW3-LDWG)
-function stiffness_matrices_Pazy(; withSkin::Bool,sweepStructuralCorrections::Bool,GAy::Real=1e12,GAz::Real=1e12,Λ::Real)
+# Chordwise position of the reference axis (spar) of the straight Pazy wing in the original AePW3 data (https://github.com/UM-A2SRL/AePW3-LDWG), a fraction of the chord
+const normSparPos_Pazy_AePW3 = 0.44096
 
-    # Elemental sectional stiffness values
-    # Axial stiffness
-    EA = withSkin ? 
-    [9.79449259e06 9.66669055e06 9.64764696e06 9.64877085e06 9.64996612e06 9.65062048e06 9.65094702e06 9.65092085e06 9.65060878e06 9.64997519e06 9.64887183e06 9.64715800e06 9.65344706e06 9.69921416e06 1.00196328e07] : 
-    [9.8519E+06 9.6654E+06 9.6455E+06 9.6469E+06 9.6483E+06 9.6491E+06 9.6495E+06 9.6496E+06 9.6493E+06 9.6486E+06 9.6475E+06 9.6457E+06 9.6519E+06 9.6976E+06 1.0018E+07]
-    # Torsional stiffness
-    GJ = withSkin ? 
-    [7.58259714e00 7.58259714e00 7.58259714e00 7.58259714e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51183018e00 6.51583594e00 6.51583594e00 6.51583594e00 6.51583594e00 7.11892627e00 7.11892627e00 1.73730728e01] : 
-    [7.2801E+00 7.2801E+00 7.2801E+00 7.2801E+00 6.4468E+00 6.4468E+00 6.4468E+00 6.4468E+00 6.4508E+00 6.4508E+00 6.4508E+00 6.4508E+00 7.0484E+00 7.0484E+00 1.7161E+01]
-    # Out-of-plane bending stiffness
-    EIy = withSkin ? 
-    [5.24743501e00 4.50448461e00 4.47822861e00 4.47438433e00 4.47481272e00 4.47492882e00 4.47492903e00 4.47492905e00 4.47492889e00 4.47488638e00 4.47471764e00 4.47618354e00 4.48916524e00 4.54819972e00 4.77037999e00] : 
-    [4.5919E+00 4.4474E+00 4.4276E+00 4.4243E+00 4.4246E+00 4.4246E+00 4.4247E+00 4.4246E+00 4.4246E+00 4.4246E+00 4.4244E+00 4.4258E+00 4.4387E+00 4.4985E+00 4.7103E+00]
-    # In-plane bending stiffness
-    EIz = withSkin ? 
-    [3.31757932e03 3.27862894e03 3.28287728e03 3.28653821e03 3.28881887e03 3.29012279e03 3.29071820e03 3.29071311e03 3.29015111e03 3.28892576e03 3.28685980e03 3.28351136e03 3.27904566e03 3.27164430e03 3.37372291e03] : 
-    [3.3182E+03 3.2745E+03 3.2796E+03 3.2838E+03 3.2867E+03 3.2884E+03 3.2892E+03 3.2894E+03 3.2888E+03 3.2874E+03 3.2850E+03 3.2813E+03 3.2763E+03 3.2683E+03 3.3711E+03]
-    # Axial-torsion coupling stiffness
-    c_EA_GJ = withSkin ? 
-    [-5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -5.69828967e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 -2.44730557e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 5.55131815e-01 1.14679646e00 1.14679646e00 6.11339950e00] : 
-    [-6.0416E-01 -6.0416E-01 -6.0416E-01 -6.0416E-01 -2.4284E-01 -2.4284E-01 -2.4284E-01 -2.4284E-01 5.9636E-01 5.9636E-01 5.9636E-01 5.9636E-01 1.3161E+00 1.3161E+00 7.5942E+00]
-    # Axial-OOP bending coupling stiffness
-    c_EA_EIy = withSkin ? 
-    [-1.37141817e00 -1.85955625e00 -2.03745676e00 -2.36861943e00 -2.34621942e00 -2.33093397e00 -2.32194657e00 -2.31978268e00 -2.32431249e00 -2.33594699e00 -2.35794054e00 -2.42282990e00 -2.63402308e00 -2.79279201e00 -2.28331802e00] : 
-    [-2.3983E+00 -2.6972E+00 -2.0315E+00 -2.3737E+00 -2.3396E+00 -2.3199E+00 -2.3094E+00 -2.3078E+00 -2.3150E+00 -2.3320E+00 -2.3607E+00 -2.4379E+00 -2.6763E+00 -2.8406E+00 -2.2564E+00]
-    # Axial-IP bending coupling stiffness
-    c_EA_EIz = withSkin ? 
-    [5.44855583e04 5.35354102e04 5.32071297e04 5.31204588e04 5.30688769e04 5.30373657e04 5.30224268e04 5.30209363e04 5.30331840e04 5.30603697e04 5.31061305e04 5.31755122e04 5.33603082e04 5.41016226e04 5.44519115e04] : 
-    [5.4387E+04 5.3580E+04 5.3233E+04 5.3138E+04 5.3080E+04 5.3043E+04 5.3025E+04 5.3022E+04 5.3035E+04 5.3064E+04 5.3114E+04 5.3190E+04 5.3383E+04 5.4132E+04 5.4469E+04]
-    # Torsion-OOP bending coupling stiffness
-    c_GJ_EIy = withSkin ? 
-    [9.33080027e-02 9.33080027e-02 9.33080027e-02 9.33080027e-02 4.22659591e-05 4.22659591e-05 4.22659591e-05 4.22659591e-05 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -1.02012319e-03 -8.09780725e-02 -8.09780725e-02 -1.39455813e00] : 
-    [1.0673E-01 1.0673E-01 1.0673E-01 1.0673E-01 -4.7619E-06 -4.7619E-06 -4.7619E-06 -4.7619E-06 -1.0471E-03 -1.0471E-03 -1.0471E-03 -1.0471E-03 -8.1077E-02 -8.1077E-02 -1.4041E+00]
-    # Torsion-IP bending coupling stiffness
-    c_GJ_EIz = withSkin ? 
-    [1.52918906e-02 1.52918906e-02 1.52918906e-02 1.52918906e-02 3.94787982e-03 3.94787982e-03 3.94787982e-03 3.94787982e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 -8.69600350e-03 1.01277971e-02 1.01277971e-02 4.24981724e-01] : 
-    [1.6787E-02 1.6787E-02 1.6787E-02 1.6787E-02 4.2981E-03 4.2981E-03 4.2981E-03 4.2981E-03 -1.0081E-02 -1.0081E-02 -1.0081E-02 -1.0081E-02 1.0495E-02 1.0495E-02 4.9732E-01]
-    # OOP-IP bending coupling stiffness
-    c_EIy_EIz = withSkin ? 
-    [-1.17141160e-01 -1.12442858e-01 -1.15192612e-01 -1.18950224e-01 -1.20649484e-01 -1.21389557e-01 -1.21682056e-01 -1.21652571e-01 -1.21317479e-01 -1.20584487e-01 -1.19291993e-01 -1.17184960e-01 -1.14807975e-01 -1.16130851e-01 -1.14249441e-01] : 
-    [-1.1292E-01 -1.1088E-01 -1.1319E-01 -1.1684E-01 -1.1917E-01 -1.2035E-01 -1.2092E-01 -1.2100E-01 -1.2062E-01 -1.1969E-01 -1.1798E-01 -1.1539E-01 -1.1277E-01 -1.1418E-01 -1.0623E-01]
+# Chordwise position of the reference axis (spar) of the Pazy wing, a fraction of the chord: the shear center, which depends on the sweep angle (the S20 value is provisional)
+function shear_center_Pazy(Λ)
 
-    # Apply ad hoc corrections for sweep, if applicable
-    if sweepStructuralCorrections
-        EIy .*= cos(Λ)
-        GJ ./= cos(Λ)^2
+    if isapprox(rad2deg(Λ), 0; atol=1e-8)
+        return 0.4653
+    elseif isapprox(rad2deg(Λ), 10; atol=1e-8)
+        return 0.4470
+    else
+        return 0.4400
     end
 
-    # Set sectional stiffness matrices
-    S = [[    EA[i]  0    0  c_EA_GJ[i]  c_EA_EIy[i]  c_EA_EIz[i];
-                  0 GAy   0           0            0            0;
-                  0  0  GAz           0            0            0;
-         c_EA_GJ[i]  0    0       GJ[i]  c_GJ_EIy[i]  c_GJ_EIz[i];
-        c_EA_EIy[i]  0    0 c_GJ_EIy[i]       EIy[i] c_EIy_EIz[i];
-        c_EA_EIz[i]  0    0 c_GJ_EIz[i] c_EIy_EIz[i]       EIz[i]] for i in 1:15]
+end
 
-    return S
+# Checks the mesh of the Pazy wing: :nominal (the standard beam mesh, with the nodes at the root, at the ribs and at the tip of the spar) or :refined (with a node at the middle of each element of the :nominal mesh, which has approximately twice as many elements)
+function validate_mesh_Pazy(mesh)
+
+    @assert mesh in (:nominal, :refined) "mesh must be :nominal or :refined"
+
+    return mesh
 
 end
 
+# Chord of the Pazy wing [m], measured along the chordwise (x) direction of the MSC Nastran frame
+chord_Pazy(Λ::Real) = isapprox(rad2deg(Λ), 0; atol=1e-8) ? 0.0988504 : 0.0950
 
-# Returns the sectional inertia matrices of the Pazy wing (https://github.com/UM-A2SRL/AePW3-LDWG)
-function inertia_matrices_Pazy(; withSkin::Bool)
+# Path of the CSV file with the reference data of the Pazy wing with sweep angle Λ (0, 10 or 20 degrees) for the given mesh (:nominal or :refined), in test/referenceData/Pazy, or in test/referenceData/PazyNoRod for the wing without the tip rod (the straight wing, and only the inertia of the swept wing). `kind` is :inertia (S<Λ>_inertia_matrices_<mesh>mesh.csv for the straight wing, and S<Λ>_<config>_inertia_matrices_<mesh>mesh.csv for the swept one, with the tip mass configuration `config`, which the straight wing does not have, so it is ignored; S<Λ>_norod_… without the tip rod) or :stiffness, S<Λ>_stiffness_matrices_<mesh>mesh_<tip>.csv (S<Λ>_norod_stiffness_matrices_<mesh>mesh.csv without the tip rod, which has no `tip`), the least squares ones, selected by the Nastran model with the rigid (`tip = :rigidtip`, the tip section of the wing is rigid, as the stiffness matrices require) or flexible (`:flextip`) tip rod. With `rootTorsionCorr = true` the stiffness data is that with the correction of the root torsional stiffness (and bending-torsion coupling) of the straight wing with the tip rod, S0_stiffness_matrices_<mesh>mesh_<tip>_corr.csv. Throws a descriptive error if the data is not available
+function Pazy_data_file(kind::Symbol, Λ, mesh::Symbol; config::Symbol=:baseline, withWingtipRod::Bool=true, tip::Symbol=:rigidtip, rootTorsionCorr::Bool=false)
 
-    # Length and nodal position
-    nElem,L,_,_,nodalPositions = geometrical_properties_Pazy()
+    @assert kind in (:inertia, :stiffness) "kind must be :inertia or :stiffness"
+    validate_mesh_Pazy(mesh)
+    ΛDeg = round(Int, rad2deg(Λ))
+    isStraight = ΛDeg == 0
+    @assert withWingtipRod || isStraight || kind == :inertia "the stiffness matrices of the wing without the tip rod are only available for the straight wing"
+    @assert config in (:baseline, :LE, :TE) "config must be :baseline, :LE or :TE"
+    @assert tip in (:rigidtip, :flextip) "tip must be :rigidtip or :flextip"
+    @assert !(rootTorsionCorr && kind == :stiffness) || (isStraight && withWingtipRod) "the root torsion correction of the stiffness matrices is only available for the straight wing with the tip rod"
+    prefix = "S$(ΛDeg)" * (withWingtipRod ? "" : "_norod")
+    # Name of the file without the extension, with the mesh in it: S<Λ>_inertia_matrices_<mesh>mesh, or S<Λ>_stiffness_matrices_<mesh>mesh_<tip> (with the suffix _corr for the root torsion correction)
+    stem = if kind == :inertia
+        prefix * (isStraight ? "" : "_" * String(config)) * "_inertia_matrices_" * String(mesh) * "mesh"
+    else
+        prefix * "_stiffness_matrices_" * String(mesh) * "mesh" * (withWingtipRod ? "_" * String(tip) : "") * (rootTorsionCorr ? "_corr" : "")
+    end
+    dir = joinpath(pkgdir(AeroBeams), "test", "referenceData", withWingtipRod ? "Pazy" : "PazyNoRod")
+    file = joinpath(dir, stem * ".csv")
 
-    # Nodal sectional inertia values
-    # Point mass
-    m = withSkin ? 
-    [1.91186108e-02 2.06788141e-02 2.06828340e-02 2.06828274e-02 2.06828571e-02 2.06828792e-02 2.06828498e-02 2.06828527e-02 2.06828616e-02 2.06828621e-02 2.06828626e-02 2.06828630e-02 2.06828635e-02 2.06828635e-02 2.54479524e-02 4.31558925e-02] : 
-    [1.5953E-02 2.0679E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.0683E-02 2.5448E-02 3.7056E-02]
-    # Center of mass offset from reference axis in x1 axis direction
-    m_x1 = withSkin ? 
-    [6.44284658e-03 -1.87501083e-03 -1.88019018e-03 -1.88021112e-03 -1.88022963e-03 -1.88021127e-03 -1.88020545e-03 -1.88022219e-03 -1.88022845e-03 -1.88022769e-03 -1.88022693e-03 -1.88022617e-03 -1.88022541e-03 -1.88022469e-03 1.34295741e-03 3.28782957e-03] : 
-    [6.9001E-03 -1.8750E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 -1.8802E-03 1.3430E-03 3.0324E-03]
-    # Center of mass offset from reference axis in x2 axis direction
-    m_x2 = withSkin ? 
-    [6.09115952e-06 -9.03114429e-04 -9.13241152e-04 -9.13181107e-04 -9.13136269e-04 -9.13139373e-04 -9.13148460e-04 -9.13133755e-04 -9.13138940e-04 -9.13138146e-04 -9.13137351e-04 -9.13136557e-04 -9.13135762e-04 -9.13135762e-04 8.11101073e-04 -5.09272488e-03] : 
-    [9.8372E-04 -9.0312E-04 -9.1325E-04 -9.1319E-04 -9.1314E-04 -9.1314E-04 -9.1315E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 -9.1314E-04 8.1110E-04 -4.8757E-03]
-    # Center of mass offset  from reference axis in x3 axis direction
-    m_x3 = withSkin ? 
-    [-2.71488305e-05 -1.48960084e-05 -1.49441628e-05 -1.50172024e-05 -1.50375210e-05 -1.50375096e-05 -1.50376952e-05 -1.50378716e-05 -1.50380388e-05 -1.50382121e-05 -1.50383854e-05 -1.50385588e-05 -1.50387321e-05 -1.50387321e-05 -3.00392326e-05 -1.43641715e-04] : 
-    [-3.1468E-05 -1.4977E-05 -1.4977E-05 -1.5017E-05 -1.5038E-05 -1.5037E-05 -1.5038E-05 -1.5038E-05 -1.5038E-05 -1.5038E-05 -1.5038E-05 -1.5039E-05 -1.5039E-05 -1.5039E-05 -3.0039E-05 -1.3985E-04]
-    # x1 axis mass moment of inertia
-    Ixx = withSkin ? 
-    [1.21416697e-05 1.09721424e-05 1.09788396e-05 1.09788493e-05 1.09788664e-05 1.09788786e-05 1.09788644e-05 1.09788687e-05 1.09788717e-05 1.09788723e-05 1.09788729e-05 1.09788735e-05 1.09788741e-05 1.09788741e-05 1.45515348e-05 1.22200220e-04] : 
-    [9.1917E-06 1.0972E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.0979E-05 1.4552E-05 1.2219E-04]
-    # x1-x2 axes mass product of inertia
-    Ixy = withSkin ? 
-    -[1.29099112e-08 -4.29590762e-08 -4.66241072e-08 -4.66239396e-08 -4.66186558e-08 -4.66208462e-08 -4.66181019e-08 -4.66178877e-08 -4.66200515e-08 -4.66200824e-08 -4.66201133e-08 -4.66201442e-08 -4.66201750e-08 -4.66201750e-08 -2.55761995e-07 3.06994479e-07] : 
-    -[5.4285E-08 -4.2959E-08 -4.6624E-08 -4.6624E-08 -4.6619E-08 -4.6621E-08 -4.6621E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -4.6620E-08 -2.5576E-07 2.9246E-07]
-    # x1-x3 axes mass product of inertia
-    Ixz = withSkin ? 
-    [2.61326836e-10 -4.05020470e-10 -4.09113627e-10 -4.09779617e-10 -4.05575499e-10 -4.05572069e-10 -4.05576866e-10 -4.05587362e-10 -4.05596285e-10 -4.05603025e-10 -4.05609766e-10 -4.05616506e-10 -4.05623247e-10 -4.05623246e-10 -2.22503423e-09 -7.38220857e-09] : 
-    [4.4861E-10 -4.0276E-10 -4.0187E-10 -4.0978E-10 -4.0558E-10 -4.0557E-10 -4.0558E-10 -4.0559E-10 -4.0560E-10 -4.0560E-10 -4.0561E-10 -4.0562E-10 -4.0562E-10 -4.0562E-10 -2.2250E-09 -7.1280E-09]
-    # x2 axis mass moment of inertia
-    Iyy = withSkin ? 
-    [6.63182204e-07 2.08434944e-06 2.08700528e-06 2.08700318e-06 2.08700972e-06 2.08701867e-06 2.08700826e-06 2.08700778e-06 2.08701031e-06 2.08701035e-06 2.08701038e-06 2.08701041e-06 2.08701047e-06 2.08701047e-06 1.68654882e-06 8.76965373e-07] : 
-    [4.7770E-07 2.0844E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 2.0870E-06 1.6865E-06 8.5986E-07]
-    # x2-x3 axes mass product of inertia
-    Iyz = withSkin ? 
-    -[9.44646195e-09 2.45046373e-09 2.45271020e-09 2.45762425e-09 2.45962684e-09 2.45962929e-09 2.45978322e-09 2.45991134e-09 2.46005086e-09 2.46019166e-09 2.46033249e-09 2.46047329e-09 2.46061128e-09 2.46061778e-09 1.47231285e-08 1.29956112e-07] : 
-    -[9.9747E-09 2.4434E-09 2.4518E-09 2.4576E-09 2.4596E-09 2.4596E-09 2.4598E-09 2.4599E-09 2.4601E-09 2.4602E-09 2.4603E-09 2.4605E-09 2.4606E-09 2.4606E-09 1.4723E-08 1.3017E-07]
-    # x3-axis mass moment of inertia
-    Izz = withSkin ? 
-    [1.20937988e-05 1.28286585e-05 1.28380090e-05 1.28380097e-05 1.28380332e-05 1.28380544e-05 1.28380298e-05 1.28380335e-05 1.28380389e-05 1.28380395e-05 1.28380401e-05 1.28380406e-05 1.28380412e-05 1.28380412e-05 1.55828514e-05 1.22614163e-04] : 
-    [9.2334E-06 1.2829E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.2838E-05 1.5583E-05 1.2258E-04]
-
-    # Set sectional inertia matrices
-    I = Vector{Matrix{Float64}}(undef,nElem)
-    for n=2:nElem+1
-        Δℓ = L*(nodalPositions[n]-nodalPositions[n-1])
-        η = [Δℓ/2+m_x1[n]; m_x2[n]; m_x3[n]]
-        inertiaMatrix = [Ixx[n] Ixy[n] Ixz[n]; 
-                         Ixy[n] Iyy[n] Iyz[n]; 
-                         Ixz[n] Iyz[n] Izz[n]]
-        I[n-1] = 1/Δℓ*[       m[n]*I3                -m[n]*tilde(η);
-                        m[n]*tilde(η) inertiaMatrix-m[n]*tilde(η)^2]
-        if n==2
-            η = [-Δℓ/2+m_x1[1]; m_x2[1]; m_x3[1]]
-            inertiaMatrix = [Ixx[1] Ixy[1] Ixz[1]; 
-                             Ixy[1] Iyy[1] Iyz[1]; 
-                             Ixz[1] Iyz[1] Izz[1]]
-            I[1] += 1/Δℓ*[        m[1]*I3                -m[1]*tilde(η);
-                            m[1]*tilde(η) inertiaMatrix-m[1]*tilde(η)^2]
-        end
+    if !isfile(file)
+        # List the meshes with data (the same name with another mesh)
+        pattern = Regex("^" * replace(stem, String(mesh) * "mesh" => "(nominal|refined)mesh") * "\\.csv\$")
+        matches = filter(!isnothing, match.(pattern, readdir(dir)))
+        available = sort([Symbol(m[1]) for m in matches])
+        availableStr = isempty(available) ? "none" : join(["mesh=:$m" for m in available], "; ")
+        throw(ArgumentError("no $(kind == :inertia ? "inertia" : "stiffness") matrices for the Pazy wing with sweep angle $(ΛDeg)° and mesh=:$mesh (expected file $file). Available data: $availableStr. Generate the data with the BeamROM scripts and add it to $dir"))
     end
 
-    return I
+    return file
 
 end
 
-# Stiffness matrices for the swept Pazy wing at 10 degrees sweep angle
-function stiffness_matrices_sweptPazy10deg(; GAy::Real=1e12,GAz::Real=1e12)
+# Returns the nodal coordinates and chord-normalized position of the reference axis (shear center of the spar) of the Pazy wing and swept variations, in the MSC Nastran default frame (x chordwise from the leading edge, y spanwise unswept, y=0 at the root of the spar).
+function reference_axis_Pazy(Λ; mesh)
 
-    # Axial stiffness
-    EA = 
-    [4561840.774, 4960813.879, 5434814.731, 4537614.556, 4699984.704, 4850954.826, 4953469.827, 5055230.295, 5036223.479, 4796775.404, 4617345.937, 4816481.364, 5794293.278, 5631862.34, 113589893.1]
-    # Torsional stiffness
-    GJ = 
-    [9.773846069, 8.102243551, 7.758477568, 7.31112596, 6.302744969, 7.405989034, 7.680267606, 7.239367522, 7.271921955, 7.262861766, 6.880799818, 7.381257439, 8.695324067, 7.601704175, 13.15654296]
-    # Out-of-plane bending stiffness
-    EIy =  
-    [4.515065954, 4.827908079, 4.50907373, 5.730102807, 4.577517168, 4.992361238, 4.764931716, 4.672091042, 4.804938355, 5.299398152, 5.84055062, 4.264869315, 4.801572824, 7.829142482, 5.56185488]
-    # In-plane bending stiffness
-    EIz =
-    [2382.301888, 3294.396408, 3108.695593, 2943.17141, 2736.506843, 2908.7608, 2906.863214, 3466.402966, 2662.073454, 2873.208598, 3507.327705, 2952.697858, 3211.327317, 2804.231536, 4655.687418]
-    # Axial-IP bending coupling stiffness
-    c_EA_EIz =
-    [20015.63805, 37064.89332, 41412.69233, 26684.58975, 27695.72585, 28458.10222, 33139.65791, 48027.98282, 21442.66278, 36049.03603, 23327.2336, 31790.70665, 43700.85776, 46899.69049, 210638.6785]
+    validate_mesh_Pazy(mesh)
 
-    # Set sectional stiffness matrices
-    S = [anisotropic_stiffness_matrix(EA=EA[i], GJ=GJ[i], EIy=EIy[i], EIz=EIz[i], c16=c_EA_EIz[i], GAy=GAy, GAz=GAz) for i in 1:15]
+    # Reference axis x, y and z coordinates
+    file = Pazy_data_file(:inertia, Λ, mesh)
+    x = Float64.(readdlm(file, ','; header=true)[1][:, 2])
+    y = Float64.(readdlm(file, ','; header=true)[1][:, 3])
+    z = Float64.(readdlm(file, ','; header=true)[1][:, 4])
 
-    return S
+    # Reference axis position (shear center) for the sweep angle
+    ra = shear_center_Pazy(Λ)
+
+    return x,y,z,ra
 
 end
 
-# Transforms the nodal mass data of the swept Pazy wing from the MSC Nastran basic frame (x chordwise positive aft, y spanwise along the unswept direction, z vertical) to the local beam frame (x1 along the swept reference axis, x2 toward the leading edge, x3 vertical), and sets the elemental sectional inertia matrices
-function inertia_matrices_sweptPazy_from_Nastran_data(; Λ,nElem,L,nodalPositions,m,m_x,m_y,m_z,Jxx,Jyy,Jzz,Jxy,Jxz,Jyz)
+# Sectional inertia matrix for a beam element given its mass, center of mass offset, inertia tensor, and length
+sectional_inertia_elem(m, η, J, Δℓ) = 1/Δℓ * [m*I3          -m*tilde(η); 
+                                              m*tilde(η) J-m*tilde(η)^2]
 
-    # Rotation tensor from the Nastran basic frame to the local beam frame (rows are the local axes resolved in the Nastran frame)
-    R = [sin(Λ) cos(Λ) 0; -cos(Λ) sin(Λ) 0; 0 0 1]
+# Transforms the nodal mass data of a swept wing from the MSC Nastran basic frame (x chordwise positive aft, y spanwise along the unswept direction, z vertical) to the local beam frame (x1 along the swept reference axis, x2 toward the leading edge, x3 vertical), and sets the elemental sectional inertia matrices
+function inertia_matrices_from_Nastran_data(; Λ,nElem,L,nodalPositions,m,m_x,m_y,m_z,Ixx,Iyy,Izz,Ixy,Ixz,Iyz)
+
+    # Rotation tensor from the Nastran basis to the undeformed beam basis b
+    R = [ sin(Λ) cos(Λ) 0; 
+         -cos(Λ) sin(Λ) 0; 
+              0      0  1]
 
     # Center of mass offsets and inertia tensors about the center of mass, resolved in the local beam frame
     η_cm = [R*[m_x[n]; m_y[n]; m_z[n]] for n in eachindex(m)]
-    J = [R*[Jxx[n] Jxy[n] Jxz[n]; Jxy[n] Jyy[n] Jyz[n]; Jxz[n] Jyz[n] Jzz[n]]*R' for n in eachindex(m)]
+    J = [R*[Ixx[n] Ixy[n] Ixz[n]; 
+            Ixy[n] Iyy[n] Iyz[n]; 
+            Ixz[n] Iyz[n] Izz[n]]*R' for n in eachindex(m)]
 
-    # Set sectional inertia matrices
-    I = Vector{Matrix{Float64}}(undef,nElem)
-    for n=2:nElem+1
-        Δℓ = L*(nodalPositions[n]-nodalPositions[n-1])
-        η = η_cm[n] + [Δℓ/2; 0; 0]
-        I[n-1] = 1/Δℓ*[       m[n]*I3        -m[n]*tilde(η);
-                        m[n]*tilde(η) J[n]-m[n]*tilde(η)^2]
-        if n==2
-            η = η_cm[1] - [Δℓ/2; 0; 0]
-            I[1] += 1/Δℓ*[        m[1]*I3        -m[1]*tilde(η);
-                            m[1]*tilde(η) J[1]-m[1]*tilde(η)^2]
-        end
+    # Set sectional inertia matrices - distribute nodal masses and inertias to elements
+    I = [zeros(6, 6) for _ in 1:nElem]
+    for k in 1:nElem
+        Δℓ = L*(nodalPositions[k+1]-nodalPositions[k])
+        wStart = k == 1 ? 1.0 : 0.5
+        wEnd = k == nElem ? 1.0 : 0.5
+        I[k] += sectional_inertia_elem(wStart * m[k], [-Δℓ / 2, 0, 0] + η_cm[k], wStart * J[k], Δℓ)
+        I[k] += sectional_inertia_elem(wEnd * m[k+1], [Δℓ / 2, 0, 0] + η_cm[k+1], wEnd * J[k+1], Δℓ)
     end
 
     return I
 
-end
+end                                              
 
+# Sectional inertia matrices of the Pazy wing with sweep angle Λ, read from `file` (default: the inertia matrices of the given mesh and tip mass configuration `config` (only for the swept wing), see `Pazy_data_file`). The nodal data is in the MSC Nastran basic frame. `applyTipInertiaCorrection` applies an ad hoc factor on the tip node's inertia about the Nastran y axis for the :LE and :TE configurations to approximate GVT torsional mode data. This correction accounts for the flexibility of the wingtip rod and the breaking beam of the flutter protection system.
+function inertia_matrices_Pazy(Λ; mesh::Symbol=:nominal, config::Symbol=:baseline, applyTipInertiaCorrection::Bool=false, withWingtipRod::Bool=true, file::String=Pazy_data_file(:inertia, Λ, mesh; config=config, withWingtipRod=withWingtipRod))
 
-# Compute inertia matrices for the 10-degree swept Pazy (taken from https://github.com/cristinariso/AePW-Swept-Pazy/tree/main/02_BeamMassModel). The nodal data is in the MSC Nastran basic frame
-function inertia_matrices_sweptPazy10deg(; config,applyTipInertiaCorrection::Bool=false)
+    # Geometrical properties
+    nElem,L,_,_,nodalPositions = geometrical_properties_Pazy(mesh=mesh, Λ=Λ)
 
-    # Sweep angle
-    Λ = deg2rad(10)
+    # Nodal data of the equivalent beam mass model (Nastran frame): mass, center of mass offsets from the reference axis and inertia tensor about the center of mass
+    data, header = readdlm(file, ','; header=true)
+    column(name) = Float64.(data[:, findfirst(==(name), vec(header))])
+    @assert size(data,1) == nElem+1 "the beam mass model data of the Pazy wing with sweep angle $(round(Int, rad2deg(Λ)))° for mesh=:$mesh has $(size(data,1)) nodes, but $(nElem+1) are expected"
 
-    # Length and nodal position
-    nElem,L,_,_,nodalPositions = geometrical_properties_Pazy(Λ=Λ)
-
-    # Ad hoc factor on the tip node's torsional inertia for the LE and TE configurations (to approximate GVT torsional mode data)
-    tipTorsionalInertiaFactor = (applyTipInertiaCorrection && config != :baseline) ? 1.4 : 1
-
-    # Point mass
-    m = if config == :baseline
-        [1.86119647400900e-02, 2.03269986438200e-02, 2.08695739350500e-02, 2.08676683952000e-02, 2.08698598968200e-02, 2.29436092148100e-02, 1.87961834906600e-02, 2.66937570400700e-02, 2.38698613367500e-02, 1.87961834045600e-02, 2.08677674403300e-02, 2.35455176395200e-02, 2.11961470312500e-02, 2.41356753647600e-02, 2.48933541789400e-02, 1.91302693425520e-02]
-    elseif config == :LE
-        [1.86119647400900e-02, 2.03269986438200e-02, 2.08695739350500e-02, 2.08676683952000e-02, 2.08698598968200e-02, 2.29436092148100e-02, 1.87961834906600e-02, 2.66937570400700e-02, 2.38698613367500e-02, 1.87961834045600e-02, 2.08677674403300e-02, 2.35455176395200e-02, 2.11961470312500e-02, 2.41356753647600e-02, 2.98933541789400e-02, 3.13327742938320e-02]
-    elseif config == :TE
-        [1.86119647400900e-02, 2.03269986438200e-02, 2.08695739350500e-02, 2.08676683952000e-02, 2.08698598968200e-02, 2.29436092148100e-02, 1.87961834906600e-02, 2.66937570400700e-02, 2.38698613367500e-02, 1.87961834045600e-02, 2.08677674403300e-02, 2.35455176395200e-02, 2.11961470312500e-02, 2.41356753647600e-02, 2.98933541786500e-02, 3.13307514342320e-02]
-    end
-    # Center of mass offset from reference axis in the Nastran y direction (spanwise, unswept)
-    m_y = if config == :baseline
-        [8.62500931243665e-03, -1.42252342954916e-03, -1.91218808150305e-03, -1.91377908775725e-03, -1.90808396813461e-03, -3.76710223397858e-05, -3.58479313410098e-05, -5.60770007797529e-04, 7.09041081194295e-04, -3.59604048381645e-05, -1.90975806503646e-03, 4.33705291254693e-04, -8.32122260930768e-04, -3.05076350985906e-03, -3.45986862853565e-03, 1.40001770961395e-03]
-    elseif config == :LE
-        [8.62500931243665e-03, -1.42252342954916e-03, -1.91218808150305e-03, -1.91377908775725e-03, -1.90808396813461e-03, -3.76710223397858e-05, -3.58479313410098e-05, -5.60770007797529e-04, 7.09041081194295e-04, -3.59604048381645e-05, -1.90975806503646e-03, 4.33705291254693e-04, -8.32122260930768e-04, -3.05076350985906e-03, -4.45676769442616e-03, 2.75139744005881e-03]
-    elseif config == :TE
-        [8.62500931243665e-03, -1.42252342954916e-03, -1.91218808150305e-03, -1.91377908775725e-03, -1.90808396813461e-03, -3.76710223397858e-05, -3.58479313410098e-05, -5.60770007797529e-04, 7.09041081194295e-04, -3.59604048381645e-05, -1.90975806503646e-03, 4.33705291254693e-04, -8.32122260930768e-04, -3.05076350985906e-03, -4.45676769437797e-03, 2.66948472624795e-03]
-    end
-    # Center of mass offset from reference axis in the Nastran x direction (chordwise, positive aft)
-    m_x = if config == :baseline
-        [1.73875219248450e-03, 1.23998011219327e-03, 1.28440000124655e-03, 1.27669602611516e-03, 1.27559318076441e-03, 1.71278841528527e-03, 1.47643931881444e-03, -5.08984626840195e-04, -1.44879844270807e-04, 1.48101191247538e-03, 1.27852974347924e-03, 1.42086303081353e-03, -3.44998758283949e-04, -1.40322683776226e-03, -8.55043876276829e-04, 2.61508600567273e-03]
-    elseif config == :LE
-        [1.73875219248450e-03, 1.23998011219326e-03, 1.28440000124655e-03, 1.27669602611516e-03, 1.27559318076441e-03, 1.71278841528527e-03, 1.47643931881444e-03, -5.08984626840195e-04, -1.44879844270793e-04, 1.48101191247538e-03, 1.27852974347924e-03, 1.42086303081353e-03, -3.44998758283949e-04, -1.40322683776226e-03, -2.43696642641233e-04, -3.76894246214857e-02]
-    elseif config == :TE
-        [1.73875219248450e-03, 1.23998011219326e-03, 1.28440000124655e-03, 1.27669602611516e-03, 1.27559318076441e-03, 1.71278841528527e-03, 1.47643931881444e-03, -5.08984626840195e-04, -1.44879844270793e-04, 1.48101191247538e-03, 1.27852974347924e-03, 1.42086303081353e-03, -3.44998758283949e-04, -1.40322683776226e-03, -4.71960788369929e-03, 4.49036531576184e-02]
-    end
-    # Center of mass offset from reference axis in the Nastran z direction (vertical)
-    m_z = if config == :baseline
-        [5.43850822820389e-05, 8.86450577732304e-05, 1.00214941838255e-04, 1.00169663209428e-04, 1.00159058675028e-04, 1.03667662820141e-04, 9.58758498443731e-05, 7.91515067610183e-04, 7.15978445451537e-04, 9.58758501054637e-05, 1.00169202380231e-04, 2.28430252714718e-04, 6.51160815771339e-04, 7.64027115330161e-04, -2.87928579352627e-05, -1.19176998478634e-05]
-    elseif config == :LE
-        [5.43850822820389e-05, 8.86450577732304e-05, 1.00214941838255e-04, 1.00169663209428e-04, 1.00159058675028e-04, 1.03667662820141e-04, 9.58758498443731e-05, 7.91515067610183e-04, 7.15978445451537e-04, 9.58758501054637e-05, 1.00169202380231e-04, 2.28430252714718e-04, 6.51160815771339e-04, 7.64027115330161e-04, -2.39769283204543e-05, -7.27636837693618e-06]
-    elseif config == :TE
-        [5.43850822820389e-05, 8.86450577732304e-05, 1.00214941838255e-04, 1.00169663209428e-04, 1.00159058675028e-04, 1.03667662820141e-04, 9.58758498443731e-05, 7.91515067610183e-04, 7.15978445451537e-04, 9.58758501054637e-05, 1.00169202380231e-04, 2.28430252714718e-04, 6.51160815771339e-04, 7.64027115330161e-04, -2.39769283206869e-05, -7.27683817325292e-06]
-    end
-    # Mass moment of inertia about the Nastran x axis
-    Jxx = if config == :baseline
-        [9.05982013723003e-07, 1.96381336650033e-06, 2.15663563458293e-06, 2.15611022417490e-06, 2.15696761766539e-06, 2.97627582831392e-06, 1.48161983376324e-06, 3.89922864276452e-06, 2.66855535813074e-06, 1.48160116627039e-06, 2.15561668294138e-06, 3.22991002527329e-06, 1.82472509086134e-06, 2.63172405112408e-06, 1.62324516224735e-06, 6.18639169499419e-07]
-    elseif config == :LE
-        [9.05982013723003e-07, 1.96381336650033e-06, 2.15663563458293e-06, 2.15611022417490e-06, 2.15696761766539e-06, 2.97627582831392e-06, 1.48161983376324e-06, 3.89922864276452e-06, 2.66855535813074e-06, 1.48160116627039e-06, 2.15561668294138e-06, 3.22991002527329e-06, 1.82472509086134e-06, 2.63172405112408e-06, 1.77115619690674e-06, 7.08348010841166e-07]
-    elseif config == :TE
-        [9.05982013723003e-07, 1.96381336650033e-06, 2.15663563458293e-06, 2.15611022417490e-06, 2.15696761766539e-06, 2.97627582831392e-06, 1.48161983376324e-06, 3.89922864276452e-06, 2.66855535813074e-06, 1.48160116627039e-06, 2.15561668294138e-06, 3.22991002527329e-06, 1.82472509086134e-06, 2.63172405112408e-06, 1.77115619689960e-06, 6.97809834859672e-07]
-    end
-    # Mass moment of inertia about the Nastran y axis
-    Jyy = if config == :baseline
-        [1.02309834824827e-05, 1.05250432343024e-05, 1.08509224040542e-05, 1.08501568214202e-05, 1.08511018676573e-05, 1.19175197804196e-05, 9.82123998108859e-06, 1.31531958246276e-05, 1.19477481429170e-05, 9.82202351580544e-06, 1.08503167363016e-05, 1.20672253700872e-05, 1.06419346329344e-05, 1.19899009325770e-05, 1.37349723435503e-05, 3.62471024551767e-05]
-    elseif config == :LE
-        [1.02309834824827e-05, 1.05250432343024e-05, 1.08509224040542e-05, 1.08501568214202e-05, 1.08511018676573e-05, 1.19175197804196e-05, 9.82123998108859e-06, 1.31531958246276e-05, 1.19477481429170e-05, 9.82202351580544e-06, 1.08503167363016e-05, 1.20672253700872e-05, 1.06419346329344e-05, 1.19899009325770e-05, 1.37906000192477e-05, 1.17505553643356e-04]
-    elseif config == :TE
-        [1.02309834824827e-05, 1.05250432343024e-05, 1.08509224040542e-05, 1.08501568214202e-05, 1.08511018676573e-05, 1.19175197804196e-05, 9.82123998108859e-06, 1.31531958246276e-05, 1.19477481429170e-05, 9.82202351580544e-06, 1.08503167363016e-05, 1.20672253700872e-05, 1.06419346329344e-05, 1.19899009325770e-05, 1.59577178736210e-05, 1.25672273282732e-04]
-    end
-    Jyy[end] *= tipTorsionalInertiaFactor
-    # Mass moment of inertia about the Nastran z axis
-    Jzz = if config == :baseline
-        [1.06441011412979e-05, 1.21761912318249e-05, 1.26816615909468e-05, 1.26803487217539e-05, 1.26821377707917e-05, 1.45534458361581e-05, 1.09913468683304e-05, 1.63675250317304e-05, 1.40044256352098e-05, 1.09921117362960e-05, 1.26800032715649e-05, 1.48987520182070e-05, 1.19327762646339e-05, 1.40399553927178e-05, 1.47181005064568e-05, 3.65193458934585e-05]
-    elseif config == :LE
-        [1.06441011412979e-05, 1.21761912318249e-05, 1.26816615909468e-05, 1.26803487217539e-05, 1.26821377707917e-05, 1.45534458361581e-05, 1.09913468683304e-05, 1.63675250317304e-05, 1.40044256352098e-05, 1.09921117362960e-05, 1.26800032715649e-05, 1.48987520182070e-05, 1.19327762646339e-05, 1.40399553927178e-05, 1.49216323131707e-05, 1.17867502901682e-04]
-    elseif config == :TE
-        [1.06441011412979e-05, 1.21761912318249e-05, 1.26816615909468e-05, 1.26803487217539e-05, 1.26821377707917e-05, 1.45534458361581e-05, 1.09913468683304e-05, 1.63675250317304e-05, 1.40044256352098e-05, 1.09921117362960e-05, 1.26800032715649e-05, 1.48987520182070e-05, 1.19327762646339e-05, 1.40399553927178e-05, 1.70887501675369e-05, 1.26023685134661e-04]
-    end
-    # Nastran x-y inertia tensor component
-    Jxy = if config == :baseline
-        [-2.41652846716972e-07, -3.23065322558405e-07, -3.28326932811425e-07, -3.28333033614819e-07, -3.28811630015552e-07, -5.20442612597910e-07, -2.53695258134825e-07, -8.17624261212795e-07, -8.20454605937869e-07, -2.53481317747953e-07, -3.28234744615780e-07, -3.90340741439703e-07, -5.05883314461251e-07, -7.34000193531013e-07, -4.99870987658024e-09, -2.48022400142290e-07]
-    elseif config == :LE
-        [-2.41652846716972e-07, -3.23065322558405e-07, -3.28326932811425e-07, -3.28333033614819e-07, -3.28811630015552e-07, -5.20442612597910e-07, -2.53695258134825e-07, -8.17624261212795e-07, -8.20454605937869e-07, -2.53481317747953e-07, -3.28234744615780e-07, -3.90340741439703e-07, -5.05883314461251e-07, -7.34000193531013e-07, 8.57054493486581e-08, 2.42745936484505e-06]
-    elseif config == :TE
-        [-2.41652846716972e-07, -3.23065322558405e-07, -3.28326932811425e-07, -3.28333033614819e-07, -3.28811630015552e-07, -5.20442612597910e-07, -2.53695258134825e-07, -8.17624261212795e-07, -8.20454605937869e-07, -2.53481317747953e-07, -3.28234744615780e-07, -3.90340741439703e-07, -5.05883314461251e-07, -7.34000193531013e-07, -5.78375033149240e-07, -2.88532094924509e-06]
-    end
-    # Nastran x-z inertia tensor component
-    Jxz = if config == :baseline
-        [-2.13291074939031e-08, -1.70393517987238e-08, -1.80583016476633e-08, -1.80358545673352e-08, -1.80358975530017e-08, -1.96080782268225e-08, -1.69813108911122e-08, 2.29072376985582e-07, 1.94280155632172e-07, -1.69845880648569e-08, -1.80385125234816e-08, 1.40872072179390e-08, 1.51093404300695e-07, 2.55868116124277e-07, -1.20981029158838e-08, -5.60408385171430e-09]
-    elseif config == :LE
-        [-2.13291074939031e-08, -1.70393517987238e-08, -1.80583016476633e-08, -1.80358545673352e-08, -1.80358975530017e-08, -1.96080782268225e-08, -1.69813108911122e-08, 2.29072376985582e-07, 1.94280155632172e-07, -1.69845880648569e-08, -1.80385125234816e-08, 1.40872072179390e-08, 1.51093404300695e-07, 2.55868116124277e-07, -1.25362865410318e-08, 3.58489348453775e-09]
-    elseif config == :TE
-        [-2.13291074939031e-08, -1.70393517987238e-08, -1.80583016476633e-08, -1.80358545673352e-08, -1.80358975530017e-08, -1.96080782268225e-08, -1.69813108911122e-08, 2.29072376985582e-07, 1.94280155632172e-07, -1.69845880648569e-08, -1.80385125234816e-08, 1.40872072179390e-08, 1.51093404300695e-07, 2.55868116124277e-07, -9.32817353169632e-09, -1.52454038701234e-08]
-    end
-    # Nastran y-z inertia tensor component
-    Jyz = if config == :baseline
-        [-1.90603666877279e-09, -7.64109829335730e-10, 1.43598335509211e-09, 1.43480138675052e-09, 1.42941157298000e-09, -9.86484097332274e-11, -7.35759556747611e-11, 5.87131141912056e-08, 1.12720295632256e-07, -6.50730668405093e-11, 1.43168996341495e-09, -5.41288603082503e-08, 7.32704783431351e-08, 1.19736860253164e-07, 1.97726633345056e-09, -1.38899512111620e-09]
-    elseif config == :LE
-        [-1.90603666877279e-09, -7.64109829335730e-10, 1.43598335509211e-09, 1.43480138675052e-09, 1.42941157298000e-09, -9.86484097332274e-11, -7.35759556747611e-11, 5.87131141912056e-08, 1.12720295632256e-07, -6.50730668405093e-11, 1.43168996341495e-09, -5.41288603082503e-08, 7.32704783431351e-08, 1.19736860253164e-07, 2.69179454682089e-09, -1.69709457506072e-09]
-    elseif config == :TE
-        [-1.90603666877279e-09, -7.64109829335730e-10, 1.43598335509211e-09, 1.43480138675052e-09, 1.42941157298000e-09, -9.86484097332274e-11, -7.35759556747611e-11, 5.87131141912056e-08, 1.12720295632256e-07, -6.50730668405093e-11, 1.43168996341495e-09, -5.41288603082503e-08, 7.32704783431351e-08, 1.19736860253164e-07, 2.69179454678639e-09, -1.67841939307621e-09]
+    # Ad hoc factor on the tip node's torsional inertia for the LE and TE configurations (to approximate wingtip rod flexibility)
+    Iyy = column("Jyy")
+    if applyTipInertiaCorrection && config != :baseline && !(Λ ≈ 0)
+        Iyy[end] *= 1.4
     end
 
-    return inertia_matrices_sweptPazy_from_Nastran_data(Λ=Λ,nElem=nElem,L=L,nodalPositions=nodalPositions,m=m,m_x=m_x,m_y=m_y,m_z=m_z,Jxx=Jxx,Jyy=Jyy,Jzz=Jzz,Jxy=Jxy,Jxz=Jxz,Jyz=Jyz)
+    return inertia_matrices_from_Nastran_data(Λ=Λ,nElem=nElem,L=L,nodalPositions=nodalPositions,m=column("m"),m_x=column("dx"),m_y=column("dy"),m_z=column("dz"),Ixx=column("Jxx"),Iyy=Iyy,Izz=column("Jzz"),Ixy=column("Jxy"),Ixz=column("Jxz"),Iyz=column("Jyz"))
 
 end
 
+# Sectional stiffness matrices of the Pazy wing with sweep angle Λ, read from the least squares data of the nodal segments (see `Pazy_data_file`), with the rigid or flexible tip rod of the Nastran model `tip` (`:rigidtip` or `:flextip`). The matrices of the segments are assigned to the elements they contain. The coordinates of the ends of the segments are along the reference axis, from the root. With `rootTorsionCorr = true` (straight wing with the tip rod only) the matrices have the correction of the torsional stiffness (S44, and the S45 = S54 coupling for the nominal mesh) of the root, which compensates the extra stiffness at the clamp of the Nastran model and the flexibility of the real one
+function stiffness_matrices_Pazy(Λ; mesh::Symbol=:nominal, withWingtipRod::Bool=true, tip::Symbol=:rigidtip, rootTorsionCorr::Bool=false)
 
-# Compute inertia matrices for the 20-degree swept Pazy (taken from https://github.com/cristinariso/AePW-Swept-Pazy/tree/main/02_BeamMassModel). The nodal data is in the MSC Nastran basic frame
-function inertia_matrices_sweptPazy20deg(; config,applyTipInertiaCorrection::Bool=false)
+    # Geometrical properties
+    nElem,L,_,_,nodalPositions = geometrical_properties_Pazy(mesh=mesh, Λ=Λ)
 
-    # Sweep angle
-    Λ = deg2rad(20)
+    # Stiffness matrix of each segment (or element), given by its components row by row (S11, S12, ..., S66) and the coordinates of its ends from the root
+    file = Pazy_data_file(:stiffness, Λ, mesh; withWingtipRod=withWingtipRod, tip=tip, rootTorsionCorr=rootTorsionCorr)
+    data, header = readdlm(file, ','; header=true)
+    columns = [findfirst(==("S$i$j"), vec(header)) for i in 1:6, j in 1:6]
+    y1, y2 = Float64.(data[:, 2]), Float64.(data[:, 3])
 
-    # Length and nodal position
-    nElem,L,_,_,nodalPositions = geometrical_properties_Pazy(Λ=Λ)
+    # The segments must span the beam from the root to the tip, and each element belongs to the segment that contains its middle
+    desc = "the stiffness matrices data of the Pazy wing with sweep angle $(round(Int, rad2deg(Λ)))° for mesh=:$mesh ($file)"
+    @assert isapprox(y1[1], 0; atol=1e-6*L) && isapprox(y2[end], L; atol=1e-6*L) "$desc do not span the beam, from 0 to $L m"
+    yMid = L*(nodalPositions[1:end-1] + nodalPositions[2:end])/2
+    segmentOfElement = [findfirst(i -> y1[i] <= y && y <= y2[i], eachindex(y1)) for y in yMid]
+    @assert !any(isnothing, segmentOfElement) "$desc do not match the nodes of the beam"
+    @assert size(data,1) == nElem "$desc has $(size(data,1)) rows, but $nElem are expected"
 
-    # Nodal sectional inertia values
-    # Point mass
-    m = if config == :baseline
-        [1.81663134436300e-02, 1.95939480495200e-02, 2.21024550026400e-02, 2.01250720876600e-02, 1.81447819496800e-02, 2.20954958696200e-02, 1.81404683222600e-02, 2.64571638110000e-02, 2.35217862175500e-02, 1.81417802553400e-02, 2.01192323222700e-02, 2.28021090557000e-02, 2.09447854047100e-02, 2.38942725628300e-02, 2.43386488209400e-02, 2.46896356977690e-02]
-    elseif config == :LE
-        [1.81663134436300e-02, 1.95939480495200e-02, 2.21024550026400e-02, 2.01250720876600e-02, 1.81447819496800e-02, 2.20954958696200e-02, 1.81404683222600e-02, 2.64571638110000e-02, 2.35217862175500e-02, 1.81417802553400e-02, 2.01192323222700e-02, 2.28021090557000e-02, 2.09447854047100e-02, 2.38942725628300e-02, 2.43386488209400e-02, 4.30896356977690e-02]
-    elseif config == :TE
-        [1.81663134436300e-02, 1.95939480495200e-02, 2.21024550026400e-02, 2.01250720876600e-02, 1.81447819496800e-02, 2.20954958696200e-02, 1.81404683222600e-02, 2.64571638110000e-02, 2.35217862175500e-02, 1.81417802553400e-02, 2.01192323222700e-02, 2.28021090557000e-02, 2.09447854047100e-02, 2.38942725628300e-02, 2.43386488209400e-02, 3.91597552155690e-02]
-    end
-    # Center of mass offset from reference axis in the Nastran y direction (spanwise, unswept)
-    m_y = if config == :baseline
-        [8.14015611461189e-03, -1.33984651225295e-03, -9.38863721276634e-05, 1.69165752260649e-03, -7.24913100817182e-05, -8.33825813670308e-05, -8.12547606598990e-05, -6.77417377785927e-04, 4.66741360012735e-04, -8.01112587354158e-05, -1.84618529298775e-03, 4.69462783220576e-04, -9.67235687026169e-04, -3.10550241932250e-03, -3.24232767417676e-03, 2.11708423633328e-03]
-    elseif config == :LE
-        [8.14015611461189e-03, -1.33984651225295e-03, -9.38863721276634e-05, 1.69165752260649e-03, -7.24913100817182e-05, -8.33825813670308e-05, -8.12547606598990e-05, -6.77417377785927e-04, 4.66741360012735e-04, -8.01112587354158e-05, -1.84618529298775e-03, 4.69462783220576e-04, -9.67235687026169e-04, -3.10550241932250e-03, -3.24232767417676e-03, 3.19868191746386e-03]
-    elseif config == :TE
-        [8.14015611461189e-03, -1.33984651225295e-03, -9.38863721276634e-05, 1.69165752260649e-03, -7.24913100817182e-05, -8.33825813670308e-05, -8.12547606598990e-05, -6.77417377785927e-04, 4.66741360012735e-04, -8.01112587354158e-05, -1.84618529298775e-03, 4.69462783220576e-04, -9.67235687026169e-04, -3.10550241932250e-03, -3.24232767417676e-03, 2.97913175779629e-03]
-    end
-    # Center of mass offset from reference axis in the Nastran x direction (chordwise, positive aft)
-    m_x = if config == :baseline
-        [3.05490048504409e-03, 8.71787044390150e-04, 1.55792077517647e-03, 2.11486353989855e-03, 1.33882057284539e-03, 1.59767440622317e-03, 1.35316958174921e-03, -1.10822256431184e-03, -4.76829801854178e-04, 1.34809831299273e-03, 8.44328170033215e-04, 1.33287101314308e-03, -9.57391070645297e-04, -2.41884908178389e-03, -1.54025579122677e-03, -1.01942788753387e-02]
-    elseif config == :LE
-        [3.05490048504409e-03, 8.71787044390150e-04, 1.55792077517647e-03, 2.11486353989855e-03, 1.33882057284539e-03, 1.59767440622317e-03, 1.35316958174921e-03, -1.10822256431184e-03, -4.76829801854178e-04, 1.34809831299273e-03, 8.44328170033215e-04, 1.33287101314308e-03, -9.57391070645297e-04, -2.41884908178389e-03, -1.54025579122677e-03, -4.88576428540698e-02]
-    elseif config == :TE
-        [3.05490048504409e-03, 8.71787044390150e-04, 1.55792077517647e-03, 2.11486353989855e-03, 1.33882057284539e-03, 1.59767440622317e-03, 1.35316958174921e-03, -1.10822256431184e-03, -4.76829801854178e-04, 1.34809831299273e-03, 8.44328170033215e-04, 1.33287101314308e-03, -9.57391070645297e-04, -2.41884908178389e-03, -1.54025579122677e-03, 3.27921263736348e-02]
-    end
-    # Center of mass offset from reference axis in the Nastran z direction (vertical)
-    m_z = if config == :baseline
-        [5.55331373915134e-05, 9.17199660244391e-05, 1.07389153763285e-04, 1.03597018625786e-04, 9.90571461144122e-05, 1.07371539357338e-04, 9.90805727419213e-05, 9.11754052488185e-04, 8.11371142248017e-04, 9.90734417439296e-05, 1.03627057424772e-04, 2.57538734978562e-04, 7.54238824248156e-04, 8.76147097319539e-04, -2.96157399406676e-05, -9.26149195703200e-06]
-    elseif config == :LE
-        [5.55331373915134e-05, 9.17199660244391e-05, 1.07389153763285e-04, 1.03597018625786e-04, 9.90571461144122e-05, 1.07371539357338e-04, 9.90805727419213e-05, 9.11754052488185e-04, 8.11371142248017e-04, 9.90734417439296e-05, 1.03627057424772e-04, 2.57538734978562e-04, 7.54238824248156e-04, 8.76147097319539e-04, -2.96157399406676e-05, -5.30667894341880e-06]
-    elseif config == :TE
-        [5.55331373915134e-05, 9.17199660244391e-05, 1.07389153763285e-04, 1.03597018625786e-04, 9.90571461144122e-05, 1.07371539357338e-04, 9.90805727419213e-05, 9.11754052488185e-04, 8.11371142248017e-04, 9.90734417439296e-05, 1.03627057424772e-04, 2.57538734978562e-04, 7.54238824248156e-04, 8.76147097319539e-04, -2.96157399406676e-05, -5.83923114887166e-06]
-    end
-    # Mass moment of inertia about the Nastran x axis
-    Jxx = if config == :baseline
-        [8.28050439962229e-07, 1.73483017099653e-06, 2.61935512057554e-06, 1.90280574141483e-06, 1.31502606746441e-06, 2.61639371945451e-06, 1.31614975072453e-06, 3.75585285908005e-06, 2.56389054880213e-06, 1.31608880345886e-06, 1.90530917873947e-06, 2.91485168566594e-06, 1.78253732071947e-06, 2.57493237919328e-06, 1.47380269444400e-06, 6.78354667488570e-07]
-    elseif config == :LE
-        [8.28050439962229e-07, 1.73483017099653e-06, 2.61935512057554e-06, 1.90280574141483e-06, 1.31502606746441e-06, 2.61639371945451e-06, 1.31614975072453e-06, 3.75585285908005e-06, 2.56389054880213e-06, 1.31608880345886e-06, 1.90530917873947e-06, 2.91485168566594e-06, 1.78253732071947e-06, 2.57493237919328e-06, 1.47380269444390e-06, 7.45995194469755e-07]
-    elseif config == :TE
-        [8.28050439962229e-07, 1.73483017099653e-06, 2.61935512057554e-06, 1.90280574141483e-06, 1.31502606746441e-06, 2.61639371945451e-06, 1.31614975072453e-06, 3.75585285908005e-06, 2.56389054880213e-06, 1.31608880345886e-06, 1.90530917873947e-06, 2.91485168566594e-06, 1.78253732071947e-06, 2.57493237919328e-06, 1.47380269444390e-06, 7.28323942751606e-07]
-    end
-    # Mass moment of inertia about the Nastran y axis
-    Jyy = if config == :baseline
-        [1.02334263147076e-05, 1.05144948455138e-05, 1.19893700159659e-05, 1.09223964044665e-05, 9.80486377015509e-06, 1.19740987384223e-05, 9.80056615833506e-06, 1.36726381970677e-05, 1.23705354488074e-05, 9.80547381273911e-06, 1.08476659416048e-05, 1.21353025500260e-05, 1.09303363750492e-05, 1.24209518401733e-05, 1.36572819042233e-05, 7.09478038810672e-05]
-    elseif config == :LE
-        [1.02334263147076e-05, 1.05144948455138e-05, 1.19893700159659e-05, 1.09223964044665e-05, 9.80486377015509e-06, 1.19740987384223e-05, 9.80056615833506e-06, 1.36726381970677e-05, 1.23705354488074e-05, 9.80547381273911e-06, 1.08476659416048e-05, 1.21353025500260e-05, 1.09303363750492e-05, 1.24209518401733e-05, 1.36572819042234e-05, 1.59664878595623e-04]
-    elseif config == :TE
-        [1.02334263147076e-05, 1.05144948455138e-05, 1.19893700159659e-05, 1.09223964044665e-05, 9.80486377015509e-06, 1.19740987384223e-05, 9.80056615833506e-06, 1.36726381970677e-05, 1.23705354488074e-05, 9.80547381273911e-06, 1.08476659416048e-05, 1.21353025500260e-05, 1.09303363750492e-05, 1.24209518401733e-05, 1.36572819042234e-05, 1.95666600946019e-04]
-    end
-    # Mass moment of inertia about the Nastran z axis
-    Jzz = if config == :baseline
-        [1.05684281860531e-05, 1.19366710514376e-05, 1.42683953783280e-05, 1.24991860348532e-05, 1.08082661579073e-05, 1.42501712845890e-05, 1.08052007743727e-05, 1.65502617173234e-05, 1.41689476010393e-05, 1.08100373557317e-05, 1.24270538546575e-05, 1.46195619283511e-05, 1.20537238847810e-05, 1.42226153455838e-05, 1.44907780183527e-05, 7.12314870310506e-05]
-    elseif config == :LE
-        [1.05684281860531e-05, 1.19366710514376e-05, 1.42683953783280e-05, 1.24991860348532e-05, 1.08082661579073e-05, 1.42501712845890e-05, 1.08052007743727e-05, 1.65502617173234e-05, 1.41689476010393e-05, 1.08100373557317e-05, 1.24270538546575e-05, 1.46195619283511e-05, 1.20537238847810e-05, 1.42226153455838e-05, 1.44907780183528e-05, 1.60016200463955e-04]
-    elseif config == :TE
-        [1.05684281860531e-05, 1.19366710514376e-05, 1.42683953783280e-05, 1.24991860348532e-05, 1.08082661579073e-05, 1.42501712845890e-05, 1.08052007743727e-05, 1.65502617173234e-05, 1.41689476010393e-05, 1.08100373557317e-05, 1.24270538546575e-05, 1.46195619283511e-05, 1.20537238847810e-05, 1.42226153455838e-05, 1.44907780183528e-05, 1.95999936250989e-04]
-    end
-    # Nastran x-y inertia tensor component
-    Jxy = if config == :baseline
-        [-3.36062862022776e-07, -6.02787124869380e-07, -9.41914568425280e-07, -7.18482181515475e-07, -4.59262013683749e-07, -9.37805693986711e-07, -4.61849697692561e-07, -1.38971073318706e-06, -1.19084584791768e-06, -4.60579224614256e-07, -6.35447092269456e-07, -8.39449367829542e-07, -7.62432323854227e-07, -1.11124607787490e-06, -2.29733631635070e-07, 5.22813972818597e-07]
-    elseif config == :LE
-        [-3.36062862022776e-07, -6.02787124869380e-07, -9.41914568425280e-07, -7.18482181515475e-07, -4.59262013683749e-07, -9.37805693986711e-07, -4.61849697692561e-07, -1.38971073318706e-06, -1.19084584791768e-06, -4.60579224614256e-07, -6.35447092269456e-07, -8.39449367829542e-07, -7.62432323854227e-07, -1.11124607787490e-06, -2.29733631635168e-07, 2.94069577510320e-06]
-    elseif config == :TE
-        [-3.36062862022776e-07, -6.02787124869380e-07, -9.41914568425280e-07, -7.18482181515475e-07, -4.59262013683749e-07, -9.37805693986711e-07, -4.61849697692561e-07, -1.38971073318706e-06, -1.19084584791768e-06, -4.60579224614256e-07, -6.35447092269456e-07, -8.39449367829542e-07, -7.62432323854227e-07, -1.11124607787490e-06, -2.29733631635168e-07, -1.95315311905493e-06]
-    end
-    # Nastran x-z inertia tensor component
-    Jxz = if config == :baseline
-        [-2.16142071050848e-08, -1.71241698896012e-08, -1.95988782849458e-08, -1.88227837418433e-08, -1.69669780397161e-08, -1.95526456902959e-08, -1.69525774966692e-08, 2.70415534204284e-07, 2.36861910082746e-07, -1.69617278315611e-08, -1.77230426986391e-08, 8.38062366445688e-09, 1.87192398721740e-07, 3.03184726296377e-07, -1.14658612011971e-08, -2.82401874589582e-09]
-    elseif config == :LE
-        [-2.16142071050848e-08, -1.71241698896012e-08, -1.95988782849458e-08, -1.88227837418433e-08, -1.69669780397161e-08, -1.95526456902959e-08, -1.69525774966692e-08, 2.70415534204284e-07, 2.36861910082746e-07, -1.69617278315611e-08, -1.77230426986391e-08, 8.38062366445688e-09, 1.87192398721740e-07, 3.03184726296377e-07, -1.14658612011971e-08, 6.01685673292203e-09]
-    elseif config == :TE
-        [-2.16142071050848e-08, -1.71241698896012e-08, -1.95988782849458e-08, -1.88227837418433e-08, -1.69669780397161e-08, -1.95526456902959e-08, -1.69525774966692e-08, 2.70415534204284e-07, 2.36861910082746e-07, -1.69617278315611e-08, -1.77230426986391e-08, 8.38062366445688e-09, 1.87192398721740e-07, 3.03184726296377e-07, -1.14658612011971e-08, -1.26534132160005e-08]
-    end
-    # Nastran y-z inertia tensor component
-    Jyz = if config == :baseline
-        [-1.90718610541462e-09, -7.73729010043718e-10, -1.91214639263379e-10, -1.63771788365478e-09, -1.36614657222166e-10, -1.87099901792621e-10, -1.43769989509229e-10, 6.44271529119628e-08, 1.18374151901374e-07, -1.41722811633644e-10, 1.30847649029578e-09, -6.01302249386615e-08, 7.90475092773848e-08, 1.25587199495828e-07, 1.82992385767983e-09, -1.50702978184233e-09]
-    elseif config == :LE
-        [-1.90718610541462e-09, -7.73729010043718e-10, -1.91214639263379e-10, -1.63771788365478e-09, -1.36614657222166e-10, -1.87099901792621e-10, -1.43769989509229e-10, 6.44271529119628e-08, 1.18374151901374e-07, -1.41722811633644e-10, 1.30847649029578e-09, -6.01302249386615e-08, 7.90475092773848e-08, 1.25587199495828e-07, 1.82992385767983e-09, -1.75435100361478e-09]
-    elseif config == :TE
-        [-1.90718610541462e-09, -7.73729010043718e-10, -1.91214639263379e-10, -1.63771788365478e-09, -1.36614657222166e-10, -1.87099901792621e-10, -1.43769989509229e-10, 6.44271529119628e-08, 1.18374151901374e-07, -1.41722811633644e-10, 1.30847649029578e-09, -6.01302249386615e-08, 7.90475092773848e-08, 1.25587199495828e-07, 1.82992385767983e-09, -1.70414803565670e-09]
-    end
-
-    return inertia_matrices_sweptPazy_from_Nastran_data(Λ=Λ,nElem=nElem,L=L,nodalPositions=nodalPositions,m=m,m_x=m_x,m_y=m_y,m_z=m_z,Jxx=Jxx,Jyy=Jyy,Jzz=Jzz,Jxy=Jxy,Jxz=Jxz,Jyz=Jyz)
+    return [Float64.(data[segmentOfElement[k], columns]) for k in 1:nElem]
 
 end
 
-# Returns the nodal coordinates of the reference axis (spar) of the swept Pazy wing, in the MSC Nastran default frame (https://github.com/cristinariso/AePW-Swept-Pazy/tree/main/01_ReferenceAxis)
-function reference_axis_sweptPazy(Λ::Real)
+# Data of the wingtip rod of the Pazy wing (Technion Nastran models nastran/Pazy_Technion/S0/S0.bdf and S10/<config>/S10_<config>.bdf), to model it as a beam. The rod is a circular bar along the chordwise direction. Positions are along the chordwise axis of the Nastran frame (x positive aft), relative to the tip node of the beam (reference axis). The slight tilt of the rod in the Nastran models (about 1e-3 rad) is neglected. The fields are:
+# - the rod section and material (`d`, `A`, `I`, `J`, `E`, `G`, `ρ`, `Ks`) and its ends `xStart` and `xEnd`
+# - `offset`: the position of the attachment point of the rod, relative to the same node, in the Nastran frame (with origin at the wing root shear center)
+# - `tied`: ends of the parts of the rod that are modeled as rigid, due to being glued to the wing along the chord, for the bending in the plane of the wing (`inPlane`, displacements along the span) and out of it (`outOfPlane`, vertical displacements); the attachment point is inside both
+# - `calibrationMass`, `xCalibration`: calibration masses and their position along the rod
+# - `hinge`: for the S10 LE and TE configurations, the breaking beam (CBEAM property 24 in the Nastran models, a cone of PLA at the end of the rod, is modeled as a hinge with springs), the fixed adapter (CONM2 205, a ring at the end of the breaking beam) and the FPS weights (CONM2 433, with the offset `arm` from the end of the breaking beam, and the transverse inertia `fpsInertia` about its center of mass)
+function wingtip_rod_Pazy(Λ,config)
 
-    if rad2deg(Λ) ≈ 10
-        x = [4.1290e-02, 4.8860e-02, 5.5490e-02, 6.2140e-02, 6.8780e-02, 7.5420e-02, 8.2070e-02, 8.8720e-02, 9.5350e-02, 1.0199e-01, 1.0863e-01, 1.1527e-01, 1.2192e-01, 1.2856e-01, 1.3520e-01, 1.3769e-01]
-        y = [0.0000e+00, 4.2910e-02, 8.0580e-02, 1.1825e-01, 1.5591e-01, 1.9358e-01, 2.3125e-01, 2.6892e-01, 3.0660e-01, 3.4426e-01, 3.8193e-01, 4.1961e-01, 4.5727e-01, 4.9492e-01, 5.3261e-01, 5.4673e-01]
-    elseif rad2deg(Λ) ≈ 20
-        x = [4.1300e-02, 5.6200e-02, 6.9300e-02, 8.2360e-02, 9.5440e-02, 1.0852e-01, 1.2160e-01, 1.3469e-01, 1.4777e-01, 1.6085e-01, 1.7393e-01, 1.8701e-01, 2.0010e-01, 2.1318e-01, 2.2626e-01, 2.3117e-01]
-        y = [0.0000e+00, 4.0900e-02, 7.6900e-02, 1.1283e-01, 1.4877e-01, 1.8472e-01, 2.2066e-01, 2.5660e-01, 2.9255e-01, 3.2849e-01, 3.6443e-01, 4.0038e-01, 4.3632e-01, 4.7226e-01, 5.0821e-01, 5.2168e-01]
-    elseif rad2deg(Λ) ≈ 30
-        # Deduced: nodes lie along a straight axis at 30 degrees, with the same arc-length stations as the 10 and 20 degree models
-        x = [4.1300e-02, 6.3080e-02, 8.2210e-02, 1.0134e-01, 1.2046e-01, 1.3959e-01, 1.5871e-01, 1.7784e-01, 1.9696e-01, 2.1608e-01, 2.3521e-01, 2.5433e-01, 2.7346e-01, 2.9258e-01, 3.1171e-01, 3.1888e-01]
-        y = [0.0000e+00, 3.7730e-02, 7.0860e-02, 1.0398e-01, 1.3711e-01, 1.7023e-01, 2.0336e-01, 2.3649e-01, 2.6961e-01, 3.0274e-01, 3.3586e-01, 3.6899e-01, 4.0211e-01, 4.3524e-01, 4.6836e-01, 4.8078e-01]
+    if isapprox(rad2deg(Λ), 0; atol=1e-8)
+        # S0: the rod goes from x = -0.0841 to 0.1841 m, at y = 0.5569833 to 0.5566833 m and z = -3.167e-4 to -1.667e-5 m, and the tip node of the spar is at x = 0.045995091120000005, y = 0.5519937 m, z = 9.2695e-8 m. The grids of the rod from x = 0.00033333 to 0.0996667 m (1202 to 1222) are tied by RBE2 to the shell grids of the tip section (the chord is from x = 0 to 0.0988502 m), which is not rigid: it has the spar, the leading and trailing edge stringers (ending at the tip section, which has no rib) and a very thin skin. The stringers run along the span, so they restrain the rod much more against bending in the plane of the wing (axially) than out of it (by their bending), and the rigid part of the rod, which represents this restraint, is longer in the plane: its limits were calibrated with the natural frequencies and mode shapes of the Nastran model with the flexible rod (S0_modal_flextip.op2), as the effective clamps of the cantilevers of the rod beyond the chord (in the plane, x = 7.0 to 85.4 mm, as given by the frequencies of the modes of the rod alone, and out of it, x = 12 to 73 mm, within the spar)
+        ℓ = 0.2682                  # length of the rod
+        c = chord_Pazy(Λ)           # chord of the wing
+        sc = shear_center_Pazy(Λ)   # shear center of the center wing stations
+        xSpar = sc*c                # x-coordinate of the tip node of the spar at the reference axis (shear center)
+        d = 0.01                    # diameter of the rod
+        s = (0.0841 + 0.05)/ℓ       # normalized distance from the LE to the attachment point (coinciding with the midpoint) of the rod
+        return (d = d, A = π*d^2/4, I = π*d^4/64, J = π*d^4/32,
+                E = 1.1e9, G = 3.94548e8, ρ = 930.0, Ks = 0.886177,
+                xStart = -xSpar - 0.0841, xEnd = -xSpar + 0.1841,
+                offset = [0.0, 
+                          0.5569833 + s*(0.5566833 - 0.5569833) - 0.5519937, 
+                          -3.167e-4 + s*(-1.667e-5 + 3.167e-4) - 9.2695e-8],
+                tied = (inPlane = (0.0070 - xSpar, 0.0854 - xSpar),
+                        outOfPlane = (0.012 - xSpar, 0.073 - xSpar)),
+                calibrationMass = 0.015 + 0.0011, xCalibration = -xSpar + 0.05,
+                hinge = nothing)
     else
-        throw(ArgumentError("reference axis data only available for sweep angles of 10, 20 and 30 degrees"))
+        # S10: the rod goes from x = 0.05289 to 0.23278 m, at y = 0.5516 to 0.55139 m, and the tip node is at x = 0.138871796846351, y = 0.54673 m. The rod crosses the plane of the tip node (the attachment point) at y = 0.5515 m, and it is made of nylon. The grids of the rod from x = 0.09734 to 0.19305 m are tied by RBE2 to the shell grids of the tip section (the chord is from x = 0.0964 to 0.1914 m), which is not rigid: in the modes of the Nastran model with the flexible rod (S10_<config>_modal_flextip.op2) the rod bends from about x = 0.17 m, so the rigid part is from 10 mm from the leading edge (0.1064 m) to the trailing edge of the spar (0.17337 m), as in the S0, which are the limits that best reproduce the natural frequencies of the Nastran models
+        xSpar = 0.138871796846351
+        d = 0.0095
+        yAttachment = 0.5516 + (xSpar - 0.05289)/(0.23278 - 0.05289)*(0.55139 - 0.5516)
+        hinge = if config == :LE
+            (side = :LE, bbLength = 0.05289 - 0.052, bbDiameter = 0.0017, arm = 0.0213, adapterMass = 0.0035, fpsMass = 0.0087, fpsInertia = 3.3e-7)
+        elseif config == :TE
+            (side = :TE, bbLength = 0.233 - 0.23278, bbDiameter = 0.0015, arm = 0.0223, adapterMass = 0.0035, fpsMass = 0.0087, fpsInertia = 3.3e-7)
+        else
+            nothing
+        end
+        return (d = d, A = π*d^2/4, I = π*d^4/64, J = π*d^4/32,
+                E = 1.4e9, G = 5.0215e8, ρ = 930.0, Ks = 0.886179,
+                xStart = 0.05289 - xSpar, xEnd = 0.23278 - xSpar,
+                offset = [0.0, yAttachment - 0.54673, 0.0],
+                tied = (inPlane = (0.1064 - xSpar, 0.17337 - xSpar), outOfPlane = (0.1064 - xSpar, 0.17337 - xSpar)),
+                calibrationMass = 0.0, xCalibration = 0.0,
+                hinge = hinge)
     end
-    z = zeros(length(x))
 
-    return x,y,z
+end
+
+# Creates the beams that model the wingtip rod of the Pazy wing attached to its tip, and their connections: a rigid link from the tip node of the wing `mainWing` (with `nElem` elements) to the attachment point of the rod, and the rod, connected at the attachment point to the end of the link. The rod is uniform, with `nElementsRod` elements: the part glued to the wing is rigid, with one element between each pair of nodes at the ends of its rigid parts (`tied` in `wingtip_rod_Pazy`, one for each plane of bending, so that in the part where only one of them is rigid the other bending is flexible) and at the attachment point, and the others are distributed beyond it in proportion to their lengths. In the S10 LE and TE configurations the rod is extended beyond its end with one element, up to the center of mass of the FPS weights, which is connected to the rod by a hinge (the breaking beam), restrained by springs of the stiffness of the breaking beam in torsion and bending, with the masses of the adapter and of the FPS weights as in the Nastran model
+function create_wingtip_rod_beams_Pazy(mainWing,nElem,Λ,config,nElementsRod)
+
+    # Get the wingtip rod model for the given configuration
+    rod = wingtip_rod_Pazy(Λ,config)
+
+    # Rotation tensor of the wing's beam basis from basis A, and rotation tensor from the Nastran frame to the wing's beam basis (as in `inertia_matrices_from_Nastran_data`)
+    R0wing = mainWing.geometry.R0
+    RNastran = [sin(Λ) cos(Λ) 0; -cos(Λ) sin(Λ) 0; 0 0 1]
+
+    # Attachment point relative to the tip node, resolved in basis A
+    offsetA = R0wing * (RNastran * rod.offset)
+
+    # Rigid link from the tip node to the attachment point (centerline) of the rod: its x1 axis is along the offset, and x3 is as close as possible to that of the wing
+    linkLength = norm(offsetA)
+    x1link = offsetA / linkLength
+    x2link = normalize(cross(R0wing[:,3], x1link))
+    x3link = cross(x1link, x2link)
+    linkStiffness = 1e12
+    link = create_Beam(
+        name="wingtipRodLink",
+        length=linkLength,
+        nElements=1,
+        S=[isotropic_stiffness_matrix(∞=linkStiffness)],
+        I=[inertia_matrix()],
+        p0=rotation_parameters_WM([x1link x2link x3link])
+        )
+
+    # Positions of the nodes of the rod along the chordwise axis, relative to the tip node of the wing, and the attachment node. The part of the rod glued to the wing, from the start of the first rigid part to the end of the last one (of the two planes of bending), has an element between each pair of nodes at the ends of the rigid parts and at the attachment point, and the parts beyond it, in cantilever, are divided in proportion to their lengths
+    xAttachment = rod.offset[1]
+    @assert all(lim -> lim[1] < xAttachment < lim[2], rod.tied) "the attachment point of the rod must be inside its rigid parts"
+    xRigid = sort(unique(vcat(collect(rod.tied.inPlane), collect(rod.tied.outOfPlane), xAttachment)))
+    nRigid = length(xRigid) - 1
+    nFree = nElementsRod - nRigid
+    @assert nFree >= 2 "nElementsWingtipRod must be at least $(nRigid+2) for this rod"
+    lengthStart = xRigid[1] - rod.xStart
+    lengthEnd = rod.xEnd - xRigid[end]
+    nStart = clamp(round(Int, nFree*lengthStart/(lengthStart+lengthEnd)), 1, nFree-1)
+    nEnd = nFree - nStart
+    xNodes = vcat(range(rod.xStart, xRigid[1], length=nStart+1)[1:end-1], xRigid, range(xRigid[end], rod.xEnd, length=nEnd+1)[2:end])
+    attachmentNode = findfirst(x -> isapprox(x, xAttachment; atol=1e-9), xNodes)
+
+    # Extension of the rod beyond its end up to the center of mass of the FPS weights, and the node of the hinge
+    hinge = rod.hinge
+    hingeNode = nothing
+    if !isnothing(hinge)
+        extension = hinge.bbLength + hinge.arm
+        if hinge.side == :LE
+            pushfirst!(xNodes, rod.xStart - extension)
+            attachmentNode += 1
+            hingeNode = 2
+        else
+            push!(xNodes, rod.xEnd + extension)
+            hingeNode = length(xNodes) - 1
+        end
+    end
+    nElements = length(xNodes) - 1
+    rodLength = xNodes[end] - xNodes[1]
+    normalizedNodalPositions = (xNodes .- xNodes[1]) / rodLength
+    normalizedNodalPositions[end] = 1.0
+
+    # Sectional matrices: rod (nylon), rigid in the part tied to the wing. The rod has its x2 axis along the span, so the bending in the plane of the wing is that of the shear GAy and bending EIz, and the one out of it, of GAz and EIy. Where only one of the planes is tied, the rod is rigid in it (and in axial and torsional deformation), and flexible in the other
+    Srod = isotropic_stiffness_matrix(E=rod.E,G=rod.G,A=rod.A,Iy=rod.I,Iz=rod.I,J=rod.J,Ksy=rod.Ks,Ksz=rod.Ks)
+    Srigid = isotropic_stiffness_matrix(∞=linkStiffness)
+    SrigidInPlane = isotropic_stiffness_matrix(∞=linkStiffness,GAz=rod.G*rod.A*rod.Ks,EIy=rod.E*rod.I)
+    SrigidOutOfPlane = isotropic_stiffness_matrix(∞=linkStiffness,GAy=rod.G*rod.A*rod.Ks,EIz=rod.E*rod.I)
+    Irod = inertia_matrix(ρ=rod.ρ,A=rod.A,Iy=rod.I,Iz=rod.I)
+    isTied(e,lim) = xNodes[e] >= lim[1] - 1e-9 && xNodes[e+1] <= lim[2] + 1e-9
+    function elementStiffness(e)
+        inPlane = isTied(e,rod.tied.inPlane)
+        outOfPlane = isTied(e,rod.tied.outOfPlane)
+        return inPlane && outOfPlane ? Srigid : inPlane ? SrigidInPlane : outOfPlane ? SrigidOutOfPlane : Srod
+    end
+
+    # Rod: x1 axis along the chord, positive aft (the rod's first node is at its leading edge end), x2 along the span and x3 vertical, as in the Nastran frame
+    R0rod = R0wing * RNastran
+    wingtipRod = create_Beam(
+        name="wingtipRod",
+        length=rodLength,
+        firstNodeOffset=(xNodes[1]-xAttachment) * R0rod[:,1],
+        nElements=nElements,
+        normalizedNodalPositions=normalizedNodalPositions,
+        S=[elementStiffness(e) for e in 1:nElements],
+        I=fill(Irod,nElements),
+        p0=rotation_parameters_WM(R0rod),
+        hingedNodes=isnothing(hingeNode) ? Int[] : [hingeNode],
+        hingedNodesDoF=isnothing(hingeNode) ? Vector{Vector{Bool}}() : [trues(3)]
+        )
+
+    # Calibration masses, at their position on the rod
+    if rod.calibrationMass > 0
+        calibrationElement = findfirst(e -> xNodes[e] <= rod.xCalibration <= xNodes[e+1], 1:nElements)
+        add_point_inertia_to_beam!(
+            beam=wingtipRod,
+            elementID=calibrationElement,
+            pointInertia=create_PointInertia(mass=rod.calibrationMass, η=[rod.xCalibration - (xNodes[calibrationElement]+xNodes[calibrationElement+1])/2, 0, 0])
+            )
+    end
+
+    # Hinge of the breaking beam, with the adapter and the FPS weights on the element after it
+    if !isnothing(hinge)
+        # Material (PLA) of the breaking beam of the Sx LE and TE configurations
+        breakingBeamE_Pazy = 2.3e9
+        breakingBeamG_Pazy = 8.5185e8
+        # Springs around the hinge, with the stiffnesses of the breaking beam (a cone of the PLA, whose length is that of the hinge)
+        bbI = π*hinge.bbDiameter^4/64
+        bbJ = π*hinge.bbDiameter^4/32
+        kTorsion = breakingBeamG_Pazy * bbJ / hinge.bbLength
+        kBending = breakingBeamE_Pazy * bbI / hinge.bbLength
+        for (k,p) in zip((kTorsion,kBending,kBending), ([0,0,0],[π/2,0,0],[0,π/2,0]))
+            add_spring_to_beams!(beams=[wingtipRod,wingtipRod],spring=create_Spring(kp=k),nodesLocalIDs=[hingeNode-1,hingeNode+1],p=p)
+        end
+        # Element after the hinge, whose far end is the center of mass of the FPS weights (a node), and its midpoint
+        extensionElement = hinge.side == :LE ? 1 : nElements
+        xFar = hinge.side == :LE ? xNodes[1] : xNodes[end]
+        xMid = (xNodes[extensionElement] + xNodes[extensionElement+1]) / 2
+        extensionLength = abs(xNodes[extensionElement+1] - xNodes[extensionElement])
+        # Adapter, at the end of the breaking beam
+        xAdapter = hinge.side == :LE ? rod.xStart - hinge.bbLength : rod.xEnd + hinge.bbLength
+        add_point_inertia_to_beam!(
+            beam=wingtipRod,
+            elementID=extensionElement,
+            pointInertia=create_PointInertia(mass=hinge.adapterMass, η=[xAdapter-xMid, 0, 0])
+            )
+        # FPS weights: the element has the distributed mass and inertia of the rod, so a concentrated mass is added to complete the mass of the FPS weights and keep their center of mass, and the inertia of the FPS weights about it
+        elementMass = rod.ρ * rod.A * extensionLength
+        concentratedMass = hinge.fpsMass - elementMass
+        @assert concentratedMass > 0 "the mass of the extension of the rod is larger than that of the FPS weights"
+        xConcentrated = (hinge.fpsMass*xFar - elementMass*xMid) / concentratedMass
+        elementInertia = elementMass*extensionLength^2/12 + elementMass*(xMid-xFar)^2 + concentratedMass*(xConcentrated-xFar)^2
+        concentratedInertia = max(hinge.fpsInertia - elementInertia, 0)
+        add_point_inertia_to_beam!(
+            beam=wingtipRod,
+            elementID=extensionElement,
+            pointInertia=create_PointInertia(mass=concentratedMass, η=[xConcentrated-xMid, 0, 0], Iyy=concentratedInertia, Izz=concentratedInertia, Ixx=0)
+            )
+    end
+
+    # Set connections (the rod is connected to the end of the link at the attachment node)
+    connections = [
+        (link => mainWing, 1 => nElem+1),
+        (wingtipRod => link, attachmentNode => 2)
+    ]
+
+    return [mainWing,link,wingtipRod],connections
+
+end
+
+# Path of the CSV file with the original structural data of the straight Pazy wing (https://github.com/UM-A2SRL/AePW3-LDWG), for the :nominal mesh (test/referenceData/Pazy/S0_AePW3_<kind>_matrices.csv, with kind :inertia or :stiffness). `kind` is :inertia (nodal data in the MSC Nastran frame, same format as the beam mass model) or :stiffness
+function Pazy_S0_AePW3_data_file(kind::Symbol)
+
+    @assert kind in (:inertia, :stiffness) "kind must be :inertia or :stiffness"
+    file = joinpath(pkgdir(AeroBeams), "test", "referenceData", "Pazy", "S0_AePW3_" * (kind == :inertia ? "inertia" : "stiffness") * "_matrices.csv")
+    isfile(file) || throw(ArgumentError("original AePW3 $kind data of the straight Pazy wing not found (expected file $file)"))
+
+    return file
+
+end
+
+# Sectional stiffness matrices of the straight Pazy wing from the original AePW3 data (with skin), one for each element of the :nominal mesh. The shear stiffnesses are set to 3e6 N, and the couplings not present in the data are zero
+function stiffness_matrices_PazyS0_AePW3()
+
+    # Geometrical properties
+    nElem,L,_,_,nodalPositions = geometrical_properties_Pazy(mesh=:nominal, Λ=0)
+
+    # Stiffness matrix of each element, given by its components row by row (S11, S12, ..., S66) and the coordinates of its ends from the root
+    file = Pazy_S0_AePW3_data_file(:stiffness)
+    data, header = readdlm(file, ','; header=true)
+    @assert size(data,1) == nElem "the original AePW3 stiffness data has $(size(data,1)) rows, but $nElem are expected"
+    @assert isapprox(Float64.(data[:, 2]), L*nodalPositions[1:end-1]; atol=1e-6*L) && isapprox(Float64.(data[:, 3]), L*nodalPositions[2:end]; atol=1e-6*L) "the original AePW3 stiffness data does not match the nodes of the :nominal mesh"
+    columns = [findfirst(==("S$i$j"), vec(header)) for i in 1:6, j in 1:6]
+
+    return [Float64.(data[k, columns]) for k in 1:nElem]
 
 end
 
@@ -562,46 +537,47 @@ export typical_section_data
 
 
 """
-    geometrical_properties_Pazy(; Λ)
+    geometrical_properties_Pazy(; mesh, Λ, useAePW3Matrices)
 
-Returns the fixed geometrical (and discretization) properties of the Pazy wing (https://github.com/UM-A2SRL/AePW3-LDWG and https://github.com/cristinariso/AePW-Swept-Pazy/tree/main/01_ReferenceAxis). For sweep angles of 10, 20 and 30 degrees, they are computed from the reference axis data of the swept Pazy (see `reference_axis_sweptPazy`)
+Returns the fixed geometrical (and discretization) properties of the Pazy wing (sweep angles of 0, 10 and 20 degrees), computed from the reference axis, which is at the shear center (see `reference_axis_Pazy`), whose length is the total length of the beam
 
 # Keyword Arguments
+- `mesh::Symbol`: beam mesh, `:nominal` (nodes at the root, at the ribs and at the tip of the spar) or `:refined` (with a node at the middle of each element of the nominal mesh, approximately twice as many elements) (default: `:nominal`)
 - `Λ::Real`: sweep angle [rad] (default: 0)
+- `useAePW3Matrices::Bool`: flag to return the normalized spar position of the original AePW3 sectional matrices (0.44096), instead of that of the shear center. Only available for the straight wing (default: `false`)
 
 # Outputs
 - `nElem::Int`: number of elements
 - `L::Float64`: total length
 - `chord::Float64`: chord
-- `normSparPos::Float64`: normalized spar position
+- `normSparPos::Float64`: normalized spar position, equal to the chordwise position of the shear center (0.4653 for sweep 0°, 0.447 for 10° and 0.440 for 20°), or to that of the original AePW3 reference axis (0.44096) if `useAePW3Matrices` is `true`
 - `nodalPositions::Vector{Float64}`: normalized nodal positions
 """
-function geometrical_properties_Pazy(; Λ=0)
+function geometrical_properties_Pazy(; Λ=0, mesh=:nominal, useAePW3Matrices=false)
 
-    @assert any(isapprox.(rad2deg(Λ), [0,10,20,30]; atol=1e-8)) "sweepAngle must be 0, 10, 20 or 30 degrees" 
-
-    # Number of elements
-    nElem = 15
+    validate_mesh_Pazy(mesh)
+    @assert any(isapprox.(rad2deg(Λ), [0,10,20]; atol=1e-8)) "sweepAngle must be 0, 10 or 20 degrees"
+    @assert !useAePW3Matrices || Λ ≈ 0 "the original AePW3 matrices are only available for the straight wing"
 
     # Chord [m]
-    chord = 0.0989
+    chord = chord_Pazy(Λ)
 
-    if rad2deg(Λ) ≈ 10 || rad2deg(Λ) ≈ 20 || rad2deg(Λ) ≈ 30
-        # Reference axis coordinates (chordwise from the leading edge, spanwise)
-        x,y,_ = reference_axis_sweptPazy(Λ)
-        # Length of each segment and total length [m]
-        segmentLengths = sqrt.(diff(x).^2 .+ diff(y).^2)
-        L = sum(segmentLengths)
-        # Normalized spar position
-        normSparPos = x[1]/chord
-        # Normalized nodal positions
-        nodalPositions = [0.0; cumsum(segmentLengths)]/L
-        nodalPositions[end] = 1.0 # avoid rounding error
-    else # Use straight wing values
-        L = 0.549843728
-        normSparPos = 0.44096
-        nodalPositions = [0.0, 0.06956521653730675, 0.13913043671201064, 0.208695655068016, 0.2782608734240213, 0.34782609178002666, 0.41739131195473056, 0.4869565303107358, 0.5565217486667412, 0.626086968841445, 0.6956521871974504, 0.7652174055534556, 0.8347826239094611, 0.9043478440841649, 0.9652173080712125, 1.0]
-    end
+    # Reference axis coordinates (chordwise from the leading edge, spanwise)
+    x,y,_,ra = reference_axis_Pazy(Λ; mesh=mesh)
+
+    # Length of each segment and total length [m]
+    segmentLengths = sqrt.(diff(x).^2 .+ diff(y).^2)
+    L = sum(segmentLengths)
+
+    # Normalized spar position (the original AePW3 data refers to a reference axis at a different chordwise position than the shear center of the condensed model)
+    normSparPos = useAePW3Matrices ? normSparPos_Pazy_AePW3 : ra
+
+    # Normalized nodal positions
+    nodalPositions = [0.0; cumsum(segmentLengths)]/L
+    nodalPositions[end] = 1.0 # avoid rounding error
+
+    # Number of elements
+    nElem = length(nodalPositions) - 1
 
     return nElem,L,chord,normSparPos,nodalPositions
 
@@ -610,24 +586,25 @@ export geometrical_properties_Pazy
 
 
 """
-    get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE, :TE), withTuningMass=true, withAttachedMass=true, withCalibrationMass=true, sweptTipMassInertiaCorrection=false) -> (tipMasses, ηtipMasses, tipMassesInertias)
+    get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE, :TE), withFPSMass=true, withAdapterMass=true, withCalibrationMass=true, sweptTipMassInertiaCorrection=false) -> (tipMasses, ηtipMasses, tipMassesInertias, tipMassesElementIDs)
 
 Get tip masses and inertias for the swept Pazy wing LE and TE configurations from the baseline configuration.
 
 # Keyword arguments
 - `Λ::Float64`: sweep angle [rad]
 - `configs::Tuple`: tip mass configurations to consider (default: `(:baseline, :LE, :TE)`)
-- `withTuningMass::Bool`: include tuning mass (default: `true`)
-- `withAttachedMass::Bool`: include attached mass (default: `true`)
+- `withFPSMass::Bool`: include flight protection system (FPS) mass (default: `true`)
+- `withAdapterMass::Bool`: include adapter mass (default: `true`)
 - `withCalibrationMass::Bool`: include calibration mass (default: `true`)
-- `sweptTipMassInertiaCorrection::Bool`: apply correction to tip mass inertias (default: `false`)
+- `sweptTipMassInertiaCorrection::Bool`: apply correction to tip mass inertias (default: `false`). This correction is roughly equivalent on setting the adapter and FPS masses 20% further from the reference axis.
 
 # Returns
 - `tipMasses::Vector{Vector{Float64}}`: tip masses for each configuration
 - `ηtipMasses::Vector{Vector{Vector{Float64}}}`: tip mass positions for each configuration
 - `tipMassesInertias::Vector{Vector{Matrix{Float64}}}`: tip mass inertias for each configuration
+- `tipMassesElementIDs::Vector{Vector{Int}}`: IDs of the elements to which the tip masses of each configuration must be attached (pass it to `create_Pazy`). Following the NASTRAN beam mass model, each mass belongs to the element ending at the beam node nearest to it in the unswept spanwise coordinate. The positions `ηtipMasses` remain relative to the tip node.
 """
-function get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE, :TE), withTuningMass=true, withAttachedMass=true, withCalibrationMass=true, sweptTipMassInertiaCorrection=false)
+function get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE, :TE), withFPSMass=true, withAdapterMass=true, withCalibrationMass=true, sweptTipMassInertiaCorrection=false)
 
     # Validate
     Λdeg = rad2deg(Λ)
@@ -638,86 +615,113 @@ function get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE,
         @assert config in (:baseline, :LE, :TE) "Invalid configuration: $config"
     end
 
-    # Set masses, positions and inertias (in the NASTRAN frame) for the tip masses in the LE and TE configurations
-    tuningMassLE = tuningMassTE = Λis10deg ? 8.7e-3 : 11.3e-3
-    attachedMassLE = attachedMassTE = Λis10deg ? 3.5e-3 : 3.1e-3
-    calibrationMassLE = Λis10deg ? 5e-3 : 4e-3
-    calibrationMassTE = Λis10deg ? 5e-3 : 0e-3
-    tuningMassPosLE = Λis10deg ? [-106.99e-3, 4.87e-3, 0] : [-108.54e-3, 4.65e-3, 0]
-    attachedMassPosLE = Λis10deg ? [-85.69e-3, 4.87e-3, 0] : [-93.93e-3, 4.65e-3, 0]
-    calibrationMassPosLE = Λis10deg ? [0.31e-3, -23.54e-3, 0] : [-83.97e-3, 4.65e-3, 0]
-    tuningMassPosTE = Λis10deg ? [117.61e-3, 4.66e-3, 0] : [110.35e-3, 4.45e-3, 0]
-    attachedMassPosTE = Λis10deg ? [95.31e-3, 4.66e-3, 0] : [90.88e-3, 4.45e-3, 0]
-    calibrationMassPosTE = Λis10deg ? [-26.45e-3, -23.54e-3, 0] : [0e-3, 0e-3, 0]
-    tuningMassInertiaLE = diagm([0, 3.3e-7, 3.3e-7])
-    tuningMassInertiaTE = diagm([0, 3.3e-7, 3.3e-7])
-    attachedMassInertiaLE = zeros(3,3)
-    attachedMassInertiaTE = zeros(3,3)
+    # Set masses, positions and inertias (in the MSC NASTRAN frame) for the tip masses in the LE and TE configurations
+    if Λis10deg
+        fpsMassLE = fpsMassTE = 8.7e-3
+        adapterMassLE = adapterMassTE = 3.5e-3
+        calibrationMassLE = calibrationMassTE = 5e-3
+        fpsMassPosLE = [-106.99e-3, 4.87e-3, 0]
+        fpsMassPosTE = [117.61e-3, 4.66e-3, 0]
+        adapterMassPosLE = [-85.69e-3, 4.87e-3, 0]
+        adapterMassPosTE = [95.31e-3, 4.66e-3, 0]
+        calibrationMassPosLE = [0.31e-3, -23.54e-3, 0]
+        calibrationMassPosTE = [-26.45e-3, -23.54e-3, 0]
+    else 
+        fpsMassLE = fpsMassTE = 11.3e-3
+        adapterMassLE = adapterMassTE = 3.1e-3
+        calibrationMassLE = 7e-3
+        calibrationMassTE = 3e-3
+        fpsMassPosLE = [-108.54e-3, 4.65e-3, 0]
+        fpsMassPosTE = [110.35e-3, 4.45e-3, 0]
+        adapterMassPosLE = [-93.93e-3, 4.65e-3, 0]
+        adapterMassPosTE = [90.88e-3, 4.45e-3, 0]
+        calibrationMassPosLE = [-83.97e-3, 4.65e-3, 0]
+        calibrationMassPosTE = [-83.97e-3, 4.65e-3, 0]
+    end
+    fpsMassInertia = sweptTipMassInertiaCorrection ? 
+                        diagm([0, 3e-5, 3.3e-7]) : 
+                        diagm([0, 3.3e-7, 3.3e-7])
+    adapterMassInertia = sweptTipMassInertiaCorrection ? 
+                         diagm([0, 1.7e-5, 0]) : 
+                         zeros(3,3)
+    fpsMassInertiaLE = fpsMassInertia
+    fpsMassInertiaTE = fpsMassInertia
+    adapterMassInertiaLE = adapterMassInertia
+    adapterMassInertiaTE = adapterMassInertia
     calibrationMassInertiaLE = zeros(3,3)
     calibrationMassInertiaTE = zeros(3,3)
-    if sweptTipMassInertiaCorrection
-        tuningMassInertiaLE[2,2] += 3e-5
-        tuningMassInertiaTE[2,2] += 3e-5
-        attachedMassInertiaLE[2,2] += 2.5e-5
-        attachedMassInertiaTE[2,2] += 1e-5
-    end
 
-    # Rotation tensor from the Nastran frame (x chordwise positive aft, y spanwise unswept, z vertical) to the local beam frame
+    # Rotation tensor from the Nastran frame (x chordwise positive aft, y spanwise unswept, z vertical) to the local beam frame (basis b)
     R = [sin(Λ) cos(Λ) 0; -cos(Λ) sin(Λ) 0; 0 0 1]
+
+    # Element that carries a tip mass at position `posNastran` (relative to the tip beam node, in the Nastran frame): the one ending at the beam node nearest to the mass in the unswept y coordinate, as in the NASTRAN beam mass model
+    nElem = geometrical_properties_Pazy(Λ=Λ)[1]
+    _,yRef,_ = reference_axis_Pazy(Λ; mesh=:nominal)
+    host_element(posNastran) = clamp(argmin(abs.(yRef .- (yRef[end] + posNastran[2]))) - 1, 1, nElem)
 
     # Initialize tip mass and inertia containers for each configuration
     tipMasses = Vector{Vector{Float64}}(undef,length(configs))
     ηtipMasses = Vector{Vector{Vector{Float64}}}(undef,length(configs))
     tipMassesInertias = Vector{Vector{Matrix{Float64}}}(undef,length(configs))
+    tipMassesElementIDs = Vector{Vector{Int}}(undef,length(configs))
 
     # Loop over each configuration and populate the tip mass, position, and inertia arrays, rotating the positions and inertias to the local beam frame
     for (i,config) in enumerate(configs)
         m = Vector{Float64}()
         η = Vector{Vector{Float64}}()
         I = Vector{Matrix{Float64}}()
+        elementIDs = Vector{Int}()
         if config == :baseline
             push!(m, 0.0)
             push!(η, zeros(3))
             push!(I, zeros(3,3))
+            push!(elementIDs, nElem)
         elseif config == :LE
-            if withTuningMass
-                push!(m, tuningMassLE)
-                push!(η, R*tuningMassPosLE)
-                push!(I, R*tuningMassInertiaLE*R')
+            if withFPSMass
+                push!(m, fpsMassLE)
+                push!(η, R*fpsMassPosLE)
+                push!(I, R*fpsMassInertiaLE*R')
+                push!(elementIDs, host_element(fpsMassPosLE))
             end
-            if withAttachedMass
-                push!(m, attachedMassLE)
-                push!(η, R*attachedMassPosLE)
-                push!(I, R*attachedMassInertiaLE*R')
+            if withAdapterMass
+                push!(m, adapterMassLE)
+                push!(η, R*adapterMassPosLE)
+                push!(I, R*adapterMassInertiaLE*R')
+                push!(elementIDs, host_element(adapterMassPosLE))
             end
             if withCalibrationMass
                 push!(m, calibrationMassLE)
                 push!(η, R*calibrationMassPosLE)
                 push!(I, R*calibrationMassInertiaLE*R')
+                push!(elementIDs, host_element(calibrationMassPosLE))
             end
         elseif config == :TE
-            if withTuningMass
-                push!(m, tuningMassTE)
-                push!(η, R*tuningMassPosTE)
-                push!(I, R*tuningMassInertiaTE*R')
+            if withFPSMass
+                push!(m, fpsMassTE)
+                push!(η, R*fpsMassPosTE)
+                push!(I, R*fpsMassInertiaTE*R')
+                push!(elementIDs, host_element(fpsMassPosTE))
             end
-            if withAttachedMass
-                push!(m, attachedMassTE)
-                push!(η, R*attachedMassPosTE)
-                push!(I, R*attachedMassInertiaTE*R')
+            if withAdapterMass
+                push!(m, adapterMassTE)
+                push!(η, R*adapterMassPosTE)
+                push!(I, R*adapterMassInertiaTE*R')
+                push!(elementIDs, host_element(adapterMassPosTE))
             end
             if withCalibrationMass
                 push!(m, calibrationMassTE)
                 push!(η, R*calibrationMassPosTE)
                 push!(I, R*calibrationMassInertiaTE*R')
+                push!(elementIDs, host_element(calibrationMassPosTE))
             end
         end
         tipMasses[i] = m
         ηtipMasses[i] = η
         tipMassesInertias[i] = I
+        tipMassesElementIDs[i] = elementIDs
     end
 
-    return tipMasses[1:length(configs)], ηtipMasses[1:length(configs)], tipMassesInertias[1:length(configs)]
+    return tipMasses, ηtipMasses, tipMassesInertias, tipMassesElementIDs
 
 end
 export get_sweptPazy_tip_inertias_from_baseline
@@ -796,69 +800,75 @@ Returns the wing model and geometrical properties
 - `aeroSolver::AeroSolver`: aerodynamic solver
 - `gustSolver::GustAeroSolver`: indicial gust loads solver
 - `derivationMethod::DerivationMethod`: method for aerodynamic derivatives
-- `withSkin::Bool`: flag for skin on
-- `sweepStructuralCorrections::Bool`: flag to apply ad hoc structural corrections on sectional stiffness matrix with sweep angle
 - `updateAirfoilParameters::Bool`: flag to update airfoil parameters with airspeed
 - `upright::Bool`: flag to set the wing in the upright position
 - `airfoil::Airfoil`: airfoil section
 - `pitchAngle::Real`: pitch angle at the root [rad]
 - `sweepAngle::Real`: sweep angle [rad]
 - `hasTipCorrection::Bool`: flag for aerodynamic tip correction 
-- `GAy::Real`: shear stiffness in the x₂ direction
-- `GAz::Real`: shear stiffness in the x₃ direction
 - `altitude::Real`: altitude
-- `gravity::Real`: acceleration of gravity (in the negative x₃ direction of inertial basis I)
+- `gravityVector::Real`: acceleration of gravity vector (resolved in the inertial basis I)
 - `airspeed::Union{Real,<:Function}`: airspeed
 - `smallAngles::Bool`: flag for small angles approximation
 - `tipLossType::String`: tip loss function type
 - `tipLossFunctionIsAirspeedDependent::Bool`: flag to update the tip loss function with the instantaneous airspeed along the problem
+- `mesh::Symbol`: beam mesh, can be `:nominal` (nodes at the root, at the ribs and at the tip of the spar) or `:refined` (approximately twice as many elements, with a node at the middle of each element of the nominal mesh)
+- `useAePW3Matrices::Bool`: flag to use the original sectional stiffness and inertia matrices of the straight wing (with skin, from https://github.com/UM-A2SRL/AePW3-LDWG, with shear stiffnesses of 3e6 N, and with the reference axis at 0.44096 of the chord) instead of those obtained from the condensation of the finite element model. Only available for the straight wing with `mesh=:nominal` (default: `false`)
+- `withWingtipRod::Bool`: flag to include the wingtip rod (its inertia is lumped in the tip node of the straight wing's beam mass model). If `false`, the wing has no rod, and its inertia and stiffness matrices are read from `test/referenceData/PazyNoRod` (least squares stiffness matrices only). Only available for the straight wing (default: `true`)
+- `rootTorsionCorr::Bool`: flag to use the sectional stiffness matrices with the correction of the root torsional stiffness (files `S0_stiffness_matrices_<mesh>mesh_<tip>_corr.csv` in `test/referenceData/Pazy`, instead of those of the condensation of the finite element model, `S0_stiffness_matrices_<mesh>mesh_<tip>.csv`). The rigid clamp of the Nastran model restrains the warping and stiffens the root in torsion, and the real clamp is more flexible. The correction reduces S44 of the root element (and also changes the bending-torsion coupling S45 = S54 for the nominal mesh), calibrated so that the flutter onset speeds of the hump mode agree with the onset (up) and onset (down) speeds measured by Drachinski et al. It reduces the frequency of the first torsion mode by about 1% (default: `true`). Only available for the straight wing with the tip rod (S0), and ignored for other configurations and for `useAePW3Matrices=true`
+- `beamWingtipRod::Bool`: flag to model the wingtip rod as a beam attached to the tip of the wing (`true`), instead of lumping its inertia in the tip node (`false`, the conventional model). Available for the straight wing (S0) and for the wing with 10 degrees of sweep (S10), and requires `withWingtipRod=true`. The wing beam then has the inertia data of the wing without the rod (`test/referenceData/PazyNoRod`), and the stiffness data of the Nastran model with the flexible tip rod (`flextip`) for the straight wing, and of the one with the rigid tip rod for the S10, and the model has two more beams, in this order: a rigid link, from the tip node of the wing to the attachment point of the rod, and the rod (flexible, with the properties of the Nastran models), connected to the end of the link. The part of the rod glued to the wing along the chord is rigid (see `wingtip_rod_Pazy` for its limits, which for the straight wing are not the same for the bending in the plane of the wing and out of it), and the parts beyond it are in cantilever. For the straight wing, the rod carries the calibration masses. For the S10, the calibration mass is part of the wing; in the `:LE` and `:TE` configurations of `sweptTipMassConfig`, the rod is extended with an element up to the center of mass of the FPS weights, which is connected to the rod by a hinge (the breaking beam) with springs of the stiffness of the breaking beam in torsion and bending, and has the masses of the fixed adapter and of the FPS weights (default: `false`)
+- `nElementsWingtipRod::Int`: number of elements of the wingtip rod beam (at least 6 for the straight wing and 4 for the S10), without the element of the FPS weights of the S10 `:LE` and `:TE` configurations. Those in the part of the rod glued to the wing are fixed (4 for the straight wing, which has different rigid parts in the two planes of bending, and 2 for the S10), and the others are distributed over the parts beyond it in proportion to their lengths (default: 12)
 - `tipMasses::Vector{<:Real}`: masses of point inertias added to the tip of the wing
 - `ηtipMasses::Vector{<:Real}`: position vectors of the tip masses relative to the tip of the spar, resolved in the local basis
 - `tipMassesInertias::Vector{<:Matrix{<:Real}}`: mass moment of inertia matrices of the tip masses
+- `tipMassesElementIDs::Union{Nothing,Vector{<:Integer}}`: IDs of the elements to which the tip masses are attached (default: `nothing`, which attaches all tip masses to the last element). The positions `ηtipMasses` are always relative to the tip of the spar, regardless of the element to which each mass is attached
 - `additionalBCs::Vector{BC}`: additional BCs (beyond the clamp)
 - `flightDirection::Vector{<:Real}`: flight direction vector, resolved in basis A
+- `tipLossPitchAngle::Real`: pitch angle at the root used to evaluate the tip loss function [rad] (default: `pitchAngle`). Useful when the angle of attack is set through `flightDirection` instead of `pitchAngle`
 - `gust::Union{Nothing,Gust}`: gust
 - `hinged::Bool`: flag for hinged wing
 - `hingeNode::Union{Nothing,Int}`: hinge node
 - `foldAngle::Union{Nothing,Real}`: fold angle [rad] (for hinge)
 - `flareAngle::Union{Nothing,Real}`: flare angle [rad] (for hinge)
 - `kSpring::Union{Nothing,Real}`: stiffness of the spring around the hinge
-- `useSweptData::Bool`: flag to use the swept wing data for swept wings
-- `sweptTipMassConfig::Symbol`: configuration of the swept tip mass, can be `:baseline`, `:TE` or `:LE`
-- `sweptTipMassInertiaCorrection::Bool`: flag to apply an ad hoc factor of 1.5 on the tip node's torsional inertia for the `:LE` and `:TE` swept tip mass configurations (approximates the GVT torsional frequencies, which are lowered by the tip rod flexibility not captured by the stiffened-tip NASTRAN model from which the swept wing mass data was derived)
+- `sweptTipMassConfig::Symbol`: configuration of the swept tip mass, can be `:baseline`, `:TE` or `:LE` (with `beamWingtipRod=true`, this sets the rod and the masses at its end)
+- `sweptTipMassInertiaCorrection::Bool`: flag to apply an ad hoc factor on the tip node's torsional inertia for the `:LE` and `:TE` swept tip mass configurations (approximates the GVT torsional frequencies, which are lowered by the tip rod flexibility not captured by the stiffened-tip NASTRAN model from which the swept wing mass data was derived)
 """
 function create_Pazy(; 
     aeroSolver::AeroSolver=Indicial(),
     gustSolver::GustAeroSolver=_defaultGustAeroSolver(aeroSolver),
     derivationMethod::DerivationMethod=AD(),
-    withSkin::Bool=true,
-    sweepStructuralCorrections::Bool=false,
     updateAirfoilParameters::Bool=true,
     upright::Bool=false,
     airfoil::Airfoil=deepcopy(NACA0018),
     pitchAngle::Real=0,
     sweepAngle::Real=0,
     hasTipCorrection::Bool=true,
-    GAy::Real=1e10,
-    GAz::Real=GAy,
     altitude::Real=0,
     gravityVector::AbstractVector{<:Real}=[0,0,-standard_atmosphere(altitude).g],
     airspeed::Union{Real,<:Function}=0,
     smallAngles::Bool=false,
     tipLossType::String="Exponential",
     tipLossFunctionIsAirspeedDependent::Bool=false,
+    mesh::Symbol=:nominal,
+    useAePW3Matrices::Bool=false,
+    withWingtipRod::Bool=true,
+    rootTorsionCorr::Bool=true,
+    beamWingtipRod::Bool=false,
+    nElementsWingtipRod::Int=12,
     tipMasses::AbstractVector{<:Real}=zeros(0),
     ηtipMasses::AbstractVector{<:AbstractVector{<:Real}}=Vector{Vector{Float64}}(),
     tipMassesInertias::AbstractVector{<:AbstractMatrix{<:Real}}=Vector{Matrix{Float64}}(),
+    tipMassesElementIDs::Union{Nothing,AbstractVector{<:Integer}}=nothing,
     additionalBCs::Vector{BC}=Vector{BC}(),
     flightDirection::AbstractVector{<:Real}=a2,
+    tipLossPitchAngle::Real=pitchAngle,
     gust::Union{Nothing,Gust}=nothing,
     hinged::Bool=false,
     hingeNode::Union{Nothing,Int} = hinged ? 14 : nothing,
     foldAngle::Union{Missing,Real}=missing,
     flareAngle::Union{Nothing,Real} = hinged ? 0 : nothing,
     kSpring::Union{Nothing,Real} = hinged ? 1e-5 : nothing,
-    useSweptData::Bool=false,
     sweptTipMassConfig::Symbol=:baseline,
     sweptTipMassInertiaCorrection::Bool=false,
     )
@@ -866,9 +876,8 @@ function create_Pazy(;
     # Validate
     @assert altitude >= 0 "altitude must be non-negative"
     @assert length(gravityVector) == 3 "gravityVector must be a 3-element vector"
-    @assert GAy >= 1e8 "GAy must be at least 1e8"
-    @assert GAz >= 1e8 "GAz must be at least 1e8"
-    @assert any(isapprox.(rad2deg(sweepAngle), [0,10,20,30]; atol=1e-8)) "sweepAngle must be 0, 10, 20 or 30 degrees"
+    @assert any(isapprox.(rad2deg(sweepAngle), [0,10,20]; atol=1e-8)) "sweepAngle must be 0, 10 or 20 degrees"
+    validate_mesh_Pazy(mesh)
     @assert length(tipMasses) == length(ηtipMasses) == length(tipMassesInertias) "tipMasses, ηtipMasses, and tipMassesInertias must have the same length"
     @assert all(tipMasses .>= 0) "tip masses must be non-negative"
     for ηtipMass in ηtipMasses
@@ -876,6 +885,11 @@ function create_Pazy(;
     end
     for tipMassInertia in tipMassesInertias
         @assert size(tipMassInertia) == (3,3) "each tipMassInertia must be a 3x3 matrix"
+    end
+    @assert isnothing(tipMassesElementIDs) || length(tipMassesElementIDs) == length(tipMasses) "tipMassesElementIDs must have the same length as tipMasses"
+    if !isnothing(tipMassesElementIDs)
+        nElem = first(geometrical_properties_Pazy(mesh=mesh))
+        @assert all(1 .<= tipMassesElementIDs .<= nElem) "tip mass element IDs must be between 1 and $nElem"
     end
     if hasTipCorrection
         @assert tipLossType in ["Exponential","VLM-undef","VLM-def"] || occursin("FixedExponential", tipLossType) "tipLossType must be one of \"Exponential\", \"VLM-undef\", \"VLM-def\", or \"FixedExponential-<value>\""
@@ -889,6 +903,18 @@ function create_Pazy(;
         @assert kSpring >= 0 "kSpring must be non-negative"
     end
     @assert sweptTipMassConfig in [:baseline, :TE, :LE] "sweptTipMassConfig must be either :baseline, :TE or :LE"
+    if useAePW3Matrices
+        @assert sweepAngle ≈ 0 && mesh == :nominal "the original AePW3 matrices are only available for the straight wing with mesh=:nominal"
+    end
+    if beamWingtipRod
+        @assert withWingtipRod "beamWingtipRod=true requires withWingtipRod=true"
+        @assert (sweepAngle ≈ 0 || rad2deg(sweepAngle) ≈ 10) && !useAePW3Matrices "the wingtip rod modeled as a beam is only available for the straight wing and the wing with 10 degrees of sweep, and not with the original AePW3 matrices"
+        @assert !sweptTipMassInertiaCorrection "sweptTipMassInertiaCorrection cannot be used with beamWingtipRod=true, as the rod flexibility is modeled"
+        @assert nElementsWingtipRod >= 4 "nElementsWingtipRod must be at least 4"
+    end
+    if !withWingtipRod
+        @assert sweepAngle ≈ 0 && !useAePW3Matrices "the wing without the tip rod is only available for the straight wing, and not with the original AePW3 matrices"
+    end
 
     # Set airspeed as function of time
     if airspeed isa Real
@@ -904,42 +930,23 @@ function create_Pazy(;
     update_all_airfoil_parameters!(airfoil,airspeed(0)/atmosphere.a)
 
     # Tip loss function, as a function of the airspeed
-    tipLossFunction = U -> tip_loss_function_Pazy(tipLossType,pitchAngle,U,sweepAngle)
+    tipLossFunction = U -> tip_loss_function_Pazy(tipLossType,tipLossPitchAngle,U,sweepAngle)
 
     # Fixed geometrical and discretization properties
-    if useSweptData
-        nElem,L,chord,normSparPos,nodalPositions = geometrical_properties_Pazy(Λ=sweepAngle)
-    else
-        nElem,L,chord,normSparPos,nodalPositions = geometrical_properties_Pazy()
-    end
+    nElem,L,chord,normSparPos,nodalPositions = geometrical_properties_Pazy(mesh=mesh,Λ=sweepAngle,useAePW3Matrices=useAePW3Matrices)
 
     # Stiffness matrices
-    if useSweptData && rad2deg(sweepAngle) ≈ 10
-        S = stiffness_matrices_sweptPazy10deg(
-            GAy=GAy,
-            GAz=GAz,
-        )
+    S = if useAePW3Matrices
+        stiffness_matrices_PazyS0_AePW3()
     else
-        S = stiffness_matrices_Pazy(
-        withSkin=withSkin,
-        sweepStructuralCorrections=sweepStructuralCorrections,
-        GAy=GAy,
-        GAz=GAz,
-        Λ=sweepAngle
-        )
+        stiffness_matrices_Pazy(sweepAngle; mesh=mesh, withWingtipRod=withWingtipRod, tip=(beamWingtipRod && sweepAngle ≈ 0) ? :flextip : :rigidtip, rootTorsionCorr=rootTorsionCorr && sweepAngle ≈ 0 && withWingtipRod)
     end
 
     # Inertia matrices
-    if useSweptData && sweepAngle > 0
-        I = if rad2deg(sweepAngle) ≈ 10
-            inertia_matrices_sweptPazy10deg(config=sweptTipMassConfig,applyTipInertiaCorrection=sweptTipMassInertiaCorrection)
-        elseif rad2deg(sweepAngle) ≈ 20
-            inertia_matrices_sweptPazy20deg(config=sweptTipMassConfig,applyTipInertiaCorrection=sweptTipMassInertiaCorrection)
-        else # No data available, using straight Pazy inertia matrices
-            inertia_matrices_Pazy(withSkin=withSkin)
-        end
+    I = if useAePW3Matrices
+        inertia_matrices_Pazy(sweepAngle; mesh=:nominal, file=Pazy_S0_AePW3_data_file(:inertia))
     else
-        I = inertia_matrices_Pazy(withSkin=withSkin)
+        inertia_matrices_Pazy(sweepAngle; mesh=mesh, config=sweptTipMassConfig, applyTipInertiaCorrection=sweptTipMassInertiaCorrection, withWingtipRod=withWingtipRod && !beamWingtipRod)
     end
 
     # Rotation parametrization and rotation parameters from basis A to basis b(0)
@@ -968,7 +975,7 @@ function create_Pazy(;
         )
 
     # Wing beam
-    beam = create_Beam(
+    mainWing = create_Beam(
         name="wingSpar",
         length=L,
         nElements=nElem,
@@ -981,26 +988,39 @@ function create_Pazy(;
         hingedNodesDoF= hinged ? [trues(3)] : Vector{Vector{Bool}}()
         )
 
-    # Tip masses
-    for (m, η, I) in zip(tipMasses, ηtipMasses, tipMassesInertias)
+    # Tip masses (attached to the last element unless specified otherwise)
+    elementIDsTipMasses = isnothing(tipMassesElementIDs) ? 
+                          fill(nElem,length(tipMasses)) : 
+                          tipMassesElementIDs
+    for (m, η, I, elementID) in zip(tipMasses, ηtipMasses, tipMassesInertias, elementIDsTipMasses)
+        # Position of the tip mass relative to the element's midpoint: distance from the tip to the element's end plus half of its length
+        ΔL = L*(nodalPositions[elementID+1]-nodalPositions[elementID])
+        tipToElementMidpoint = L*(nodalPositions[end]-nodalPositions[elementID+1]) + ΔL/2
         tipInertia = create_PointInertia(
             mass=m,
-            η=η+[L/2*(nodalPositions[end]-nodalPositions[end-1]), 0, 0],
+            η=η+[tipToElementMidpoint, 0, 0],
             inertiaMatrix=I
             )
-        add_point_inertia_to_beam!(beam=beam, elementID=nElem, pointInertia=tipInertia)
+        add_point_inertia_to_beam!(beam=mainWing, elementID=elementID, pointInertia=tipInertia)
+    end
+
+    # Wingtip rod modeled as beams (rigid link and rod, with their connections to the wing)
+    beams = [mainWing]
+    connections = Tuple{Pair{Beam,Beam},Pair{Int,Int}}[]
+    if beamWingtipRod
+        beams,connections = create_wingtip_rod_beams_Pazy(mainWing,nElem,sweepAngle,sweptTipMassConfig,nElementsWingtipRod)
     end
 
     # Update beam of additional BCs, if applicable
     for BC in additionalBCs
-        reset_BC_beam!(BC,beam)
+        reset_BC_beam!(BC,mainWing)
     end
     BCs = additionalBCs
 
     # Add root clamp to BCs
     clamp = create_BC(
         name="clamp",
-        beam=beam,
+        beam=mainWing,
         node=1,
         conditions=Dict(:u1A=>0,:u2A=>0,:u3A=>0,:p1A=>0,:p2A=>0,:p3A=>0)
         )
@@ -1017,16 +1037,16 @@ function create_Pazy(;
         pHValue = !isnothing(foldAngle) ? 4*tan(foldAngle/4) : missing
         # Set hinge axis constraint
         hingeAxisConstraint = create_HingeAxisConstraint(
-                                  beam=beam,
+                                  beam=mainWing,
                                   localHingeAxis=localHingeAxis,
                                   pHValue=pHValue
                                   )
         # Springs around hinge
         if kSpring > 0
             spring = create_Spring(kp=kSpring)
-            add_spring_to_beams!(beams=[beam,beam],spring=deepcopy(spring),nodesLocalIDs=[hingeNode-1,hingeNode+1])
-            add_spring_to_beams!(beams=[beam,beam],spring=deepcopy(spring),nodesLocalIDs=[hingeNode-1,hingeNode+1],p=[π/2,0,0])
-            add_spring_to_beams!(beams=[beam,beam],spring=deepcopy(spring),nodesLocalIDs=[hingeNode-1,hingeNode+1],p=[0,π/2,0])
+            add_spring_to_beams!(beams=[mainWing,mainWing],spring=deepcopy(spring),nodesLocalIDs=[hingeNode-1,hingeNode+1])
+            add_spring_to_beams!(beams=[mainWing,mainWing],spring=deepcopy(spring),nodesLocalIDs=[hingeNode-1,hingeNode+1],p=[π/2,0,0])
+            add_spring_to_beams!(beams=[mainWing,mainWing],spring=deepcopy(spring),nodesLocalIDs=[hingeNode-1,hingeNode+1],p=[0,π/2,0])
         end
     end
     hingeAxisConstraints = hinged ? 
@@ -1036,7 +1056,8 @@ function create_Pazy(;
     # Model
     pazy = create_Model(
         name="Pazy",
-        beams=[beam],
+        beams=beams,
+        connections=connections,
         BCs=BCs,
         gravityVector=gravityVector,
         v_A=v_A,

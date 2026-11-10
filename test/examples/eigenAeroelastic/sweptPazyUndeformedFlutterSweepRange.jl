@@ -1,22 +1,22 @@
 using AeroBeams
 
 # Sweep angle range [rad]
-ΛRange = deg2rad.([0,10,20,30])
+ΛRange = deg2rad.([0,10,20])
 
 # Airspeed range [m/s]
-URange = collect(0:1:120)
+URange = collect(0:1:100)
 
 # Root pitch angle [rad]
 θ = deg2rad(0)
+
+# Tip mass configuration (select between :baseline, :TE or :LE)
+sweptTipMassConfig = :TE
 
 # Flag for tip correction
 hasTipCorrection = true
 
 # Tip correction function type
 tipLossType = "VLM-def"
-
-# Flag for ad hoc corrections on sectional stiffness matrix
-sweepStructuralCorrections = true
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -31,14 +31,14 @@ upright = false
 g = 0
 
 # Geometric properties
-nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+nElem,L,_ = geometrical_properties_Pazy()
 
 # Number of modes to track
 nModes = 3
 
 # Eigensolver method and minimum number of eigenvalues to be computed
 eigenmethod = :krylovkit
-nev = 40
+nev = 50
 
 # Initialize outputs
 eigensols = Array{EigenSolution}(undef,length(ΛRange),length(URange))
@@ -55,7 +55,7 @@ for (i,Λ) in enumerate(ΛRange)
         # Display progress
         println("Solving for Λ = $(round(Int,rad2deg(Λ))) deg, U = $U m/s")
         # Model
-        model,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,sweepAngle=Λ,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],sweepStructuralCorrections=sweepStructuralCorrections)
+        model,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,sweepAngle=Λ,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],sweptTipMassConfig=sweptTipMassConfig)
         # Create and solve problem
         problem = create_EigenProblem(model=model,eigenmethod=eigenmethod,nev=nev,x0=x0)
         solve!(problem)
@@ -98,7 +98,7 @@ gr()
 # V-g-f
 for (i,Λ) in enumerate(ΛRange)
     Λstr = string(round(Int,rad2deg(Λ)))
-    plt_Vf = plot(ylabel="Frequency [Hz]", xlims=[0,120], ylims=[0,50], xticks=0:10:120, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legendposition=(0.75,0.95))
+    plt_Vf = plot(ylabel="Frequency [Hz]", xlims=[0,100], ylims=[0,50], xticks=0:10:100, tickfont=font(ts), guidefont=font(fs), legendfontsize=lfs, legendposition=(0.75,0.95))
     if i==1
         plot!([NaN], [NaN], c=:black, lw=lw, label="AeroBeams")
         scatter!([NaN], [NaN], c=:black, ms=ms, msw=msw, label="Nastran (Technion)")
@@ -119,7 +119,7 @@ for (i,Λ) in enumerate(ΛRange)
         scatter!(undef_freq_Lambda30_NastranTechnion[1,33:63],undef_freq_Lambda30_NastranTechnion[2,33:63], c=modeColors[2], ms=ms, msw=msw, label=false)  
         scatter!(undef_freq_Lambda30_NastranTechnion[1,65:end],undef_freq_Lambda30_NastranTechnion[2,65:end], c=modeColors[3], ms=ms, msw=msw, label=false)  
     end
-    plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,120], ylims=[-0.15,0.075], xticks=0:10:120, yticks=-0.1:0.05:0.1, tickfont=font(ts), guidefont=font(fs))
+    plt_Vg = plot(xlabel="Airspeed [m/s]", ylabel="Damping Ratio", xlims=[0,100], ylims=[-0.15,0.075], xticks=0:10:100, yticks=-0.1:0.05:0.1, tickfont=font(ts), guidefont=font(fs))
     plot!(URange, zeros(length(URange)), c=:black, lw=lw, ls=:dash, label=false)
     for mode in 1:nModes
         plot!(URange, dampsOsc[i][mode,:]./freqsOsc[i][mode,:], c=modeColors[mode], lw=lw, label=false)

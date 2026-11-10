@@ -193,21 +193,6 @@ relPath = "/test/outputs/figures/BWBflutter"
 absPath = string(pwd(),relPath)
 mkpath(absPath)
 
-# Mode shapes at first flutter condition
-iFlutter = round(Int,flutterInds[1])+1
-modesPlot = plot_mode_shapes(eigenProblem[iFlutter],modeShapes=modeShapesOsc[:,iFlutter],modeNumbers=collect(1:nModes),scale=1,view=(45,30),element2centralize=11,legendPos=(0.6,0.95),modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/BWBflutter_modeShapes.pdf"))
-display(modesPlot)
-
-# Flutter mode shape animation at first flutter mode
-flutterModeAnim = plot_mode_shapes_animation(eigenProblem[iFlutter],modeShapes=modeShapesOsc[flutterModes[1]:flutterModes[1],iFlutter],modeNumbers=[flutterModes[1]],nFramesPerCycle=21,fps=20,scale=2,view=(45,30),element2centralize=11,legendPos=:top,plotBCs=false,plotAxes=false,displayProgress=true,save=true,savePath=string(relPath,"/BWBflutter_flutterMode.gif"))
-display(flutterModeAnim)
-
-# Each mode shape animation at lowest flutter speed
-for mode in 1:nModes
-    modeAnim = plot_mode_shapes_animation(eigenProblem[iFlutter],modeShapes=modeShapesOsc[mode:mode,iFlutter],modeNumbers=[mode],nFramesPerCycle=21,fps=20,scale=2,view=(45,30),element2centralize=11,legendPos=:top,plotBCs=false,plotAxes=false,displayProgress=true,save=true,savePath=string(relPath,"/BWBflutter_mode",mode,".gif"))
-    display(modeAnim)
-end
-
 # Plot configurations
 modeColors = cgrad(:rainbow, nModes, categorical=true)
 ts = 10
@@ -219,6 +204,21 @@ msw = 0
 fps = 5
 DPI = 300
 gr()
+
+# Mode shapes at first flutter condition
+iFlutter = round(Int,flutterInds[1])+1
+modesPlot = plot_mode_shapes(eigenProblem[iFlutter],modeShapes=modeShapesOsc[:,iFlutter],modeNumbers=collect(1:nModes),scale=1,view=(45,30),element2centralize=11,legendPos=(0.6,0.95),modalColorScheme=:rainbow,save=true,savePath=string(relPath,"/BWBflutter_modeShapes.pdf"))
+display(modesPlot)
+
+# Flutter mode shape animation at first flutter mode
+flutterModeAnim = plot_mode_shapes_animation(eigenProblem[iFlutter],modeShapes=modeShapesOsc[flutterModes[1]:flutterModes[1],iFlutter],modeNumbers=[flutterModes[1]],nFramesPerCycle=21,fps=20,scale=2,view=(45,30),element2centralize=11,legendPos=:top,plotBCs=false,plotAxes=false,displayProgress=true,save=true,savePath=string(relPath,"/BWBflutter_flutterMode.gif"))
+display(flutterModeAnim)
+
+# Each mode shape animation at lowest flutter speed
+for mode in 1:nModes
+    modeAnim = plot_mode_shapes_animation(eigenProblem[iFlutter],modeShapes=modeShapesOsc[mode:mode,iFlutter],modeNumbers=[mode],modalColorScheme=[modeColors[mode]],nFramesPerCycle=21,fps=20,scale=2,view=(45,30),element2centralize=11,legendPos=:top,plotBCs=false,plotAxes=false,displayProgress=true,save=true,savePath=string(relPath,"/BWBflutter_mode",mode,".gif"))
+    display(modeAnim)
+end
 
 # Trim root angle of attack vs airspeed
 plt1 = plot(xlabel="Airspeed [m/s]", ylabel="Trim root AoA [deg]", xlims=extrema(URange), tickfont=font(ts), guidefont=font(fs), legend=:topright, legendfontsize=lfs, xticks=30:10:160)

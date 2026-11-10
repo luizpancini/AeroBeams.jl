@@ -58,11 +58,6 @@ freqsNormAnalytical = [2.0288; 4.9132; 7.9787; 11.086]
 ϵ_rel = freqsNorm./freqsNormAnalytical .- 1.0
 println("Relative frequency errors: $(round.(100ϵ_rel, sigdigits=2)) %")
 
-# Set paths
-relPath = "/test/outputs/figures/cantileverWithTipAxialSpringEigen"
-absPath = string(pwd(),relPath)
-mkpath(absPath)
-
 ## Plots
 # Set paths
 relPath = "/test/outputs/figures/cantileverWithTipAxialSpringEigen"

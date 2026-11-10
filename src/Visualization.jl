@@ -941,9 +941,10 @@ function _select_modes(problem::EigenProblem, nModes, modes2plot, modeLabels, mo
     @assert isnothing(modeLabels) || length(modeLabels) == length(modes) "set one label for each of the $(length(modes)) modes plotted"
     @assert ismissing(numberOfColors) || numberOfColors >= length(modes) "set numberOfColors as at least the number of modes plotted"
 
-    # Colors by position among the modes plotted or, if the number of colors is given, by mode number
+    # Colors by position among the modes plotted or, if the number of colors is given, by mode number. A vector of colors is used as is
     nColors = ismissing(numberOfColors) ? length(modes) : numberOfColors
-    colors = cgrad(modalColorScheme, nColors, categorical=true)
+    colors = modalColorScheme isa AbstractVector ? modalColorScheme : cgrad(modalColorScheme, nColors, categorical=true)
+    @assert length(colors) >= nColors "set one color for each of the $nColors colors"
 
     # Labels with the frequency (and damping, if not null)
     unit = problem.model.units.frequency
@@ -990,7 +991,7 @@ Plots the mode shapes of the model in the given eigenproblem, over its steady co
 - `plotSteady::Bool`: flag to plot steady solution
 - `lw::Real`: linewidth
 - `colorSteady`: color for steadily deformed assembly
-- `modalColorScheme`: color scheme for mode shapes
+- `modalColorScheme`: color scheme for mode shapes, or a vector with one color per mode (e.g., `[colors[mode]]` for a single mode)
 - `numberOfColors::Union{Missing,Int}`: number of colors in legend color gradient (if given, the modes are colored by their numbers)
 - `plotAxes::Bool`: flag to plot axes
 - `plotGrid::Bool`: flag to plot grid
@@ -1047,7 +1048,7 @@ Plots the animation of the mode shapes of the model in the given eigenproblem, o
 - `plotSteady::Bool`: flag to plot steady solution
 - `lw::Real`: linewidth
 - `colorSteady`: color for steadily deformed assembly
-- `modalColorScheme`: color scheme for mode shapes
+- `modalColorScheme`: color scheme for mode shapes, or a vector with one color per mode (e.g., `[colors[mode]]` for a single mode)
 - `numberOfColors::Union{Missing,Int}`: number of colors in legend color gradient (if given, the modes are colored by their numbers)
 - `plotAxes::Bool`: flag to plot axes
 - `plotGrid::Bool`: flag to plot grid

@@ -1,27 +1,13 @@
 using AeroBeams
 
-# Geometric properties
-nElem,L,chord,normSparPos = geometrical_properties_Pazy()
-
-# Tip mass configuration (select between :none, :TE or :LE)
-tipMassConfig = :TE
-
-# Corresponding tip mass and its position over the chord
-if tipMassConfig == :none
-    tipMass = 0
-    tipMassPos = 0
-elseif tipMassConfig == :TE
-    tipMass = 15.5e-3
-    tipMassPos = -chord*(1-normSparPos) - 0.01 # Assume about 1 cm behind TE
-elseif tipMassConfig == :LE
-    tipMass = 15.5e-3
-    tipMassPos = chord*normSparPos + 0.01 # Assume about 1 cm ahead of LE
-else
-    error("Select tipMassConfig as :none, :TE or :LE")
-end
-
 # Sweep angle [rad]
 Λ = deg2rad(20)
+
+# Geometric properties
+nElem,L,_ = geometrical_properties_Pazy(Λ=Λ)
+
+# Tip mass configuration (select between :baseline, :TE or :LE)
+sweptTipMassConfig = :TE
 
 # Root pitch angle range [rad]
 θRange = deg2rad.([0,1,3,5,7,10])
@@ -35,8 +21,8 @@ hasTipCorrection = true
 # Tip correction function type
 tipLossType = "VLM-def"
 
-# Flag for ad hoc corrections on sectional stiffness matrix
-sweepStructuralCorrections = true
+# Flag for ad hoc correction of torsional inertia of wingtip rod
+sweptTipMassInertiaCorrection = true
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -69,7 +55,7 @@ for (i,θ) in enumerate(θRange)
         # Display progress
         println("Solving for θ = $(round(Int,rad2deg(θ))) deg, U = $U m/s")
         # Model
-        sweptPazyFlutterPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,sweepAngle=Λ,pitchAngle=θ,airspeed=U,sweepStructuralCorrections=sweepStructuralCorrections,tipMasses=[tipMass],ηtipMasses=[[0;tipMassPos;0]],tipMassesInertias=[zeros(3,3)])
+        sweptPazyFlutterPitchRange,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,sweepAngle=Λ,pitchAngle=θ,airspeed=U,sweptTipMassConfig=sweptTipMassConfig,sweptTipMassInertiaCorrection=sweptTipMassInertiaCorrection)
         # Create and solve problem
         problem = create_EigenProblem(model=sweptPazyFlutterPitchRange,eigenmethod=eigenmethod,nev=nev,x0=x0)
         solve!(problem)

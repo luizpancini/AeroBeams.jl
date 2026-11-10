@@ -1,10 +1,7 @@
 using AeroBeams
 
 # Sweep angle range [rad]
-ΛRange = deg2rad.(0:10:30)
-
-# Flag for ad hoc sectional stiffness corrections with sweep angle
-sweepStructuralCorrections = true
+ΛRange = deg2rad.(0:10:20)
 
 # Gravity vector
 g = zeros(3)
@@ -27,7 +24,7 @@ eigensols = Array{EigenSolution}(undef,length(ΛRange))
 for (i,Λ) in enumerate(ΛRange)
     display("Solving for Λ = $(round(Int,rad2deg(Λ))) deg")
     # Model
-    sweptPazyModal,_ = create_Pazy(sweepAngle=Λ,upright=upright,gravityVector=g,sweepStructuralCorrections=sweepStructuralCorrections)
+    sweptPazyModal,_ = create_Pazy(sweepAngle=Λ,upright=upright,gravityVector=g)
     # Create and solve problem
     problem[i] = create_EigenProblem(model=sweptPazyModal,eigenmethod=eigenmethod,nev=nev)
     solve!(problem[i])
@@ -49,7 +46,7 @@ mkpath(absPath)
 
 # Plot 10 deg swept mode shapes
 i2plot = 2
-plt_swept_modeShapes = plot_mode_shapes(problem[i2plot],nModes=nModes,scale=0.2,view=(30,30),legendPos=(-0.25,0.99),save=true,savePath=string(relPath,"/PazySweepAngleRangeModal_modeShapes.pdf"))
+plt_swept_modeShapes = plot_mode_shapes(problem[i2plot],nModes=nModes,scale=1,view=(30,30),legendPos=(0.0,0.99),save=true,savePath=string(relPath,"/PazySweepAngleRangeModal_modeShapes.pdf"))
 display(plt_swept_modeShapes)
 
 # Plot configurations

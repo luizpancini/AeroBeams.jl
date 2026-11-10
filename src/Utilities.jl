@@ -556,6 +556,7 @@ Computes the arithmetic mean of a list of numbers.
 function average(args...)
     return sum(args)/length(args)
 end
+export average
 
 
 """
@@ -1952,7 +1953,7 @@ function moving_average(v::AbstractVector{<:Real}, n::Int)
     for i in 1:length(v)
         start_idx = max(1, i - k + 1)
         end_idx = min(length(v), i + k)
-        result[i] = average(v[start_idx:end_idx])
+        result[i] = average(@view v[start_idx:end_idx])
     end
 
     return result

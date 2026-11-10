@@ -49,6 +49,7 @@ anim = plot_dynamic_deformation(problem,plotAxes=false,plotFrequency=pltFreq,DPI
 display(anim)
 
 # Animated plot of curvature
+using Plots
 gr()
 tSpaced = t[1:pltFreq:end]
 κ2Spaced = κ2[1:pltFreq:end]

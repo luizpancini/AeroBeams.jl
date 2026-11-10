@@ -93,9 +93,34 @@ end
     @test matches_test_data(freqs, "HealyBaselineFFWTModalFree", "freqs.txt")
 end
 
+@testset "Modal analysis of the baseline Healy locked FFWT wing" begin
+    include_example("examples/eigenStructural/HealyLCOFFWTLockedModal.jl")
+    @test matches_test_data(freqs, "HealyLCOFFWTLockedModal", "freqs.txt")
+end
+
+@testset "Modal analysis of the baseline Healy FFWT wing with wingtip removed" begin
+    include_example("examples/eigenStructural/HealyLCOFFWTRemovedModal.jl")
+    @test matches_test_data(freqs, "HealyLCOFFWTRemovedModal", "freqs.txt")
+end
+
 @testset "Modal analyses of the Pazy wing in horizontal and vertical positions" begin
     include_example("examples/eigenStructural/PazyWingModal.jl")
     @test matches_test_data(freqs, "PazyWingModal", "freqs.txt")
+end
+
+@testset "Modal analysis of the Pazy wing with the wingtip rod modeled as a beam" begin
+    include_example("examples/eigenStructural/PazyWingBeamRodModal.jl")
+    @test matches_test_data(freqs, "PazyWingBeamRodModal", "freqs.txt")
+end
+
+@testset "Modal analysis of the Pazy wing without the wingtip rod" begin
+    include_example("examples/eigenStructural/PazyWingNoRodModal.jl")
+    @test matches_test_data(freqs, "PazyWingNoRodModal", "freqs.txt")
+end
+
+@testset "Modal analysis of the Pazy wing with 10 degrees of sweep and the wingtip rod modeled as a beam" begin
+    include_example("examples/eigenStructural/PazyS10BeamRodModal.jl")
+    @test matches_test_data(freqs, "PazyS10BeamRodModal", "freqs.txt")
 end
 
 @testset "Modal analysis of a beam pinned at one end and transversely springed at the other" begin
@@ -116,16 +141,6 @@ end
 @testset "Modal analysis of the undeformed swept Pazy wing" begin
     include_example("examples/eigenStructural/sweptPazyModal.jl")
     @test matches_test_data(freqs, "sweptPazyModal", "freqs.txt")
-end
-
-@testset "Modal analysis of the baseline Healy locked FFWT wing" begin
-    include_example("examples/eigenStructural/HealyLCOFFWTLockedModal.jl")
-    @test matches_test_data(freqs, "HealyLCOFFWTLockedModal", "freqs.txt")
-end
-
-@testset "Modal analysis of the baseline Healy FFWT wing with wingtip removed" begin
-    include_example("examples/eigenStructural/HealyLCOFFWTRemovedModal.jl")
-    @test matches_test_data(freqs, "HealyLCOFFWTRemovedModal", "freqs.txt")
 end
 
 @testset "Modal analysis of the swept Pazy wing with varying tip displacement" begin

@@ -51,7 +51,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Plot displaced beams
-plt_beams = plot_steady_deformations(problem,backendSymbol=:plotlyjs,plotBCs=true,plotUndeformed=false,plotDistLoads=false,plotAxes=true,plotGrid=true,legendEntries=["\$Λ = $(round(Int,rad2deg(Λ))) ^\\circ \$" for Λ in ΛRange],legendPos=:right,view=(80,30),plotLimits=([0,L],[-L*3/4,L/4],[-L/2,L/2]),save=true,savePath=string(relPath,"/beam_shapes.pdf"))
+plt_beams = plot_steady_deformations(problem,backend=:plotlyjs,plotBCs=true,plotUndeformed=false,plotDistLoads=false,plotAxes=true,plotGrid=true,legendEntries=["\$Λ = $(round(Int,rad2deg(Λ))) ^\\circ \$" for Λ in ΛRange],legendPos=:right,view=(80,30),plotLimits=([0,L],[-L*3/4,L/4],[-L/2,L/2]),save=true,savePath=string(relPath,"/beam_shapes.pdf"))
 display(plt_beams)
 
 # Plot configurations

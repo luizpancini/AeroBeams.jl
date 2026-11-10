@@ -6,9 +6,6 @@ URange = vcat(1e-3,0.5:0.5:60)
 # Aerodynamic solver
 aeroSolver = Indicial()
 
-# Flag for skin (wing covering)
-withSkin = false
-
 # Airfoil section
 airfoil = deepcopy(FlatPlate)
 
@@ -52,7 +49,7 @@ for (i,U) in enumerate(URange)
     # Display progress
     println("Solving for U = $U m/s")
     # Model
-    PazyWingFreqsEvolution,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,withSkin=withSkin,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,upright=upright,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],smallAngles=smallAngles)
+    PazyWingFreqsEvolution,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,upright=upright,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],smallAngles=smallAngles)
     # Create and solve problem
     problem = create_EigenProblem(model=PazyWingFreqsEvolution,eigenmethod=eigenmethod,nev=nev,x0=x0)
     solve!(problem)

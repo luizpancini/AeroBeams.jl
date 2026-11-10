@@ -7,16 +7,13 @@ hasTipCorrectionConfig = [false,true,true,true]
 tipLossTypeConfig = ["None","Exponential","VLM-undef","VLM-def"]
 
 # Sweep angle range [rad]
-ΛRange = deg2rad.(vcat(0,10,20,30))
+ΛRange = deg2rad.(vcat(0,10,20))
 
 # Root pitch angle range [rad]
 θRange = deg2rad.(vcat(0,3,5,7))
 
 # Airspeed range [m/s]
 URange = collect(30:1:70)
-
-# Flag for ad hoc corrections on sectional stiffness matrix
-sweepStructuralCorrections = false
 
 # Aerodynamic solver
 aeroSolver = Indicial()
@@ -31,7 +28,7 @@ upright = false
 g = 0
 
 # Geometric properties
-nElem,L,chord,normSparPos = geometrical_properties_Pazy()
+nElem,L,_ = geometrical_properties_Pazy()
 
 # Undeformed nodal positions (vary only with sweep angle and upright position)
 x1_0 = Array{Vector{Float64}}(undef,length(ΛRange))
@@ -68,7 +65,7 @@ for (c,hasTipCorrection,tipLossType) in zip(1:length(tipLossTypeConfig),hasTipCo
                 # Display progress
                 println("Solving for configuration $c, Λ = $(round(Int,rad2deg(Λ))) deg, θ = $(round(Int,rad2deg(θ))) deg, U = $U m/s")
                 # Model
-                model,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,sweepAngle=Λ,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],hasTipCorrection=hasTipCorrection,tipLossType=tipLossType,sweepStructuralCorrections=sweepStructuralCorrections)
+                model,_ = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,sweepAngle=Λ,pitchAngle=θ,airspeed=U,gravityVector=[0,0,-g],hasTipCorrection=hasTipCorrection,tipLossType=tipLossType)
                 # Create and solve problem
                 problem = create_SteadyProblem(model=model,x0=x0)
                 solve!(problem)

@@ -1,22 +1,28 @@
 using AeroBeams
 
 # Airspeed range [m/s]
-URange = vcat(1e-2,0.5:0.5:100)
+URange = vcat(1e-3,1:1:120)
 
 # Aerodynamic solver
 aeroSolver = Indicial()
 
 # Airfoil section
-airfoil = deepcopy(NACA0018)
+airfoil = deepcopy(FlatPlate)
 
 # Flag for upright position
 upright = true
 
 # Root pitch angle [rad]
-θ = deg2rad(5)
+θ = deg2rad(7)
+
+# Mesh: :nominal or :refined
+mesh = :refined
+
+# Flag to use old data matrices from AePW3
+useAePW3Matrices = false
 
 # Initialize model
-PazyWingFlutter,nElem,L,chord,normSparPos = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ)
+PazyWingFlutter,nElem,L,chord,normSparPos = create_Pazy(aeroSolver=aeroSolver,airfoil=airfoil,upright=upright,pitchAngle=θ,mesh=mesh,useAePW3Matrices=useAePW3Matrices)
 
 # Undeformed nodal and midpoint positions
 wing = PazyWingFlutter.beams[1]
@@ -27,8 +33,12 @@ x3_0 = -vcat([vcat(wing.elements[e].assemblyData.r_n1[1],wing.elements[e].assemb
 nModes = 5
 
 # Eigensolver method and minimum number of eigenvalues to be computed
-eigenmethod = :arnoldi
-nev = aeroSolver isa DynamicStallSolver ? 150 : 50
+eigenmethod = :krylovkit
+nev = if aeroSolver isa DynamicStallSolver
+    mesh == :nominal ? 150 : 200
+else
+    mesh == :nominal ? 45 : 65
+end
 
 # Initialize outputs
 problem = Array{EigenProblem}(undef,length(URange))
@@ -69,7 +79,7 @@ freqs,damps,modeShapes,_ = mode_tracking(eigensols)
 rads2Hz!(freqs)
 
 # Get frequencies and dampings of oscillatory modes
-freqsOsc,dampsOsc,modeShapesOsc,_ = filter_tracked_modes(freqs,damps,modeShapes; fmin=1e-1, fmax=150, maxTracks=nModes)
+freqsOsc,dampsOsc,modeShapesOsc,_ = filter_tracked_modes(freqs,damps,modeShapes; fmin=1e-1, maxTracks=nModes)
 
 # Flutter onset and offset speeds, frequencies, modes and tip OOP displacements
 flutterOnsetSpeeds,flutterOnsetFreqs,flutterOnsetModes,flutterOnsetDisp,flutterOffsetSpeeds,flutterOffsetFreqs,flutterOffsetModes,flutterOffsetDisp = find_flutter(URange,freqsOsc,dampsOsc,tip_OOP)
@@ -89,7 +99,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Mode shapes
-modesPlot = plot_mode_shapes(problem[end],modeShapes=modeShapesOsc[:,end],modeNumbers=collect(1:nModes),scale=0.2,legendPos=(0.25,0.98),view=(30,30),save=true,savePath=string(relPath,"/PazyWingFlutter_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(problem[end],modeShapes=modeShapesOsc[:,end],modeNumbers=collect(1:nModes),scale=1,legendPos=(0.25,0.98),view=(30,30),save=true,savePath=string(relPath,"/PazyWingFlutter_modeShapes.pdf"))
 display(modesPlot)
 
 # Plot configurations
@@ -107,7 +117,7 @@ display(plt0)
 savefig(string(absPath,"/PazyWingFlutter_disp.pdf"))
 
 # V-g-f
-plt11 = plot(ylabel="Frequency [Hz]")
+plt11 = plot(ylabel="Frequency [Hz]", ylims=[0,110])
 for mode in 1:nModes
     plot!(URange, freqsOsc[mode,:], c=modeColors[mode], lw=lw,  label=false)
 end
@@ -120,7 +130,7 @@ display(plt1)
 savefig(string(absPath,"/PazyWingFlutter_Vgf.pdf"))
 
 # Frequencies and dampings vs tip OOP displacement
-plt21 = plot(ylabel="Frequency [Hz]")
+plt21 = plot(ylabel="Frequency [Hz]", ylims=[0,110])
 for mode in 1:nModes
     plot!(tip_OOP, freqsOsc[mode,:], c=modeColors[mode], lw=lw,  label=false)
 end

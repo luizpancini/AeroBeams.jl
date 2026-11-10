@@ -111,10 +111,35 @@ include("../examples/eigenStructural/HealyBaselineFFWTModalFree.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/HealyBaselineFFWTModalFree"))
 writedlm("test/newTestDataGenerators/HealyBaselineFFWTModalFree/freqs.txt", test_data_matrix(freqs))
 
+# Modal analysis of the baseline Healy locked FFWT wing
+include("../examples/eigenStructural/HealyLCOFFWTLockedModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyLCOFFWTLockedModal"))
+writedlm("test/newTestDataGenerators/HealyLCOFFWTLockedModal/freqs.txt", test_data_matrix(freqs))
+
+# Modal analysis of the baseline Healy FFWT wing with wingtip removed
+include("../examples/eigenStructural/HealyLCOFFWTRemovedModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/HealyLCOFFWTRemovedModal"))
+writedlm("test/newTestDataGenerators/HealyLCOFFWTRemovedModal/freqs.txt", test_data_matrix(freqs))
+
 # Modal analyses of the Pazy wing in horizontal and vertical positions
 include("../examples/eigenStructural/PazyWingModal.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingModal"))
 writedlm("test/newTestDataGenerators/PazyWingModal/freqs.txt", test_data_matrix(freqs))
+
+# Modal analysis of the Pazy wing with the wingtip rod modeled as a beam
+include("../examples/eigenStructural/PazyWingBeamRodModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingBeamRodModal"))
+writedlm("test/newTestDataGenerators/PazyWingBeamRodModal/freqs.txt", test_data_matrix(freqs))
+
+# Modal analysis of the Pazy wing without the wingtip rod
+include("../examples/eigenStructural/PazyWingNoRodModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyWingNoRodModal"))
+writedlm("test/newTestDataGenerators/PazyWingNoRodModal/freqs.txt", test_data_matrix(freqs))
+
+# Modal analysis of the Pazy wing with 10 degrees of sweep and the wingtip rod modeled as a beam
+include("../examples/eigenStructural/PazyS10BeamRodModal.jl")
+mkpath(string(pwd(),"/test/newTestDataGenerators/PazyS10BeamRodModal"))
+writedlm("test/newTestDataGenerators/PazyS10BeamRodModal/freqs.txt", test_data_matrix(freqs))
 
 # Modal analysis of a beam pinned at one end and transversely springed at the other
 include("../examples/eigenStructural/pinnedSpringedBeamEigen.jl")
@@ -135,16 +160,6 @@ writedlm("test/newTestDataGenerators/straightRotor/freqs.txt", test_data_matrix(
 include("../examples/eigenStructural/sweptPazyModal.jl")
 mkpath(string(pwd(),"/test/newTestDataGenerators/sweptPazyModal"))
 writedlm("test/newTestDataGenerators/sweptPazyModal/freqs.txt", test_data_matrix(freqs))
-
-# Modal analysis of the baseline Healy locked FFWT wing
-include("../examples/eigenStructural/HealyLCOFFWTLockedModal.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/HealyLCOFFWTLockedModal"))
-writedlm("test/newTestDataGenerators/HealyLCOFFWTLockedModal/freqs.txt", test_data_matrix(freqs))
-
-# Modal analysis of the baseline Healy FFWT wing with wingtip removed
-include("../examples/eigenStructural/HealyLCOFFWTRemovedModal.jl")
-mkpath(string(pwd(),"/test/newTestDataGenerators/HealyLCOFFWTRemovedModal"))
-writedlm("test/newTestDataGenerators/HealyLCOFFWTRemovedModal/freqs.txt", test_data_matrix(freqs))
 
 # Modal analysis of the swept Pazy wing with varying tip displacement
 include("../examples/eigenStructural/sweptPazyModalTipDispRange.jl")

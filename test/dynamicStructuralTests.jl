@@ -192,6 +192,12 @@ end
     @test matches_test_data(M2_root, "tipSineLoadedCantilever", "M2_root.txt")
 end
 
+@testset "Dynamic analysis of a cantilever with tip sinusoidal force, with different time integration methods" begin
+    include_example("examples/dynamicStructural/tipSineLoadedCantileverIntegrationMethods.jl")
+    @test matches_test_data(u3_tip, "tipSineLoadedCantileverIntegrationMethods", "u3_tip.txt")
+    @test matches_test_data(M2_root, "tipSineLoadedCantileverIntegrationMethods", "M2_root.txt")
+end
+
 @testset "Dynamic analysis of a cantilever with linearly increasing tip moment" begin
     include_example("examples/dynamicStructural/tipMomentCantileverDynamic.jl")
     @test matches_test_data(κ2, "tipMomentCantileverDynamic", "kappa2.txt")

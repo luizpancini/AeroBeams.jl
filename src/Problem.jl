@@ -1931,7 +1931,6 @@ function initial_static_problem(problem)
     timeCopy = Time(problem.time.timeVector)
     timeCopy.state.Δt = Inf
 
-    # The static problem is not marched in time, so the integration method is not used
     return DynamicProblem(
         model=modelCopy,
         systemSolver=systemSolverCopy,

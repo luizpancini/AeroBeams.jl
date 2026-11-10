@@ -87,7 +87,7 @@ absPath = string(pwd(),relPath)
 mkpath(absPath)
 
 # Mode shapes at highest payload
-modesPlot = plot_mode_shapes(eigenProblem[end],backendSymbol=:gr,element2centralize=15,scale=10,modeShapes=modeShapesOsc[:,end],modeNumbers=collect(1:nModes),view=(30,30),legendPos=:outerright,save=true,savePath=string(relPath,"/heliosFlutterPRange_modeShapes.pdf"))
+modesPlot = plot_mode_shapes(eigenProblem[end],backend=:gr,element2centralize=15,scale=10,modeShapes=modeShapesOsc[:,end],modeNumbers=collect(1:nModes),view=(30,30),legendPos=:outerright,save=true,savePath=string(relPath,"/heliosFlutterPRange_modeShapes.pdf"))
 display(modesPlot)
 
 # Phugoid mode animation at highest payload
