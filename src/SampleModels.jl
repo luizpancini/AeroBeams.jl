@@ -40,7 +40,7 @@ function shear_center_Pazy(Λ)
     elseif isapprox(rad2deg(Λ), 10; atol=1e-8)
         return 0.4470
     else
-        return 0.4400
+        return 0.4565
     end
 
 end
@@ -604,7 +604,7 @@ Get tip masses and inertias for the swept Pazy wing LE and TE configurations fro
 - `tipMassesInertias::Vector{Vector{Matrix{Float64}}}`: tip mass inertias for each configuration
 - `tipMassesElementIDs::Vector{Vector{Int}}`: IDs of the elements to which the tip masses of each configuration must be attached (pass it to `create_Pazy`). Following the NASTRAN beam mass model, each mass belongs to the element ending at the beam node nearest to it in the unswept spanwise coordinate. The positions `ηtipMasses` remain relative to the tip node.
 """
-function get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE, :TE), withFPSMass=true, withAdapterMass=true, withCalibrationMass=true, sweptTipMassInertiaCorrection=false)
+function get_sweptPazy_tip_inertias_from_baseline(; Λ, mesh, configs=(:baseline, :LE, :TE), withFPSMass=true, withAdapterMass=true, withCalibrationMass=true, sweptTipMassInertiaCorrection=false)
 
     # Validate
     Λdeg = rad2deg(Λ)
@@ -639,8 +639,8 @@ function get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE,
         calibrationMassPosTE = [-83.97e-3, 4.65e-3, 0]
     end
     fpsMassInertia = sweptTipMassInertiaCorrection ? 
-                        diagm([0, 3e-5, 3.3e-7]) : 
-                        diagm([0, 3.3e-7, 3.3e-7])
+                     diagm([0, 3e-5, 3.3e-7]) : 
+                     diagm([0, 3.3e-7, 3.3e-7])
     adapterMassInertia = sweptTipMassInertiaCorrection ? 
                          diagm([0, 1.7e-5, 0]) : 
                          zeros(3,3)
@@ -656,7 +656,7 @@ function get_sweptPazy_tip_inertias_from_baseline(; Λ, configs=(:baseline, :LE,
 
     # Element that carries a tip mass at position `posNastran` (relative to the tip beam node, in the Nastran frame): the one ending at the beam node nearest to the mass in the unswept y coordinate, as in the NASTRAN beam mass model
     nElem = geometrical_properties_Pazy(Λ=Λ)[1]
-    _,yRef,_ = reference_axis_Pazy(Λ; mesh=:nominal)
+    _,yRef,_ = reference_axis_Pazy(Λ; mesh=mesh)
     host_element(posNastran) = clamp(argmin(abs.(yRef .- (yRef[end] + posNastran[2]))) - 1, 1, nElem)
 
     # Initialize tip mass and inertia containers for each configuration
