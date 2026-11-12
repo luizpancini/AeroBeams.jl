@@ -11,9 +11,9 @@
 # - `cosΛ`: cosine of the sweep angle
 # - `cosΛ²`: cosine squared of the sweep angle
 # - `csecΛ`: chord times secant of the sweep angle
-# - `Rw`: rotation tensor from the undeformed beam basis b to the undeformed aerodynamic basis w
-# - `RwT`: transpose of Rw
-# - `RwR0`: rotation tensor from the undeformed beam basis b to the undeformed aerodynamic basis w, resolved in basis A
+# - `Rw⁺`: rotation tensor from the undeformed beam basis b to the undeformed aerodynamic basis w, resolved in basis b (and therefore also in B, from the deformed beam basis B to the deformed aerodynamic basis W)
+# - `Rw⁺T`: transpose of Rw⁺
+# - `RwR0`: rotation tensor from basis A to the undeformed aerodynamic basis w, resolved in basis A
 # - `isFlapped`: flag for being flapped (element's midpoint is inside the flapped portion of span)
 # - `Th`: Theodorsen's flap constants
 #
@@ -30,8 +30,8 @@ struct AeroGeometry
     cosΛ²::Float64
     csecΛ::Float64
 
-    Rw::SMatrix{3,3,Float64,9}
-    RwT::SMatrix{3,3,Float64,9}
+    Rw⁺::SMatrix{3,3,Float64,9}
+    Rw⁺T::SMatrix{3,3,Float64,9}
     RwR0::SMatrix{3,3,Float64,9}
 
     isFlapped::Bool
@@ -996,12 +996,12 @@ function get_aero_geometric_properties(surface,R0,x1,x1_norm)
         surface.geometry.φ(x1)
     cosΛ = cos(Λ)
 
-    # Rotation tensor from basis b to basis w and its transpose
-    Rw = SMatrix{3,3,Float64,9}(rotation_tensor_E321([Λ; 0; φ]))
-    RwT = Rw'
-
-    # Rotation tensor from basis A to basis w, resolved in basis A
-    RwR0 = Rw * R0
+    # Rotation tensor from basis b to basis w and its transpose, resolved in basis b
+    Rw⁺ = SMatrix{3,3,Float64,9}(rotation_tensor_E321([Λ; 0; φ]))
+    Rw⁺T = Rw⁺'
+ 
+    # Rotation tensor from basis A to basis w, resolved in basis A (Rw⁺ is resolved in basis b, so that Rw = R0*Rw⁺*R0', and RwR0 = R0*Rw⁺*R0'*R0 = R0*Rw⁺)
+    RwR0 = R0*Rw⁺
 
     # Flag for being flapped
     isFlapped = !isnothing(surface.geometry.normFlapSpan) && minimum(surface.geometry.normFlapSpan) < x1_norm < maximum(surface.geometry.normFlapSpan)
@@ -1012,7 +1012,7 @@ function get_aero_geometric_properties(surface,R0,x1,x1_norm)
          nothing
 
     # Set geometry data 
-    geometry = AeroGeometry(b,c,normSparPos,aₕ,Λ,φ,cosΛ,cosΛ^2,c/cosΛ,Rw,RwT,RwR0,isFlapped,Th)
+    geometry = AeroGeometry(b,c,normSparPos,aₕ,Λ,φ,cosΛ,cosΛ^2,c/cosΛ,Rw⁺,Rw⁺T,RwR0,isFlapped,Th)
 
     return geometry
 

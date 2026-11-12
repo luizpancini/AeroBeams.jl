@@ -68,11 +68,11 @@ end
 # Computes the steady aerodynamic kinematic variables
 function aero_steady_kinematics!(element,aeroStateCache,V::AbstractVector{T},Ω::AbstractVector{T}) where T<:Number
 
-    @unpack RwT,c,normSparPos = element.aero.geometry
+    @unpack Rw⁺T,c,normSparPos = element.aero.geometry
     @unpack U = aeroStateCache.attachedVars.steadyKin
 
     # Relative wind velocity vector at spar position, resolved in basis W
-    U .= - RwT * V
+    U .= - Rw⁺T * V
 
     # Spanwise, tangential and normal components of relative wind velocity
     Uₛ,Uₜ,Uₙ = U
@@ -81,7 +81,7 @@ function aero_steady_kinematics!(element,aeroStateCache,V::AbstractVector{T},Ω:
     Uᵢ = sqrt(Uₜ^2 + Uₙ^2)
 
     # Spanwise angular velocity component, resolved in basis W
-    Ωₐ = dot(RwT[1,:], Ω)
+    Ωₐ = dot(Rw⁺T[1,:], Ω)
 
     # Relative normal wind velocity component at the airfoil's 1/2- and 3/4-chord
     UₙMid = Uₙ - Ωₐ * c * (normSparPos - 1/2)
@@ -107,12 +107,12 @@ end
 # Computes the unsteady aerodynamic kinematic variables
 function aero_unsteady_kinematics!(element,aeroStateCache,Vdot,Ωdot)
 
-    @unpack RwT,c,normSparPos = element.aero.geometry
+    @unpack Rw⁺T,c,normSparPos = element.aero.geometry
     @unpack Uₜ,Uₙ,Uᵢ = aeroStateCache.attachedVars.steadyKin
     @unpack Udot = aeroStateCache.attachedVars.unsteadyKin
 
     # Time derivative of relative wind velocity vector, resolved in basis W
-    Udot .= - RwT * Vdot
+    Udot .= - Rw⁺T * Vdot
 
     # Time derivatives of tangential and normal components of relative wind velocity
     Uₜdot,Uₙdot = Udot[2],Udot[3]
@@ -121,7 +121,7 @@ function aero_unsteady_kinematics!(element,aeroStateCache,Vdot,Ωdot)
     Uᵢdot = (Uₜ * Uₜdot + Uₙ * Uₙdot) / Uᵢ
 
     # Spanwise angular acceleration component, resolved in basis W
-    Ωₐdot = dot(RwT[1,:], Ωdot)
+    Ωₐdot = dot(Rw⁺T[1,:], Ωdot)
 
     # Relative normal wind acceleration component at the airfoil's 1/2- and 3/4-chord
     UₙdotMid = Uₙdot - Ωₐdot * c * (normSparPos - 1/2)
@@ -2011,7 +2011,7 @@ function aero_loads_resultants!(f1χ,f2χ,m1χ,m2χ,atmosphere,element,aeroState
     @unpack Δℓ = element.geometry
     @unpack ppSolver = element.aero.surface.solvers
     @unpack hasTipCorrection = element.aero.surface.tipLoss
-    @unpack csecΛ,cosΛ²,RwR0 = element.aero.geometry
+    @unpack csecΛ,cosΛ²,Rw⁺T,RwR0 = element.aero.geometry
     @unpack ϖ,ϖMid,Uref = element.aero.loadsDistribution
     @unpack Uᵢ = aeroStateCache.attachedVars.steadyKin
     @unpack Uᵢdot = aeroStateCache.attachedVars.unsteadyKin
@@ -2039,6 +2039,13 @@ function aero_loads_resultants!(f1χ,f2χ,m1χ,m2χ,atmosphere,element,aeroState
         Fa[2:4]  .= fMid / 2
         Fa[8:10] .= fMid / 2
     end
+
+    # Pitching moment, computed about the axis of basis W perpendicular to the flow, kept only as the torque about the beam axis (the component of the moment along the beam axis b1, resolved in basis W), as in simple sweep theory
+    b1 = Rw⁺T[:,1]
+    m1 = Fa[4]
+    m2 = Fa[10]
+    Fa[4:6]   .= (m1 * b1[1]) * b1
+    Fa[10:12] .= (m2 * b1[1]) * b1
 
     # Aerodynamic contributions to nodal resultants, resolved in basis A
     f1χ .= R * RwR0 * view(Fa, 1:3)

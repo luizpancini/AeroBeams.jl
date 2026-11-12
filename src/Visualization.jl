@@ -281,7 +281,7 @@ function get_undeformed_airfoil_coords(element::Element)
     @unpack x1_n1,x1_n2,R0_n1,R0_n2 = element.geometry
     @unpack r_n1,r_n2 = element.assemblyData
     @unpack airfoil,c,normSparPos = element.aero.surface.geometry
-    @unpack Rw = element.aero.geometry
+    @unpack Rw⁺ = element.aero.geometry
 
     # Airfoil coordinates, rotated to face forward
     coordinates = airfoil.database.coordinates
@@ -294,7 +294,7 @@ function get_undeformed_airfoil_coords(element::Element)
     s1,s2 = normSparPos isa Real ? (normSparPos,normSparPos) : (normSparPos(x1_n1),normSparPos(x1_n2))
 
     # Sections offset to the spar, scaled by the chord, rotated to the nodal orientation and translated to the nodal position
-    section(R0_n,r_n,c_n,s_n) = (Rw*R0_n)*vcat(zeros(1,N),((Y .- (1-s_n))*c_n)',(Z*c_n)') .+ r_n
+    section(R0_n,r_n,c_n,s_n) = (Rw⁺*R0_n)*vcat(zeros(1,N),((Y .- (1-s_n))*c_n)',(Z*c_n)') .+ r_n
 
     return section(R0_n1,r_n1,c1,s1),section(R0_n2,r_n2,c2,s2)
 end
@@ -576,7 +576,9 @@ function _distributed_loads!(strokes, cfg::_Config, v::_View, problem, scales::_
             M = TR*R[2]*element.aero.geometry.RwR0
             _arrow!(strokes,:green,P[2],Lref*λ/4*ct/scales.cF*M[:,2],v.out)
             _arrow!(strokes,:green,P[2],Lref*λ/4*cn/scales.cF*M[:,3],v.out)
-            _moment!(strokes,:green,P[2],M,1,cm,Lref*λ/20*abs(cm)/scales.cM)
+            # The pitching moment acts about the beam axis (axis 1 of basis B), with magnitude cm*cosΛ
+            cmB = cm*element.aero.geometry.cosΛ
+            _moment!(strokes,:green,P[2],TR*R[2]*R0[2],1,cmB,Lref*λ/20*abs(cmB)/scales.cM)
         end
     end
     return nothing
